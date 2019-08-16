@@ -1,0 +1,2 @@
+rewriteEngine on
+RewriteRule ^(media|api)\/(.*)$ api.php/$2
