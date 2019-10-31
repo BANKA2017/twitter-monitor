@@ -3,13 +3,15 @@
     <head>
         <meta name="robots" content="nofollow">
         <meta charset="utf-8">
-        <link rel="shortcut icon" href="/static/img/icon.png">
+        <!--<link rel="shortcut icon" href="/static/img/icon.png">-->
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <meta name="author" content="Banka2017 (https://bangdream.fun)">
         <meta name="description" content="Twitter Monitor">
         <meta name="keywords" content="Twitter, Monitor, Twitter Monitor">
         <title>Twitter Monitor</title>
         <link href="/static/css/bootstrap.min.css" rel="stylesheet preload" as="style">
+        <script src="/static/js/jquery.slim.min.js"></script>
+        <script src="/static/js/bootstrap.bundle.min.js"></script>
     </head>
     <body>
         <div id="app">
@@ -48,12 +50,12 @@
                         <div v-else-if="!hash && info!=null">
                             <div v-if="!init">
                                 <div class="card">
-                                    <img v-if="info && info.banner!=0" class="card-img-top" :src="`./media/https://pbs.twimg.com/profile_banners/`+info.uid+`/`+info.banner+`.banner.jpg`" alt="Banner">
+                                    <img v-if="info.banner!=0" class="card-img-top" :src="`./media/https://pbs.twimg.com/profile_banners/`+info.uid+`/`+info.banner+`.banner.jpg`" alt="Banner">
                                     <div class="card-body">
                                         <div class="container">
                                             <div class="row">
                                                 <div class="col-md-4" style="max-height:100px;max-width:100px;">
-                                                    <img v-if="info && info.header" class="rounded-circle img-fluid" :src="`./media/https://pbs.twimg.com/profile_images/`+info.header" alt="Header">
+                                                    <img v-if="info.header" class="rounded-circle img-fluid" :src="`./media/https://pbs.twimg.com/profile_images/`+info.header" alt="Header">
                                                     <div class="my-4"></div>
                                                 </div>
                                                 <div class="col-md-8">
@@ -65,13 +67,9 @@
                                         </div>
                                     </div>
                                 </div>
+                                <!--Load data-->
                                 <div class="my-4"></div>
-                                    <b v-if="info">{{ info.following }}</b> 正在关注
-                                <div class="my-4"></div>
-                                    <b v-if="info">{{ info.followers }}</b> 个关注者
-                                <div class="my-4"></div>
-                                    <b v-if="info">{{ info.statuses_count }}</b> 合计推文数
-                                <div class="my-4"></div>
+                                <ve-line :data="chartData" :settings="chartSettings" :extend="option" :init-options="{renderer: 'svg'}" height="250px"></ve-line>
                             </div>
                             <div v-else class="text-center">
                                 <div class="spinner-border" role="status">
@@ -119,7 +117,7 @@
                         <div class="my-4"></div>
                         <nav class="nav nav-pills nav-fill">
                             <li class="nav-item" v-if="!(hash||search)" v-for="value in [['全部', 'all'], ['原创', 'self'], ['转推', 'retweet'], ['媒体', 'media']]">
-                                <a :class="`nav-link `+(value[1] == display ? 'active' : '')" :href="`#/`+name+`/`+value[1]" @click="display == value[1] ? loading(tweets[info.top && display=='all' ? 1 : 0].tweet_id, 'refresh') : display = value[1]">{{ value[0] }}</a>
+                                <a :class="`nav-link `+(value[1] == display ? 'active' : '')" :href="`#/`+name+`/`+value[1]" @click="display == value[1] ? loading(tweets[(info.top && display=='all') ? 1 : 0].tweet_id, 'refresh') : display = value[1]">{{ value[0] }}</a>
                             </li>
                             <li class="nav-item">
                                 <a :class="`nav-link `+(picture ? 'active' : '')" :href="`#`+$route.path" @click="picture = !picture">无图</a>
@@ -147,7 +145,7 @@
                                                     {{ tweet.display_name }}
                                                 </a>
                                                  | <small>@{{ tweet.name }}</small>
-                                                   <span class="badge badge-success" v-if="tweet.media.length">Media</span>
+                                                   <a class="badge badge-success" v-if="tweet.media.length" :href="`#`+$route.path" @click="picture = !picture">Media</a>
                                                    <span class="badge badge-danger" v-if="tweet.hasvideo">Video</span>
                                                    <span class="badge badge-info" v-if="tweet.hasgif">GIF</span>
                                                 <div class="my-4"></div>
@@ -160,14 +158,14 @@
                                                 </div>
                                                 <div v-else>
                                                     <hr class="my-4">
-                                                    <p class='card-text'><small class="text-muted">由 {{ tweet.powerby }} 翻译</small></p>
+                                                    <p class='card-text'><small class="text-muted">由 {{ tweet.translate_source }} 翻译</small></p>
                                                     <p v-if="tweet.translate" v-html="`<p class='card-text'>`+tweet.translate+`</p>`"></p>
                                                 </div>
                                                 <!--pic-->
                                                 <div v-if="!picture">
                                                     <div class="my-4" v-if="tweet.media.length"></div>
                                                     <div :class="tweet.media.length > 1 ? `card-columns` : ''">
-                                                        <a class="card" v-for="(media, s) in tweet.media" :href="`#`+$route.path" @click="largePicture=[s, tweet.media, media.origin.origin_type === 'photo' ? 'picture' : 'video'];$('#largePicture').modal()">
+                                                        <a class="card" v-for="(media, s) in tweet.media" :href="`#`+$route.path" @click="largePicture=[s, ids];$('#largePicture').modal();autoPause()">
                                                             <img :src="`./media/`+media.cover.thumb_img_url+(tweet.media.length>1 ? ':360' : ':medium')" class="card-img-top card-img img-fluid rounded" width="100%" data-toggle="modal">
                                                             <div class="card-img-overlay" v-if="media.origin.origin_type != 'photo'">
                                                                 <span class="badge badge-secondary" v-if="media.origin.origin_type === 'animated_gif'">GIF</span>
@@ -208,23 +206,23 @@
                         <div class="my-4"></div>
                         
                         <!--media-->
-                        <div class="modal fade" id="largePicture" tabindex="-1" role="dialog" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered" role="document">
+                        <div class="modal fade" id="largePicture" tabindex="-1" role="dialog" aria-hidden="true" v-if="tweets.length && tweets[largePicture[1]].media.length">
+                            <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
                                 <div class="modal-content">
                                     <div id="largePictureControls" class="carousel slide" data-ride="carousel">
                                         <div class="carousel-inner">
-                                            <div :class="`carousel-item`+(s == largePicture[0] ? ` active` : '')" v-for="(media, s) in largePicture[1]" v-if="largePicture[2]=='picture'">
+                                            <div :class="`carousel-item`+(s == largePicture[0] ? ` active` : '')" v-for="(media, s) in tweets[largePicture[1]].media" v-if="tweets[largePicture[1]].media[largePicture[0]].origin.origin_type === 'photo'">
                                                 <img :src="`./media/`+media.cover.thumb_img_url+`:large`" class="d-block w-100">
                                             </div>
-                                            <div v-if="largePicture[2]=='video'">
-                                                <video :src="`./media/`+largePicture[1][largePicture[0]].origin.url" class="img-fluid" :poster="`./media/`+largePicture[1][largePicture[0]].cover.thumb_img_url+`:medium`" :type="largePicture[1][largePicture[0]].origin.content_type" autoplay controls muted width="100%"></video>
+                                            <div v-if="tweets[largePicture[1]].media[largePicture[0]].origin.origin_type == 'video' || tweets[largePicture[1]].media[largePicture[0]].origin.origin_type == 'animated_gif'">
+                                                <video :src="`./media/`+tweets[largePicture[1]].media[largePicture[0]].origin.url" class="img-fluid" :poster="`./media/`+tweets[largePicture[1]].media[largePicture[0]].cover.thumb_img_url+`:medium`" :type="tweets[largePicture[1]].media[largePicture[0]].origin.content_type" preload="none" controls muted width="100%" id="videoPlayer"></video>
                                             </div>
                                         </div>
-                                        <a class="carousel-control-prev" href="#largePictureControls" role="button" data-slide="prev" v-if="largePicture[2]=='picture'">
+                                        <a class="carousel-control-prev" href="#largePictureControls" role="button" data-slide="prev" v-if="tweets[largePicture[1]].media[largePicture[0]].origin.origin_type === 'photo' && tweets[largePicture[1]].media.length > 1">
                                             <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                                             <span class="sr-only">Previous</span>
                                         </a>
-                                        <a class="carousel-control-next" href="#largePictureControls" role="button" data-slide="next" v-if="largePicture[2]=='picture'">
+                                        <a class="carousel-control-next" href="#largePictureControls" role="button" data-slide="next" v-if="tweets[largePicture[1]].media[largePicture[0]].origin.origin_type === 'photo' && tweets[largePicture[1]].media.length > 1">
                                             <span class="carousel-control-next-icon" aria-hidden="true"></span>
                                             <span class="sr-only">Next</span>
                                         </a>
@@ -234,10 +232,16 @@
                         </div>
                     </div>
                     <div class="col-md-2">
-                        <a :href="`#/`+project.name+`/all`" class="text-decoration-none badge badge-pill badge-primary" v-for="project in projects">{{ project.display_name }}</a>
+                        <template v-for="project in projects">
+                            <a :href="`#/`+project.name+`/all`" class="text-decoration-none badge badge-pill badge-primary">{{ project.display_name }}</a>
+                            <span></span>
+                        </template>
                         <hr class="my-4">
                         <h5>相关链接</h5>
-                            <a href="https://ailand.date" target="_blank" class="badge badge-pill badge-primary">♥BANKA</a>
+                        <template v-for="link in links">
+                            <a :href="link[0]" target="_blank" :class="`badge badge-pill badge-`+link[2]">{{ link[1] }}</a>
+                            <span></span>
+                        </template>
                         <div class="my-4"></div>
                     </div>
                 </div>
@@ -249,13 +253,13 @@
         <script src="/static/js/vue.min.js"></script>
         <script src="/static/js/vue-router.js"></script>
         <script src="/static/js/axios.min.js"></script>
-        <script src="/static/js/jquery.slim.min.js"></script>
         <script src="/static/js/fastclick.js"></script>
         <script src="/static/js/noty.min.js"></script>
-        <script src="/static/js/bootstrap.bundle.min.js"></script>
+        <script src="/static/js/echarts.min.js"></script>
+        <script src="/static/js/index.min.js"></script>
         <script>
             'use strict';
-            var bgfun = new Vue({
+            new Vue({
                 el: "#app",
                 data: {
                     name: '',
@@ -268,7 +272,7 @@
                     search: null,
                     search_type: 'text',
                     picture: false,
-                    largePicture: [0, [], ''],
+                    largePicture: [0, 0],
                     load: false,
                     refresh: false,
                     init: true,
@@ -280,13 +284,32 @@
                         '<li>在输入框输入任何内容可进行对推文的搜索，此功能适用于全站</li>',
                         '<li>任何时候在输入框输入<code>help</code>、<code>帮助</code>可弹出此教程</li>',
                     ],
-                    projects: {
-                        Twitter: {name: 'Twitter', display_name: 'Twitter'},
-                    },
+                    projects: [],
                     names: [],
-                    nsfwList: [
-                            
-                        ],
+                    nsfwList: [],
+                    links: [],
+                    chartData: {
+                        columns: ['timestamp', 'followers', 'following', 'statuses_count'],
+                        rows: []
+                    },
+                    chartSettings: {
+                        labelMap: {
+                            'timestamp': '日期',
+                            'followers': '关注者',
+                            'following': '关注中',
+                            'statuses_count': '总推文数',
+                        },
+                        legendName: [],
+                        scale: [true, true],
+                    },
+                    option: {
+                        grid: {
+                            left: '3%',
+                            right: '4%',
+                            bottom: '3%',
+                            containLabel: true
+                        },
+                    },
                 },
                 router: new VueRouter({
                     routes: [
@@ -330,6 +353,7 @@
                             }
                         }else{
                             this.$route.params.search = null;
+                            //if()
                             this.update();
                         }
                     },
@@ -341,22 +365,26 @@
                     "info": function(){
                         //バンドリ！ BanG Dream! 公式 (@bang_dream_info) / Twitter
                         document.title = this.info.display_name + ' (@' + this.info.name + ') / Twitter Monitor';
-                    }
+                    },
                 },
                 mounted: function() {
                     let startTime = Date.now();
-                    axios.get('names.json').then(response => {
-                        this.names = response.data;
+                    axios.get('account_info.json').then(response => {
+                        this.names = response.data.account_info;
+                        this.projects = response.data.projects;
+                        this.nsfwList = response.data.nsfwList;
+                        this.links = response.data.links;
+                        this.project = Object.keys(this.projects)[0];
+                        this.name = this.projects[this.project].name;
+                        this.update();
                         if(Date.now() - startTime > 1000){
                             this.picture = true;
                             this.noty('当前网速较慢，已关闭图片显示', 'information');
                         }
-                        this.project = Object.keys(this.names)[0];
-                        this.name = this.names[this.project][Object.keys(this.names[this.project])[0]][0].name;//此处需保证第一个账号必须不为空
-                        this.update();
                     }).catch(error => {
                         this.noty('加载失败，请稍后再试 #' + error, 'error');
                     });
+                    this.fastClick();
                 },
                 methods: {
                     loading: function(tweet_id = 0, type = 'load') {
@@ -400,7 +428,10 @@
                     update: function() {
                         this.init = true;
                         this.hasmore = true;
+                        this.chartData.rows = [];
+                        this.chartSettings.legendName = [];
                         this.tweets = [];
+                        this.largePicture = [0, 0];
                         if(this.$route.params.project || this.$route.path == '/' || this.$route.path == '/'+this.name){
                             if(this.$route.params.project){
                                 this.project = this.$route.params.project.toLowerCase();
@@ -432,6 +463,8 @@
                                 }
                                 axios.get('api/?m=info&name=' + this.name).then(response => {
                                         this.info = response.data.data;
+                                        this.chartSettings.legendName = {'关注者': '关注者 ' + this.info.followers, '关注中': '关注中 ' + this.info.following, '总推文数': '总推文数 ' + this.info.statuses_count};
+                                        this.createChart();
                                     });
                             }
                             if (this.$route.params.display) {
@@ -462,7 +495,7 @@
                         this.tweets[ids].translate = 'pending';
                         axios.get('api/?m=translate&tweet_id=' + tweet_id.toString()).then(response => {
                             this.tweets[ids].translate = response.data.data.translate;
-                            this.tweets[ids].powerby = response.data.data.powerby;
+                            this.tweets[ids].translate_source = response.data.data.translate_source;
                         }).catch(error => {
                             this.noty('加载失败，请稍后再试 #' + error, 'error');
                         });
@@ -512,13 +545,34 @@
                                 text: text,
                             }).show();
                     },
+                    autoPause: function(){
+                        //pause video //TODO
+                        $(function() {
+                            $('#largePicture').on('hidden.bs.modal',
+                            function() {
+                                document.getElementById('videoPlayer').pause();
+                            })
+                        });
+                    },
+                    fastClick: function() {
+                        $(function() {  
+                            FastClick.attach(document.body);  
+                        });
+                    },
+                    createSVG: function(width, height, text = '') {
+                        let newSVG = '<svg width="' + width + '" height="' + height + '" xmlns="http://www.w3.org/2000/svg" role="img"><rect width="100%" height="100%" fill="#868e96"></rect>';
+                        newSVG = newSVG + (text.length ? '<text x="50%" y="50%" fill="#dee2e6" dy=".3em">' + text + '</text></svg>' : '</svg>');
+                        return 'data:image/svg+xml;base64,' + btoa(newSVG);
+                    },
+                    createChart: function(){
+                        axios.get('api/?m=data&uid=' + this.info.uid).then(response => {
+                            this.chartData.rows = response.data.data;
+                        }).catch(error => {
+                            this.noty('加载失败，请稍后再试 #' + error, 'error');
+                        });
+                    }
                 }
             })
-        </script>
-        <script>
-            $(function() {  
-                FastClick.attach(document.body);  
-            });
         </script>
     </body>
 </html>

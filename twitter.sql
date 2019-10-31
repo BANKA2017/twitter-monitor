@@ -31,11 +31,26 @@ CREATE TABLE `account_info` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 
+DROP TABLE IF EXISTS `twitter_data`;
+CREATE TABLE `twitter_data` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `uid` bigint(20) NOT NULL DEFAULT '0',
+  `name` text,
+  `display_name` text,
+  `following` int(11) NOT NULL DEFAULT '0',
+  `followers` int(11) NOT NULL DEFAULT '0',
+  `statuses_count` int(11) NOT NULL DEFAULT '0',
+  `timestamp` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+
 DROP TABLE IF EXISTS `twitter_tags`;
 CREATE TABLE `twitter_tags` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `tag` text NOT NULL,
   `tweet_id` bigint(20) NOT NULL,
+  `account` bigint(20) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
@@ -49,8 +64,9 @@ CREATE TABLE `twitter_tweets` (
   `media` longtext NOT NULL,
   `full_text` longtext NOT NULL,
   `full_text_origin` longtext NOT NULL,
-  `retweet_from` text NOT NULL,
-  `translate` longtext NOT NULL,
+  `retweet_from` text,
+  `translate` longtext,
+  `translate_source` text,
   `time` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;

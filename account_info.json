@@ -1,0 +1,22 @@
+{
+"account_info": {
+    "twitter": {
+        "官方": [
+            {
+                "name": "Twitter",
+                "display_name": "twitter"
+            }
+        ]
+    }
+},
+"projects": {
+        "twitter": {
+            "name": "twitter",
+            "display_name": "Twitter"
+        }
+    },
+    "nsfwList": [],
+    "links": [
+        ["https://example.com", "Example Domain", "primary"]
+    ]
+}

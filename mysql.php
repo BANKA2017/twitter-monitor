@@ -26,18 +26,23 @@ class ssql{
      * @param array $orders
      * @return array
      */
-    public function load($table, $keys = ["*"], $where = [], $orders = [], $limit = 0) {
-        $sql = "SELECT";
+    public function load($table, $keys = ["*"], $where = [], $orders = [], $limit = 0, $desc = false) {
+        $activeOr = false;
+        $sql = "SELECT DISTINCT";
         for ($x = 0; $x < count($keys); $x++) {
             if ($x > 0) {
                 $sql .= ',';
             }
-            $sql .= ' `' . mysqli_real_escape_string($this->conn, $keys[$x]) . '`';
+            $sql .= $keys[$x] == '*' ? ' * ' : ' `' . mysqli_real_escape_string($this->conn, $keys[$x]) . '`';
         }
         $sql .= " FROM `" . mysqli_real_escape_string($this->conn, $table) . "`";
         if ($where != []) {
             $sql .= ' WHERE';
             for ($x = 0; $x < count($where); $x++) {
+                if(isset($where[$x][3]) && strtoupper($where[$x][3]) == "OR" && !$activeOr){
+                    $sql .= ' ( ';
+                    $activeOr = true;
+                }
                 if ($x > 0) {
                     if(isset($where[$x][3]) && strtoupper($where[$x][3]) == "OR"){
                         $sql .= ' OR ';
@@ -50,7 +55,11 @@ class ssql{
                 }else{
                     $sql .= ' `' . mysqli_real_escape_string($this->conn, $where[$x][0]) . '` LIKE "%' . mysqli_real_escape_string($this->conn, $where[$x][2]) . '%"';
                 }
-            }
+                if((($x < count($where) - 1 && strtoupper($where[$x + 1][3] ?? null) != 'OR') || $x == count($where) - 1) && $activeOr){
+                    $sql .= ' ) ';
+                    $activeOr = false;
+                }
+            } 
         }
         if ($orders != []) {
             $sql .= ' ORDER BY';
@@ -58,9 +67,13 @@ class ssql{
                 if ($x > 0) {
                     $sql .= ',';
                 }
-                $sql .= ' `' . mysqli_real_escape_string($this->conn, $orders[$x]) . '`';
+                $rOrder = mysqli_real_escape_string($this->conn, $desc ? $orders[$x][0] : $orders[$x]);
+                $sql .= $rOrder ? ' `' . $rOrder . '`' : '';
+                //TODO 尝试兼容前提下自主修改本句
+                if($desc && $orders[$x][1]){
+                    $sql .= ' DESC';
+                }
             }
-            $sql .= ' DESC';
         }
         if($limit){
             $sql .= " LIMIT {$limit}";
@@ -111,7 +124,7 @@ class ssql{
      * @return bool
      */
     public function inset($table, $values = []) {
-        $sql = "INSERT INTO `" . mysqli_real_escape_string($this->conn, $table) . "` ";
+        $sql = "INSERT IGNORE INTO `" . mysqli_real_escape_string($this->conn, $table) . "` ";
         $x = 0;
         $d = '(';
         $e = '(';

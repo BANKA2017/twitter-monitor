@@ -1,7 +1,5 @@
 <?php
 
-//ini_set('display_errors',1);
-
 ob_implicit_flush();
 
 date_default_timezone_set('Asia/Shanghai');
@@ -9,12 +7,14 @@ require(dirname(__FILE__) . '/mysql.php');
 require(dirname(__FILE__) . '/scurl.php');
 require(dirname(__FILE__) . '/config.php');
 require(dirname(__FILE__) . '/translate.php');
+$names = json_decode(file_get_contents(dirname(__FILE__) . '/account_info.json'), true)["account_info"];
 
 //创建连接
 $sssql = new ssql($servername,$username,$password,$dbname);
 
 //合并媒体镜像
 if (str_replace(dirname(__FILE__) . '/api.php', '', str_replace($_SERVER["SCRIPT_NAME"], '', $_SERVER["SCRIPT_FILENAME"]) . preg_replace('/https:[\/]{1,}(.*?)\.(mp4|(jpg|png)(:large|:medium|:(240|360)|)).*/', '', $_SERVER["REQUEST_URI"])) == dirname(__FILE__) . "/media/") {
+    $not_found = '<svg class="bd-placeholder-img card-img-top" width="100%" height="0" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" focusable="false" role="img" aria-label="Placeholder: Deleted"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>';
     $real_query = str_replace(dirname(__FILE__) . '/api.php', '', str_replace($_SERVER["SCRIPT_NAME"], '', $_SERVER["SCRIPT_FILENAME"]) . $_SERVER["REQUEST_URI"]);
     preg_match('/https:[\/]{1,}(.*?)\.(mp4|banner|jpg|png)(:large|:medium|:(240|360)|)/', $real_query, $url_);
     if(!preg_replace('/.*\/https:[\/]{1,}(.*?)\.(mp4|(jpg|png)(:large|:medium|:(240|360)|))/', '', $real_query)){
@@ -33,52 +33,61 @@ if (str_replace(dirname(__FILE__) . '/api.php', '', str_replace($_SERVER["SCRIPT
                 //mp4救不了救不了
                 case "mp4":
                     if(count($sssql -> load("twitter_tweets", ["id"], [["media", "LIKE%%", $token_[count($token_) - 1]]]))){
-                        
                         //default
                         if(!$cloudflare_workers_link){
                             header("content-type: video/mp4");
-                            echo new sscurl("https://{$url}.mp4");
+                            echo new sscurl("https://{$url}.mp4");//mp4不会删无需修改
                         }else{
                             header("Location: " . str_replace("video.twimg.com", $cloudflare_workers_link, $url . ".mp4"));
                         }
                     }
                     break;
-                case "jpg":
-                    if(count($sssql -> load("account_info", ["id"], [["header", "=", preg_replace('/pbs\.twimg\.com\/profile_images\/([\w\/\-]+)_400x400/', '$1', $url) . ".jpg"]])) || count($sssql -> load("twitter_tweets", ["id"], [["media", "LIKE%%", $token_[count($token_) - 1]]]))){
-                        header("content-type: image/jpeg");
-                        echo new sscurl("https://{$url}.jpg{$large}");
-                    }else{
-                        header("HTTP/1.0 404 Not Found");
-                    }
-                    break;
                 case "banner":
                     if(count($sssql -> load("account_info", ["id"], [["uid", "=", $token_[count($token_) - 2]], ["banner", "=", $token_[count($token_) - 1]]]))){
-                        header("content-type: image/jpeg");
-                        echo new sscurl("https://{$url}");
+                        $r = new sscurl("https://{$url}");
+                        $r = $r != '' ? $r : $not_found;
+                        header("content-type: image/" . ($r == $not_found ? 'svg+xml' : 'jpeg'));
+                        header("Content-Disposition:attachment;filename=banner." . ($r == $not_found ? 'svg' : 'jpg'));
+                        header("Accept-ranges:bytes");
+                        header("Accept-Length:".strlen($r));
+                        echo $r;
                     }else{
-                        header("HTTP/1.0 404 Not Found");
+                        header("content-type: image/svg+xml");
+                        echo $not_found;
                     }
                     break;
+                case "jpg":
                 case "png":
-                    if(count($sssql -> load("account_info", ["id"], [["header", "=", preg_replace('/pbs\.twimg\.com\/profile_images\/([\w\/\-]+)_400x400/', '$1', $url) . ".png"]])) || count($sssql -> load("twitter_tweets", ["id"], [["media", "LIKE%%", $token_[count($token_) - 1]]]))){
-                        header("content-type: image/png");
-                        echo new sscurl("https://{$url}.png{$large}");
+                    if(count($sssql -> load("account_info", ["id"], [["header", "=", preg_replace('/pbs\.twimg\.com\/profile_images\/([\w\/\-]+)_400x400/', '$1', $url) . ".{$type}"]])) || count($sssql -> load("twitter_tweets", ["id"], [["media", "LIKE%%", $token_[count($token_) - 1]]]))){
+                        $replace_svg_text = '<svg class="bd-placeholder-img card-img-top" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" focusable="false" role="img" aria-label="Placeholder: Deleted"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>';
+                        $r = new sscurl("https://{$url}.{$type}{$large}");
+                        $r = $r != '' ? $r : $replace_svg_text;
+                        header("content-type: image/" . ($r == $replace_svg_text ? 'svg+xml' : $type));
+                        header("Content-Disposition:attachment;filename=picture." . ($r == $replace_svg_text ? 'svg' : $type));
+                        header("Accept-ranges:bytes");
+                        header("Accept-Length:".strlen($r));
+                        echo $r;
                     }else{
-                        header("HTTP/1.0 404 Not Found");
+                        header("content-type: image/svg+xml");
+                        echo $not_found;
                     }
                     break;
                 default:
-                    header("HTTP/1.0 404 Not Found");
+                    header("content-type: image/svg+xml");
+                    echo $not_found;
             }
         }else{
-            header("HTTP/1.0 404 Not Found");
+            header("content-type: image/svg+xml");
+            echo $not_found;
         }
     }else{
-        header("HTTP/1.0 404 Not Found");
+        header("content-type: image/svg+xml");
+        echo $not_found;
     }
 } else {
     //判断账户
-    $name = ($_GET["name"] ?? false) && count($sssql -> load("account_info", ["id"], [["name", "=", $_GET["name"]]])) ? $name = $_GET["name"] : "bang_dream_info";
+    //$name = ($_GET["name"] ?? false) && count($sssql -> load("account_info", ["id"], [["name", "=", $_GET["name"]]], [['', true]], 0, true)) ? $name = $_GET["name"] : "bang_dream_info";//不通用但高效
+    $name = ($_GET["name"] ?? false) && count($sssql -> load("account_info", ["id"], [["name", "=", $_GET["name"]]])) ? $name = $_GET["name"] : $names[array_keys($names)[0]][array_keys($names[array_keys($names)[0]])[0]][0]["name"];
     header("content-type: text/json");
     /*
     errno 一览
@@ -92,7 +101,7 @@ if (str_replace(dirname(__FILE__) . '/api.php', '', str_replace($_SERVER["SCRIPT
         switch($_GET["m"]){
             //获取个人信息页
             case "info":
-                $info = $sssql -> load("account_info", ["uid", "name", "display_name", "header", "banner", "following", "followers", "description", "lang", "statuses_count", "top"], [["name", "=", $name]]);
+                $info = $sssql -> load("account_info", ["uid", "name", "display_name", "header", "banner", "following", "followers", "description", "lang", "statuses_count", "top"], [["name", "=", $name]], [], 1);
                 if(!count($info)){
                     $arr["error"] = 1;
                     $arr["message"] = "No record";
@@ -108,19 +117,7 @@ if (str_replace(dirname(__FILE__) . '/api.php', '', str_replace($_SERVER["SCRIPT
             //获取11条推文
             case "tweets":
                 //默认配置
-                $get_arr = [[
-                                "name",
-                                "=",
-                                $name
-                            ],[
-                                "retweet_from",
-                                "=",
-                                null
-                            ],[
-                                "tweet_id",
-                                ">",
-                                0
-                            ]];
+                $get_arr = [["name", "=", $name], ["retweet_from", "=", null], ["tweet_id", ">", 0]];
                 $get_top = true;
                 $display_all = false;
                 if (isset($_GET["tweet_id"]) && is_numeric($_GET["tweet_id"]) && $_GET["tweet_id"] > 0) {
@@ -145,7 +142,12 @@ if (str_replace(dirname(__FILE__) . '/api.php', '', str_replace($_SERVER["SCRIPT
                         }
                     } else {
                         $display_all = true;
-                        $get_arr[2][1] = (isset($_GET["type"]) && strtolower($_GET["type"]) == 'refresh') ? ">" : "<";
+                        if(isset($_GET["type"]) && strtolower($_GET["type"]) == 'refresh'){
+                            $get_top = false;
+                            $get_arr[2][1] = ">";
+                        }else{
+                            $get_arr[2][1] = "<";
+                        }
                         $get_arr[2][2] = $_GET["tweet_id"];
                         array_splice($get_arr, 1, 1);
                     }
@@ -178,7 +180,7 @@ if (str_replace(dirname(__FILE__) . '/api.php', '', str_replace($_SERVER["SCRIPT
                     $get_arr[] = ["time", ">=", $_GET["date"]];
                     $get_arr[] = ["time", "<", $_GET["date"] + 86400];
                 }
-                $tweets = $sssql -> load("twitter_tweets", ["tweet_id", "name", "display_name", "media", "full_text", "full_text_origin", "retweet_from", "time", "translate"], $get_arr, ["tweet_id"], 11);
+                $tweets = $sssql -> load("twitter_tweets", ["tweet_id", "name", "display_name", "media", "full_text", "full_text_origin", "retweet_from", "time", "translate"], $get_arr, [["tweet_id", true]], 11, true);
                 $arr["error"] = 0;
                 $arr["message"] = "OK";
                 $arr["data"] = returnData($tweets, 11);
@@ -192,7 +194,7 @@ if (str_replace(dirname(__FILE__) . '/api.php', '', str_replace($_SERVER["SCRIPT
                             }
                         }
                         if(!$display_all){
-                            $top_tweet = ($sssql -> load("twitter_tweets", ["tweet_id", "name", "display_name", "media", "full_text", "full_text_origin", "retweet_from", "time", "translate"], [["tweet_id", "=", $info[0]["top"]]], ["tweet_id"], 1));
+                            $top_tweet = ($sssql -> load("twitter_tweets", ["tweet_id", "name", "display_name", "media", "full_text", "full_text_origin", "retweet_from", "time", "translate"], [["tweet_id", "=", $info[0]["top"]]], [], 1));
                             if(count($top_tweet)){
                                 $top_tweet = $top_tweet[0];
                                 $top_tweet["translate"] = "";
@@ -221,16 +223,16 @@ if (str_replace(dirname(__FILE__) . '/api.php', '', str_replace($_SERVER["SCRIPT
                 break;
             case "tag":
                 if (isset($_GET["tweet_id"]) && is_numeric($_GET["tweet_id"]) && $_GET["tweet_id"] > 0) {
-                    $get_tweet_id = $sssql -> load("twitter_tags", ["tweet_id"], [["tag", "=", $_GET["hash"]], ["tweet_id", "<", $_GET["tweet_id"]]], ["tweet_id"], 11);
+                    $get_tweet_id = $sssql -> load("twitter_tags", ["tweet_id"], [["tag", "=", $_GET["hash"]], ["tweet_id", "<", $_GET["tweet_id"]]], [["tweet_id", true]], 11, true);
                 } else {
-                    $get_tweet_id = $sssql -> load("twitter_tags", ["tweet_id"], [["tag", "=", $_GET["hash"]]], ["tweet_id"], 11);
+                    $get_tweet_id = $sssql -> load("twitter_tags", ["tweet_id"], [["tag", "=", $_GET["hash"]]], [["tweet_id", true]], 11, true);
                 }
                 $tweet_ids = [];
                 foreach($get_tweet_id as $get_tweet_ids){
                     $tweet_ids[] = ["tweet_id", "=", $get_tweet_ids["tweet_id"], "OR"];
                 }
                 if($tweet_ids){
-                    $tweets = $sssql -> load("twitter_tweets", ["tweet_id", "name", "display_name", "media", "full_text", "full_text_origin", "retweet_from", "time", "translate"], $tweet_ids, ["tweet_id"], count($tweet_ids));
+                    $tweets = $sssql -> load("twitter_tweets", ["tweet_id", "name", "display_name", "media", "full_text", "full_text_origin", "retweet_from", "time", "translate"], $tweet_ids, [["tweet_id", true]], count($tweet_ids), true);
                 }else{
                     $tweets = [];//如果没有tag一定要留空，否则内存爆炸
                 }
@@ -239,19 +241,13 @@ if (str_replace(dirname(__FILE__) . '/api.php', '', str_replace($_SERVER["SCRIPT
                 $arr["data"] = returnData($tweets, 11);
                 break;
             case "search":
-                $get_arr = [[
-                                "full_text_origin",
-                                "LIKE%%",
-                                $_GET["q"]
-                            ],[
-                                "retweet_from",
-                                "=",
-                                null
-                            ],[
-                                "tweet_id",
-                                ">",
-                                0
-                            ]];
+                $keyWord = strtok($_GET["q"], " ");
+                $keyWords = [];
+                while($keyWord){
+                    $keyWords[] = ["full_text_origin", "LIKE%%", $keyWord];
+                    $keyWord = strtok(" ");
+                }
+                $get_arr = array_merge($keyWords, [["retweet_from", "=", null], ["tweet_id", ">", 0]]);
                 if (isset($_GET["tweet_id"]) && is_numeric($_GET["tweet_id"]) && $_GET["tweet_id"] > 0) {
                     $get_arr[2][1] = "<";
                     $get_arr[2][2] = $_GET["tweet_id"];
@@ -259,14 +255,14 @@ if (str_replace(dirname(__FILE__) . '/api.php', '', str_replace($_SERVER["SCRIPT
                 } else {
                     array_splice($get_arr, 1);
                 }
-                $tweets = $sssql -> load("twitter_tweets", ["tweet_id", "name", "display_name", "media", "full_text", "full_text_origin", "retweet_from", "time", "translate"], $get_arr, ["tweet_id"], 11);
+                $tweets = $sssql -> load("twitter_tweets", ["tweet_id", "name", "display_name", "media", "full_text", "full_text_origin", "retweet_from", "time", "translate"], $get_arr, [["tweet_id", true]], 11, true);
                 $arr["error"] = 0;
                 $arr["message"] = "OK";
                 $arr["data"] = returnData($tweets, 11);
                 break;
             case "translate":
                 if(isset($_GET["tweet_id"]) && is_numeric($_GET["tweet_id"]) && $_GET["tweet_id"] > 0){
-                    $info = $sssql -> load("twitter_tweets", ["translate", "full_text_origin"], [["tweet_id", "=", $_GET["tweet_id"]]]);
+                    $info = $sssql -> load("twitter_tweets", ["translate", "full_text_origin", "translate_source"], [["tweet_id", "=", $_GET["tweet_id"]]]);
                     if (count($info) && $info[0]["translate"] == "") {
                         $info = $info[0];
                         //google translate
@@ -300,7 +296,7 @@ if (str_replace(dirname(__FILE__) . '/api.php', '', str_replace($_SERVER["SCRIPT
                             $info["translate"] .= $trs[0];
                         }
                         if($info["translate"]){
-                            $sssql -> update("twitter_tweets", ["translate" => $info["translate"]], [["tweet_id", "=", $_GET["tweet_id"]]]);
+                            $sssql -> update("twitter_tweets", ["translate" => $info["translate"], "translate_source" => $powerby], [["tweet_id", "=", $_GET["tweet_id"]]]);
                         }
                         
                         //bing translator
@@ -316,10 +312,27 @@ if (str_replace(dirname(__FILE__) . '/api.php', '', str_replace($_SERVER["SCRIPT
                         $info["cache"] = true;
                     }
                     $info["translate"] = nl2br($info["translate"]);
-                    $info["powerby"] = $powerby;
+                    $info["translate_source"] = $info["translate_source"] == '' ? $powerby : $info["translate_source"];
                     $arr["error"] = 0;
                     $arr["message"] = "OK";
                     $arr["data"] = $info;
+                }
+                break;
+            case "data":
+                //数据图表
+                $uid = $_GET["uid"] ?? 0;
+                if($uid){
+                    $chartData = $sssql -> load("twitter_data", ["timestamp", "followers", "following", "statuses_count"], [["uid", "=", $uid]], [["timestamp", true]], 144, true);
+                    //$rData = ["following" => [], "followers" => [], "statuses_count" => [], "timestamp" => []];//返回值
+                    foreach($chartData as $s => $sData){
+                        //$rData["following"][] = $sData["following"];
+                        //$rData["followers"][] = $sData["followers"];
+                        //$rData["statuses_count"][] = $sData["statuses_count"];
+                        $chartData[$s]["timestamp"] = date('Y-n-j G:i', $sData["timestamp"]);
+                    }
+                    $arr["error"] = 0;
+                    $arr["message"] = "OK";
+                    $arr["data"] = array_reverse($chartData);
                 }
                 break;
         }
