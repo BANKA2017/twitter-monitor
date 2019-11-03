@@ -60,7 +60,7 @@ foreach ($account_info["account_info"] as $project => $accounts) {
             if (isset($user_info["errors"])) {
                 echo "Auto break ({$account["name"]}) -- {$user_info["errors"][0]["message"]}\n";
                 $update_names = true;
-                $account_info[$project][$tag][$c]["deleted"] = true;
+                $account_info["account_info"][$project][$tag][$c]["deleted"] = true;
                 //删号自动添加
                 continue;
             }
@@ -123,13 +123,13 @@ foreach ($account_info["account_info"] as $project => $accounts) {
             //处理uid
             if (!isset($account["uid"]) || $account["uid"] != $user_info["id"]) {
                 $update_names = true;
-                $account_info[$project][$tag][$c]["uid"] = $user_info["id"];
+                $account_info["account_info"][$project][$tag][$c]["uid"] = $user_info["id"];
             }
 
             //处理id
             if ($user_info["screen_name"] && $account["name"] != $user_info["screen_name"]) {
                 $update_names = true;
-                $account_info[$project][$tag][$c]["name"] = $user_info["screen_name"];
+                $account_info["account_info"][$project][$tag][$c]["name"] = $user_info["screen_name"];
             }
 
             $verify_info = $sssql -> load("account_info", ["statuses_count", "last_cursor", "uid", "display_name", "cursor"], [["name", "=", $in_sql_info["name"], "OR"], ["uid", "=", $in_sql_info["uid"], "OR"]]);
@@ -198,7 +198,7 @@ foreach ($name_count as $account_info) {
     //x-rate-limit-reset: 1567401449
     //请求限制改成了180
 
-    //你以为真的是180？骗你的, 只要暂停请求又是新一轮180//但还是开着吧,谁知道会有什么影响呢//要取消限制只需要将 196 行的 99 改成大的数字即可
+    //你以为真的是180？骗你的, 只要暂停请求又是新一轮180//但还是开着吧,谁知道会有什么影响呢//要取消限制只需要将下行的 99 改成大的数字即可
 
     if (($timesss % 99 == 0) && time() <= $starttime+60) {
         $sleeptime = ($starttime+60-time());
