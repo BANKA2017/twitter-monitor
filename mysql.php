@@ -1,16 +1,11 @@
 <?php
-
+/* Class ssql
+ * @banka2017 & KD·NETWORK
+ * v5.2
+ */
 class ssql{
     public $conn;
 
-    /**
-     * ssql constructor.
-     * @param $servername
-     * @param $username
-     * @param $password
-     * @param $dbname
-     * @throws Exception
-     */
     public function __construct($servername, $username, $password, $dbname) {
         $this->conn = new mysqli($servername, $username, $password, $dbname);
         // 检测连接
@@ -19,14 +14,32 @@ class ssql{
         }
     }
 
-    /**
-     * @param $table
-     * @param array $keys
-     * @param array $where
-     * @param array $orders
-     * @return array
-     */
-    public function load($table, $keys = ["*"], $where = [], $orders = [], $limit = 0, $desc = false) {
+    public function returnQuery(string $sql, bool $multi = false, bool $singleMulti = false){
+        $result = $multi && !$singleMulti ? $this->conn->multi_query($sql) : $this->conn->query($sql);
+        $returnArray = [];
+        if (!$result){
+            throw new Exception("Error: " . $sql . $this->conn->error . "\n");
+        } elseif ($multi && !$singleMulti){
+            do {
+                /* store first result set */
+                if ($result = $this->conn->store_result(MYSQLI_STORE_RESULT_COPY_DATA)) {
+                    while ($row = $result->fetch_row()) {
+                        $returnArray[] = $row;
+                    }
+                    $result->free();
+                }
+            } while ($this->conn->next_result());
+        } elseif($result === TRUE) {
+            return true;
+        } elseif ($result->num_rows) {
+            while ($row = $result->fetch_assoc()) {
+                $returnArray[] = $row;
+            }
+        }
+        return $returnArray;
+    }
+
+    public function load(string $table, array $keys = ["*"], array $where = [], array $orders = [], int $limit = 0, bool $desc = false, int $offset = 0, $returnRawSql = false) {
         $activeOr = false;
         $sql = "SELECT DISTINCT";
         for ($x = 0; $x < count($keys); $x++) {
@@ -78,26 +91,14 @@ class ssql{
         if($limit){
             $sql .= " LIMIT {$limit}";
         }
-        $sql .= ";";
-        $result = $this->conn->query($sql);
-        if ($result->num_rows) {
-            $a = [];
-            while ($row = $result->fetch_assoc()) {
-                $a[] = $row;
-            }
-        } else {
-            $a = [];
+        if ($offset) {
+            $sql .= " OFFSET {$offset}";
         }
-        return $a;
+        $sql .= ";";
+        return $returnRawSql ? $sql : self::returnQuery($sql);
     }
 
-    /**
-     * @param $table
-     * @param array $set
-     * @param array $where
-     * @return bool
-     */
-    public function update($table, $set = [], $where = []) {
+    public function update(string $table, array $set = [], array $where = [], bool $returnRawSql = false) {
         $sql = "UPDATE `{$table}` SET";
         foreach ($set as $key => $value) {
             $sql .= " `" . mysqli_real_escape_string($this->conn, $key) . "` = '" . mysqli_real_escape_string($this->conn, $value) . "',";
@@ -105,25 +106,20 @@ class ssql{
         $sql = substr($sql, 0, strlen($sql) - 1);
         if ($where != []) {
             $sql .= " WHERE (";
-            foreach ($where as $value) {
-                $sql .= " (`" . mysqli_real_escape_string($this->conn, $value[0]) . "` " . mysqli_real_escape_string($this->conn, $value[1]) . " '" . mysqli_real_escape_string($this->conn, $value[2]) . "') OR";
+            foreach ($where as $x => $value) {
+                $sql .= " (`" . mysqli_real_escape_string($this->conn, $value[0]) . "` " . mysqli_real_escape_string($this->conn, $value[1]) . " '" . mysqli_real_escape_string($this->conn, $value[2]) . "') ";
+                if(isset($where[$x][3]) && strtoupper($where[$x][3]) == "OR"){
+                    $sql .= ' OR ';
+                }else{
+                    $sql .= ' AND ';
+                }
             }
-            $sql = substr($sql, 0, strlen($sql) - 3) . ");";
+            $sql = substr($sql, 0, strlen($sql) - 4) . ");";
         }
-        if ($this->conn->query($sql) === true) {
-            return true;
-        } else {
-            echo "Error: " . $sql . $this->conn->error . "\n";
-            return false;
-        }
+        return $returnRawSql ? $sql : self::returnQuery($sql);
     }
 
-    /**
-     * @param $table
-     * @param array $values
-     * @return bool
-     */
-    public function inset($table, $values = []) {
+    public function insert(string $table, array $values = [], bool $returnRawSql = false) {
         $sql = "INSERT IGNORE INTO `" . mysqli_real_escape_string($this->conn, $table) . "` ";
         $x = 0;
         $d = '(';
@@ -140,26 +136,48 @@ class ssql{
         $d .= ')';
         $e .= ')';
         $sql .= $d . " VALUES " . $e . ";";
-        if ($this->conn->query($sql) === TRUE) {
-            return true;
-        } else {
-            echo "Error: " . $sql . $this->conn->error . "\n";
-            return false;
-        }
+        return $returnRawSql ? $sql : self::returnQuery($sql);
     }
 
-    /**
-     * @param $sql
-     */
-    //警告！此函数不会验证输入数据，禁止用于运行未知来源数据
-    public function multi($sql) {
-        if ($this->conn->multi_query($sql) != TRUE) {
-            echo("Error: " . $sql . $this->conn->error . "\n");
-        }
-        do {
-            if ($res = $this->conn->store_result()) {
-                $res->free();
-            }
-        } while ($this->conn->more_results() && $this->conn->next_result());
+    public function switch_db (string $dbname) {
+        $this->conn->select_db($dbname);
     }
+
+    //警告: 此函数会删除数据, 请谨慎调用
+    public function _delete(string $table, array $where = [], bool $returnRawSql = false) {
+        $activeOr = false;
+        $sql = "DELETE FROM `" . mysqli_real_escape_string($this->conn, $table) . "` WHERE ";
+        for ($x = 0; $x < count($where); $x++) {
+            if(isset($where[$x][3]) && strtoupper($where[$x][3]) == "OR" && !$activeOr){
+                $sql .= ' ( ';
+                $activeOr = true;
+            }
+            if ($x > 0) {
+                if(isset($where[$x][3]) && strtoupper($where[$x][3]) == "OR"){
+                    $sql .= ' OR ';
+                }else{
+                    $sql .= ' AND ';
+                }
+            }
+            if(strtoupper($where[$x][1]) != 'LIKE%%'){
+                $sql .= ' `' . mysqli_real_escape_string($this->conn, $where[$x][0]) . '` ' . mysqli_real_escape_string($this->conn, $where[$x][1]) . ' "' . mysqli_real_escape_string($this->conn, $where[$x][2]) . '"';
+            }else{
+                $sql .= ' `' . mysqli_real_escape_string($this->conn, $where[$x][0]) . '` LIKE "%' . mysqli_real_escape_string($this->conn, $where[$x][2]) . '%"';
+            }
+            if((($x < count($where) - 1 && strtoupper($where[$x + 1][3] ?? null) != 'OR') || $x == count($where) - 1) && $activeOr){
+                $sql .= ' ) ';
+                $activeOr = false;
+            }
+        }
+        $sql .= ";";
+        return $returnRawSql ? $sql : self::returnQuery($sql);
+    }
+    //警告: 此函数不会验证输入数据，禁止用于运行未知来源数据
+    public function multi(string $sql, bool $singleMulti = false) {
+        return self::returnQuery($sql, true, $singleMulti);
+    }
+
+    //public function __destruct() {
+    //    unset($this->returnArray);
+    //}
 }

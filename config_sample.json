@@ -1,0 +1,24 @@
+{
+    "users": [
+        {
+            "name": "Example_user",
+            "display_name": "Example user",
+            "hidden": false,
+            "deleted": false,
+            "locked": false,
+            "projects": [
+                [
+                    "project1",
+                    "tag1"
+                ]
+            ]
+        }
+    ],
+    "links": [
+        {
+            "url": "https://example.com",
+            "display": "Exapmle Domain"
+        }
+    ],
+    "nsfwList": []
+}

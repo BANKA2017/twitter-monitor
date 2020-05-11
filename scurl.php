@@ -1,74 +1,89 @@
 <?php
 /* Class scurl
- * @banka2017 & KD·NETWORK
- * v5.0
+ * @banka2017 & KDNETWORK
+ * v5.2.1
  */
 class sscurl{
     public $ch, $url, $user_agent, $others, $type, $data, $target, $fp, $options;
     public function __construct($url = null, $type = 'GET', $head = [], $user_agent = 3, $data = null, $target = ""){
-        if(!function_exists('curl_init') || $url == null){
+        if(!function_exists('curl_init') || !$url){
             throw new Exception('unable to use scurl');
         }
         if(is_file($url)){
-            $this -> ch = file_get_contents($url);
+            $this->ch = file_get_contents($url);
         }else{
-            $this -> ch = curl_init();
-            $this -> setup($url);
+            $this->ch = curl_init();
+            $this->setup($url);
             if($target){
-                $this -> target = $target;
-                if(!($this -> fp = fopen($target, "w"))){
+                $this->target = $target;
+                if(!($this->fp = fopen($target, "w"))){
                     throw new Exception("unable open the file {$target}");
                 }else{
-                    $this -> saveAsFile();
+                    $this->saveAsFile();
                 }
             }
-            $this -> setHeader($head) -> setUseragent($user_agent) -> post($type, $data);
+            $this->setHeader($head)->setUseragent($user_agent)->post($type, $data);
         }
     }
     public function __toString(){
-        if(is_string($this -> ch)){
-            return $this -> ch;
+        if(is_string($this->ch)){
+            return $this->ch;
         }
-        if(is_string($r = $this -> exec())){
+        if(is_string($r = $this->exec())){
             return $r;
-        }elseif(!$this -> target){
-            echo "KDscurl: Could not receive a string value!\n";
+        }elseif(!$this->target){
+            //echo "KDscurl: Could not receive a string value!\n";
             return "";
         }else{
-            echo "KDscurl: File is save to {$this -> target}\n";
+            //echo "KDscurl: File is save to {$this->target}\n";
             return "1";
         }
     }
-    public function setup($url, $returntransfer = true, $timeout = 10){
-        $this -> options = [
+    public function setup($url){
+        $this->options = [
             CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => $returntransfer,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_TIMEOUT => 10,
+
+            //proxy//当你知道你在干嘛的时候再取消注释
+            //CURLOPT_PROXYTYPE => CURLPROXY_HTTP,//CURLPROXY_SOCKS5
+            //CURLOPT_PROXY => "http://127.0.0.1",//socks5://bob:marley@localhost:12345
+            //CURLOPT_PROXYPORT => "1081",
         ];
         return $this;
     }
+    public function addMore($add = []) {
+        foreach($add as $optionKey => $optionValue){
+            $this->options[$optionKey] = $optionValue;
+        }
+        return $this;
+    }
+    public function gzip(){
+        $this->options[CURLOPT_ENCODING] = "gzip";
+        return $this;
+    }
     public function saveAsFile(){
-        $this -> options[CURLOPT_FILE] = $this -> fp;
+        $this->options[CURLOPT_FILE] = $this->fp;
         return $this;
     }
     public function post($type, $data){
         $type = strtoupper($type);
         if($type != 'GET'){
             if($type == 'POST'){
-                $this -> options[CURLOPT_POST] = true;
+                $this->options[CURLOPT_POST] = true;
             }else{
-                $this -> options[CURLOPT_CUSTOMREQUEST] = $type;
+                $this->options[CURLOPT_CUSTOMREQUEST] = $type;
             }
             if($data != null){
-                $this -> options[CURLOPT_POSTFIELDS] = $data;
+                $this->options[CURLOPT_POSTFIELDS] = $data;
             }
         }
         return $this;
     }
     //public function buildFields($data){
-    //    curl_setopt($this -> ch,CURLOPT_POSTFIELDS,$data);
+    //    curl_setopt($this->ch,CURLOPT_POSTFIELDS,$data);
     //    return $this;
     //}
     public function returnBody($a = -1){
@@ -89,8 +104,8 @@ class sscurl{
                 $b = false;
                 $c = false;
         }
-        $this -> options[CURLOPT_HEADER] = $b;
-        $this -> options[CURLOPT_NOBODY] = $c;
+        $this->options[CURLOPT_HEADER] = $b;
+        $this->options[CURLOPT_NOBODY] = $c;
         return $this;
     }
     public function setUseragent($ua){
@@ -106,28 +121,37 @@ class sscurl{
                 break;
         }
         if($ua != ""){
-            $this -> options[CURLOPT_USERAGENT] = $ua;
+            $this->options[CURLOPT_USERAGENT] = $ua;
         }
         return $this;
     }
     public function setHeader($head){
         if(is_array($head) && $head != []){
-            $this -> options[CURLOPT_HTTPHEADER] = $head;
+            $this->options[CURLOPT_HTTPHEADER] = $head;
         }
         return $this;
     }
     public function getHttpCode(){
-        return curl_getinfo($this -> ch,CURLINFO_HTTP_CODE);
+        return curl_getinfo($this->ch,CURLINFO_HTTP_CODE);
     }
     public function exec(){
-        curl_setopt_array($this -> ch, $this -> options);
-        return curl_exec($this -> ch);
+        curl_setopt_array($this->ch, $this->options);
+        return curl_exec($this->ch);
+    }
+    public function close(){
+        curl_close($this->ch);
+    }
+    public function header_body() {
+        //header and body
+        $response = $this->exec();
+        $headerSize = curl_getinfo($this->ch, CURLINFO_HEADER_SIZE);
+        return [substr($response, 0, $headerSize), substr($response, $headerSize)];
     }
     public function __destruct() {
-        if(!is_string($this -> ch)){
-            curl_close($this -> ch);
-            if($this -> fp){
-                fclose($this -> fp);
+        if(!is_string($this->ch)){
+            //curl_close($this->ch);//提高效率
+            if($this->fp){
+                fclose($this->fp);
             }
         }
     }
