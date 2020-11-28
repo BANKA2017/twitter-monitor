@@ -9,8 +9,11 @@ $translate_source = "Google Translate";
 //for Translate
 $target_language = "zh-CN";//zh-CN, zh-TW, en-US, etc.//注: 使用微软翻译时简中应填写 zh 而不是 zh-CN//注2: 此处用于无目标语言时翻译使用的默认目标语言
 
-//前后端分离
-$front_end_path = '';
+//TODO DELETE //前后端分离
+//$front_end_path = dirname(__FILE__) . '/../../twitter';
+
+//default config id
+$config_id = 1;
 
 //设置系统语言
 //TODO 未来将会自动设置
@@ -22,7 +25,7 @@ $default_timezone = "Asia/Shanghai";//默认 Asia/Shanghai
 
 //for alert push
 $token = "";
-$push_to = "";//仅用于telegram
+$push_to = "";//若使用qqbot此处需要填写 qqbot (不知道什么情况请打开 functions.php 拉到底)//仅用于telegram
 
 //开启的项目
 $run_options = [

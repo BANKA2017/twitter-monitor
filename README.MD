@@ -14,7 +14,7 @@ Twitter Monitor v2
 * ```git clone https://github.com/BANKA2017/twitter-monitor```
 * 导入 ```mysql.sql```
 * 将 ```config_sample.php``` 复制一份副本并重命名为 ```config.php``` ，打开并根据实际情况编辑
-* 使用浏览器打开 ```config.html``` 编辑并保存配置文件
+* 使用浏览器打开 ```config.html``` 编辑并保存配置文件 [在线1](https://banka2017.github.io/twitter-monitor/config.html) [在线2](https://tm.bangdream.fun/i/dev/config)
 * *在网站 Nginx 配置文件中添加 ```nginx.conf``` 的内容，这是可选的步骤，仅爬取数据不使用api功能可忽略此步
 * 根据个人喜好设定crontab，下面是例子
 
@@ -53,6 +53,10 @@ Twitter Monitor v2
     * poll2choice_image
     * poll3choice_image
     * poll4choice_image
+    * unified_card
+        * image_website
+        * video_website
+        * image_app
 
     这些卡片示例都可以在 ```docs/cards.json``` 找到
 

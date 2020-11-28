@@ -4961,5 +4961,32 @@
                 }
             }
         }
+    },
+    {
+        "name": "unified_card",
+        "url": "card:\/\/1316735744929538050",
+        "card_type_url": "http:\/\/card-type-url-is-deprecated.invalid",
+        "binding_values": {
+            "unified_card": {
+                "type": "STRING",
+                "string_value": "{\"type\":\"image_website\",\"component_objects\":{\"media_1\":{\"type\":\"media\",\"data\":{\"id\":\"19_1316735725715382273\",\"destination\":\"browser_1\"}},\"details_1\":{\"type\":\"details\",\"data\":{\"title\":{\"content\":\"\u300cColor of Life #00 \u30d7\u30ed\u30ed\u30fc\u30b0\u300d\u306f\u3053\u3061\u3089\u304b\u3089\",\"is_rtl\":false},\"subtitle\":{\"content\":\"youtube.com\",\"is_rtl\":false},\"destination\":\"browser_1\"}}},\"destination_objects\":{\"browser_1\":{\"type\":\"browser\",\"data\":{\"url_data\":{\"url\":\"https:\/\/www.youtube.com\/watch?v=22N4ZK6dcoE&feature=youtu.be\",\"tco_url\":\"https:\/\/t.co\/NlE32DlD3M\",\"vanity\":\"youtube.com\"}}}},\"components\":[\"media_1\",\"details_1\"],\"media_entities\":{\"19_1316735725715382273\":{\"id\":1316735725715382273,\"id_str\":\"1316735725715382273\",\"indices\":[0,0],\"media_url\":\"\",\"media_url_https\":\"https:\/\/pbs.twimg.com\/ad_img\/1316735725715382273\/KoI_Cy1B?format=jpg&name=orig\",\"url\":\"\",\"display_url\":\"\",\"expanded_url\":\"\",\"type\":\"photo\",\"original_info\":{\"width\":800,\"height\":418},\"sizes\":{},\"source_user_id\":335115257,\"source_user_id_str\":\"335115257\",\"media_key\":\"19_1316735725715382273\",\"ext\":{\"mediaColor\":{\"r\":{\"ok\":{\"palette\":[{\"rgb\":{\"red\":254,\"green\":253,\"blue\":251},\"percentage\":53.35},{\"rgb\":{\"red\":239,\"green\":195,\"blue\":150},\"percentage\":27.47},{\"rgb\":{\"red\":54,\"green\":51,\"blue\":52},\"percentage\":4.19},{\"rgb\":{\"red\":226,\"green\":175,\"blue\":82},\"percentage\":3.24},{\"rgb\":{\"red\":32,\"green\":101,\"blue\":174},\"percentage\":2.22}]}},\"ttl\":-1}}}}}"
+            },
+            "card_url": {
+                "type": "STRING",
+                "string_value": "https:\/\/twitter.com",
+                "scribe_key": "card_url"
+            }
+        },
+        "card_platform": {
+            "platform": {
+                "device": {
+                    "name": "Swift",
+                    "version": "12"
+                },
+                "audience": {
+                    "name": "production"
+                }
+            }
+        }
     }
 ]

@@ -119,7 +119,7 @@ class ssql{
         return $returnRawSql ? $sql : self::returnQuery($sql);
     }
 
-    public function insert(string $table, array $values = [], bool $returnRawSql = false) {
+    public function insert(string $table, array $values = [], bool $returnRawSql = false, array $updateWhileExists = []) {
         $sql = "INSERT IGNORE INTO `" . mysqli_real_escape_string($this->conn, $table) . "` ";
         $x = 0;
         $d = '(';
@@ -135,7 +135,20 @@ class ssql{
         }
         $d .= ')';
         $e .= ')';
-        $sql .= $d . " VALUES " . $e . ";";
+        $sql .= $d . " VALUES " . $e;
+        if ($updateWhileExists) {
+            $x = 0;
+            $sql .= " ON DUPLICATE KEY UPDATE ";
+            foreach ($updateWhileExists as $key => $value) {
+                if ($x > 0) {
+                    $sql .= ',';
+                }
+                $sql .= " `" . mysqli_real_escape_string($this->conn, $key) . "` = '" . mysqli_real_escape_string($this->conn, $value) . "'";
+                $x++;
+            }
+        } else {
+            $sql .= ";";
+        }
         return $returnRawSql ? $sql : self::returnQuery($sql);
     }
 

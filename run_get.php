@@ -24,6 +24,7 @@ if(!count($get_csrf_token)){
 $csrfToken = $get_csrf_token[1];
 //$account_info = json_decode(file_get_contents(SYSTEM_ROOT . '/account_info.json'), true);
 $config = json_decode(file_get_contents(SYSTEM_ROOT . '/config.json'), true);//原始配置文件
+$configInMysql = $sssql->load("v2_config", ["id", "data_origin", "data_output", "md5", "timestamp"], [["id", "=", $config_id]], [], 1);
 
 //需要更新的用户的信息
 $name_count = [];
@@ -33,13 +34,16 @@ $update_names = false;
 
 //用户统计
 $userinfoReqCount = 0;
+
+//出错推送内容
+$userInfoErrorsForPush = "";
 foreach ($config["users"] as $account_s => $account) {
 
     //呐呐呐[ (Auto break| Auto break (@nenene) -- User is not exist|)]
     echo $account["display_name"];
     if (!strlen($account["name"]) || ($account["deleted"] ?? false) || ($account["locked"] ?? false)) {
         //跳过已删号或不存在账户或已锁定
-        echo "Auto break\n";
+        echo " Auto break\n";
         continue;
     }
     //输入模板
@@ -57,6 +61,7 @@ foreach ($config["users"] as $account_s => $account) {
         "description" => "",
         "description_origin" => "",
         "verified" => "",
+        "organization" => 0,
         "top" => 0,
         "statuses_count" => "",//推文计数
         
@@ -64,6 +69,7 @@ foreach ($config["users"] as $account_s => $account) {
         "hidden" => $account["hidden"] ?? 0 ? 1 : 0,//隐藏//本站层面
         "locked" => $account["locked"] ?? 0 ? 1 : 0,//锁推//twitter层面
         "deleted" => $account["deleted"] ?? 0 ? 1 : 0,//删号人士
+        "organization" => (int)($account["organization"]??false),//组织帐号
         
         //来源 twitter
         //"source" => "twitter",
@@ -117,7 +123,8 @@ foreach ($config["users"] as $account_s => $account) {
             kd_push($account["name"] . "已删除账户 #deleted", $token, $push_to);//KDpush
         } else {
             $accountErrorCount = isset($config["users"][$account_s]["error_count"]) ? $config["users"][$account_s]["error_count"]++ : 1;
-            kd_push($account["name"] . "查询出错 {$user_info["errors"][0]["message"]} %{$accountErrorCount} #error {$user_info["errors"][0]["code"]}", $token, $push_to);//KDpush
+            $tw_server_info["total_errors_count"]++;
+            $userInfoErrorsForPush .= $account["name"] . "查询出错 {$user_info["errors"][0]["message"]} %{$accountErrorCount} #error {$user_info["errors"][0]["code"]}\n";
             //$sssql->insert("v2_error_log", ["uid" => ($account["uid"]??0), "name" => $account["name"], "info" => json_encode($user_info, JSON_UNESCAPED_UNICODE)]);
             //事不过三系统
             if ($accountErrorCount >= 3 ) {
@@ -208,7 +215,7 @@ foreach ($config["users"] as $account_s => $account) {
 
     //monitor data
     //同时满足时才会插入监控项目
-    if($user_info["id_str"] && $run_options["twitter"]["count_data_user"]){
+    if($user_info["id_str"] && $run_options["twitter"]["count_data_user"] && !($account["not_analytics"]??false)){
         //处理数据
         $monitor_data_info["uid"] = $user_info["id_str"];
         $monitor_data_info["name"] = $user_info["screen_name"];
@@ -218,7 +225,12 @@ foreach ($config["users"] as $account_s => $account) {
         $monitor_data_info["statuses_count"] = $user_info["statuses_count"];
         $monitor_data_info["media_count"] = $user_info["media_count"];
         $sssql->insert("twitter_data", $monitor_data_info);
-    }else{
+        //临时表, 用于stats
+        $monitor_data_info["visible"] = (int)!($in_sql_info["hidden"] || $in_sql_info["locked"] || $in_sql_info["deleted"] || $in_sql_info["organization"]);
+        $sssql->insert("tmp_twitter_data", $monitor_data_info, false, $monitor_data_info);
+    }elseif (($account["not_analytics"]??false)) {
+        echo " - 不统计";
+    } else {
         kd_push($account["name"] . "出现数据错误 #twitter_data", $token, $push_to);//KDpush
     }
 
@@ -265,14 +277,19 @@ foreach ($config["users"] as $account_s => $account) {
     }
 }
 
+if ($userInfoErrorsForPush !== "") {
+    kd_push($userInfoErrorsForPush, $token, $push_to);//KDpush
+}
+
+
 //处理本地配置文件
 if ($update_names) {
     $config_jsonencode = json_encode($config, JSON_UNESCAPED_UNICODE);
     file_put_contents(SYSTEM_ROOT . '/config.json', $config_jsonencode);
     //转换文件
-    $config_runtime = is_file(SYSTEM_ROOT . '/account_info_t.json') ? json_decode(file_get_contents(SYSTEM_ROOT . '/account_info_t.json'), true) : ["hash" => 0];//运行文件
+    $config_sql_md5 = count($configInMysql) === 1 ? $configInMysql[0]["md5"] : "0";//is_file(SYSTEM_ROOT . '/account_info_t.json') ? json_decode(file_get_contents(SYSTEM_ROOT . '/account_info_t.json'), true) : ["hash" => 0];//运行文件
     $config_md5 = md5($config_jsonencode);
-    if($config_md5 != $config_runtime["hash"]){
+    if($config_md5 !== $config_sql_md5){
         //需要执行更新
         $newAccountInfo = ["account_info" => [], "projects" => [], "nsfwList" => [], "links" => [], "hash" => ""];//Template
         //处理
@@ -300,11 +317,13 @@ if ($update_names) {
         $newAccountInfo["links"] = $config["links"];
         //hash
         $newAccountInfo["hash"] = $config_md5;
-        file_put_contents(SYSTEM_ROOT . '/account_info_t.json', json_encode($newAccountInfo, JSON_UNESCAPED_UNICODE));
+        $config_data = ["id" => $config_id, "data_origin" => $config_jsonencode, "data_output" => json_encode($newAccountInfo, JSON_UNESCAPED_UNICODE), "md5" => $config_md5, "timestamp" => time()];
+        $sssql->insert("v2_config", $config_data, false, $config_data);
+        //file_put_contents(SYSTEM_ROOT . '/account_info_t.json', json_encode($newAccountInfo, JSON_UNESCAPED_UNICODE));
         //前后端分离专属//请确保具有目标目录读写权限
-        if ($front_end_path) {
-            file_put_contents($front_end_path . '/account_info_t.json', json_encode($newAccountInfo, JSON_UNESCAPED_UNICODE));
-        }
+        //if ($front_end_path) {
+        //    file_put_contents($front_end_path . '/account_info_t.json', json_encode($newAccountInfo, JSON_UNESCAPED_UNICODE));
+        //}
     }
 }
 
@@ -351,11 +370,11 @@ foreach ($name_count as $account_info) {
     echo "正在处理{$account_info["display_name"]}\n";
     if (!$account_info["last_cursor"]) {
         echo "全新抓取{$account_info["display_name"]}\n";
-        $max_tweetid = 0;
+        $max_tweetid = "0";
         //$url = 'https://api.twitter.com/2/timeline/profile/' . $account_info["uid"] . '.json?tweet_mode=extended&count=93000';
         $tw_server_info["total_req_tweets"]++;
     } else {
-        $max_tweetid = 0;
+        $max_tweetid = "0";
         //$url = "https://api.twitter.com/2/timeline/profile/{$account_info["uid"]}.json?tweet_mode=extended&count=40&cursor=" . urlencode($account_info["cursor"]);
         //https://api.twitter.com/2/timeline/profile/775280864674525184.json?tweet_mode=extended&count=20//已经够用了
         $tw_server_info["total_req_tweets"]++;
@@ -490,7 +509,7 @@ foreach ($name_count as $account_info) {
             $last_end = 0;
 
             //给卡片找源链接
-            $cardUrl = ($content["card"]["name"] == "app" || substr($content["card"]["name"] ?? "", 0, 7) == "summary") ? $content["card"]["url"] : "";
+            $cardUrl = (isset($content["card"]) && ($content["card"]["name"] == "app" || substr($content["card"]["name"] ?? "", 0, 7) == "summary")) ? $content["card"]["url"] : "";
             $quoteUrl = $isReallyQuote ? $content["quoted_status_permalink"]["url"] : "";
             $entitiesLength = count($tags);
             foreach ($tags as $entitiesOrder => $single_tag) {
@@ -572,10 +591,10 @@ foreach ($name_count as $account_info) {
             //处理card
             if ($run_options["twitter"]["tweets_full"] && isset($content["card"])) {
                 $tmp_cardType = preg_replace("/[0-9]+:(.*)/", "$1", $content["card"]["name"]);
+                $in_sql["card"] = $tmp_cardType;//任何时候都应该留下卡片类型, 不然等着头疼吧
                 if (in_array($tmp_cardType, $tw_supportCardNameList)) {
                     //$in_sql["card"] = 1;
                     $cardInfo = tw_card($content["card"], $in_sql["uid"], $in_sql["tweet_id"], $in_sql["hidden"], $cardUrl, $tmp_cardType);
-                    $in_sql["card"] = $tmp_cardType;
                     if (($cardInfo["data"]["poll"]??0) && ($cardInfo["data"]["polls"] ?? [])) {
                         $in_sql["poll"] = 1;
                     }
@@ -589,7 +608,9 @@ foreach ($name_count as $account_info) {
                     }
                 } else {
                     echo "未适配的卡片 {$content["card"]["name"]}\n";
-                    kd_push("快来研究新的卡片\n" . json_encode($content["card"]), $token, $push_to);//kdpush
+                    //主动发现卡片
+                    //新增加卡片的研究，不然最后麻烦的只有自己
+                    kd_push("快来研究新的卡片\n #new_card #{$content["card"]["name"]} \nid: {$in_sql["tweet_id"]}\nhttps://twitter.com/i/status/{$in_sql["tweet_id"]}\n" . json_encode($content["card"]), $token, $push_to);//kdpush
                 }
             }
 
@@ -631,7 +652,7 @@ foreach ($name_count as $account_info) {
                 }
                 //v2_twitter_entities
                 foreach ($tags as $tag) {
-                    $tmp_sql .= $sssql->insert("v2_twitter_entities", $tag, true);
+                    $tmp_sql .= $sssql->insert("v2_twitter_entities", array_merge($tag, ["hidden" => $in_sql["hidden"]]), true);
                 }
                 //v2_twitter_polls
                 if ($in_sql["poll"]) {
@@ -661,7 +682,7 @@ foreach ($name_count as $account_info) {
     //一个号解决
     //差点整死我
     //echo $cursor . "\n";
-    if ($max_tweetid && $cursor) {
+    if ($max_tweetid !== 0 && $cursor) {
         $sssql->update("v2_account_info", ["last_cursor" => $max_tweetid, "cursor" => $cursor, "new" => 1], [["uid", "=", $account_info["uid"]]]);
     } elseif ($cursor) {
         $sssql->update("v2_account_info", ["cursor" => $cursor, "new" => 1], [["uid", "=", $account_info["uid"]]]);

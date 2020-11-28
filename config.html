@@ -7,9 +7,10 @@
         <meta name="author" content="Banka2017 (https://bangdream.fun)">
         <meta name="description" content="Twitter Monitor Config">
         <title>Twitter Monitor Config</title>
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
-        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+        <!-- CSS only -->
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+        <!-- JS -->
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/js/bootstrap.min.js" integrity="sha384-oesi62hOLfzrys4LxRF63OJCXdXDipiYWBnvTl9Y9/TRlw5xlKIEHpNyvvDShgf/" crossorigin="anonymous"></script>
     </head>
     <body>
         <div id="app">
@@ -23,28 +24,36 @@
                         <h4>创建配置文件 Config.json</h4>
                         <nav>
                             <div class="nav nav-tabs" id="nav-tab" role="tablist">
-                                <a class="nav-item nav-link active" id="config-user-tab" data-toggle="tab" href="#config-user" role="tab" aria-controls="config-user" aria-selected="true">账户</a>
+                                <a class="nav-item nav-link active" id="config-user-tab" data-toggle="tab" href="#config-user" role="tab" aria-controls="config-user" aria-selected="true">帐号</a>
                                 <a class="nav-item nav-link" id="config-url-tab" data-toggle="tab" href="#config-url" role="tab" aria-controls="config-url" aria-selected="false">链接</a>
                                 <a class="nav-item nav-link" id="config-nsfwList-tab" data-toggle="tab" href="#config-nsfwList" role="tab" aria-controls="config-nsfwList" aria-selected="false">NSFW列表</a>
                             </div>
                         </nav>
                         <div class="tab-content" id="nav-tabContent">
                             <div class="tab-pane fade show active" id="config-user" role="tabpanel" aria-labelledby="config-user-tab">
-                                <div v-for="(user, s) in config.users">
+                                <template id="nameList">
+                                    <div class="my-4"></div>
+                                    <template v-for="(info, index) in userList">
+                                        <a role="button" :class="`text-decoration-none badge badge-pill badge-` + (info.organization ? 'success' : 'primary')" :href="`#item` + index" :key="index">{{ info.display_name }}</a>
+                                        <span></span>
+                                    </template>
+                                    <div class="my-4"></div>
+                                </template>
+                                <div v-for="(user, s) in config.users" :id="`item` + s">
                                     <div class="form-group">
                                         <label :for="`user`+s+`name`" :style="user.name ? '' : 'color: orange'">id</label>
                                         <input type="text" class="form-control" aria-describedby="idHelp" v-model="config.users[s].name" :value="user.name" :id="`user`+s+`name`">
-                                        <small id="idHelp" class="form-text text-muted">Twitter账户id</small>
+                                        <small id="idHelp" class="form-text text-muted">Twitter帐号id</small>
                                     </div>
                                     <div class="form-group">
                                         <label :for="`user`+s+`display_name`" :style="(!user.display_name && !user.name) ? 'color: red' : ''">备注</label>
                                         <input type="text" class="form-control" aria-describedby="display_nameHelp" v-model="config.users[s].display_name" :value="user.display_name" :id="`user`+s+`display_name`">
-                                        <small id="display_nameHelp" class="form-text text-muted">留空则使用账户名称</small>
+                                        <small id="display_nameHelp" class="form-text text-muted">留空则使用帐号名称</small>
                                     </div>
                                     <div class="form-group" v-if="user.uid">
                                         <label :for="`user`+s+`uid`">UID</label>
                                         <input type="text" class="form-control" aria-describedby="uidHelp" v-model="config.users[s].uid" :value="user.uid" :id="`user`+s+`uid`">
-                                        <small id="uidHelp" class="form-text text-muted">Twitter账户uid，无需理会</small>
+                                        <small id="uidHelp" class="form-text text-muted">Twitter帐号uid，无需理会</small>
                                     </div>
                                     <div v-if="user.projects.length">
                                         <template v-for="(project, ss) in config.users[s].projects">
@@ -53,7 +62,7 @@
                                                 <div class="input-group-append" :id="`project`+ss">
                                                     <span class="input-group-text">-></span>
                                                 </div>
-                                                <input type="text" class="form-control" v-model="config.users[s].projects[ss][1]" value="project[1]" placeholder="二级目录">
+                                                <input type="text" class="form-control input-group-append" v-model="config.users[s].projects[ss][1]" value="project[1]" placeholder="二级目录">
                                                 <div class="input-group-append" :id="`project`+ss">
                                                     <button class="btn btn-outline-danger" @click="action('del', 'project', s, ss)" type="button">删除</button>
                                                 </div>
@@ -63,19 +72,16 @@
                                         
                                         <small id="projectHelp" class="form-text text-muted">两格从左到右分别是<code>一级目录|二级目录</code></small>
                                     </div>
-                                    <div class="form-group form-check">
-                                        <input type="checkbox" class="form-check-input" :id="`user`+s+`check`" v-model="config.users[s].hidden">
-                                        <label class="form-check-label" :for="`user`+s+`check`">隐藏此账户</label>
-                                    </div>
-                                    <div class="form-group form-check">
-                                        <input type="checkbox" class="form-check-input" :id="`user`+s+`deleted`" v-model="config.users[s].deleted">
-                                        <label class="form-check-label" :for="`user`+s+`deleted`">账户已删除</label>
-                                    </div>
-                                    <div class="form-group form-check">
-                                        <input type="checkbox" class="form-check-input" :id="`user`+s+`locked`" v-model="config.users[s].locked">
-                                        <label class="form-check-label" :for="`user`+s+`locked`">推文已被保护</label>
-                                    </div>
-                                    <button class="btn btn-primary" @click="action('add', 'project', s)">添加目录</button> <button :class="`btn btn-primary`+((!user.display_name && !user.name) ? ' disabled' : '')" @click="(!user.display_name && !user.name) ? '' : action('add', 'users')" v-if="s+1==config.users.length">新增账户</button> <button class="btn btn-outline-danger" @click="action('del', 'users', s)" v-if="config.users.length > 1">删除账户</button>
+                                    <template v-for="(checkInfo, checkType) in {hidden: '隐藏此帐号', deleted: '帐号已删除', locked: '推文已被保护', organization: '机构帐号', not_analytics: '不统计数据'}">
+                                        <div class="form-group form-check">
+                                            <input type="checkbox" class="form-check-input" :id="`user`+s+checkType" v-model="config.users[s][checkType]">
+                                            <label class="form-check-label" :for="`user`+s+checkType">{{ checkInfo }}</label>
+                                        </div>
+                                    </template>
+                                    <button class="btn btn-primary mx-1" @click="action('add', 'project', s)">添加目录</button>
+                                    <button :class="`btn btn-primary mx-1`+((!user.display_name && !user.name) ? ' disabled' : '')" @click="(!user.display_name && !user.name) ? '' : action('add', 'users', s)">新增帐号</button>
+                                    <button class="btn btn-outline-danger mx-1" @click="action('del', 'users', s)" v-if="config.users.length > 1">删除帐号</button>
+                                    
                                     <hr class="my-4">
                                 </div>
                             </div>
@@ -95,7 +101,7 @@
                                             <!--<option :value="badgeClass[0]" v-for="badgeClass in [['primary', 'Primary'], ['secondary', 'Secondary'], ['success', 'Success'], ['danger', 'Danger'], ['warning', 'Warning'],  ['info', 'Info'], ['light', 'Light'], ['dark', 'Dark']]">{{ badgeClass[1] }}</option>-->
                                         <!--</select>-->
                                     <!--</div>-->
-                                    <button :class="`btn btn-primary`+(/(http|https|ftp):\/\/[^\.]+\..*/gm.test(url.url) ? '' : ' disabled')" @click="/(http|https|ftp):\/\/[^\.]+\..*/gm.test(url.url) ? action('add', 'links') : ''" v-if="s+1==config.links.length">增加</button> <button class="btn btn-outline-danger" @click="action('del', 'links', s)">删除</button>
+                                    <button :class="`btn btn-primary`+(/(http|https|ftp):\/\/[^\.]+\..*/gm.test(url.url) ? '' : ' disabled')" @click="/(http|https|ftp):\/\/[^\.]+\..*/gm.test(url.url) ? action('add', 'links', config.links.length) : ''" v-if="s+1==config.links.length">增加</button> <button class="btn btn-outline-danger" @click="action('del', 'links', s)">删除</button>
                                     <hr class="my-4">
                                 </div>
                                 <template v-if="config.links.length===0">
@@ -109,8 +115,8 @@
                                     <div class="input-group">
                                         <input type="text" class="form-control" v-model="config.nsfwList[s]" :value="nsfwUser" :aria-describedby="`nsfwUser`+s">
                                         <div class="input-group-append" :id="`nsfwUser`+s">
-                                            <button :class="`btn btn-primary`+((nsfwUser && s+1==config.nsfwList.length) ? '' : ' disabled')" @click="((nsfwUser && s+1==config.nsfwList.length) ? action('add', 'nsfwList') : '')" v-if="s+1==config.nsfwList.length" type="button">增加</button>
-                                            <button class="btn btn-outline-danger" @click="action('del', 'nsfwList', s)" type="button">删除</button>
+                                            <button :class="`btn btn-primary mx-1`+((nsfwUser && s+1==config.nsfwList.length) ? '' : ' disabled')" @click="((nsfwUser && s+1==config.nsfwList.length) ? action('add', 'nsfwList') : '')" v-if="s+1==config.nsfwList.length" type="button">增加</button>
+                                            <button class="btn btn-outline-danger mx-1" @click="action('del', 'nsfwList', s)" type="button">删除</button>
                                         </div>
                                     </div>
                                     <hr class="my-4">
@@ -141,9 +147,15 @@
                     </div>
                 </div>
             </div>
+            <button type="button" class="btn btn-primary fixed-button" style="opacity: 0.8;position: fixed;bottom: 0;right: 0" @click='() => {window.scrollTo({top: 0,behavior: "smooth"}), this.scrollTop = 0}'>
+                <svg class="bi bi-chevron-up" width="25" height="25" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M9.646 6.646a.5.5 0 01.708 0l6 6a.5.5 0 01-.708.708L10 7.707l-5.646 5.647a.5.5 0 01-.708-.708l6-6z" clip-rule="evenodd"/>
+                </svg>
+            </button>
         </div>
         <!--load css and js-->
         <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
+        <script src="https://cdn.jsdelivr.net/npm/axios@0.19.2/dist/axios.min.js"></script>
         <script>
             'use strict';
             new Vue({
@@ -157,6 +169,8 @@
                                 hidden: false,
                                 deleted: false,
                                 locked: false,
+                                organization: false,
+                                not_analytics: false,
                                 projects: [
                                     ["project1", "tag1"],
                                 ],
@@ -165,7 +179,7 @@
                         links: [
                             {
                                 url: "https://example.com",
-                                display: "Exapmle Domain",
+                                display: "Example Domain",
                                 //badgeClass: "primary",
                             }
                         ],
@@ -178,6 +192,8 @@
                             hidden: false,
                             deleted: false,
                             locked: false,
+                            organization: false,
+                            not_analytics: false,
                             projects: [],
                         },
                         links: {
@@ -192,6 +208,11 @@
                         style: false,
                     },
                     projects: [],
+                },
+                computed: {
+                    userList: function () {
+                        return this.config.users.map(x => {return {name: x.name, display_name: x.display_name, organization: x.organization}})
+                    },
                 },
                 watch: {
                     "config": {
@@ -214,10 +235,15 @@
                     }
                 },
                 mounted: function() {
-                    if (localStorage.getItem('twitter_monitor_config')) {
-                        this.config = JSON.parse(localStorage.getItem('twitter_monitor_config'));
+                    axios.get("./config.json").then(response => {
+                        this.config = response.data
                         this.autoSave();
-                    }
+                    }).catch(() => {
+                        if (localStorage.getItem('twitter_monitor_config')) {
+                            this.config = JSON.parse(localStorage.getItem('twitter_monitor_config'));
+                            this.autoSave();
+                        }
+                    })
                     this.textareaData = JSON.stringify(this.config, null, 4);
                 },
                 methods: {
@@ -233,7 +259,7 @@
                                             this.config.users[l1].projects = this.config.users[l1].projects.concat([["", ""]]);
                                             break;
                                         default:
-                                            this.config[where] = this.config[where].concat(JSON.parse(JSON.stringify(this.Templates[where])));
+                                            this.config[where] = (l1 === this.config[where].length) ? this.config[where].concat(this.Templates[where]) : this.config[where].slice(0, l1 + 1).concat(this.Templates[where]).concat(this.config[where].slice(l1 + 1));
                                     }
                                     break;
                                 case "del":

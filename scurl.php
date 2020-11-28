@@ -1,7 +1,7 @@
 <?php
 /* Class scurl
  * @banka2017 & KDNETWORK
- * v5.2.1
+ * v5.2.2
  */
 class sscurl{
     public $ch, $url, $user_agent, $others, $type, $data, $target, $fp, $options;
@@ -87,25 +87,8 @@ class sscurl{
     //    return $this;
     //}
     public function returnBody($a = -1){
-        switch($a){
-            case 0:
-                $b = true;
-                $c = false;
-                break;
-            case 1:
-                $b = false;
-                $c = true;
-                break;
-            case 2:
-                $b = true;
-                $c = true;
-                break;
-            default:
-                $b = false;
-                $c = false;
-        }
-        $this->options[CURLOPT_HEADER] = $b;
-        $this->options[CURLOPT_NOBODY] = $c;
+        $this->options[CURLOPT_HEADER] = ($a === 0 || $a === 2);
+        $this->options[CURLOPT_NOBODY] = ($a === 1 || $a === 2);
         return $this;
     }
     public function setUseragent($ua){
@@ -117,7 +100,7 @@ class sscurl{
                 $ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1';
                 break;
             case 3:
-                $ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36';
+                $ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36';
                 break;
         }
         if($ua != ""){

@@ -11,6 +11,14 @@ function translate (string $source = "Google Translate", string $to, string $ori
         //有想法添加百度翻译的欢迎来pr//js auth怎么搞啊
         //case "百度翻译":
         //    break;
+        case "腾讯翻译君": 
+            $txTranslate = new sscurl ("https://fanyi.qq.com");
+            preg_match('/qtv = "([^"]+)"/', $txTranslate, $qtv);
+            preg_match('/qtk = "([^"]+)"/', $txTranslate, $qtk);
+            foreach(json_decode(new sscurl("https://fanyi.qq.com/api/translate", "POST", ['Referer: https://fanyi.qq.com/'], 3, http_build_query(["qtv" => $qtv[1], "qtk" => $qtk[1], "source" =>  "auto", "target" => $to, "sourceText" => $origin])), true)["translate"]["records"]??[] as $trs) {
+                $translate .= $trs["targetText"];
+            }
+            break;
         case "Microsoft Translator":
             //bing translator
             $origin = str_replace("\n", "", $origin);
@@ -31,7 +39,7 @@ function translate (string $source = "Google Translate", string $to, string $ori
 
 //get twitter csrf token
 function tw_get_token (): array {
-    preg_match('/gt=([0-9]+);/', new sscurl('https://mobile.twitter.com/', 'get', [], 1), $csrfToken);
+    preg_match('/gt=([0-9]+);/', (new sscurl('https://twitter.com/', 'GET', [], 1))->returnBody(0)->exec(), $csrfToken);
     //rate-limit是靠csrf token判断的，需要定期刷新csrf token
     //获取csrf token
     $GLOBALS["tw_server_info"]["total_req_times"]++;
@@ -63,6 +71,15 @@ function tw_get_tweets (string $uid, string $cursor = "", string $csrfToken = ""
     } else {
         return json_decode(new sscurl("https://api.twitter.com/2/timeline/profile/{$uid}.json?tweet_mode=extended&count=" . ($cursor ? ($online ? 20 : 40) . "&cursor=" . urlencode($cursor) : ($online ? 20 : 9999)), 'get', ["authorization: " . TW_AUTHORIZATION, "x-guest-token: " . $csrfToken], 1), true);
     }
+}
+
+//get conversation
+function tw_get_conversation (string $tweet_id, string $csrfToken = ""): array {
+    if (!$csrfToken) {
+        $csrfToken = tw_get_token()[1];
+    }
+    //时隔多月又要更新这玩意了, 这次是因为卡片的图片时间久远了会失效......确实有点让人绝望
+    return json_decode(new sscurl("https://api.twitter.com/2/timeline/conversation/{$tweet_id}.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_composer_source=true&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweets=true&count=1&ext=mediaStats%2CcameraMoment", 'get', ["authorization: " . TW_AUTHORIZATION, "x-guest-token: " . $csrfToken], 1), true);
 }
 
 //get poll result
@@ -241,6 +258,7 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
             "vanity_url" => "",//用于展示的域名
             "url" => $url,//实际域名
             "media" => 0,//是否有媒体
+            "secondly_type" => null,
             //"poll" => 0,//是否有投票
         ],
         "media" => [],
@@ -296,6 +314,72 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
             //来源
             $card["media"]["source"] = "cards";
         }
+    } elseif ($card["data"]["type"] === "unified_card") {
+        //这玩意对于内容的处理需要 components 的处理，有必要有更详细的处理方式
+        //这东西远比我现象要复杂，涉及到全部核心部件的重写，下行的说法是不准确的，那样子只适用于单个卡片，多个卡片会涉及到走马灯
+        //没见过的类型，奇怪的类型，扭曲的类型，小屏幕下是类似summary，大屏幕就像large_card
+        //这是前所未有的类型，貌似是最近才出现的 (Twitter Monitor 监控首次报警是 2020-10-16 https://twitter.com/i/status/1316889033583149057)
+        //子组件数据
+        $childCardInfo = json_decode($cardInfo["binding_values"]["unified_card"]["string_value"], true);
+        //组件类型
+        //$tmpComponents = $cardInfo["components"];
+        //看不懂啊，这都是啥啊
+        //处理子组件类型
+        switch ($childCardInfo["type"]) {
+            //当务之急只有这三种, 优先处理
+            case "image_website":
+            case "video_website":
+                //$card["data"]["title"] = '';//没有标题
+                $card["data"]["description"] = $childCardInfo["component_objects"]["details_1"]["data"]["title"]["content"];//内容
+                $card["data"]["vanity_url"] = $childCardInfo["component_objects"]["details_1"]["data"]["subtitle"]["content"];//显示的连接
+                $card["data"]["url"] = $childCardInfo["destination_objects"][$childCardInfo["component_objects"]["media_1"]["data"]["destination"]]["data"]["url_data"]["url"];//真实链接
+                $card["data"]["media"] = 1;//是否有媒体//你先看看子组件叫什么名字?
+                $card["data"]["secondly_type"] = $childCardInfo["type"];
+                break;
+            case "image_app":
+                //app store only
+                $card["data"]["title"] = $childCardInfo["app_store_data"]["app_1"][0]["title"]["content"];//标题
+                $card["data"]["description"] = $childCardInfo["app_store_data"]["app_1"][0]["category"]["content"];//内容
+                $card["data"]["vanity_url"] = "App Store";//显示的连接
+                $card["data"]["url"] = "https://apps.apple.com/{$childCardInfo["app_store_data"]["app_1"][0]["country_code"]}/app/id{$childCardInfo["app_store_data"]["app_1"][0]["id"]}";//真实链接
+                $card["data"]["media"] = 1;//是否有媒体//你先看看子组件叫什么名字?
+                $card["data"]["secondly_type"] = $childCardInfo["type"];
+                break;
+            //下面两个就是可滑动的, 暂时没遇到先拖着//暂时还是没什么想法, 可能需要加个表?
+            //case "image_carousel_app":
+
+            //    break;
+            //case "video_carousel_website":
+
+            //    break;
+            //不知道还有什么，现在只找到这些
+            //不知道说什么，报个警吧
+            default: 
+                kd_push("快来研究新的子卡片\n #new_child_card #{$childCardInfo["type"]} \nid: {$tweetid}\nhttps://twitter.com/i/status/{$tweetid}\n" . $cardInfo["binding_values"]["unified_card"]["string_value"], $GLOBALS["token"], $GLOBALS["push_to"]);//喵喵喵
+        }
+        if (isset($childCardInfo["media_entities"])) {
+            //媒体
+            $card["media"]["media_key"] = $childCardInfo["media_entities"][$childCardInfo["component_objects"]["media_1"]["data"]["id"]]["media_key"];//unified_card 特别一点, 有这玩意//卡片(card)没有media_key
+            $card["media"]["uid"] = $uid;//TODO 从后面的users获得用户
+            $card["media"]["tweet_id"] = $tweetid;
+            $card["media"]["hidden"] = $hidden;
+            $card["media"]["origin_type"] = "{$card["data"]["type"]}_{$childCardInfo["type"]}_card_photo";
+            $card["media"]["bitrate"] = 0;
+            $card["media"]["cover"] = $childCardInfo["media_entities"][$childCardInfo["component_objects"]["media_1"]["data"]["id"]]["media_url_https"];//由于封面只是size不同，所以无需额外创建记录
+            $card["media"]["url"] = $childCardInfo["media_entities"][$childCardInfo["component_objects"]["media_1"]["data"]["id"]]["media_url_https"];//原始文件
+            $card["media"]["origin_info_width"] =  $childCardInfo["media_entities"][$childCardInfo["component_objects"]["media_1"]["data"]["id"]]["original_info"]["width"];
+            $card["media"]["origin_info_height"] = $childCardInfo["media_entities"][$childCardInfo["component_objects"]["media_1"]["data"]["id"]]["original_info"]["height"];
+            //处理媒体名称
+            $pathinfo = tw_pathinfo($card["media"]["url"]);
+            $card["media"]["filename"] = $pathinfo["filename"];
+            $card["media"]["basename"] = $pathinfo["basename"];
+            $card["media"]["extension"] = $pathinfo["extension"];
+            $card["media"]["content_type"] = get_mime($pathinfo["extension"]);//获取文件类型//一般都是jpg或者png
+        
+            //来源
+            $card["media"]["source"] = "cards";
+        }
+        return $card;
     } else {
         $tmp_whereIsInfoFrom = [
             //data

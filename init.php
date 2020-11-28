@@ -18,8 +18,6 @@ require(SYSTEM_ROOT . '/functions.php');
 $tw_supportCardNameList = [
     "summary",
     "summary_large_image",
-    "promo_image_convo",
-    "promo_video_convo",
     "promo_website",
     "audio",
     "player",
@@ -28,6 +26,7 @@ $tw_supportCardNameList = [
     "promo_video_website",
     "promo_image_convo",
     "promo_video_convo",
+    "direct_store_link_app",
     "promo_image_app",
     "app",
     "live_event",
@@ -38,6 +37,16 @@ $tw_supportCardNameList = [
     "poll2choice_image",
     "poll3choice_image",
     "poll4choice_image",
+    "unified_card",
+];
+
+//for unified_card
+$tw_supportUnifiedCardNameList = [
+    "image_website",
+    "video_website",
+    "image_app",
+    //"image_carousel_app",
+    //"video_carousel_website",
 ];
 
 //templates
@@ -66,7 +75,11 @@ $tw_server_info = [
     "total_throw_tweets" => 0,
     "total_req_times" => 0,
     "total_media_count" => 0,
+    //"avgtimecost" => 0,
     "total_time_cost" => 0,
+    //"avgreqtimecost" => 0,
+    //"savetimecost" => 0,
+    "total_errors_count" => 0,
 ];
 
 $month = date('Ym');

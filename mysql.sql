@@ -1,6 +1,44 @@
+-- phpMyAdmin SQL Dump
+-- version 5.0.4
+-- https://www.phpmyadmin.net/
+--
+-- 主机： localhost
+-- 生成日期： 2020-11-27 15:02:46
+-- 服务器版本： 8.0.22-0ubuntu0.20.04.2
+-- PHP 版本： 7.4.12
+
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
+
+--
+-- 数据库： `tmv2`
+--
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `tmp_twitter_data`
+--
+
+CREATE TABLE `tmp_twitter_data` (
+  `uid` bigint NOT NULL DEFAULT '0',
+  `name` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `display_name` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `following` int NOT NULL DEFAULT '0',
+  `followers` int NOT NULL DEFAULT '0',
+  `media_count` int NOT NULL DEFAULT '0',
+  `statuses_count` int NOT NULL DEFAULT '0',
+  `timestamp` int NOT NULL DEFAULT '0',
+  `visible` tinyint NOT NULL DEFAULT '1'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=COMPRESSED;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `twitter_data`
+--
+
 CREATE TABLE `twitter_data` (
   `id` bigint NOT NULL,
   `uid` bigint NOT NULL DEFAULT '0',
@@ -12,6 +50,13 @@ CREATE TABLE `twitter_data` (
   `statuses_count` int NOT NULL DEFAULT '0',
   `timestamp` int NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=COMPRESSED;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `v2_account_info`
+--
+
 CREATE TABLE `v2_account_info` (
   `id` int NOT NULL,
   `uid` bigint NOT NULL DEFAULT '0',
@@ -26,6 +71,7 @@ CREATE TABLE `v2_account_info` (
   `description` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `description_origin` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `verified` tinyint NOT NULL DEFAULT '0',
+  `organization` tinyint NOT NULL DEFAULT '0',
   `top` bigint NOT NULL DEFAULT '0',
   `last_check` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `statuses_count` int NOT NULL DEFAULT '0',
@@ -36,18 +82,60 @@ CREATE TABLE `v2_account_info` (
   `hidden` tinyint NOT NULL DEFAULT '0',
   `new` tinyint NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=COMPRESSED;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `v2_config`
+--
+
+CREATE TABLE `v2_config` (
+  `id` int NOT NULL,
+  `data_origin` longtext NOT NULL,
+  `data_output` longtext NOT NULL,
+  `md5` char(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `timestamp` int NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `v2_error_log`
+--
+
+CREATE TABLE `v2_error_log` (
+  `id` bigint NOT NULL,
+  `uid` bigint NOT NULL DEFAULT '0',
+  `name` text,
+  `info` text
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `v2_server_info`
+--
+
 CREATE TABLE `v2_server_info` (
   `id` bigint NOT NULL,
-  `time` int NOT NULL,
-  `microtime` float NOT NULL,
+  `time` bigint NOT NULL,
+  `microtime` bigint NOT NULL,
   `total_users` int NOT NULL,
   `total_tweets` int NOT NULL,
   `total_req_tweets` int NOT NULL,
   `total_throw_tweets` int NOT NULL,
   `total_req_times` int NOT NULL,
+  `total_errors_count` int DEFAULT '0',
   `total_media_count` int NOT NULL,
   `total_time_cost` float NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=COMPACT;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `v2_twitter_cards`
+--
+
 CREATE TABLE `v2_twitter_cards` (
   `id` bigint NOT NULL,
   `uid` bigint NOT NULL DEFAULT '0',
@@ -56,10 +144,18 @@ CREATE TABLE `v2_twitter_cards` (
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
   `vanity_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
   `type` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
+  `secondly_type` text COLLATE utf8mb4_is_0900_ai_ci,
   `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
   `media` tinyint NOT NULL DEFAULT '0',
   `hidden` tinyint NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_is_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `v2_twitter_entities`
+--
+
 CREATE TABLE `v2_twitter_entities` (
   `id` int NOT NULL,
   `uid` bigint NOT NULL DEFAULT '0',
@@ -73,6 +169,13 @@ CREATE TABLE `v2_twitter_entities` (
   `length` int NOT NULL,
   `hidden` tinyint NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `v2_twitter_media`
+--
+
 CREATE TABLE `v2_twitter_media` (
   `id` bigint NOT NULL,
   `tweet_id` bigint NOT NULL DEFAULT '0',
@@ -89,8 +192,16 @@ CREATE TABLE `v2_twitter_media` (
   `origin_info_height` int NOT NULL,
   `media_key` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `source` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `deleted` tinyint DEFAULT '0',
   `hidden` tinyint NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=COMPACT;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `v2_twitter_polls`
+--
+
 CREATE TABLE `v2_twitter_polls` (
   `id` bigint NOT NULL,
   `uid` bigint NOT NULL DEFAULT '0',
@@ -103,6 +214,13 @@ CREATE TABLE `v2_twitter_polls` (
   `checked` tinyint NOT NULL DEFAULT '0',
   `hidden` tinyint NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_is_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `v2_twitter_quote`
+--
+
 CREATE TABLE `v2_twitter_quote` (
   `id` bigint NOT NULL,
   `uid` bigint NOT NULL DEFAULT '0',
@@ -115,6 +233,13 @@ CREATE TABLE `v2_twitter_quote` (
   `media` tinyint NOT NULL DEFAULT '0',
   `video` tinyint NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_is_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `v2_twitter_tweets`
+--
+
 CREATE TABLE `v2_twitter_tweets` (
   `id` int NOT NULL,
   `tweet_id` bigint NOT NULL,
@@ -134,58 +259,175 @@ CREATE TABLE `v2_twitter_tweets` (
   `translate` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `translate_source` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `hidden` tinyint NOT NULL DEFAULT '0',
+  `dispute` tinyint NOT NULL DEFAULT '0',
   `time` int NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=COMPRESSED;
+
+--
+-- 转储表的索引
+--
+
+--
+-- 表的索引 `tmp_twitter_data`
+--
+ALTER TABLE `tmp_twitter_data`
+  ADD PRIMARY KEY (`uid`),
+  ADD KEY `uid` (`uid`);
+
+--
+-- 表的索引 `twitter_data`
+--
 ALTER TABLE `twitter_data`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `uid` (`uid`);
+  ADD KEY `uid` (`uid`),
+  ADD KEY `timestamp` (`timestamp`),
+  ADD KEY `id` (`id`);
+
+--
+-- 表的索引 `v2_account_info`
+--
 ALTER TABLE `v2_account_info`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uid` (`uid`);
-ALTER TABLE `v2_server_info`
+
+--
+-- 表的索引 `v2_config`
+--
+ALTER TABLE `v2_config`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `id` (`id`);
+
+--
+-- 表的索引 `v2_error_log`
+--
+ALTER TABLE `v2_error_log`
   ADD PRIMARY KEY (`id`);
+
+--
+-- 表的索引 `v2_server_info`
+--
+ALTER TABLE `v2_server_info`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `time` (`time`),
+  ADD KEY `microtime` (`microtime`);
+
+--
+-- 表的索引 `v2_twitter_cards`
+--
 ALTER TABLE `v2_twitter_cards`
   ADD PRIMARY KEY (`id`),
   ADD KEY `uid` (`uid`),
   ADD KEY `tweet_id` (`tweet_id`);
+
+--
+-- 表的索引 `v2_twitter_entities`
+--
 ALTER TABLE `v2_twitter_entities`
   ADD PRIMARY KEY (`id`),
   ADD KEY `uid` (`uid`),
   ADD KEY `tweet_id` (`tweet_id`);
+
+--
+-- 表的索引 `v2_twitter_media`
+--
 ALTER TABLE `v2_twitter_media`
   ADD PRIMARY KEY (`id`),
   ADD KEY `tweet_id` (`tweet_id`),
   ADD KEY `uid` (`uid`);
+
+--
+-- 表的索引 `v2_twitter_polls`
+--
 ALTER TABLE `v2_twitter_polls`
   ADD PRIMARY KEY (`id`),
   ADD KEY `uid` (`uid`),
   ADD KEY `tweet_id` (`tweet_id`);
+
+--
+-- 表的索引 `v2_twitter_quote`
+--
 ALTER TABLE `v2_twitter_quote`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `tweet_id_2` (`tweet_id`),
   ADD KEY `uid` (`uid`),
   ADD KEY `tweet_id` (`tweet_id`);
+
+--
+-- 表的索引 `v2_twitter_tweets`
+--
 ALTER TABLE `v2_twitter_tweets`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `tweet_id` (`tweet_id`),
   ADD UNIQUE KEY `id` (`id`),
   ADD KEY `uid` (`uid`);
+
+--
+-- 在导出的表使用AUTO_INCREMENT
+--
+
+--
+-- 使用表AUTO_INCREMENT `twitter_data`
+--
 ALTER TABLE `twitter_data`
   MODIFY `id` bigint NOT NULL AUTO_INCREMENT;
+
+--
+-- 使用表AUTO_INCREMENT `v2_account_info`
+--
 ALTER TABLE `v2_account_info`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- 使用表AUTO_INCREMENT `v2_config`
+--
+ALTER TABLE `v2_config`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- 使用表AUTO_INCREMENT `v2_error_log`
+--
+ALTER TABLE `v2_error_log`
+  MODIFY `id` bigint NOT NULL AUTO_INCREMENT;
+
+--
+-- 使用表AUTO_INCREMENT `v2_server_info`
+--
 ALTER TABLE `v2_server_info`
   MODIFY `id` bigint NOT NULL AUTO_INCREMENT;
+
+--
+-- 使用表AUTO_INCREMENT `v2_twitter_cards`
+--
 ALTER TABLE `v2_twitter_cards`
   MODIFY `id` bigint NOT NULL AUTO_INCREMENT;
+
+--
+-- 使用表AUTO_INCREMENT `v2_twitter_entities`
+--
 ALTER TABLE `v2_twitter_entities`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- 使用表AUTO_INCREMENT `v2_twitter_media`
+--
 ALTER TABLE `v2_twitter_media`
   MODIFY `id` bigint NOT NULL AUTO_INCREMENT;
+
+--
+-- 使用表AUTO_INCREMENT `v2_twitter_polls`
+--
 ALTER TABLE `v2_twitter_polls`
   MODIFY `id` bigint NOT NULL AUTO_INCREMENT;
+
+--
+-- 使用表AUTO_INCREMENT `v2_twitter_quote`
+--
 ALTER TABLE `v2_twitter_quote`
   MODIFY `id` bigint NOT NULL AUTO_INCREMENT;
+
+--
+-- 使用表AUTO_INCREMENT `v2_twitter_tweets`
+--
 ALTER TABLE `v2_twitter_tweets`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
 COMMIT;
