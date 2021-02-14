@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- 主机： localhost
--- 生成日期： 2020-11-27 15:02:46
--- 服务器版本： 8.0.22-0ubuntu0.20.04.2
--- PHP 版本： 7.4.12
+-- 生成日期： 2021-02-10 17:49:02
+-- 服务器版本： 8.0.23-0ubuntu0.20.10.1
+-- PHP 版本： 7.4.15
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -144,11 +144,30 @@ CREATE TABLE `v2_twitter_cards` (
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
   `vanity_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
   `type` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
-  `secondly_type` text COLLATE utf8mb4_is_0900_ai_ci,
+  `secondly_type` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
   `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
   `media` tinyint NOT NULL DEFAULT '0',
+  `unified_card_app` tinyint NOT NULL DEFAULT '0',
   `hidden` tinyint NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_is_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `v2_twitter_card_app`
+--
+
+CREATE TABLE `v2_twitter_card_app` (
+  `id` bigint NOT NULL,
+  `uid` bigint NOT NULL DEFAULT '0',
+  `tweet_id` bigint NOT NULL DEFAULT '0',
+  `unified_card_type` text NOT NULL,
+  `type` text NOT NULL,
+  `appid` text NOT NULL,
+  `country_code` text,
+  `title` text NOT NULL,
+  `category` text NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -320,6 +339,14 @@ ALTER TABLE `v2_twitter_cards`
   ADD KEY `tweet_id` (`tweet_id`);
 
 --
+-- 表的索引 `v2_twitter_card_app`
+--
+ALTER TABLE `v2_twitter_card_app`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `tweet_id` (`tweet_id`),
+  ADD KEY `uid` (`uid`);
+
+--
 -- 表的索引 `v2_twitter_entities`
 --
 ALTER TABLE `v2_twitter_entities`
@@ -399,6 +426,12 @@ ALTER TABLE `v2_server_info`
 -- 使用表AUTO_INCREMENT `v2_twitter_cards`
 --
 ALTER TABLE `v2_twitter_cards`
+  MODIFY `id` bigint NOT NULL AUTO_INCREMENT;
+
+--
+-- 使用表AUTO_INCREMENT `v2_twitter_card_app`
+--
+ALTER TABLE `v2_twitter_card_app`
   MODIFY `id` bigint NOT NULL AUTO_INCREMENT;
 
 --

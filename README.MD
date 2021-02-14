@@ -56,9 +56,16 @@ Twitter Monitor v2
     * unified_card
         * image_website
         * video_website
+        * image_carousel_website
+        * video_carousel_website
         * image_app
+        * video_app
+        * image_carousel_app
+        * video_carousel_app
 
     这些卡片示例都可以在 ```docs/cards.json``` 找到
+
+    *其中 `unified_card` 的示例不齐，将在未来补齐
 
 ## 出处
 

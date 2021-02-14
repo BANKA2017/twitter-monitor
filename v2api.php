@@ -78,7 +78,11 @@ function returnDataForTweets (array $tweets = [], int $count = 0, string $top = 
         //处理卡片
         $tweets[$x]["cardObject"] = [];
         if ($tweets[$x]["card"]) {
-            $tweets[$x]["cardObject"] = $GLOBALS['sssql']->load("v2_twitter_cards", ["title", "description", "vanity_url", "type", "secondly_type", "url", "media"], [["tweet_id", "=", $tweets[$x]["tweet_id"]]])[0]??[];
+            $tweets[$x]["cardObject"] = $GLOBALS['sssql']->load("v2_twitter_cards", ["title", "description", "vanity_url", "type", "secondly_type", "url", "media", "unified_card_app"], [["tweet_id", "=", $tweets[$x]["tweet_id"]]])[0]??[];
+            $tweets[$x]["cardObject"]["unified_card_app"] = (bool)$tweets[$x]["cardObject"]["unified_card_app"];
+            if ($tweets[$x]["cardObject"]["unified_card_app"]) {
+                $tweets[$x]["cardObject"]["app"] = $GLOBALS['sssql']->load("v2_twitter_card_app", ["unified_card_type", "type", "appid", "country_code", "title", "category"], [["tweet_id", "=", $tweets[$x]["tweet_id"]]]);
+            }
         }
         //处理引用
         $tweets[$x]["quoteObject"] = [];
@@ -181,7 +185,7 @@ switch ($mode) {
                     if(count($sssql->load("v2_account_info", ["id"], [["banner", "=", $mediaLinkArray["filename"]]]))) {
                         header("content-type: image/jpeg");
                         header("Content-Disposition:attachment;filename=banner.jpg");
-                        echo (new sscurl("https://{$mediaLinkArray["dirname"]}/{$mediaLinkArray["filename"]}"))->addMore([CURLOPT_RETURNTRANSFER => false]);
+                        echo (new sscurl("https://{$mediaLinkArray["dirname"]}/{$mediaLinkArray["filename"]}"))->addMore([CURLOPT_TIMEOUT => 999])->addMore([CURLOPT_RETURNTRANSFER => false]);
                     } else {
                         header("content-type: image/svg+xml");
                         echo $ReturnSvg;
@@ -191,7 +195,7 @@ switch ($mode) {
                 case "png":
                 case "mp4":
                     //TODO 此处可能需要修改
-                    if(($type == "userinfo" && count($sssql->load("v2_account_info", ["id"], [["header", "=", "https://" . $_GET["link"]]]))) || count($sssql->load("v2_twitter_media", ["id"], [["basename", "=", $mediaLinkArray["basename"]]], [], 1))) {
+                    if(($type == "userinfo" && count($sssql->load("v2_account_info", ["id"], [["header", "=", "https://" . str_replace('_bigger', '', $_GET["link"])]]))) || count($sssql->load("v2_twitter_media", ["id"], [["basename", "=", $mediaLinkArray["basename"]]], [], 1))) {
 
                         //TODO 下面是一些暂时无法解决的想法, 可能需要到v3解决
                         ////获取长度
@@ -226,7 +230,7 @@ switch ($mode) {
                             //在twitter中gif会被转换为mp4
                             header("content-type: " . get_mime($mediaLinkArray["extension"]));
                             header("Content-Disposition:attachment;filename=file." . $mediaLinkArray["extension"]);
-                            echo (new sscurl("https://" . $_GET["link"] . ($mediaLinkArray["pathtype"] == 2 ? ":{$mediaLinkArray["size"]}" : $mediaLinkArray["pathtype"] == 1 ? "?format={$mediaLinkArray["extension"]}&name={$mediaLinkArray["size"]}" : "")))->addMore([CURLOPT_RETURNTRANSFER => false]);//mp4不会删//use CURLOPT_RETURNTRANSFER to stdout
+                            echo (new sscurl("https://" . $_GET["link"] . ($mediaLinkArray["pathtype"] == 2 ? ":{$mediaLinkArray["size"]}" : $mediaLinkArray["pathtype"] == 1 ? "?format={$mediaLinkArray["extension"]}&name={$mediaLinkArray["size"]}" : "")))->addMore([CURLOPT_TIMEOUT => 999])->addMore([CURLOPT_RETURNTRANSFER => false]);//mp4不会删//use CURLOPT_RETURNTRANSFER to stdout
                         }
                     } else {
                         header("content-type: image/svg+xml");
@@ -279,7 +283,7 @@ switch ($mode) {
                     $ReturnJson["data"]["deleted"] = (int)$ReturnJson["data"]["deleted"];
                     $ReturnJson["data"]["locked"] = (int)$ReturnJson["data"]["locked"];
                     $ReturnJson["data"]["verified"] = (int)$ReturnJson["data"]["verified"];
-                    $ReturnJson["data"]["header"] = substr($ReturnJson["data"]["header"], 7);
+                    $ReturnJson["data"]["header"] = preg_replace("/http:\/\/|https:\/\//", "", $ReturnJson["data"]["header"]);
                 }
                 break;
             case "tweets":
@@ -317,7 +321,9 @@ switch ($mode) {
                         $querySql[] = ["time", "<", $queryDate + 86400];
                     }
                     //是否隐藏
-                    $querySql[] = ["hidden", "=", ((int)($_GET["hidden"]??0)) ? 1 : 0];
+                    if (!(bool)($_GET["hidden"]??0)) {
+                        $querySql[] = ["hidden", "=", 0];
+                    }
                     $tmpTweets = [];
                     //置顶
                     $topStatusId = 0;
@@ -347,12 +353,12 @@ switch ($mode) {
                 //TODO 自定义精度
 
                 $endTimestamp = is_numeric($_GET["end"]??false) ? $_GET["end"] : time();//最后时间
-                $length = is_numeric($_GET["length"]??false) ? ($_GET["length"] > 360 ? 360 : ($_GET["length"] < 1 ? 1 : $_GET["length"])) : 180;
+                $length = is_numeric($_GET["length"]??false) ? ($_GET["length"] > 2880 ? 2880 : ($_GET["length"] < 1 ? 1 : $_GET["length"])) : 720;
                 $querySql = [["uid", "=", $uid]];
                 if ($_GET["refresh"]??0) {
                     $querySql[] = ["timestamp", ">", $endTimestamp];
                 } else {
-                    $querySql = array_merge($querySql, [["timestamp", "<", $endTimestamp], ["timestamp", ">", $endTimestamp - 25000]]);
+                    $querySql = array_merge($querySql, [["timestamp", "<", $endTimestamp], ["timestamp", ">", $endTimestamp - (60 * $length)]]);
                 }
 
                 $chartData = $sssql->load("twitter_data", ["timestamp", "followers", "following", "statuses_count"], $querySql, [["timestamp", true]], $length, true);//最近三小时//一天144个记录点

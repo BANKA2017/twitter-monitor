@@ -137,8 +137,7 @@ function tw_entities (string $type, array $entitie, string $uid, string $tweetid
 //处理媒体(media)//包括entities中的
 //https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/entities-object
 //https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/extended-entities-object
-
-function tw_media (array $media, string $uid, string $tweetid, bool $hidden = false, string $source = "tweets"): array {
+function tw_media (array $media, string $uid, string $tweetid, bool $hidden = false, string $source = "tweets", string $card_type = ""): array {
     $mediaInfoToReturn = [];
     $single_media = [
         "cover" => "",//类型
@@ -152,7 +151,7 @@ function tw_media (array $media, string $uid, string $tweetid, bool $hidden = fa
     ];
     $single_media["uid"] = $uid;//用户id
     $single_media["tweet_id"] = $tweetid;//tweet id
-    $single_media["origin_type"] = $media["type"];//类型
+    $single_media["origin_type"] = $card_type ?: $media["type"];//类型
     $single_media["origin_info_width"] = $media["original_info"]["width"];
     $single_media["origin_info_height"] = $media["original_info"]["height"];
     $single_media["media_key"] = $media["media_key"];//你问我这个media_key是啥我只能说我也不知道
@@ -187,7 +186,7 @@ function tw_media (array $media, string $uid, string $tweetid, bool $hidden = fa
                     "origin_type" => "photo",
                     "hidden" => $hidden,
                     "media_key" => $media["media_key"],
-                    "source" => "cover",//来源tweets cards
+                    "source" => "cover",
                 ]
             ];
 
@@ -249,6 +248,7 @@ function tw_pathinfo(string $path): array {
 //https://business.twitter.com/zh-cn/help/campaign-setup/advertiser-card-specifications.html
 //下行是twitter现有及保留的所有卡片(card)类型
 //{"responsive_web_unified_cards_all_cards_enabled":{"value":false},"responsive_web_unified_cards_amplify_enabled":{"value":true},"responsive_web_unified_cards_app_enabled":{"value":true},"responsive_web_unified_cards_appplayer_enabled":{"value":true},"responsive_web_unified_cards_audio_enabled":{"value":true},"responsive_web_unified_cards_broadcast_enabled":{"value":true},"responsive_web_unified_cards_direct_store_link_app_enabled":{"value":true},"responsive_web_unified_cards_image_direct_message_enabled":{"value":true},"responsive_web_unified_cards_live_event_enabled":{"value":false},"responsive_web_unified_cards_message_me_enabled":{"value":true},"responsive_web_unified_cards_moment_enabled":{"value":true},"responsive_web_unified_cards_periscope_broadcast_enabled":{"value":true},"responsive_web_unified_cards_player_enabled":{"value":true},"responsive_web_unified_cards_poll2choice_image_enabled":{"value":false},"responsive_web_unified_cards_poll2choice_text_only_enabled":{"value":true},"responsive_web_unified_cards_poll2choice_video_enabled":{"value":false},"responsive_web_unified_cards_poll3choice_image_enabled":{"value":false},"responsive_web_unified_cards_poll3choice_text_only_enabled":{"value":true},"responsive_web_unified_cards_poll3choice_video_enabled":{"value":false},"responsive_web_unified_cards_poll4choice_image_enabled":{"value":false},"responsive_web_unified_cards_poll4choice_text_only_enabled":{"value":true},"responsive_web_unified_cards_poll4choice_video_enabled":{"value":false},"responsive_web_unified_cards_promo_image_app_enabled":{"value":true},"responsive_web_unified_cards_promo_image_convo_enabled":{"value":true},"responsive_web_unified_cards_promo_video_convo_enabled":{"value":true},"responsive_web_unified_cards_promo_video_website_enabled":{"value":true},"responsive_web_unified_cards_promo_website_enabled":{"value":true},"responsive_web_unified_cards_promoted_cards_enabled":{"value":true},"responsive_web_unified_cards_summary_enabled":{"value":true},"responsive_web_unified_cards_summary_large_image_enabled":{"value":true},"responsive_web_unified_cards_unified_card_enabled":{"value":true},"responsive_web_unified_cards_video_direct_message_enabled":{"value":true},"responsive_web_unified_cards_vine_enabled":{"value":true}}
+//有人说iPhone能发"audio", 不过我找了半天都没找到例子
 function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = false, string $url = "", string $cardType = ""): array {
     $card = [
         "data" => [
@@ -259,9 +259,11 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
             "url" => $url,//实际域名
             "media" => 0,//是否有媒体
             "secondly_type" => null,
+            "unified_card_app" => 0,
             //"poll" => 0,//是否有投票
         ],
         "media" => [],
+        "app_data" => [],//app类的数据
         //"more" => [],//用以处理额外的信息, 存储在表 v2_twitter_card_ext
     ];
 
@@ -324,34 +326,45 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
         //组件类型
         //$tmpComponents = $cardInfo["components"];
         //看不懂啊，这都是啥啊
+        $card["data"]["media"] = 1;//是否有媒体
+        $card["data"]["secondly_type"] = $childCardInfo["type"];//子类型
         //处理子组件类型
         switch ($childCardInfo["type"]) {
-            //当务之急只有这三种, 优先处理
+            //上面是 图/视频 加链接, 虽然也没看明白
             case "image_website":
             case "video_website":
+            case "image_carousel_website":
+            case "video_carousel_website":
                 //$card["data"]["title"] = '';//没有标题
                 $card["data"]["description"] = $childCardInfo["component_objects"]["details_1"]["data"]["title"]["content"];//内容
                 $card["data"]["vanity_url"] = $childCardInfo["component_objects"]["details_1"]["data"]["subtitle"]["content"];//显示的连接
-                $card["data"]["url"] = $childCardInfo["destination_objects"][$childCardInfo["component_objects"]["media_1"]["data"]["destination"]]["data"]["url_data"]["url"];//真实链接
-                $card["data"]["media"] = 1;//是否有媒体//你先看看子组件叫什么名字?
-                $card["data"]["secondly_type"] = $childCardInfo["type"];
+                $card["data"]["url"] = $childCardInfo["destination_objects"][$childCardInfo["component_objects"]["details_1"]["data"]["destination"]]["data"]["url_data"]["url"];//真实链接
                 break;
+            //iphone跟iPad不都差不多嘛?//下面是app安装链接...
             case "image_app":
-                //app store only
+            case "video_app":
+            case "image_carousel_app":
+            case "video_carousel_app"://没找到实例, 但我觉得存在
+                $card["data"]["unified_card_app"] = 1;
                 $card["data"]["title"] = $childCardInfo["app_store_data"]["app_1"][0]["title"]["content"];//标题
                 $card["data"]["description"] = $childCardInfo["app_store_data"]["app_1"][0]["category"]["content"];//内容
                 $card["data"]["vanity_url"] = "App Store";//显示的连接
-                $card["data"]["url"] = "https://apps.apple.com/{$childCardInfo["app_store_data"]["app_1"][0]["country_code"]}/app/id{$childCardInfo["app_store_data"]["app_1"][0]["id"]}";//真实链接
-                $card["data"]["media"] = 1;//是否有媒体//你先看看子组件叫什么名字?
-                $card["data"]["secondly_type"] = $childCardInfo["type"];
+                //$card["data"]["url"] = "https://apps.apple.com/{$childCardInfo["app_store_data"]["app_1"][0]["country_code"]}/app/id{$childCardInfo["app_store_data"]["app_1"][0]["id"]}";//真实链接
+                
+                //处理 app 数据
+                foreach ($childCardInfo["app_store_data"]["app_1"] as $childCardAppInfo) {
+                    $card["app_data"][] = [
+                        "tweet_id" => $tweetid,
+                        "uid" => $uid,
+                        "unified_card_type" => $childCardInfo["type"],//子类型
+                        "type" => $childCardAppInfo["type"],//android_app iphone_app ipad_app
+                        "appid" => $childCardAppInfo["id"],
+                        "country_code" => $childCardAppInfo["country_code"],
+                        "title" => $childCardAppInfo["title"]["content"],//名称
+                        "category" => $childCardAppInfo["category"]["content"],//类型
+                    ];
+                }
                 break;
-            //下面两个就是可滑动的, 暂时没遇到先拖着//暂时还是没什么想法, 可能需要加个表?
-            //case "image_carousel_app":
-
-            //    break;
-            //case "video_carousel_website":
-
-            //    break;
             //不知道还有什么，现在只找到这些
             //不知道说什么，报个警吧
             default: 
@@ -359,25 +372,9 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
         }
         if (isset($childCardInfo["media_entities"])) {
             //媒体
-            $card["media"]["media_key"] = $childCardInfo["media_entities"][$childCardInfo["component_objects"]["media_1"]["data"]["id"]]["media_key"];//unified_card 特别一点, 有这玩意//卡片(card)没有media_key
-            $card["media"]["uid"] = $uid;//TODO 从后面的users获得用户
-            $card["media"]["tweet_id"] = $tweetid;
-            $card["media"]["hidden"] = $hidden;
-            $card["media"]["origin_type"] = "{$card["data"]["type"]}_{$childCardInfo["type"]}_card_photo";
-            $card["media"]["bitrate"] = 0;
-            $card["media"]["cover"] = $childCardInfo["media_entities"][$childCardInfo["component_objects"]["media_1"]["data"]["id"]]["media_url_https"];//由于封面只是size不同，所以无需额外创建记录
-            $card["media"]["url"] = $childCardInfo["media_entities"][$childCardInfo["component_objects"]["media_1"]["data"]["id"]]["media_url_https"];//原始文件
-            $card["media"]["origin_info_width"] =  $childCardInfo["media_entities"][$childCardInfo["component_objects"]["media_1"]["data"]["id"]]["original_info"]["width"];
-            $card["media"]["origin_info_height"] = $childCardInfo["media_entities"][$childCardInfo["component_objects"]["media_1"]["data"]["id"]]["original_info"]["height"];
-            //处理媒体名称
-            $pathinfo = tw_pathinfo($card["media"]["url"]);
-            $card["media"]["filename"] = $pathinfo["filename"];
-            $card["media"]["basename"] = $pathinfo["basename"];
-            $card["media"]["extension"] = $pathinfo["extension"];
-            $card["media"]["content_type"] = get_mime($pathinfo["extension"]);//获取文件类型//一般都是jpg或者png
-        
-            //来源
-            $card["media"]["source"] = "cards";
+            foreach ($childCardInfo["component_objects"]["swipeable_media_1"]["data"]["media_list"]??[$childCardInfo["component_objects"]["media_1"]["data"]] as $childCardMediaInfoKeyInfo) {
+                $card["media"] = array_merge($card["media"], tw_media ($childCardInfo["media_entities"][$childCardMediaInfoKeyInfo["id"]], $uid, $tweetid, $hidden, "cards", "{$card["data"]["type"]}_{$childCardInfo["type"]}_card_{$childCardInfo["media_entities"][$childCardMediaInfoKeyInfo["id"]]["type"]}"));
+            }
         }
         return $card;
     } else {

@@ -44,9 +44,12 @@ $tw_supportCardNameList = [
 $tw_supportUnifiedCardNameList = [
     "image_website",
     "video_website",
+    "image_carousel_website",
+    "video_carousel_website",
     "image_app",
-    //"image_carousel_app",
-    //"video_carousel_website",
+    "video_app",
+    "image_carousel_app",
+    "video_carousel_app",
 ];
 
 //templates

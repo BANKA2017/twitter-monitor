@@ -116,8 +116,9 @@ foreach ($config["users"] as $account_s => $account) {
             $config["users"][$account_s]["locked"] = true;
             $sssql->update("v2_account_info", ["locked" => 1], [["name", "=", $account["name"]]]);
             kd_push($account["name"] . "已保护账户 #locked", $token, $push_to);//KDpush
-        } elseif ($user_info["errors"][0]["code"] === 50) {
-            //deleted 用于在twitter删除帐户的用户
+        } elseif ($user_info["errors"][0]["code"] === 50 || $user_info["errors"][0]["code"] === 63) {
+            //deleted 用于在twitter删除帐户的用户 #50
+            //suspended 用于被封禁帐户的用户 #63
             $config["users"][$account_s]["deleted"] = true;
             $sssql->update("v2_account_info", ["deleted" => 1], [["name", "=", $account["name"]]]);
             kd_push($account["name"] . "已删除账户 #deleted", $token, $push_to);//KDpush
@@ -464,6 +465,9 @@ foreach ($name_count as $account_info) {
             //处理来源
             $in_sql["source"] = preg_replace('/<a[^>]+>(.*)<\/a>/', "$1", $content["source"]);
             
+            //个人信息
+            $in_sql["name"] = $tweets["globalObjects"]["users"][$content["user_id_str"]]["screen_name"];
+            $in_sql["display_name"] = $tweets["globalObjects"]["users"][$content["user_id_str"]]["name"];
             //判断是否转推
             if (isset($content["retweeted_status_id_str"])) {
                 $content = $tweets["globalObjects"]["tweets"][$content["retweeted_status_id_str"]];
@@ -475,7 +479,7 @@ foreach ($name_count as $account_info) {
             //如果没用twitter会显示 "这条推文不可用。"
             //推文不可用不等于原推被删, 虽然真正的原因是什么我只能说我也不知道
             //群友说可能是被屏蔽了, 仅供参考
-            $isReallyQuote =  (($content["is_quote_status"]??false) && isset($tweets["globalObjects"]["tweets"][$content["quoted_status_id_str"]]));
+            $isReallyQuote = (($content["is_quote_status"]??false) && isset($tweets["globalObjects"]["tweets"][$content["quoted_status_id_str"]]));
 
             //这逻辑是啥我看不懂了//重写//处理full_text
             $in_sql["full_text_origin"] = $content["full_text"];//原始全文
@@ -490,7 +494,7 @@ foreach ($name_count as $account_info) {
                         case "hashtags":
                         case "urls":
                         case "user_mentions":
-                            $single_entitie_data = tw_entities($entities, $single_entities, $account_info["uid"], $in_sql["tweet_id"]);
+                            $single_entitie_data = tw_entities($entities, $single_entities, $in_sql["uid"], $in_sql["tweet_id"]);
                             $tags[$single_entitie_data["indices_start"]] = $single_entitie_data;
                             break;
                         case "media":
@@ -599,12 +603,12 @@ foreach ($name_count as $account_info) {
                         $in_sql["poll"] = 1;
                     }
                     if ($cardInfo["media"]) {
-                        //暂时不会处理//promo_image_convo比较麻烦
-                        //if ($cardInfo["data"]["type"] == "promo_image_convo") {
-                        //    $media = array_merge($media, $cardInfo["media"]);
-                        //} else {
+                        //风水轮流转, 这次到奇妙的 unified_card 了//promo_image_convo继续等
+                        if ($cardInfo["data"]["type"] == "unified_card") {
+                            $media = array_merge($media, $cardInfo["media"]);
+                        } else {
                             $media[] = $cardInfo["media"];
-                        //}
+                        }
                     }
                 } else {
                     echo "未适配的卡片 {$content["card"]["name"]}\n";
@@ -613,10 +617,6 @@ foreach ($name_count as $account_info) {
                     kd_push("快来研究新的卡片\n #new_card #{$content["card"]["name"]} \nid: {$in_sql["tweet_id"]}\nhttps://twitter.com/i/status/{$in_sql["tweet_id"]}\n" . json_encode($content["card"]), $token, $push_to);//kdpush
                 }
             }
-
-            //处理其他
-            $in_sql["name"] = $account_info["name"];
-            $in_sql["display_name"] = $account_info["display_name"];
 
             //翻译
             //暂时用不上了
@@ -663,6 +663,11 @@ foreach ($name_count as $account_info) {
                 //v2_twitter_cards
                 if ($in_sql["card"] && !$in_sql["poll"]) {
                     $tmp_sql .= $sssql->insert("v2_twitter_cards", $cardInfo["data"], true);
+                    if ($cardInfo["data"]["unified_card_app"]) {
+                        foreach ($cardInfo["app_data"] as $in_sql_app_data) {
+                            $tmp_sql .= $sssql->insert("v2_twitter_card_app", $in_sql_app_data, true);
+                        }
+                    }
                 }
                 //v2_twitter_quote
                 if ($isReallyQuote) {

@@ -1,7 +1,7 @@
 <?php
 /* Class scurl
  * @banka2017 & KDNETWORK
- * v5.2.2
+ * v5.3.2
  */
 class sscurl{
     public $ch, $url, $user_agent, $others, $type, $data, $target, $fp, $options;
@@ -45,13 +45,24 @@ class sscurl{
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_TIMEOUT => 10,
-
-            //proxy//当你知道你在干嘛的时候再取消注释
-            //CURLOPT_PROXYTYPE => CURLPROXY_HTTP,//CURLPROXY_SOCKS5
-            //CURLOPT_PROXY => "http://127.0.0.1",//socks5://bob:marley@localhost:12345
-            //CURLOPT_PROXYPORT => "1081",
+            CURLOPT_TIMEOUT => 10
         ];
+        return $this;
+    }
+    public function addProxy ($proxy, $proxyPort, $type = CURLPROXY_HTTP) {
+        $this->options[CURLOPT_PROXYTYPE] = $type;//CURLPROXY_HTTP CURLPROXY_SOCKS5
+        $this->options[CURLOPT_PROXY] = $proxy;//"http://127.0.0.1",//socks5://bob:marley@localhost:12345
+        $this->options[CURLOPT_PROXYPORT] = $proxyPort;//1081
+        return $this;
+    }
+    public function upLoad ($fileName) {
+        if (!file_exists($fileName)) {
+            $this->close();//no such file
+        } else {
+            $this->options[CURLOPT_SAFE_UPLOAD] = true;
+            $data = ['file' => new \CURLFile(realpath($fileName))];
+            $this->options[CURLOPT_POSTFIELDS] = isset($this->options[CURLOPT_POSTFIELDS]) ? array_merge($this->options[CURLOPT_POSTFIELDS], $data) : $data;
+        }
         return $this;
     }
     public function addMore($add = []) {
@@ -77,7 +88,7 @@ class sscurl{
                 $this->options[CURLOPT_CUSTOMREQUEST] = $type;
             }
             if($data != null){
-                $this->options[CURLOPT_POSTFIELDS] = $data;
+                $this->options[CURLOPT_POSTFIELDS] = isset($this->options[CURLOPT_POSTFIELDS]) ? array_merge($this->options[CURLOPT_POSTFIELDS], $data) : $data;
             }
         }
         return $this;

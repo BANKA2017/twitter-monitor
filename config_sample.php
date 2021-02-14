@@ -25,7 +25,7 @@ $default_timezone = "Asia/Shanghai";//默认 Asia/Shanghai
 
 //for alert push
 $token = "";
-$push_to = "";//若使用qqbot此处需要填写 qqbot (不知道什么情况请打开 functions.php 拉到底)//仅用于telegram
+$push_to = "";//仅用于telegram
 
 //开启的项目
 $run_options = [
@@ -36,6 +36,6 @@ $run_options = [
         "tweets" => true,//获取推文，同时会更新cursor
         "tweets_full" => true,//最大限度获取所有信息//使用card等功能的时候需要开启
         "save_tweets_rawjson" => false,//将原始json数据保存到额外文件夹
-        //"save_raw_media" => false,//TODO 保存媒体文件到本地，包括large和thumb，若为视频则保存视频文件及封面
+        "save_raw_media" => false,//TODO 保存媒体文件到本地，包括large和thumb，若为视频则保存视频文件及封面
     ],
 ];
