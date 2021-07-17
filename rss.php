@@ -3,7 +3,6 @@
  * @banka2017 & KD·NETWORK
  * v1
  */
-//TODO rewrite
 namespace Tmv2\Rss;
 class Rss {
     public $rss, $channelArray, $itemArray;

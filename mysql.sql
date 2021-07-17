@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- 主机： localhost
--- 生成日期： 2021-02-10 17:49:02
--- 服务器版本： 8.0.23-0ubuntu0.20.10.1
--- PHP 版本： 7.4.15
+-- 生成日期： 2021-07-18 00:40:32
+-- 服务器版本： 8.0.25-0ubuntu0.20.10.1
+-- PHP 版本： 8.0.8
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -107,7 +107,9 @@ CREATE TABLE `v2_error_log` (
   `id` bigint NOT NULL,
   `uid` bigint NOT NULL DEFAULT '0',
   `name` text,
-  `info` text
+  `code` bigint NOT NULL,
+  `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `timestamp` bigint NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -159,8 +161,8 @@ CREATE TABLE `v2_twitter_cards` (
 
 CREATE TABLE `v2_twitter_card_app` (
   `id` bigint NOT NULL,
-  `uid` bigint NOT NULL DEFAULT '0',
   `tweet_id` bigint NOT NULL DEFAULT '0',
+  `uid` bigint NOT NULL DEFAULT '0',
   `unified_card_type` text NOT NULL,
   `type` text NOT NULL,
   `appid` text NOT NULL,
@@ -186,6 +188,7 @@ CREATE TABLE `v2_twitter_entities` (
   `indices_start` int NOT NULL,
   `indices_end` int NOT NULL,
   `length` int NOT NULL,
+  `timestamp` int NOT NULL DEFAULT '0',
   `hidden` tinyint NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -211,6 +214,7 @@ CREATE TABLE `v2_twitter_media` (
   `origin_info_height` int NOT NULL,
   `media_key` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `source` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `blurhash` text COLLATE utf8mb4_general_ci,
   `deleted` tinyint DEFAULT '0',
   `hidden` tinyint NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=COMPACT;
@@ -320,7 +324,10 @@ ALTER TABLE `v2_config`
 -- 表的索引 `v2_error_log`
 --
 ALTER TABLE `v2_error_log`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `timestamp` (`timestamp`),
+  ADD KEY `uid` (`uid`),
+  ADD KEY `code` (`code`);
 
 --
 -- 表的索引 `v2_server_info`
@@ -352,7 +359,8 @@ ALTER TABLE `v2_twitter_card_app`
 ALTER TABLE `v2_twitter_entities`
   ADD PRIMARY KEY (`id`),
   ADD KEY `uid` (`uid`),
-  ADD KEY `tweet_id` (`tweet_id`);
+  ADD KEY `tweet_id` (`tweet_id`),
+  ADD KEY `timestamp` (`timestamp`);
 
 --
 -- 表的索引 `v2_twitter_media`
@@ -387,6 +395,7 @@ ALTER TABLE `v2_twitter_tweets`
   ADD UNIQUE KEY `tweet_id` (`tweet_id`),
   ADD UNIQUE KEY `id` (`id`),
   ADD KEY `uid` (`uid`);
+ALTER TABLE `v2_twitter_tweets` ADD FULLTEXT KEY `full_text_origin` (`full_text_origin`);
 
 --
 -- 在导出的表使用AUTO_INCREMENT

@@ -63,7 +63,7 @@ foreach ($config["users"] as $account_s => $account) {
         "verified" => "",
         "organization" => 0,
         "top" => 0,
-        "statuses_count" => "",//推文计数(含回复)
+        "statuses_count" => "",//推文计数
         
         //账号状态
         "hidden" => $account["hidden"] ?? 0 ? 1 : 0,//隐藏//本站层面
@@ -100,7 +100,7 @@ foreach ($config["users"] as $account_s => $account) {
         $csrfToken = $get_csrf_token[1];
         $userinfoReqCount = 0;
     }
-    $user_info = tw_get_userinfo(($account["uid"]??0) ?: $account["name"], $csrfToken);
+    $user_info = tw_get_userinfo(($account["uid"]??0) ?: $account["name"], $csrfToken, false, false);
     $userinfoReqCount++;
     
     //处理特殊警告
@@ -108,10 +108,10 @@ foreach ($config["users"] as $account_s => $account) {
 
 
     //处理删号
-    if (isset($user_info["errors"]) || $user_info["data"]["user"]["legacy"]["protected"]) {
+    if (isset($user_info["errors"]) || $user_info["protected"]) {
         echo "Auto break ({$account["name"]}) -- {$user_info["errors"][0]["message"]}\n";
         $update_names = true;
-        if ($user_info["data"]["user"]["legacy"]["protected"]??false) {
+        if ($user_info["protected"]??false) {
             //protect 用于本地隐藏
             $config["users"][$account_s]["locked"] = true;
             $sssql->update("v2_account_info", ["locked" => 1], [["name", "=", $account["name"]]]);
@@ -141,11 +141,6 @@ foreach ($config["users"] as $account_s => $account) {
     } else {
         $config["users"][$account_s]["error_count"] = 0;
     }
-
-    //legacy userinfo
-    $user_info_id_str = $user_info["data"]["user"]["rest_id"];
-    $user_info = $user_info["data"]["user"]["legacy"];
-
     //banner
     if (isset($user_info["profile_banner_url"])) {
         preg_match('/\/([0-9]+)$/', $user_info["profile_banner_url"], $banner);
@@ -156,7 +151,7 @@ foreach ($config["users"] as $account_s => $account) {
     }
 
     //常规
-    $in_sql_info["uid"] = $user_info_id_str;
+    $in_sql_info["uid"] = $user_info["id_str"];
     $in_sql_info["name"] = $user_info["screen_name"];
     $in_sql_info["display_name"] = $user_info["name"];
     $in_sql_info["header"] = preg_replace('/\/([0-9]+)\/([\w\-]+)_normal.([\w]+)$/', '/$1/$2.$3', $user_info["profile_image_url_https"]);
@@ -167,7 +162,7 @@ foreach ($config["users"] as $account_s => $account) {
     $in_sql_info["verified"] = (int)$user_info["verified"];
     //$in_sql_info["lang"] = $user_info["lang"];
     $in_sql_info["statuses_count"] = $user_info["statuses_count"];
-    $in_sql_info["top"] = $user_info["pinned_tweet_ids_str"] ? $user_info["pinned_tweet_ids_str"][0] : 0;
+    $in_sql_info["top"] = $user_info["pinned_tweet_ids"] ? $user_info["pinned_tweet_ids"][0] : 0;
     
     //处理介绍
     $description = $user_info["description"];
@@ -196,9 +191,9 @@ foreach ($config["users"] as $account_s => $account) {
     $in_sql_info["description"] = $description;
 
     //处理uid
-    if (($account["uid"]??0) != $user_info_id_str) {
+    if (($account["uid"]??0) != $user_info["id_str"]) {
         $update_names = true;
-        $config["users"][$account_s]["uid"] = $user_info_id_str;
+        $config["users"][$account_s]["uid"] = $user_info["id_str"];
     }
 
     //处理id
@@ -221,9 +216,9 @@ foreach ($config["users"] as $account_s => $account) {
 
     //monitor data
     //同时满足时才会插入监控项目
-    if($user_info_id_str && $run_options["twitter"]["count_data_user"] && !($account["not_analytics"]??false)){
+    if($user_info["id_str"] && $run_options["twitter"]["count_data_user"] && !($account["not_analytics"]??false)){
         //处理数据
-        $monitor_data_info["uid"] = $user_info_id_str;
+        $monitor_data_info["uid"] = $user_info["id_str"];
         $monitor_data_info["name"] = $user_info["screen_name"];
         $monitor_data_info["display_name"] = $user_info["name"];
         $monitor_data_info["following"] = $user_info["friends_count"];
@@ -243,7 +238,7 @@ foreach ($config["users"] as $account_s => $account) {
     //处理用户
     if (!count($verify_info)) {
         //完全没记录
-        if($user_info_id_str){
+        if($user_info["id_str"]){
             echo " - 插入新记录\n";
             $name_count[] = [
                 "name" => $in_sql_info["name"],
@@ -260,7 +255,6 @@ foreach ($config["users"] as $account_s => $account) {
             kd_push($account["name"] . "出现数据错误 #account_info", $token, $push_to);//KDpush
         }
     } else {
-        $verify_info[0]["top"] = (string)$verify_info[0]["top"];
         echo " - 刷新记录";
 
         if ($verify_info[0]["new"] == '1' && array_diff_assoc(array_slice($verify_info[0], 0, 11), ["uid" => $in_sql_info["uid"], "name" => $in_sql_info["name"], "display_name" => $in_sql_info["display_name"], "header" => $in_sql_info["header"], "banner" => $in_sql_info["banner"], "description_origin" => $in_sql_info["description_origin"], "top" => $in_sql_info["top"], "statuses_count" => $in_sql_info["statuses_count"], "hidden" => $in_sql_info["hidden"], "locked" => $in_sql_info["locked"], "deleted" => $in_sql_info["deleted"]])) {
@@ -375,56 +369,45 @@ foreach ($name_count as $account_info) {
     }
 
     echo "正在处理{$account_info["display_name"]}\n";
-    //if (!$account_info["last_cursor"]) {
-    //    echo "全新抓取{$account_info["display_name"]}\n";
-    //    //$url = 'https://api.twitter.com/2/timeline/profile/' . $account_info["uid"] . '.json?tweet_mode=extended&count=93000';
-    //} else {
-    //    //$url = "https://api.twitter.com/2/timeline/profile/{$account_info["uid"]}.json?tweet_mode=extended&count=40&cursor=" . urlencode($account_info["cursor"]);
-    //    //https://api.twitter.com/2/timeline/profile/775280864674525184.json?tweet_mode=extended&count=20//已经够用了
-    //}
-    $max_tweetid = "0";
-    $tw_server_info["total_req_tweets"]++;
+    if (!$account_info["last_cursor"]) {
+        echo "全新抓取{$account_info["display_name"]}\n";
+        $max_tweetid = "0";
+        //$url = 'https://api.twitter.com/2/timeline/profile/' . $account_info["uid"] . '.json?tweet_mode=extended&count=93000';
+        $tw_server_info["total_req_tweets"]++;
+    } else {
+        $max_tweetid = "0";
+        //$url = "https://api.twitter.com/2/timeline/profile/{$account_info["uid"]}.json?tweet_mode=extended&count=40&cursor=" . urlencode($account_info["cursor"]);
+        //https://api.twitter.com/2/timeline/profile/775280864674525184.json?tweet_mode=extended&count=20//已经够用了
+        $tw_server_info["total_req_tweets"]++;
+    }
     //echo $url . "\n";
-    //2021-05-12 Twitter 强制启用graphql, 原rest方案已经不再可用, 虽然conversation仍可用, 但不应继续使用
-    $tweets = tw_get_tweets($account_info["uid"], $account_info["cursor"], $csrfToken, $run_options["twitter"]["tweets_full"]);
+    $tweets = tw_get_tweets($account_info["uid"], $account_info["cursor"], $csrfToken, $run_options["twitter"]["tweets_full"], false, false);
 
-    if (!isset($tweets["data"]["user"]["result"]["timeline"])) {
-        echo "error: #timelineError {$tweets["data"]["user"]["result"]["__typename"]}\n";
+    if (isset($tweets["errors"])) {
+        echo "error: #{$tweets["errors"][0]["code"]} {$tweets["errors"][0]["message"]}\n";
         continue;
     }
-    $tw_server_info["total_req_tweets"] = count($tweets["data"]["user"]["result"]["timeline"]["timeline"]["instructions"][0]["entries"]) - 2;
+    $tw_server_info["total_req_tweets"] = count($tweets["globalObjects"]["tweets"]);
     $singleAccountTweetsCount = 0;
 
-    //$cursor = "";
-    //cursor with rest mode
-    //foreach ($tweets["timeline"]["instructions"] as $first_instructions) {
-    //    foreach ($first_instructions as $second_instructions => $second_instructions_value) {
-    //        switch ($second_instructions) {
-    //            //case "pinEntry":
-    //            //    $pinned_id = $second_instructions_value["entry"]["content"]["item"]["content"]["tweet"]["id"];
-    //            //    break;
-    //            case "addEntries":
-    //                foreach ($second_instructions_value["entries"] as $third_entries_value) {
-    //                    if (substr($third_entries_value["entryId"], 0, 10) == "cursor-top") {
-    //                        $cursor = $third_entries_value["content"]["operation"]["cursor"]["value"];
-    //                    }
-    //                }
-    //                break;
-    //        }
-    //    }
-    //}
-
-    //cursor with graphql mode
-    //倒数第二个                                                                                        data.user.result.timeline.timeline.instructions[0].entries
-    $cursor = $tweets["data"]["user"]["result"]["timeline"]["timeline"]["instructions"][0]["entries"][count($tweets["data"]["user"]["result"]["timeline"]["timeline"]["instructions"][0]["entries"]) - 2]["content"]["value"];
-
-    foreach ($tweets["data"]["user"]["result"]["timeline"]["timeline"]["instructions"][0]["entries"] as $content) {
-        
-        //判断非推文
-        if ($content["content"]["entryType"] != "TimelineTimelineItem") {
-            continue;
+    $cursor = "";
+    foreach ($tweets["timeline"]["instructions"] as $first_instructions) {
+        foreach ($first_instructions as $second_instructions => $second_instructions_value) {
+            switch ($second_instructions) {
+                //case "pinEntry":
+                //    $pinned_id = $second_instructions_value["entry"]["content"]["item"]["content"]["tweet"]["id"];
+                //    break;
+                case "addEntries":
+                    foreach ($second_instructions_value["entries"] as $third_entries_value) {
+                        if (substr($third_entries_value["entryId"], 0, 10) == "cursor-top") {
+                            $cursor = $third_entries_value["content"]["operation"]["cursor"]["value"];
+                        }
+                    }
+                    break;
+            }
         }
-
+    }
+    foreach ($tweets["globalObjects"]["tweets"] as $tweet => $content) {
         $in_sql = [
             "retweet_from" => "",//display_name
             "retweet_from_name" => "",//name
@@ -458,8 +441,6 @@ foreach ($name_count as $account_info) {
         $card = [];//卡片
         //$geo = [];//地理坐标
         
-        $isRetweet = false;
-
         //记录原始json
         if ($run_options["twitter"]["save_tweets_rawjson"]) {
             //$in_sql["origin_json"] = json_encode($content, JSON_UNESCAPED_UNICODE);
@@ -468,45 +449,43 @@ foreach ($name_count as $account_info) {
             //if (!file_exists(SYSTEM_ROOT . "/savetweets/{$month}")) {
             //    mkdir(SYSTEM_ROOT . "/savetweets/{$month}");
             //}
-            file_put_contents(SYSTEM_ROOT . "/savetweets/{$content["content"]["itemContent"]["tweet"]["legacy"]["id_str"]}.json", json_encode($content, JSON_UNESCAPED_UNICODE));
+            file_put_contents(SYSTEM_ROOT . "/savetweets/{$content["id_str"]}.json", json_encode($content, JSON_UNESCAPED_UNICODE));
         }
         
         //判断是否本人发推
-        if ($content["content"]["itemContent"]["tweet"]["legacy"]["user_id_str"] == $account_info["uid"]) {
+        if ($content["user_id_str"] == $account_info["uid"]) {
             //提前处理
-            $in_sql["uid"] = $content["content"]["itemContent"]["tweet"]["legacy"]["user_id_str"];
-            $in_sql["tweet_id"] = $content["content"]["itemContent"]["tweet"]["legacy"]["id_str"];
-            $in_sql["time"] = strtotime($content["content"]["itemContent"]["tweet"]["legacy"]["created_at"]);//提前处理时间
+            $in_sql["uid"] = $content["user_id_str"];
+            $in_sql["tweet_id"] = $content["id_str"];
+            $in_sql["time"] = strtotime($content["created_at"]);//提前处理时间
             //处理最终tweet_id
-            if ($content["content"]["itemContent"]["tweet"]["legacy"]["id_str"] > $max_tweetid) {
-                $max_tweetid = $content["content"]["itemContent"]["tweet"]["legacy"]["id_str"];
+            if ($content["id_str"] > $max_tweetid) {
+                $max_tweetid = $content["id_str"];
             }
             //处理来源
-            $in_sql["source"] = preg_replace('/<a[^>]+>(.*)<\/a>/', "$1", $content["content"]["itemContent"]["tweet"]["legacy"]["source"]);
+            $in_sql["source"] = preg_replace('/<a[^>]+>(.*)<\/a>/', "$1", $content["source"]);
             
             //个人信息
-            $in_sql["name"] = $content["content"]["itemContent"]["tweet"]["core"]["user"]["legacy"]["screen_name"];
-            $in_sql["display_name"] = $content["content"]["itemContent"]["tweet"]["core"]["user"]["legacy"]["name"];
+            $in_sql["name"] = $tweets["globalObjects"]["users"][$content["user_id_str"]]["screen_name"];
+            $in_sql["display_name"] = $tweets["globalObjects"]["users"][$content["user_id_str"]]["name"];
             //判断是否转推
-            if (isset($content["content"]["itemContent"]["tweet"]["legacy"]["retweeted_status"])) {
-                //$content = $tweets["globalObjects"]["tweets"][$content["retweeted_status_id_str"]];//graphql mode 不再需要多次处理
-                $in_sql["retweet_from"] = $content["content"]["itemContent"]["tweet"]["legacy"]["retweeted_status"]["core"]["user"]["legacy"]["name"];
-                $in_sql["retweet_from_name"] = $content["content"]["itemContent"]["tweet"]["legacy"]["retweeted_status"]["core"]["user"]["legacy"]["screen_name"];
-                $isRetweet = true;
+            if (isset($content["retweeted_status_id_str"])) {
+                $content = $tweets["globalObjects"]["tweets"][$content["retweeted_status_id_str"]];
+                $in_sql["retweet_from"] = $tweets["globalObjects"]["users"][$content["user_id_str"]]["name"];
+                $in_sql["retweet_from_name"] = $tweets["globalObjects"]["users"][$content["user_id_str"]]["screen_name"];
             }
 
             //真的有quote嘛
-            //如果是已删除的twitter会显示 "这条推文不可用。"
+            //如果没用twitter会显示 "这条推文不可用。"
             //推文不可用不等于原推被删, 虽然真正的原因是什么我只能说我也不知道
             //群友说可能是被屏蔽了, 仅供参考
-
-            $isReallyQuote = (($content["content"]["itemContent"]["tweet"]["legacy"]["is_quote_status"]??false) && isset($content["content"]["itemContent"]["tweet"]["quoted_status"]));
+            $isReallyQuote = (($content["is_quote_status"]??false) && isset($tweets["globalObjects"]["tweets"][$content["quoted_status_id_str"]]));
 
             //这逻辑是啥我看不懂了//重写//处理full_text
-            $in_sql["full_text_origin"] = $isRetweet ? $content["content"]["itemContent"]["tweet"]["legacy"]["retweeted_status"]["legacy"]["full_text"] : $content["content"]["itemContent"]["tweet"]["legacy"]["full_text"];//原始全文
+            $in_sql["full_text_origin"] = $content["full_text"];//原始全文
 
             //处理entities//包括图片//https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/entities-object
-            foreach (($isRetweet ? $content["content"]["itemContent"]["tweet"]["legacy"]["retweeted_status"]["legacy"]["entities"] : $content["content"]["itemContent"]["tweet"]["legacy"]["entities"]) as $entities => $entities_) {
+            foreach ($content["entities"] as $entities => $entities_) {
                 foreach ($entities_ as $single_entities) {
                     $single_entitie_data = [];
                     switch ($entities) {
@@ -534,8 +513,8 @@ foreach ($name_count as $account_info) {
             $last_end = 0;
 
             //给卡片找源链接
-            $cardUrl = (isset($content["content"]["itemContent"]["tweet"]["card"]) && ($content["content"]["itemContent"]["tweet"]["card"]["rest_id"] ?? "") && (substr(($content["content"]["itemContent"]["tweet"]["card"]["rest_id"] ?? ""), 0, 7) != "card://")) ? $content["content"]["itemContent"]["tweet"]["card"]["rest_id"] : "";
-            $quoteUrl = $isReallyQuote ? $content["content"]["itemContent"]["tweet"]["legacy"]["quoted_status_permalink"]["url"] : "";
+            $cardUrl = (isset($content["card"]) && (substr(($content["card"]["url"] ?? ""), 0, 7) != "card://")) ? $content["card"]["url"] : "";
+            $quoteUrl = $isReallyQuote ? $content["quoted_status_permalink"]["url"] : "";
             $entitiesLength = count($tags);
             foreach ($tags as $entitiesOrder => $single_tag) {
                 $addText = "";
@@ -550,7 +529,7 @@ foreach ($name_count as $account_info) {
                         $addText = "<a href=\"{$single_tag["expanded_url"]}\" id=\"user_mention\" target=\"_blank\">{$single_tag["text"]}</a>";
                         break;
                     case "url":
-                        if ($cardUrl && $cardUrl == $single_tag["url"]) {
+                        if ($cardUrl && $cardUrl == $single_tag["url"] && $entitiesOrder == ($entitiesLength - 1)) {
                             //处理卡片的url
                             $cardUrl = $single_tag["expanded_url"];
                         } elseif ($single_tag["url"] != $quoteUrl) {
@@ -571,7 +550,7 @@ foreach ($name_count as $account_info) {
             //处理media
             //来啊, 互相伤害啊
             if ($in_sql["media"]) {
-                foreach (($isRetweet ? $content["content"]["itemContent"]["tweet"]["legacy"]["retweeted_status"]["legacy"]["extended_entities"]["media"] : $content["content"]["itemContent"]["tweet"]["legacy"]["extended_entities"]["media"]) as $single_entities) {
+                foreach ($content["extended_entities"]["media"] as $single_entities) {
                     $media = array_merge($media, tw_media($single_entities, $in_sql["uid"], $in_sql["tweet_id"], $in_sql["hidden"]));
                 }
             }
@@ -582,44 +561,44 @@ foreach ($name_count as $account_info) {
             //若推文不存在不需要处理此处
             if ($isReallyQuote) {
                 //从返回的数据里面重新抽出该条推文
-                $quote_content = $content["content"]["itemContent"]["tweet"]["quoted_status"];//来吧
-                $in_sql["quote_status"] = $content["content"]["itemContent"]["tweet"]["legacy"]["quoted_status_id_str"];
+                $quote_content = $tweets["globalObjects"]["tweets"][$content["quoted_status_id_str"]];//来吧
+                $in_sql["quote_status"] = $content["quoted_status_id_str"];
                 $in_sql_for_quote = [
-                    "tweet_id" => $quote_content["legacy"]["id_str"],
-                    "uid" => $quote_content["legacy"]["user_id_str"],
-                    "name" => $quote_content["core"]["user"]["legacy"]["screen_name"],
-                    "display_name" => $quote_content["core"]["user"]["legacy"]["name"],
-                    "full_text" => $quote_content["legacy"]["full_text"],
-                    "full_text_origin" => $quote_content["legacy"]["full_text"],
-                    "time" => strtotime($quote_content["legacy"]["created_at"]),
+                    "tweet_id" => $quote_content["id_str"],
+                    "uid" => $quote_content["user_id_str"],
+                    "name" => $tweets["globalObjects"]["users"][$quote_content["user_id_str"]]["screen_name"],
+                    "display_name" => $tweets["globalObjects"]["users"][$quote_content["user_id_str"]]["name"],
+                    "full_text" => $quote_content["full_text"],
+                    "full_text_origin" => $quote_content["full_text"],
+                    "time" => strtotime($quote_content["created_at"]),
                     "media" => 0,//v2中切为int类型(sql中tinyint)
                     "video" => 0,//是否有视频
                     //"hidden" => $account_info["hidden"]//本人认为此库数据不需要hidden
                 ];
 
                 //处理full_text的url
-                foreach ($quote_content["legacy"]["entities"]["urls"] as $quote_entitie) {
+                if (isset($quote_content["entities"]["urls"]))
+                foreach ($quote_content["entities"]["urls"] as $quote_entitie) {
                     $in_sql_for_quote["full_text"] = str_replace($quote_entitie["url"], "<a href=\"//{$quote_entitie["expanded_url"]}\" id=\"quote_url\" target=\"_blank\" style=\"color: black\">{$quote_entitie["display_url"]}</a>", $in_sql_for_quote["full_text"]);
                 }
                 $in_sql_for_quote["full_text"] = nl2br(preg_replace('/ https:\/\/t.co\/[\w]+/', '', $in_sql_for_quote["full_text"]));
 
                 //处理媒体
-                if (isset($quote_content["legacy"]["extended_entities"]["media"])) {
+                if (isset($quote_content["extended_entities"]["media"])) {
                     $in_sql_for_quote["media"] = 1;
-                    foreach ($quote_content["legacy"]["extended_entities"]["media"] as $single_entities) {
-                        $media = array_merge($media, tw_media($single_entities, $quote_content["legacy"]["user_id_str"], $quote_content["legacy"]["id_str"], false, "quote_status"));
+                    foreach ($quote_content["extended_entities"]["media"] as $single_entities) {
+                        $media = array_merge($media, tw_media($single_entities, $quote_content["user_id_str"], $quote_content["id_str"], false, "quote_status"));
                     }
                 }
             }
 
             //处理card
-            //$content["content"]["itemContent"]["tweet"]["card"]
-            if ($run_options["twitter"]["tweets_full"] && isset($content["content"]["itemContent"]["tweet"]["card"])) {
-                $tmp_cardType = preg_replace("/[0-9]+:(.*)/", "$1", $content["content"]["itemContent"]["tweet"]["card"]["legacy"]["name"]);
+            if ($run_options["twitter"]["tweets_full"] && isset($content["card"])) {
+                $tmp_cardType = preg_replace("/[0-9]+:(.*)/", "$1", $content["card"]["name"]);
                 $in_sql["card"] = $tmp_cardType;//任何时候都应该留下卡片类型, 不然等着头疼吧
                 if (in_array($tmp_cardType, $tw_supportCardNameList)) {
                     //$in_sql["card"] = 1;
-                    $cardInfo = tw_card($content["content"]["itemContent"]["tweet"]["card"]["legacy"], $in_sql["uid"], $in_sql["tweet_id"], $in_sql["hidden"], $cardUrl, $tmp_cardType);
+                    $cardInfo = tw_card($content["card"], $in_sql["uid"], $in_sql["tweet_id"], $in_sql["hidden"], $cardUrl, $tmp_cardType, false);
                     if (($cardInfo["data"]["poll"]??0) && ($cardInfo["data"]["polls"] ?? [])) {
                         $in_sql["poll"] = 1;
                     }
@@ -632,10 +611,10 @@ foreach ($name_count as $account_info) {
                         }
                     }
                 } else {
-                    echo "未适配的卡片 {$content["content"]["itemContent"]["tweet"]["card"]["legacy"]["name"]}\n";
+                    echo "未适配的卡片 {$content["card"]["name"]}\n";
                     //主动发现卡片
                     //新增加卡片的研究，不然最后麻烦的只有自己
-                    kd_push("快来研究新的卡片\n #new_card #{$content["content"]["itemContent"]["tweet"]["card"]["legacy"]["name"]} \nid: {$in_sql["tweet_id"]}\nhttps://twitter.com/i/status/{$in_sql["tweet_id"]}\n" . json_encode($content["content"]["itemContent"]["tweet"]["card"]), $token, $push_to);//kdpush
+                    kd_push("快来研究新的卡片\n #new_card #{$content["card"]["name"]} \nid: {$in_sql["tweet_id"]}\nhttps://twitter.com/i/status/{$in_sql["tweet_id"]}\n" . json_encode($content["card"]), $token, $push_to);//kdpush
                 }
             }
 
@@ -678,7 +657,7 @@ foreach ($name_count as $account_info) {
                 //v2_twitter_polls
                 if ($in_sql["poll"]) {
                     foreach ($cardInfo["data"]["polls"] as $in_sql_poll) {
-                        $tmp_sql .= $sssql->insert("v2_twitter_polls", array_merge($in_sql_poll, ["origin_tweet_id" => $content["content"]["itemContent"]["tweet"]["legacy"]["id_str"]]), true);
+                        $tmp_sql .= $sssql->insert("v2_twitter_polls", array_merge($in_sql_poll, ["origin_tweet_id" => $content["id_str"]]), true);
                     }
                 }
                 //v2_twitter_cards
@@ -702,13 +681,13 @@ foreach ($name_count as $account_info) {
             }
         } else {
             $tw_server_info["total_throw_tweets"]++;
-            echo "已丢弃->{$content["content"]["itemContent"]["tweet"]["legacy"]["id_str"]} (非对应账号)\n";
+            echo "已丢弃->{$content["id_str"]} (非对应账号)\n";
         }
     }
     //一个号解决
     //差点整死我
     //echo $cursor . "\n";
-    if ($max_tweetid !== 0 && $cursor) {
+    if ($max_tweetid != "0" && $cursor) {
         $sssql->update("v2_account_info", ["last_cursor" => $max_tweetid, "cursor" => $cursor, "new" => 1], [["uid", "=", $account_info["uid"]]]);
     } elseif ($cursor) {
         $sssql->update("v2_account_info", ["cursor" => $cursor, "new" => 1], [["uid", "=", $account_info["uid"]]]);

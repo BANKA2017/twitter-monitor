@@ -3,6 +3,7 @@
  * twitter monitor v2
 */
 define('SYSTEM_ROOT', dirname(__FILE__));
+require(SYSTEM_ROOT . '/vendor/autoload.php');
 //twitter authorization
 //此值固定, 出现在https://abs.twimg.com/responsive-web/web/main.22e26814.js
 define('TW_AUTHORIZATION', "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA");
@@ -13,6 +14,9 @@ require(SYSTEM_ROOT . '/rss.php');
 require(SYSTEM_ROOT . '/config.php');
 require(SYSTEM_ROOT . '/GoogleTokenGenerator.php');
 require(SYSTEM_ROOT . '/functions.php');
+
+//GraphqL queryId List
+$queryhqlQueryIdList = json_decode(file_get_contents(SYSTEM_ROOT . '/graphqlQueryIdList.json'), true);
 
 //for cards
 $tw_supportCardNameList = [
@@ -38,6 +42,8 @@ $tw_supportCardNameList = [
     "poll3choice_image",
     "poll4choice_image",
     "unified_card",
+    "appplayer",
+    "audiospace",
 ];
 
 //for unified_card

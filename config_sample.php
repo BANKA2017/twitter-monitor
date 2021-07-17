@@ -27,6 +27,8 @@ $default_timezone = "Asia/Shanghai";//默认 Asia/Shanghai
 $token = "";
 $push_to = "";//仅用于telegram
 
+$referrerWhiteList = "";//跨域 referrer 白名单, 留空则不启用跨域白名单
+
 //开启的项目
 $run_options = [
     "twitter" => [

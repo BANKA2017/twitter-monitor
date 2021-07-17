@@ -1,0 +1,5 @@
+{
+    "require": {
+        "kornrunner/blurhash": "^1.2"
+    }
+}

@@ -3,12 +3,12 @@
  * twitter monitor v2 functions
  * @banka2017 && KDNETWORK
  */
-
+use kornrunner\Blurhash\Blurhash;
  //translate
 function translate (string $source = "Google Translate", string $to, string $origin): string {
     $translate = "";
     switch ($source) {
-        //有想法添加百度翻译的欢迎来pr//js auth怎么搞啊
+        //有想法添加百度翻译的欢迎来pr
         //case "百度翻译":
         //    break;
         case "腾讯翻译君": 
@@ -29,7 +29,7 @@ function translate (string $source = "Google Translate", string $to, string $ori
             //google translate
             //$origin = preg_replace('/[^\x{0000}-\x{FFFF}]|\x{200D}+/', '', $origin);//去除所有非bmp平面及\u200d
             $translate = "";
-            $g_body = ["client" => "webapp", "sl" => "auto", "tl" => $to, "hl" => $to, "dt" => "at", "dt" => "bd", "dt" => "ex", "dt" => "ld", "dt" => "md", "dt" => "qca", "dt" => "rw", "dt" => "rm", "dt" => "ss", "dt" => "t", "clearbtn" => 1, "otf" => 1, "pc" => 1, "ssel" => 0, "tsel" => 0, "kc" => 2, "tk" => GoogleTokenGenerator::generateToken($origin), "q" => $origin];
+            $g_body = ["client" => "webapp", "sl" => "auto", "tl" => $to, "hl" => $to, "dt" => "at", "dt" => "bd", "dt" => "ex", "dt" => "ld", "dt" => "md", "dt" => "qca", "dt" => "rw", "dt" => "rm", "dt" => "ss", "dt" => "t", "clearbtn" => 1, "otf" => 1, "pc" => 1, "ssel" => 0, "tsel" => 0, "kc" => 2, "tk" => "", "q" => $origin];
             foreach (json_decode(new sscurl("https://translate.google.com/translate_a/single?" . html_entity_decode(http_build_query($g_body)), "get", ["referer: https://translate.google.com/", "authority: translate.google.com"]), true)[0]??[] as $trs) {
                 $translate .= $trs[0];
             }
@@ -48,16 +48,24 @@ function tw_get_token (): array {
 
 //get userinfo
 //TODO full mode
-function tw_get_userinfo (string $user, string $csrfToken = "", bool $full = false): array {
+function tw_get_userinfo (string $user, string $csrfToken = "", bool $full = false, bool $graphqlMode = true): array {
     if (!$csrfToken) {
         $csrfToken = tw_get_token()[1];
     }
     $GLOBALS["tw_server_info"]["total_req_times"]++;
-    return json_decode(new sscurl("https://api.twitter.com/1.1/users/show.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&" . (is_numeric($user) ? "user_id=" : "screen_name=") . $user, 'get', ["authorization: " . TW_AUTHORIZATION, "content-type: application/json", "x-guest-token: " . $csrfToken], 1), true);
+    if ($graphqlMode) {
+        if (is_numeric($user)) {
+            return json_decode(new sscurl("https://mobile.twitter.com/i/api/graphql/{$GLOBALS["queryhqlQueryIdList"]["UserByRestIdWithoutResults"]["queryId"]}/UserByRestIdWithoutResults?variables=" . urlencode(json_encode(["userId" => $user, "withHighlightedLabel" => true])), 'get', ["authorization: " . TW_AUTHORIZATION, "content-type: application/json", "x-guest-token: " . $csrfToken], 1), true);
+        } else {
+            return json_decode(new sscurl("https://mobile.twitter.com/i/api/graphql/{$GLOBALS["queryhqlQueryIdList"]["UserByScreenNameWithoutResults"]["queryId"]}/UserByScreenNameWithoutResults?variables=" . urlencode(json_encode(["screen_name" => $user, "withHighlightedLabel" => true])), 'get', ["authorization: " . TW_AUTHORIZATION, "content-type: application/json", "x-guest-token: " . $csrfToken], 1), true);
+        }
+    } else {
+        return json_decode(new sscurl("https://api.twitter.com/1.1/users/show.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&" . (is_numeric($user) ? "user_id=" : "screen_name=") . $user, 'get', ["authorization: " . TW_AUTHORIZATION, "content-type: application/json", "x-guest-token: " . $csrfToken], 1), true);
+    }
 }
 
 //get tweets
-function tw_get_tweets (string $uid, string $cursor = "", string $csrfToken = "", bool $full = false, bool $online = false): array {
+function tw_get_tweets (string $queryString, string $cursor = "", string $csrfToken = "", bool $full = false, bool $online = false, bool $graphqlMode = true, bool $searchMode = false): array {
     if (!$csrfToken) {
         $csrfToken = tw_get_token()[1];
     }
@@ -66,10 +74,34 @@ function tw_get_tweets (string $uid, string $cursor = "", string $csrfToken = ""
     //网页版使用的
     //https://api.twitter.com/2/timeline/conversation/:uid.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_composer_source=true&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweets=true&count=20&ext=mediaStats%2CcameraMoment
     //card类型需要启用full//建议启用full
-    if ($full) {
-        return json_decode(new sscurl("https://api.twitter.com/2/timeline/profile/{$uid}.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_composer_source=true&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweets=true&ext=mediaStats%2CcameraMoment&count=" . ($cursor ? ($online ? 20 : 40)  . "&cursor=" . urlencode($cursor) : ($online ? 20 : 9999)), 'get', ["authorization: " . TW_AUTHORIZATION, "x-guest-token: " . $csrfToken], 1), true);
+    if ($graphqlMode) {
+        $graphqlObject = [
+            "userId" => $queryString,
+            "count" => ($online ? 20 : 40),
+            "withHighlightedLabel" => true,
+            "withTweetQuoteCount" => true,
+            "includePromotedContent" => true,
+            "withTweetResult" => false,
+            "withReactions" => false,
+            "withUserResults" => false,
+            "withVoice" => false,
+            "withNonLegacyCard" => true,
+            "withBirdwatchPivots" => false
+        ];
+        if ($cursor) {
+            $graphqlObject["cursor"] = $cursor;
+        } else {
+            $graphqlObject["count"] = ($online ? 20 : 9999);
+        }
+        return json_decode(new sscurl("https://mobile.twitter.com/i/api/graphql/{$GLOBALS["queryhqlQueryIdList"]["UserTweets"]["queryId"]}/UserTweets?variables=" . urlencode(json_encode($graphqlObject)), 'get', ["authorization: " . TW_AUTHORIZATION, "x-guest-token: " . $csrfToken], 1), true);
+    } elseif ($searchMode) {
+        return json_decode(new sscurl("https://twitter.com/i/api/2/search/adaptive.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweet=true&q=" . urlencode($queryString) . "&tweet_search_mode=live&count=999&query_source=typed_query&pc=1&spelling_corrections=1&ext=mediaStats%2ChighlightedLabel" . ($cursor ? '&cursor=' . $cursor : ''), 'get', ["authorization: " . TW_AUTHORIZATION, "x-guest-token: " . $csrfToken, 'cookie: gt=' . $csrfToken], 1), true);
     } else {
-        return json_decode(new sscurl("https://api.twitter.com/2/timeline/profile/{$uid}.json?tweet_mode=extended&count=" . ($cursor ? ($online ? 20 : 40) . "&cursor=" . urlencode($cursor) : ($online ? 20 : 9999)), 'get', ["authorization: " . TW_AUTHORIZATION, "x-guest-token: " . $csrfToken], 1), true);
+        if ($full) {
+            return json_decode(new sscurl("https://api.twitter.com/2/timeline/profile/{$queryString}.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_composer_source=true&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweets=true&ext=mediaStats%2CcameraMoment&count=" . ($cursor ? ($online ? 20 : 40)  . "&cursor=" . urlencode($cursor) : ($online ? 20 : 9999)), 'get', ["authorization: " . TW_AUTHORIZATION, "x-guest-token: " . $csrfToken], 1), true);
+        } else {
+            return json_decode(new sscurl("https://api.twitter.com/2/timeline/profile/{$queryString}.json?tweet_mode=extended&count=" . ($cursor ? ($online ? 20 : 40) . "&cursor=" . urlencode($cursor) : ($online ? 20 : 9999)), 'get', ["authorization: " . TW_AUTHORIZATION, "x-guest-token: " . $csrfToken], 1), true);
+        }
     }
 }
 
@@ -137,7 +169,7 @@ function tw_entities (string $type, array $entitie, string $uid, string $tweetid
 //处理媒体(media)//包括entities中的
 //https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/entities-object
 //https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/extended-entities-object
-function tw_media (array $media, string $uid, string $tweetid, bool $hidden = false, string $source = "tweets", string $card_type = ""): array {
+function tw_media (array $media, string $uid, string $tweetid, bool $hidden = false, string $source = "tweets", string $card_type = "", string $savePath = ""): array {
     $mediaInfoToReturn = [];
     $single_media = [
         "cover" => "",//类型
@@ -148,13 +180,14 @@ function tw_media (array $media, string $uid, string $tweetid, bool $hidden = fa
         "bitrate" => 0,//仅用于视频类
         "hidden" => $hidden,//是否隐藏
         "source" => $source,//来源tweets cards
+        "blurhash" => "",
     ];
     $single_media["uid"] = $uid;//用户id
     $single_media["tweet_id"] = $tweetid;//tweet id
     $single_media["origin_type"] = $card_type ?: $media["type"];//类型
     $single_media["origin_info_width"] = $media["original_info"]["width"];
     $single_media["origin_info_height"] = $media["original_info"]["height"];
-    $single_media["media_key"] = $media["media_key"];//你问我这个media_key是啥我只能说我也不知道
+    $single_media["media_key"] = $media["media_key"]??"";//你问我这个media_key是啥我只能说我也不知道
     switch ($media["type"]) {
         case "video":
         case "animated_gif":
@@ -167,6 +200,7 @@ function tw_media (array $media, string $uid, string $tweetid, bool $hidden = fa
                     $single_media["bitrate"] = ($variant["bitrate"]??0);
                 }
             }
+            
             //处理文件名以及类型
             $single_media["cover"] = $media["media_url_https"];
             $pathinfo = tw_pathinfo($single_media["url"]);
@@ -174,6 +208,9 @@ function tw_media (array $media, string $uid, string $tweetid, bool $hidden = fa
             $single_media["basename"] = $pathinfo["basename"];
             $single_media["extension"] = $pathinfo["extension"]??"";
 
+            if ($savePath !== "") {
+                file_put_contents($savePath . '/' . $single_media["basename"], new sscurl($single_media["url"]));
+            }
             //开始为封面构造一条记录
             $mediaInfoToReturn = [
                 $single_media,
@@ -185,7 +222,7 @@ function tw_media (array $media, string $uid, string $tweetid, bool $hidden = fa
                     "bitrate" => 0,
                     "origin_type" => "photo",
                     "hidden" => $hidden,
-                    "media_key" => $media["media_key"],
+                    "media_key" => $media["media_key"]??"",
                     "source" => "cover",
                 ]
             ];
@@ -210,6 +247,40 @@ function tw_media (array $media, string $uid, string $tweetid, bool $hidden = fa
             //$single_media["cover"] = $pathinfo["basename"];
             $single_media["extension"] = $pathinfo["extension"]??"";
             $single_media["content_type"] = get_mime($single_media["extension"]);//类型
+
+            if ($savePath !== "") {
+                file_put_contents($savePath . '/' . $single_media["basename"], new sscurl($single_media["url"] . ":orig"));
+            }
+
+            if ($single_media["source"] == "tweets") {
+                $getBlurHash = function(string $fileUrl): string {
+                    $file = new sscurl($fileUrl);
+                    if ($file) {
+                        $image = imagecreatefromstring($file);
+                        $width = imagesx($image);
+                        $height = imagesy($image);
+                        
+                        $pixels = [];
+                        for ($y = 0; $y < $height; $y = $y += 5) {
+                            $row = [];
+                            for ($x = 0; $x < $width; $x = $x += 5) {
+                                $index = imagecolorat($image, $x, $y);
+                                $colors = imagecolorsforindex($image, $index);
+                                $row[] = [$colors['red'], $colors['green'], $colors['blue']];
+                            }
+                            $pixels[] = $row;
+                        }
+                        $components_x = 4;
+                        $components_y = 3;
+                        return Blurhash::encode($pixels, $components_x, $components_y);
+                    } else {
+                        kd_push("blurhash: 文件 {$fileUrl} 获取失败, tweet_id: {$tweetid} #blurhash", $token, $push_to);//KDpush
+                        return "deleted";
+                    }
+                    
+                };
+                $single_media["blurhash"] = $getBlurHash(($savePath !== "" ? $savePath . '/' . $single_media["basename"] : $single_media["cover"]));
+            }
             break;
     }
     return $mediaInfoToReturn ?: ($single_media["url"] ? [$single_media] : []);//多个优先，再到单个，再到空白
@@ -248,8 +319,8 @@ function tw_pathinfo(string $path): array {
 //https://business.twitter.com/zh-cn/help/campaign-setup/advertiser-card-specifications.html
 //下行是twitter现有及保留的所有卡片(card)类型
 //{"responsive_web_unified_cards_all_cards_enabled":{"value":false},"responsive_web_unified_cards_amplify_enabled":{"value":true},"responsive_web_unified_cards_app_enabled":{"value":true},"responsive_web_unified_cards_appplayer_enabled":{"value":true},"responsive_web_unified_cards_audio_enabled":{"value":true},"responsive_web_unified_cards_broadcast_enabled":{"value":true},"responsive_web_unified_cards_direct_store_link_app_enabled":{"value":true},"responsive_web_unified_cards_image_direct_message_enabled":{"value":true},"responsive_web_unified_cards_live_event_enabled":{"value":false},"responsive_web_unified_cards_message_me_enabled":{"value":true},"responsive_web_unified_cards_moment_enabled":{"value":true},"responsive_web_unified_cards_periscope_broadcast_enabled":{"value":true},"responsive_web_unified_cards_player_enabled":{"value":true},"responsive_web_unified_cards_poll2choice_image_enabled":{"value":false},"responsive_web_unified_cards_poll2choice_text_only_enabled":{"value":true},"responsive_web_unified_cards_poll2choice_video_enabled":{"value":false},"responsive_web_unified_cards_poll3choice_image_enabled":{"value":false},"responsive_web_unified_cards_poll3choice_text_only_enabled":{"value":true},"responsive_web_unified_cards_poll3choice_video_enabled":{"value":false},"responsive_web_unified_cards_poll4choice_image_enabled":{"value":false},"responsive_web_unified_cards_poll4choice_text_only_enabled":{"value":true},"responsive_web_unified_cards_poll4choice_video_enabled":{"value":false},"responsive_web_unified_cards_promo_image_app_enabled":{"value":true},"responsive_web_unified_cards_promo_image_convo_enabled":{"value":true},"responsive_web_unified_cards_promo_video_convo_enabled":{"value":true},"responsive_web_unified_cards_promo_video_website_enabled":{"value":true},"responsive_web_unified_cards_promo_website_enabled":{"value":true},"responsive_web_unified_cards_promoted_cards_enabled":{"value":true},"responsive_web_unified_cards_summary_enabled":{"value":true},"responsive_web_unified_cards_summary_large_image_enabled":{"value":true},"responsive_web_unified_cards_unified_card_enabled":{"value":true},"responsive_web_unified_cards_video_direct_message_enabled":{"value":true},"responsive_web_unified_cards_vine_enabled":{"value":true}}
-//有人说iPhone能发"audio", 不过我找了半天都没找到例子
-function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = false, string $url = "", string $cardType = ""): array {
+//此处描述的类型为3691233323:audiospace//有人说iPhone能发"audio", 不过我找了半天都没找到例子
+function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = false, string $url = "", string $cardType = "", bool $graphqlMode = true): array {
     $card = [
         "data" => [
             "type" => $cardType,//类型
@@ -272,6 +343,22 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
     $card["data"]["tweet_id"] = $tweetid;
     $card["data"]["hidden"] = $hidden;
     //$card["data"]["type"] = preg_replace("/[0-9]+:(.*)/", "$1", $cardInfo["name"]);//类型
+
+    if ($graphqlMode) {
+        //重新将 Array 改回 Object
+        $tmpBindingValueList = [];
+        foreach ($cardInfo["binding_values"] as $bindingValue) {
+            $tmpBindingValueList[$bindingValue["key"]] = $bindingValue["value"];
+        }
+        $cardInfo["binding_values"] = $tmpBindingValueList;
+    }
+
+    //这就是改成 graphql 的代码
+    //$tmpList = [];
+    //foreach ($cardInfo["binding_values"] as $key => $value) {
+    //    $tmpList[] = ["key" => $key, "value" => $value];
+    //}
+    //$cardInfo["binding_values"] = $tmpList;
 
     //处理投票
     if (substr($card["data"]["type"], 0, 4) == "poll") {
@@ -334,16 +421,16 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
             case "image_website":
             case "video_website":
             case "image_carousel_website":
-            case "video_carousel_website":
+            case "video_carousel_website"://https://twitter.com/ABEMA/status/1356905272749551616
                 //$card["data"]["title"] = '';//没有标题
                 $card["data"]["description"] = $childCardInfo["component_objects"]["details_1"]["data"]["title"]["content"];//内容
                 $card["data"]["vanity_url"] = $childCardInfo["component_objects"]["details_1"]["data"]["subtitle"]["content"];//显示的连接
                 $card["data"]["url"] = $childCardInfo["destination_objects"][$childCardInfo["component_objects"]["details_1"]["data"]["destination"]]["data"]["url_data"]["url"];//真实链接
                 break;
-            //iphone跟iPad不都差不多嘛?//下面是app安装链接...
+            //iphone跟iPad不都差不多嘛?//下面是app安装链接...我觉得都差不多, 但它有我就要支援, 真麻烦
             case "image_app":
             case "video_app":
-            case "image_carousel_app":
+            case "image_carousel_app"://https://twitter.com/stc_ksa/status/1359170192706703360
             case "video_carousel_app"://没找到实例, 但我觉得存在
                 $card["data"]["unified_card_app"] = 1;
                 $card["data"]["title"] = $childCardInfo["app_store_data"]["app_1"][0]["title"]["content"];//标题
@@ -377,7 +464,9 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
             }
         }
         return $card;
-    } else {
+    } 
+    //elseif ($card["data"]["type"] === "appplayer" || $card["data"]["type"] === "promo_video_website" || $card["data"]["type"] === "promo_video_convo") {} 
+    else {
         $tmp_whereIsInfoFrom = [
             //data
             "title" => "title",
@@ -408,6 +497,8 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
             //这...带视频的card..跟player差不多
             case "promo_video_website":
             case "player":
+            //与 promo_video_website, promo_video_convo 差不多, 未来有计划支援视频
+            case "appplayer":
                 $tmp_whereIsInfoFrom["cover"] = "player_image_large";
                 $tmp_whereIsInfoFrom["origin"] = "player_image_original";
                 break;
@@ -485,13 +576,19 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
                 $tmp_whereIsInfoFrom["origin"] = "photo_image";
                 $card["data"]["url"] = $cardInfo["binding_values"]["url"]["string_value"];
                 break;
+            //类似clubhouse的玩意, 仅限600fo以上的iOS用户发起
+            //https://help.twitter.com/en/using-twitter/spaces
+            //https://twitter.com/twitterspaces
+            case "audiospace":
+                $card["data"]["url"] = $cardInfo["binding_values"]["id"]["string_value"];
+                break;
         }
 
         //写入
         //处理基本信息
         $card["data"]["title"] = $cardInfo["binding_values"][$tmp_whereIsInfoFrom["title"]]["string_value"]??"";//TODO 如果不是STRING怎么办呢
-        $card["data"]["description"] = ($cardInfo["binding_values"][$tmp_whereIsInfoFrom["description"]]["string_value"]??"") . (($card["data"]["type"] == "app" && isset($cardInfo["binding_values"]["app_star_rating"]["string_value"]) && isset($cardInfo["binding_values"]["app_num_ratings"]["string_value"])) ? "\n{$cardInfo["binding_values"]["app_star_rating"]["string_value"]}/5.0 stars - {$cardInfo["binding_values"]["app_num_ratings"]["string_value"]} ratings" : "");//同上
-        $card["data"]["vanity_url"] = ($cardInfo["binding_values"][$tmp_whereIsInfoFrom["vanity_url"]]["string_value"]??"") . (($card["data"]["type"] == "promo_image_app" && isset($cardInfo["binding_values"]["site"]["user_value"]["id_str"]) && isset($cardInfo["users"][$cardInfo["binding_values"]["site"]["user_value"]["id_str"]])) ? $cardInfo["users"][$cardInfo["binding_values"]["site"]["user_value"]["id_str"]]["name"] : "");//再同上
+        $card["data"]["description"] = ($cardInfo["binding_values"][$tmp_whereIsInfoFrom["description"]]["string_value"]??"") . ((($card["data"]["type"] == "app" || $card["data"]["type"] == "appplayer") && isset($cardInfo["binding_values"]["app_star_rating"]["string_value"]) && isset($cardInfo["binding_values"]["app_num_ratings"]["string_value"])) ? "\n{$cardInfo["binding_values"]["app_star_rating"]["string_value"]}/5.0 stars - {$cardInfo["binding_values"]["app_num_ratings"]["string_value"]} ratings" : "");//同上
+        $card["data"]["vanity_url"] = ($cardInfo["binding_values"][$tmp_whereIsInfoFrom["vanity_url"]]["string_value"]??"") . ((($card["data"]["type"] == "promo_image_app" || $card["data"]["type"] == "appplayer") && isset($cardInfo["binding_values"]["site"]["user_value"]["id_str"]) && ($graphqlMode ? isset($cardInfo["user_refs"]) : isset($cardInfo["users"][$cardInfo["binding_values"]["site"]["user_value"]["id_str"]]))) ? ($graphqlMode ? $cardInfo["user_refs"][0]["legacy"]["name"] : $cardInfo["users"][$cardInfo["binding_values"]["site"]["user_value"]["id_str"]]["name"]) : "");//再同上
         //处理媒体
         if (isset($cardInfo["binding_values"][$tmp_whereIsInfoFrom["origin"]])) {
             $card["data"]["media"] = 1;//媒体
@@ -708,11 +805,16 @@ function get_mime($ext): string {
 function kd_push(string $text = "", string $token = "", string $to = ""){
     if ($token) {
         if (preg_match('/[0-9]+:[\w]+/', $token)) {
-            $r = json_decode(new sscurl("https://api.telegram.org/bot{$token}/sendMessage", "post", [], "KDboT", ["chat_id" => $to, "text" => $text]), true);
-            if($r["ok"] ?? false){
-                echo "KDboT: Successful to push error log to master channel\n";
-            }else{
-                echo "KDboT: Error #{$r["description"]}\n";
+            //切割文字防止无法发送
+            $textLength = strlen($text);
+            $partCount = ceil($textLength / 3000);
+            for ($x = 1; $x <= $partCount; $x++) {
+                $r = json_decode(new sscurl("https://api.telegram.org/bot{$token}/sendMessage", "post", [], "KDboT", ["chat_id" => $to, "text" => mb_substr($text, ($x - 1) * 3000, 3000)]), true);
+                if($r["ok"] ?? false){
+                    echo "KDboT: Successful to push log #part{$x} to master channel\n";
+                }else{
+                    echo "KDboT: Error #{$r["description"]}\n";
+                }
             }
         //} elseif ($to == 'qqbot') {
         //    //这是腾讯QQ测试中的hookbot, 可用性不保证, 仅供尝鲜
@@ -726,10 +828,11 @@ function kd_push(string $text = "", string $token = "", string $to = ""){
         } else {
             $r = json_decode(new sscurl("https://sc.ftqq.com/{$token}.send", "post", [], "KDboT", ["text" => $text]), true);
             if (!$r["errno"]) {
-                echo "ServerChan: Successful to push error log to wechat\n";
+                echo "ServerChan: Successful to push log to wechat\n";
             } else {
                 echo "ServerChan: Error #{$r["errmsg"]}";
             }
         }
     }
 }
+

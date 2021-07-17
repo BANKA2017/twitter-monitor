@@ -1,7 +1,7 @@
 <?php
 /* Class ssql
  * @banka2017 & KD·NETWORK
- * v5.2
+ * v5.4
  */
 class ssql{
     public $conn;
@@ -12,6 +12,7 @@ class ssql{
         if ($this->conn->connect_error) {
             throw new Exception("连接失败: " . $this->conn->connect_error . "\n");
         }
+        mysqli_options($this->conn, MYSQLI_OPT_INT_AND_FLOAT_NATIVE, true);
     }
 
     public function returnQuery(string $sql, bool $multi = false, bool $singleMulti = false){
@@ -63,10 +64,15 @@ class ssql{
                         $sql .= ' AND ';
                     }
                 }
-                if(strtoupper($where[$x][1]) != 'LIKE%%'){
-                    $sql .= ' `' . mysqli_real_escape_string($this->conn, $where[$x][0]) . '` ' . mysqli_real_escape_string($this->conn, $where[$x][1]) . ' "' . mysqli_real_escape_string($this->conn, $where[$x][2]) . '"';
-                }else{
-                    $sql .= ' `' . mysqli_real_escape_string($this->conn, $where[$x][0]) . '` LIKE "%' . mysqli_real_escape_string($this->conn, $where[$x][2]) . '%"';
+                switch (strtoupper($where[$x][1])) {
+                    case "LIKE%%":
+                        $sql .= ' `' . mysqli_real_escape_string($this->conn, $where[$x][0]) . '` LIKE "%' . mysqli_real_escape_string($this->conn, $where[$x][2]) . '%"';
+                        break;
+                    case "MATCH":
+                        $sql .= ' MATCH(`' . mysqli_real_escape_string($this->conn, $where[$x][0]) . '`) AGAINST("' . mysqli_real_escape_string($this->conn, $where[$x][2]) . '")';
+                        break;
+                    default:
+                        $sql .= ' `' . mysqli_real_escape_string($this->conn, $where[$x][0]) . '` ' . mysqli_real_escape_string($this->conn, $where[$x][1]) . ' "' . mysqli_real_escape_string($this->conn, $where[$x][2]) . '"';
                 }
                 if((($x < count($where) - 1 && strtoupper($where[$x + 1][3] ?? null) != 'OR') || $x == count($where) - 1) && $activeOr){
                     $sql .= ' ) ';
