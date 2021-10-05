@@ -153,9 +153,9 @@ foreach ($menberList as $menber) {
     $generateData["data"][] = $userData;
     file_put_contents($to . '/' . date("Y-m-d", $range["start"]) . '.json', json_encode($generateData, JSON_UNESCAPED_UNICODE));//data
     $pushText .= "LoveLive! Trends: {$menber["name_cn"]} cost: " . microtime(true) - $startTime . "\n";
-    //kd_push("LoveLive! Trends: {$menber["name_cn"]} cost: " . microtime(true) - $startTime . "\n", $token, $push_to);
+    //kd_push("LoveLive! Trends: {$menber["name_cn"]} cost: " . microtime(true) - $startTime . "\n");
     echo "cost: " . microtime(true) - $startTime . "\n";
 }
 $dateInfo = file_exists($to . '/date.json') ? json_decode(file_get_contents($to . '/date.json'), true) : [];
 file_put_contents($to . '/date.json', json_encode(in_array(date("Y-m-d", $range["start"]), $dateInfo) ? $dateInfo : array_merge([date("Y-m-d", $range["start"])], $dateInfo), JSON_UNESCAPED_UNICODE));//data
-kd_push($pushText . "#lovelive_trends", $token, $push_to);
+kd_push($pushText . "#lovelive_trends");

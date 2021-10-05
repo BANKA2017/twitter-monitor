@@ -1,0 +1,52 @@
+[
+  {
+    "name": "bang_dream_info",
+    "display_name": "バンドリ！ BanG Dream! 公式",
+    "project": "BanGDream!",
+    "uid": "3009772568"
+  },
+  {
+    "name": "bang_dream_gbp",
+    "display_name": "日服官方",
+    "project": "BanGDream!",
+    "uid": "775280864674525184"
+  },{
+  "name": "bangdreamgbp_EN",
+  "display_name": "BanG Dream! GBP",
+  "project": "BanGDream!",
+  "uid": "925637038396735488"
+},
+  {
+    "name": "LoveLive_staff",
+    "display_name": "ラブライブ！シリーズ公式",
+    "project": "LoveLive!",
+    "uid": "347849994"
+  },
+  {
+    "name": "lovelive_SIF",
+    "display_name": "【公式】ラブライブ！スクフェス事務局",
+    "project": "LoveLive!",
+    "uid": "1346933186"
+  },{
+  "name": "LLAS_STAFF",
+  "display_name": "ラブライブ！スクスタ公式",
+  "project": "LoveLive!",
+  "uid": "1158675515193999360"
+},{
+  "name": "227_staff",
+  "display_name": "22/7(ナナブンノニジュウニ)",
+  "project": "227",
+  "uid": "812662608478113793"
+},
+  {
+    "name": "nanaon_official",
+    "display_name": "【公式】22/7 音楽の時間",
+    "project": "227",
+    "uid": "1203860801229975552"
+  },{
+  "name": "227keisanchu",
+  "display_name": "【公式】22/7 計算中＆検算中",
+  "project": "227",
+  "uid": "1006790586551107587"
+}
+]

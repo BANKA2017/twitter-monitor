@@ -1,5 +1,8 @@
 {
     "require": {
-        "kornrunner/blurhash": "^1.2"
+        "kornrunner/blurhash": "^1.2",
+        "ext-curl": "*",
+        "ext-mysqli": "*",
+        "ext-gd": "*"
     }
 }

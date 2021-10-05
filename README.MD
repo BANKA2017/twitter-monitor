@@ -5,11 +5,11 @@ This is the crawer and api, we will not release frontend source.
 
 ## Environment
 
-* php7.4
+* php8.0
 * php-mbstring php-xml php-mysqli php-gd
 * Nginx / Apache (we are not provide apache config file .htaccess)
-* MySQL 8.0 (it will have some issues while using MySql 5.x based database system, use Legacy mode for password)
-* Linux (No Windows, I am not own any Windows servers)
+* MySQL 8.0 (it will have some issues while using MySql 5.x based database system)
+* Linux (No Windows, I am not own any Windows servers; And 64-bit system)
 
 ## How to
 
@@ -29,11 +29,11 @@ This is the crawer and api, we will not release frontend source.
     ```shell
     #this is example path, use your path
     * * * * * php /tmv2/run_get_legacy.php
-    0 * * * * php /tmv2/ext_run.php
+    #0 * * * * php /tmv2/ext_run.php #for poll data
+    #*/10 * * * * php /tmv2/scripts/blurhash/add.php #for blurhash
     #10 23 * * 0 php /tmv2/scripts/lovelive_trends/run.php #only for lovelive_trends
     ```
 
-    if need't pull data can delete line ```ext_run.php```
 
 ## Supported Cards
 
@@ -77,18 +77,19 @@ This is the crawer and api, we will not release frontend source.
 
 ## How it works
 
-This is a Chinese article
+Those are Chinese articles
 
 [怎么爬twitter](https://blog.nest.moe/2020/02/27/how-to-crawl-twitter/)
+
 [怎么爬twitter Graphql](https://blog.nest.moe/2021/05/12/how-to-crawl-twitter-with-graphql/)
 
 ## 环境要求
 
-* php7.x (未来可能只支持 php7.4 及以上)
+* php8.0
 * php-mbstring php-xml php-mysqli
 * Nginx / Apache (使用 Apache 请自行生成 .htaccess)
-* MySQL 8.0 (使用MariaDB等基于 MySQL 5.x 的可能会有奇怪的支持问题, MySQL密码类型请使用Legacy)
-* Linux (使用Windows可能会遇上奇奇怪怪的问题)
+* MySQL 8.0 (使用MariaDB等基于 MySQL 5.x 的可能会有奇怪的支持问题)
+* Linux (使用Windows可能会遇上奇奇怪怪的问题, 以及64位系统)
 
 ## 使用方法
 
@@ -108,11 +109,10 @@ This is a Chinese article
     ```shell
     #这里的路径只是示例, 请在配置中使用实际文件路径
     * * * * * php /tmv2/run_get_legacy.php
-    0 * * * * php /tmv2/ext_run.php
+    #0 * * * * php /tmv2/ext_run.php #for poll data
+    #*/10 * * * * php /tmv2/scripts/blurhash/add.php #for blurhash
     #10 23 * * 0 php /tmv2/scripts/lovelive_trends/run.php #only for lovelive_trends
     ```
-
-    如果不在乎投票的结果数据可不添加 ```ext_run.php``` 行
 
 ## 支持
 
@@ -159,10 +159,11 @@ This is a Chinese article
 
 ## 出处
 
-* ```GoogleTokenGenerator.php``` 这个文件出自 [google-translate-php](https://github.com/Stichoza/google-translate-php) 并经过本人小幅修改
+* ```GoogleTokenGenerator.php``` 这个文件出自 [google-translate-php](https://github.com/Stichoza/google-translate-php) 并经过本人小幅修改; 现在使用 Google translate 不再需要生成 TKK，故已移除本文件
 * 函数 ```get_mime``` 出自 [Tieba-Cloud-Sign](https://github.com/MoeNetwork/Tieba-Cloud-Sign/blob/c4ab393045bcabde97c1a70fbe8e8d56be8f7f1e/lib/sfc.functions.php#L790)
 
 ## 资料
 
 [怎么爬twitter](https://blog.nest.moe/2020/02/27/how-to-crawl-twitter/)
+
 [怎么爬twitter Graphql](https://blog.nest.moe/2021/05/12/how-to-crawl-twitter-with-graphql/)

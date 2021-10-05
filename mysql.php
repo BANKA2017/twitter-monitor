@@ -1,10 +1,11 @@
 <?php
 /* Class ssql
  * @banka2017 & KD·NETWORK
- * v5.4
+ * v5.5.1
  */
 class ssql{
     public $conn;
+    private $real_escape_string;
 
     public function __construct($servername, $username, $password, $dbname) {
         $this->conn = new mysqli($servername, $username, $password, $dbname);
@@ -12,7 +13,8 @@ class ssql{
         if ($this->conn->connect_error) {
             throw new Exception("连接失败: " . $this->conn->connect_error . "\n");
         }
-        mysqli_options($this->conn, MYSQLI_OPT_INT_AND_FLOAT_NATIVE, true);
+        $this->real_escape_string = fn(mixed $data) => $this->conn->real_escape_string($data);
+        $this->conn->options(MYSQLI_OPT_INT_AND_FLOAT_NATIVE, true);
     }
 
     public function returnQuery(string $sql, bool $multi = false, bool $singleMulti = false){
@@ -39,7 +41,9 @@ class ssql{
         }
         return $returnArray;
     }
-
+    public function select() {
+        return call_user_func_array("load", func_get_args());
+    }
     public function load(string $table, array $keys = ["*"], array $where = [], array $orders = [], int $limit = 0, bool $desc = false, int $offset = 0, $returnRawSql = false) {
         $activeOr = false;
         $sql = "SELECT DISTINCT";
@@ -47,9 +51,9 @@ class ssql{
             if ($x > 0) {
                 $sql .= ',';
             }
-            $sql .= $keys[$x] == '*' ? ' * ' : ' `' . mysqli_real_escape_string($this->conn, $keys[$x]) . '`';
+            $sql .= $keys[$x] == '*' ? ' * ' : ' `' . $this->conn->real_escape_string($keys[$x]) . '`';
         }
-        $sql .= " FROM `" . mysqli_real_escape_string($this->conn, $table) . "`";
+        $sql .= " FROM `" . $this->conn->real_escape_string($table) . "`";
         if ($where != []) {
             $sql .= ' WHERE';
             for ($x = 0; $x < count($where); $x++) {
@@ -66,13 +70,13 @@ class ssql{
                 }
                 switch (strtoupper($where[$x][1])) {
                     case "LIKE%%":
-                        $sql .= ' `' . mysqli_real_escape_string($this->conn, $where[$x][0]) . '` LIKE "%' . mysqli_real_escape_string($this->conn, $where[$x][2]) . '%"';
+                        $sql .= ' `' . $this->conn->real_escape_string($where[$x][0]) . '` LIKE "%' . $this->conn->real_escape_string($where[$x][2]) . '%"';
                         break;
                     case "MATCH":
-                        $sql .= ' MATCH(`' . mysqli_real_escape_string($this->conn, $where[$x][0]) . '`) AGAINST("' . mysqli_real_escape_string($this->conn, $where[$x][2]) . '")';
+                        $sql .= ' MATCH(`' . $this->conn->real_escape_string($where[$x][0]) . '`) AGAINST("' . $this->conn->real_escape_string($where[$x][2]) . '")';
                         break;
                     default:
-                        $sql .= ' `' . mysqli_real_escape_string($this->conn, $where[$x][0]) . '` ' . mysqli_real_escape_string($this->conn, $where[$x][1]) . ' "' . mysqli_real_escape_string($this->conn, $where[$x][2]) . '"';
+                        $sql .= ' `' . $this->conn->real_escape_string($where[$x][0]) . '` ' . $this->conn->real_escape_string($where[$x][1]) . ' "' . $this->conn->real_escape_string($where[$x][2]) . '"';
                 }
                 if((($x < count($where) - 1 && strtoupper($where[$x + 1][3] ?? null) != 'OR') || $x == count($where) - 1) && $activeOr){
                     $sql .= ' ) ';
@@ -86,7 +90,7 @@ class ssql{
                 if ($x > 0) {
                     $sql .= ',';
                 }
-                $rOrder = mysqli_real_escape_string($this->conn, $desc ? $orders[$x][0] : $orders[$x]);
+                $rOrder = $this->conn->real_escape_string($desc ? $orders[$x][0] : $orders[$x]);
                 $sql .= $rOrder ? ' `' . $rOrder . '`' : '';
                 //TODO 尝试兼容前提下自主修改本句
                 if($desc && $orders[$x][1]){
@@ -107,13 +111,13 @@ class ssql{
     public function update(string $table, array $set = [], array $where = [], bool $returnRawSql = false) {
         $sql = "UPDATE `{$table}` SET";
         foreach ($set as $key => $value) {
-            $sql .= " `" . mysqli_real_escape_string($this->conn, $key) . "` = '" . mysqli_real_escape_string($this->conn, $value) . "',";
+            $sql .= " `" . $this->conn->real_escape_string($key) . "` = '" . $this->conn->real_escape_string($value) . "',";
         }
         $sql = substr($sql, 0, strlen($sql) - 1);
         if ($where != []) {
             $sql .= " WHERE (";
             foreach ($where as $x => $value) {
-                $sql .= " (`" . mysqli_real_escape_string($this->conn, $value[0]) . "` " . mysqli_real_escape_string($this->conn, $value[1]) . " '" . mysqli_real_escape_string($this->conn, $value[2]) . "') ";
+                $sql .= " (`" . $this->conn->real_escape_string($value[0]) . "` " . $this->conn->real_escape_string($value[1]) . " '" . $this->conn->real_escape_string($value[2]) . "') ";
                 if(isset($where[$x][3]) && strtoupper($where[$x][3]) == "OR"){
                     $sql .= ' OR ';
                 }else{
@@ -125,23 +129,27 @@ class ssql{
         return $returnRawSql ? $sql : self::returnQuery($sql);
     }
 
-    public function insert(string $table, array $values = [], bool $returnRawSql = false, array $updateWhileExists = []) {
-        $sql = "INSERT IGNORE INTO `" . mysqli_real_escape_string($this->conn, $table) . "` ";
-        $x = 0;
-        $d = '(';
-        $e = '(';
-        foreach ($values as $key => $value) {
-            if ($x > 0) {
-                $d .= ',';
-                $e .= ',';
-            }
-            $d .= "`" . mysqli_real_escape_string($this->conn, $key) . "`";
-            $e .= "'" . mysqli_real_escape_string($this->conn, $value) . "'";
-            $x++;
+    //TODO 当心 '% _' 注入
+    public function insert(string $table, array $values = [], bool $returnRawSql = false, array $updateWhileExists = [], bool $multiInsert = false) {
+        if ($values == []) {
+            return "";
         }
-        $d .= ')';
-        $e .= ')';
-        $sql .= $d . " VALUES " . $e;
+        $sql = "INSERT IGNORE INTO `" . $this->conn->real_escape_string($table) . "` ";
+
+        if ($multiInsert) {
+            $insertArrayKeys = array_map($this->real_escape_string,  array_keys($values[0]));
+            $sql .= "(`" . implode("`, `", $insertArrayKeys) . "`) VALUES ";
+            foreach ($values as $key => $value) {
+                if ($key !== 0) {
+                    $sql .= ", ";
+                }
+                $sql .= "('" . implode("', '", array_map($this->real_escape_string,  array_values($value))) . "')";
+            }
+        } else {
+            $insertArrayKeys = array_map($this->real_escape_string,  array_keys($values));
+            $insertArrayValues = array_map($this->real_escape_string,  array_values($values));
+            $sql .= "(`" . implode("`, `", $insertArrayKeys) . "`) VALUES ('" . implode("', '", $insertArrayValues) . "')";
+        }
         if ($updateWhileExists) {
             $x = 0;
             $sql .= " ON DUPLICATE KEY UPDATE ";
@@ -149,12 +157,11 @@ class ssql{
                 if ($x > 0) {
                     $sql .= ',';
                 }
-                $sql .= " `" . mysqli_real_escape_string($this->conn, $key) . "` = '" . mysqli_real_escape_string($this->conn, $value) . "'";
+                $sql .= " `" . $this->conn->real_escape_string($key) . "` = '" . $this->conn->real_escape_string($value) . "'";
                 $x++;
             }
-        } else {
-            $sql .= ";";
         }
+        $sql .= ";";
         return $returnRawSql ? $sql : self::returnQuery($sql);
     }
 
@@ -165,7 +172,7 @@ class ssql{
     //警告: 此函数会删除数据, 请谨慎调用
     public function _delete(string $table, array $where = [], bool $returnRawSql = false) {
         $activeOr = false;
-        $sql = "DELETE FROM `" . mysqli_real_escape_string($this->conn, $table) . "` WHERE ";
+        $sql = "DELETE FROM `" . $this->conn->real_escape_string($table) . "` WHERE ";
         for ($x = 0; $x < count($where); $x++) {
             if(isset($where[$x][3]) && strtoupper($where[$x][3]) == "OR" && !$activeOr){
                 $sql .= ' ( ';
@@ -179,9 +186,9 @@ class ssql{
                 }
             }
             if(strtoupper($where[$x][1]) != 'LIKE%%'){
-                $sql .= ' `' . mysqli_real_escape_string($this->conn, $where[$x][0]) . '` ' . mysqli_real_escape_string($this->conn, $where[$x][1]) . ' "' . mysqli_real_escape_string($this->conn, $where[$x][2]) . '"';
+                $sql .= ' `' . $this->conn->real_escape_string($where[$x][0]) . '` ' . $this->conn->real_escape_string($where[$x][1]) . ' "' . $this->conn->real_escape_string($where[$x][2]) . '"';
             }else{
-                $sql .= ' `' . mysqli_real_escape_string($this->conn, $where[$x][0]) . '` LIKE "%' . mysqli_real_escape_string($this->conn, $where[$x][2]) . '%"';
+                $sql .= ' `' . $this->conn->real_escape_string($where[$x][0]) . '` LIKE "%' . $this->conn->real_escape_string($where[$x][2]) . '%"';
             }
             if((($x < count($where) - 1 && strtoupper($where[$x + 1][3] ?? null) != 'OR') || $x == count($where) - 1) && $activeOr){
                 $sql .= ' ) ';

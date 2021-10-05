@@ -29,7 +29,7 @@ foreach ($tweetIdList as $tweetid => $count) {
     $getdata = tw_get_poll_result($tweetid, $count);
     if ($getdata["code"]) {
         echo "ext_getPoll: {$getdata["message"]}\n";
-        kd_push("获取{$tweetid}投票结果失败 #errorpoll ", $token, $push_to);
+        kd_push("获取{$tweetid}投票结果失败 #errorpoll ");
         $tmp_sql .= $sssql->update("v2_twitter_polls", ["count" => 0, "checked" => 1], [["origin_tweet_id", "=", $tweetid]], true);
     } else {
         foreach ($getdata["data"] as $pollDataOrder => $polldata) {

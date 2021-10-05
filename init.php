@@ -2,24 +2,28 @@
 /*
  * twitter monitor v2
 */
-define('SYSTEM_ROOT', dirname(__FILE__));
+const SYSTEM_ROOT = __DIR__;
 require(SYSTEM_ROOT . '/vendor/autoload.php');
 //twitter authorization
 //此值固定, 出现在https://abs.twimg.com/responsive-web/web/main.22e26814.js
-define('TW_AUTHORIZATION', "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA");
+const TW_AUTHORIZATION = "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA";
 //核心文件
 require(SYSTEM_ROOT . '/mysql.php');
 require(SYSTEM_ROOT . '/scurl.php');
 require(SYSTEM_ROOT . '/rss.php');
 require(SYSTEM_ROOT . '/config.php');
-require(SYSTEM_ROOT . '/GoogleTokenGenerator.php');
+//require(SYSTEM_ROOT . '/GoogleTokenGenerator.php');
 require(SYSTEM_ROOT . '/functions.php');
+require SYSTEM_ROOT . '/lib/tmv2.fetch.class.php';
+require SYSTEM_ROOT . '/lib/tmv2.info.class.php';
+require SYSTEM_ROOT . '/lib/tmv2.core.class.php';
 
 //GraphqL queryId List
 $queryhqlQueryIdList = json_decode(file_get_contents(SYSTEM_ROOT . '/graphqlQueryIdList.json'), true);
+define("queryhqlQueryIdList", $queryhqlQueryIdList);
 
 //for cards
-$tw_supportCardNameList = [
+const tw_supportCardNameList = [
     "summary",
     "summary_large_image",
     "promo_website",
@@ -47,7 +51,7 @@ $tw_supportCardNameList = [
 ];
 
 //for unified_card
-$tw_supportUnifiedCardNameList = [
+const tw_supportUnifiedCardNameList = [
     "image_website",
     "video_website",
     "image_carousel_website",
@@ -57,6 +61,11 @@ $tw_supportUnifiedCardNameList = [
     "image_carousel_app",
     "video_carousel_app",
 ];
+
+//TODO remove them
+$tw_supportCardNameList = tw_supportCardNameList;
+$tw_supportUnifiedCardNameList = tw_supportUnifiedCardNameList;
+
 
 //templates
 //媒体数据

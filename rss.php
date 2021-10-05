@@ -22,11 +22,11 @@ class Rss {
         $this->rss .= "</channel></rss>";
         return $this->rss;
     }
-    public function channel (array $channelArray) {
+    public function channel (array $channelArray): self {
         $this->channelArray = $channelArray;
         return $this;
     }
-    public function item (array $itemArray) {
+    public function item (array $itemArray): self {
         $this->itemArray[] = $itemArray;
         return $this;
     }

@@ -5,20 +5,12 @@
  */
 use kornrunner\Blurhash\Blurhash;
  //translate
-function translate (string $source = "Google Translate", string $to, string $origin): string {
+function translate (string $source = "Google Translate", string $to = "", string $origin = ""): string {
     $translate = "";
     switch ($source) {
         //有想法添加百度翻译的欢迎来pr
         //case "百度翻译":
         //    break;
-        case "腾讯翻译君": 
-            $txTranslate = new sscurl ("https://fanyi.qq.com");
-            preg_match('/qtv = "([^"]+)"/', $txTranslate, $qtv);
-            preg_match('/qtk = "([^"]+)"/', $txTranslate, $qtk);
-            foreach(json_decode(new sscurl("https://fanyi.qq.com/api/translate", "POST", ['Referer: https://fanyi.qq.com/'], 3, http_build_query(["qtv" => $qtv[1], "qtk" => $qtk[1], "source" =>  "auto", "target" => $to, "sourceText" => $origin])), true)["translate"]["records"]??[] as $trs) {
-                $translate .= $trs["targetText"];
-            }
-            break;
         case "Microsoft Translator":
             //bing translator
             $origin = str_replace("\n", "", $origin);
@@ -29,7 +21,7 @@ function translate (string $source = "Google Translate", string $to, string $ori
             //google translate
             //$origin = preg_replace('/[^\x{0000}-\x{FFFF}]|\x{200D}+/', '', $origin);//去除所有非bmp平面及\u200d
             $translate = "";
-            $g_body = ["client" => "webapp", "sl" => "auto", "tl" => $to, "hl" => $to, "dt" => "at", "dt" => "bd", "dt" => "ex", "dt" => "ld", "dt" => "md", "dt" => "qca", "dt" => "rw", "dt" => "rm", "dt" => "ss", "dt" => "t", "clearbtn" => 1, "otf" => 1, "pc" => 1, "ssel" => 0, "tsel" => 0, "kc" => 2, "tk" => "", "q" => $origin];
+            $g_body = ["client" => "webapp", "sl" => "auto", "tl" => $to, "hl" => $to, "dt" => "t", "clearbtn" => 1, "otf" => 1, "pc" => 1, "ssel" => 0, "tsel" => 0, "kc" => 2, "tk" => "", "q" => $origin];
             foreach (json_decode(new sscurl("https://translate.google.com/translate_a/single?" . html_entity_decode(http_build_query($g_body)), "get", ["referer: https://translate.google.com/", "authority: translate.google.com"]), true)[0]??[] as $trs) {
                 $translate .= $trs[0];
             }
@@ -169,7 +161,7 @@ function tw_entities (string $type, array $entitie, string $uid, string $tweetid
 //处理媒体(media)//包括entities中的
 //https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/entities-object
 //https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/extended-entities-object
-function tw_media (array $media, string $uid, string $tweetid, bool $hidden = false, string $source = "tweets", string $card_type = "", string $savePath = ""): array {
+function tw_media (array $media, string $uid, string $tweetid, bool $hidden = false, string $source = "tweets", string $card_type = "", string $savePath = "", bool $online = false): array {
     $mediaInfoToReturn = [];
     $single_media = [
         "cover" => "",//类型
@@ -180,7 +172,7 @@ function tw_media (array $media, string $uid, string $tweetid, bool $hidden = fa
         "bitrate" => 0,//仅用于视频类
         "hidden" => $hidden,//是否隐藏
         "source" => $source,//来源tweets cards
-        "blurhash" => "",
+        //"blurhash" => "",
     ];
     $single_media["uid"] = $uid;//用户id
     $single_media["tweet_id"] = $tweetid;//tweet id
@@ -224,6 +216,7 @@ function tw_media (array $media, string $uid, string $tweetid, bool $hidden = fa
                     "hidden" => $hidden,
                     "media_key" => $media["media_key"]??"",
                     "source" => "cover",
+                    //"blurhash" => "",
                 ]
             ];
 
@@ -252,35 +245,10 @@ function tw_media (array $media, string $uid, string $tweetid, bool $hidden = fa
                 file_put_contents($savePath . '/' . $single_media["basename"], new sscurl($single_media["url"] . ":orig"));
             }
 
-            if ($single_media["source"] == "tweets") {
-                $getBlurHash = function(string $fileUrl): string {
-                    $file = new sscurl($fileUrl);
-                    if ($file) {
-                        $image = imagecreatefromstring($file);
-                        $width = imagesx($image);
-                        $height = imagesy($image);
-                        
-                        $pixels = [];
-                        for ($y = 0; $y < $height; $y = $y += 5) {
-                            $row = [];
-                            for ($x = 0; $x < $width; $x = $x += 5) {
-                                $index = imagecolorat($image, $x, $y);
-                                $colors = imagecolorsforindex($image, $index);
-                                $row[] = [$colors['red'], $colors['green'], $colors['blue']];
-                            }
-                            $pixels[] = $row;
-                        }
-                        $components_x = 4;
-                        $components_y = 3;
-                        return Blurhash::encode($pixels, $components_x, $components_y);
-                    } else {
-                        kd_push("blurhash: 文件 {$fileUrl} 获取失败, tweet_id: {$tweetid} #blurhash", $token, $push_to);//KDpush
-                        return "deleted";
-                    }
-                    
-                };
-                $single_media["blurhash"] = $getBlurHash(($savePath !== "" ? $savePath . '/' . $single_media["basename"] : $single_media["cover"]));
-            }
+            //we needn't blurhash
+            //if ($single_media["source"] == "tweets") {
+            //    $single_media["blurhash"] = $online ? '' : getBlurHash(($savePath !== "" ? $savePath . '/' . $single_media["basename"] : $single_media["cover"]), $tweetid);
+            //}
             break;
     }
     return $mediaInfoToReturn ?: ($single_media["url"] ? [$single_media] : []);//多个优先，再到单个，再到空白
@@ -320,7 +288,7 @@ function tw_pathinfo(string $path): array {
 //下行是twitter现有及保留的所有卡片(card)类型
 //{"responsive_web_unified_cards_all_cards_enabled":{"value":false},"responsive_web_unified_cards_amplify_enabled":{"value":true},"responsive_web_unified_cards_app_enabled":{"value":true},"responsive_web_unified_cards_appplayer_enabled":{"value":true},"responsive_web_unified_cards_audio_enabled":{"value":true},"responsive_web_unified_cards_broadcast_enabled":{"value":true},"responsive_web_unified_cards_direct_store_link_app_enabled":{"value":true},"responsive_web_unified_cards_image_direct_message_enabled":{"value":true},"responsive_web_unified_cards_live_event_enabled":{"value":false},"responsive_web_unified_cards_message_me_enabled":{"value":true},"responsive_web_unified_cards_moment_enabled":{"value":true},"responsive_web_unified_cards_periscope_broadcast_enabled":{"value":true},"responsive_web_unified_cards_player_enabled":{"value":true},"responsive_web_unified_cards_poll2choice_image_enabled":{"value":false},"responsive_web_unified_cards_poll2choice_text_only_enabled":{"value":true},"responsive_web_unified_cards_poll2choice_video_enabled":{"value":false},"responsive_web_unified_cards_poll3choice_image_enabled":{"value":false},"responsive_web_unified_cards_poll3choice_text_only_enabled":{"value":true},"responsive_web_unified_cards_poll3choice_video_enabled":{"value":false},"responsive_web_unified_cards_poll4choice_image_enabled":{"value":false},"responsive_web_unified_cards_poll4choice_text_only_enabled":{"value":true},"responsive_web_unified_cards_poll4choice_video_enabled":{"value":false},"responsive_web_unified_cards_promo_image_app_enabled":{"value":true},"responsive_web_unified_cards_promo_image_convo_enabled":{"value":true},"responsive_web_unified_cards_promo_video_convo_enabled":{"value":true},"responsive_web_unified_cards_promo_video_website_enabled":{"value":true},"responsive_web_unified_cards_promo_website_enabled":{"value":true},"responsive_web_unified_cards_promoted_cards_enabled":{"value":true},"responsive_web_unified_cards_summary_enabled":{"value":true},"responsive_web_unified_cards_summary_large_image_enabled":{"value":true},"responsive_web_unified_cards_unified_card_enabled":{"value":true},"responsive_web_unified_cards_video_direct_message_enabled":{"value":true},"responsive_web_unified_cards_vine_enabled":{"value":true}}
 //此处描述的类型为3691233323:audiospace//有人说iPhone能发"audio", 不过我找了半天都没找到例子
-function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = false, string $url = "", string $cardType = "", bool $graphqlMode = true): array {
+function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = false, string $url = "", string $cardType = "", bool $graphqlMode = true, bool $online = false): array {
     $card = [
         "data" => [
             "type" => $cardType,//类型
@@ -402,6 +370,9 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
             
             //来源
             $card["media"]["source"] = "cards";
+
+            //empty blurhash
+            //$card["media"]["blurhash"] = "";
         }
     } elseif ($card["data"]["type"] === "unified_card") {
         //这玩意对于内容的处理需要 components 的处理，有必要有更详细的处理方式
@@ -460,7 +431,7 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
         if (isset($childCardInfo["media_entities"])) {
             //媒体
             foreach ($childCardInfo["component_objects"]["swipeable_media_1"]["data"]["media_list"]??[$childCardInfo["component_objects"]["media_1"]["data"]] as $childCardMediaInfoKeyInfo) {
-                $card["media"] = array_merge($card["media"], tw_media ($childCardInfo["media_entities"][$childCardMediaInfoKeyInfo["id"]], $uid, $tweetid, $hidden, "cards", "{$card["data"]["type"]}_{$childCardInfo["type"]}_card_{$childCardInfo["media_entities"][$childCardMediaInfoKeyInfo["id"]]["type"]}"));
+                $card["media"] = array_merge($card["media"], tw_media ($childCardInfo["media_entities"][$childCardMediaInfoKeyInfo["id"]], $uid, $tweetid, $hidden, "cards", "{$card["data"]["type"]}_{$childCardInfo["type"]}_card_{$childCardInfo["media_entities"][$childCardMediaInfoKeyInfo["id"]]["type"]}", "", $online));
             }
         }
         return $card;
@@ -611,6 +582,10 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
             
             //来源
             $card["media"]["source"] = "cards";
+
+            //empty blurhash
+            //$card["media"]["blurhash"] = "";
+
         }
     }
     return $card;
@@ -798,41 +773,108 @@ function get_mime($ext): string {
         'xyz'     => 'chemical/x-xyz',
         'zip'     => 'application/zip'
     ];
-    return isset($mime_types[$ext]) ? $mime_types[$ext] : 'application/octet-stream';
+    return $mime_types[$ext] ?? 'application/octet-stream';
 }
 
 //push server
-function kd_push(string $text = "", string $token = "", string $to = ""){
+function kd_push(string $text = "", string $token = "", string $to = ""): string{
+    $token = $token?:ALERT_TOKEN;
+    $to = $to?:ALERT_PUSH_TO;
+    $tmpReturnText = "";
     if ($token) {
-        if (preg_match('/[0-9]+:[\w]+/', $token)) {
-            //切割文字防止无法发送
-            $textLength = strlen($text);
-            $partCount = ceil($textLength / 3000);
-            for ($x = 1; $x <= $partCount; $x++) {
-                $r = json_decode(new sscurl("https://api.telegram.org/bot{$token}/sendMessage", "post", [], "KDboT", ["chat_id" => $to, "text" => mb_substr($text, ($x - 1) * 3000, 3000)]), true);
-                if($r["ok"] ?? false){
-                    echo "KDboT: Successful to push log #part{$x} to master channel\n";
-                }else{
-                    echo "KDboT: Error #{$r["description"]}\n";
-                }
-            }
-        //} elseif ($to == 'qqbot') {
-        //    //这是腾讯QQ测试中的hookbot, 可用性不保证, 仅供尝鲜
-        //    //已暂时失效
-        //    $r = new sscurl("https://app.qun.qq.com/cgi-bin/api/hookrobot_send?key={$token}", "post", [], 3, '{"content": [ {"type":0,"data":"' . $text . '"}]}');
-        //    //if (!$r["errno"]) {
-        //    echo "HOO!K: Successful to push error log to QQ group\n";
-        //    //} else {
-        //    //    echo "HOO!K: Error #{$r["errmsg"]}";
-        //    //}
-        } else {
-            $r = json_decode(new sscurl("https://sc.ftqq.com/{$token}.send", "post", [], "KDboT", ["text" => $text]), true);
-            if (!$r["errno"]) {
-                echo "ServerChan: Successful to push log to wechat\n";
-            } else {
-                echo "ServerChan: Error #{$r["errmsg"]}";
+        //切割文字防止无法发送
+        $textLength = strlen($text);
+        $partCount = ceil($textLength / 3000);
+        for ($x = 1; $x <= $partCount; $x++) {
+            $r = json_decode(new sscurl("https://api.telegram.org/bot{$token}/sendMessage", "post", [], "KDboT", ["chat_id" => $to, "text" => mb_substr($text, ($x - 1) * 3000, 3000)]), true);
+            if($r["ok"] ?? false){
+                $tmpReturnText .= "KDboT: Successful to push log #part{$x} to master channel\n";
+            }else{
+                $tmpReturnText .= "KDboT: Error #{$r["description"]}\n";
             }
         }
     }
+    return $tmpReturnText;
 }
 
+function str_to_array (string|array $path = "", array $arr = []): mixed {
+    if ($path === "") {
+        return $arr;
+    }
+    if (is_array($path)) {
+        $tmpData = false;
+        foreach ($path as $pathItem) {
+            $tmpData = array_reduce(explode('.', $pathItem), function ($o, $p) { return $o[$p]??false; }, $arr);
+            if ($tmpData) {
+                return $tmpData;
+            }
+        }
+        return $tmpData;
+    } else {
+        return array_reduce(explode('.', $path), function ($o, $p) { return $o[$p]??false; }, $arr);
+    }
+}
+
+//path between restapi and graphql
+//see also ~ scripts/apiPathGenerator/run.php
+function path_to_array (string $handle = "", array $source = []): mixed {
+    return match ($handle) {
+        "rest_id" => $source["id_str"]??$source["data"]["user"]["rest_id"]??false,
+        "user_info_legacy" => $source["data"]["user"]["legacy"]??$source??false,
+        "tweets_contents" => $source["globalObjects"]["tweets"]??$source["data"]["user"]["result"]["timeline"]["timeline"]["instructions"][0]["entries"]??false,
+        "tweet_content" => $source["content"]["itemContent"]["tweet"]??$source["content"]["itemContent"]["tweet_results"]["result"]??false,
+        "tweet_id" => $source["id_str"]??$source["rest_id"]??false,
+        "tweet_uid" => $source["user_id_str"]??$source["legacy"]["user_id_str"]??false,
+        "tweet_conversation_id_str" => $source["conversation_id_str"]??$source["legacy"]["conversation_id_str"]??false,
+        "tweet_created_at" => $source["created_at"]??$source["legacy"]["created_at"]??false,
+        "tweet_source" => $source["source"]??$source["legacy"]["source"]??false,
+        "tweet_full_text" => $source["full_text"]??$source["legacy"]["full_text"]??false,
+        "tweet_entities" => $source["entities"]??$source["legacy"]["entities"]??false,
+        "tweet_card_url" => $source["url"]??$source["rest_id"]??false,
+        "tweet_quote_url" => $source["quoted_status_permalink"]["url"]??$source["legacy"]["quoted_status_permalink"]["url"]??false,
+        "tweet_media_path" => $source["extended_entities"]["media"]??$source["legacy"]["extended_entities"]["media"]??[],
+        "tweet_card_name" => $source["name"]??$source["legacy"]["name"]??false,
+        "tweet_card_path" => $source["card"]??$source["card"]["legacy"]??false,
+        "retweet_rest_id" => $source["retweeted_status_id_str"]??$source["legacy"]["retweeted_status"]["rest_id"]??$source["legacy"]["retweeted_status_result"]["result"]["rest_id"]??false,
+        "retweet_graphql_path" => $source["legacy"]["retweeted_status"]??$source["legacy"]["retweeted_status_result"]["result"]??false,
+        "quote_tweet_id" => $source["quoted_status_id_str"]??$source["legacy"]["quoted_status_id_str"]??false,
+        "quote_graphql_path" => $source["quoted_status"]??$source["quoted_status_result"]["result"]??false,
+        "graphql_user_legacy" => $source["core"]["user"]["legacy"]??$source["core"]["user_results"]["result"]["legacy"]??false,
+        default => false
+    };
+}
+
+function saveTo(string $path, mixed $content): void {
+    file_put_contents($path, is_array($content) ? json_encode($content, JSON_UNESCAPED_UNICODE) : $content);
+}
+
+
+function getBlurHash (string $fileUrl): string {
+    try {
+        $file = new sscurl($fileUrl);
+
+        $image = imagecreatefromstring($file);
+
+        if (!$image) {
+            return "deleted";
+        }
+        $width = imagesx($image);
+        $height = imagesy($image);
+
+        $pixels = [];
+        for ($y = 0; $y < $height; $y += 5) {
+            $row = [];
+            for ($x = 0; $x < $width; $x += 5) {
+                $index = imagecolorat($image, $x, $y);
+                $colors = imagecolorsforindex($image, $index);
+                $row[] = [$colors['red'], $colors['green'], $colors['blue']];
+            }
+            $pixels[] = $row;
+        }
+        $components_x = 4;
+        $components_y = 3;
+        return Blurhash::encode($pixels, $components_x, $components_y);
+    } catch (Exception $e) {
+        return "deleted";
+    }
+};

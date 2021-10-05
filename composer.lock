@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "efa2bd45c0063314e54bfdffd611f4d3",
+    "content-hash": "79fa323241d46df01b611c8960486961",
     "packages": [
         {
             "name": "kornrunner/blurhash",
@@ -53,6 +53,10 @@
             ],
             "description": "Pure PHP implementation of Blurhash",
             "homepage": "https://github.com/kornrunner/php-blurhash",
+            "support": {
+                "issues": "https://github.com/kornrunner/php-blurhash/issues",
+                "source": "https://github.com/kornrunner/php-blurhash.git"
+            },
             "time": "2021-01-18T11:17:12+00:00"
         }
     ],
@@ -62,6 +66,11 @@
     "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": [],
-    "platform-dev": []
+    "platform": {
+        "ext-curl": "*",
+        "ext-mysqli": "*",
+        "ext-gd": "*"
+    },
+    "platform-dev": [],
+    "plugin-api-version": "2.1.0"
 }

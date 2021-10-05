@@ -3,14 +3,15 @@
  * twitter monitor v2 api
  * @banka2017 && KDNETWORK
  */
+
 //ini_set('display_errors',1);
 //header("Access-Control-Allow-Origin: *");
 
 ob_implicit_flush();
-require(dirname(__FILE__) . '/init.php');
+require(__DIR__ . '/init.php');
 
 $parseReferrer = parse_url($_SERVER["HTTP_REFERER"]??"");
-if ($referrerWhiteList !== "" && preg_match('/^(?:' . $referrerWhiteList . ')$/', $parseReferrer["host"]??"")) {
+if ($referrerWhiteList !== "" && preg_match('/^(' . $referrerWhiteList . ')$/', $parseReferrer["host"]??"")) {
     header("Access-Control-Allow-Origin: " . $parseReferrer["scheme"] . '://' . $parseReferrer["host"] . (isset($parseReferrer["port"]) ? ':' . $parseReferrer["port"] : ""));
 }
 
@@ -30,7 +31,13 @@ $rssMode = ($_GET["format"]??"json") == "rss";
 $defaultTweetsCount = $rssMode ? 20 : 10;//rss模式应该有更多内容
 
 //创建连接
-$sssql = new ssql($servername,$username,$password,$dbname);
+try {
+    $sssql = new ssql($servername, $username, $password, $dbname);
+} catch (Exception $e) {
+    $returnJson["code"] = 500;
+    $returnJson["message"] = "Unable to connect to database";
+    die(json_encode($returnJson, JSON_UNESCAPED_UNICODE));
+}
 
 $config_data = $sssql->load("v2_config", ["data_origin", "data_output"], [["id", "=", $config_id]], [], 1);
 if (count($config_data) === 0) {
@@ -152,11 +159,9 @@ function returnDataForTweets (array $tweets = [], int $count = 0, string $top = 
         }
     }
     if ($rssMode) {
-        //生成即完成
-        header("content-type: text/xml");
-        die($rss->build());
+        return ["rss_message" => $rss->build(), "rss_mode" => true];
     }
-    return ["tweets" => $tweets, "bottom_tweet_id" => (string)$tweet_id, "top_tweet_id" => (string)$check_new_tweet_id, "hasmore" => $hasmore];
+    return ["tweets" => $tweets, "bottom_tweet_id" => (string)$tweet_id, "top_tweet_id" => (string)$check_new_tweet_id, "hasmore" => $hasmore, "rss_mode" => false];
 }
 
 //media object
@@ -314,9 +319,6 @@ switch ($mode) {
                     $ReturnJson["data"] = $baseInfo[0];
                     $ReturnJson["data"]["description"] = nl2br($ReturnJson["data"]["description"]);//nl2br(preg_replace("/ #([^\s]+)/", ' <a href="#/hashtag/$1" id="hashtag_profile">#$1</a>', $ReturnJson["data"]["description"]));//处理个人简介中的hashtag//TODO remove
                     $ReturnJson["data"]["top"] = (string)($ReturnJson["data"]["top"] ?: 0);
-                    $ReturnJson["data"]["deleted"] = $ReturnJson["data"]["deleted"];
-                    $ReturnJson["data"]["locked"] = $ReturnJson["data"]["locked"];
-                    $ReturnJson["data"]["verified"] = $ReturnJson["data"]["verified"];
                     $ReturnJson["data"]["header"] = preg_replace("/http:\/\/|https:\/\//", "", $ReturnJson["data"]["header"]);
                     $ReturnJson["data"]["uid_str"] = (string)$ReturnJson["data"]["uid"];
                     //$ReturnJson["data"]["translate"] = "";// TODO Delete this key
@@ -326,14 +328,14 @@ switch ($mode) {
                     $descriptionText = $ReturnJson["data"]["description"];
                     $textWithoutTags = strip_tags($descriptionText);
                     $ReturnJson["data"]["description_origin"] = $textWithoutTags;
-                    preg_match_all('/<a href="([^"]+)" target="_blank">([^<]+)<\/a>|(?:\s|^)#([^ ]+)/', $descriptionText, $Match);
+                    preg_match_all('/<a href="([^"]+)" target="_blank">([^<]+)<\/a>|(?:\s|\p{P}|^)#([^\s\p{P}]+)/u', $descriptionText, $Match);
                     $List = [];
                     $lastEnd = 0;
                     foreach ($Match[2] as $order => $value) {
                         if ($value === "") {
                             $text = $Match[3][$order];
                             $beforeLength = mb_strlen(stristr(mb_substr($textWithoutTags, $lastEnd), "#{$text}", true)) + $lastEnd;
-                            $lastEnd += $beforeLength + mb_strlen($text) + 1;
+                            $lastEnd = $beforeLength + mb_strlen($text) + 1;
                             $List[] = [
                                 "expanded_url" => "",
                                 "indices_end" => $lastEnd,
@@ -343,7 +345,7 @@ switch ($mode) {
                             ];
                         } else {
                             $beforeLength = mb_strlen(stristr(mb_substr($textWithoutTags, $lastEnd), $value, true)) + $lastEnd;
-                            $lastEnd += $beforeLength + mb_strlen($value);
+                            $lastEnd = $beforeLength + mb_strlen($value);
                             $List[] = [
                                 "expanded_url" => $Match[1][$order],
                                 "indices_end" => $lastEnd,
@@ -631,7 +633,7 @@ switch ($mode) {
                 // /data/translate/?tweet_id={$tweet_id}&to={$language}&tr_type={$translate_type} etc.
                 // /?mode=data&type=translate&tweet_id=0&to=zh_CN&tr_type=tweets //for tweets
                 // /?mode=data&type=translate&uid=0&to=zh_CN&tr_type=profile //for user description
-
+                //TODO diy translate_source
                 $language = $_GET["to"]??$target_language;
                 $is_save = strtolower($language) == strtolower($target_language);
                 $tweet_id = is_numeric($_GET["tweet_id"]??false)? $_GET["tweet_id"] :0;
@@ -689,9 +691,6 @@ switch ($mode) {
                     return [$tmpDisplayName, $tmpData];
                 };
                 foreach ($tmpStats as $order => $tmpPersonStats) {
-                    $tmpStats[$order]["followers"] = $tmpStats[$order]["followers"];
-                    $tmpStats[$order]["following"] = $tmpStats[$order]["following"];
-                    $tmpStats[$order]["statuses_count"] = $tmpStats[$order]["statuses_count"];
                     $tmpConfigData = $findOutGroups($config["users"], $tmpPersonStats["name"]);
                     $tmpStats[$order]["display_name"] = $tmpConfigData[0];
                     $tmpStats[$order]["group"] = $tmpConfigData[1];
@@ -750,13 +749,13 @@ switch ($mode) {
                         }
                     }
                 }
-                function following_sort ($a, $b) {
+                function following_sort ($a, $b): int {
                     if ($a[2] == $b[2]) {
                         return 0;
                     }
                     return ($a[2] < $b[2]) ? 1 : -1;
                 }
-                function statuses_sort ($a, $b) {
+                function statuses_sort ($a, $b): int {
                     if ($a[3] == $b[3]) {
                         return 0;
                     }
@@ -781,8 +780,13 @@ switch ($mode) {
                 $ReturnJson["message"] = "OK";
                 break;
         }
-        header("content-type: text/json");
-        echo json_encode($ReturnJson, JSON_UNESCAPED_UNICODE);//request nothing
+        if ($ReturnJson["data"]["rss_mode"]??false) {
+            header("content-type: text/xml");
+            echo $ReturnJson["data"]["rss_message"];
+        } else {
+            header("content-type: text/json");
+            echo json_encode($ReturnJson, JSON_UNESCAPED_UNICODE);//request nothing
+        }
         break;
     case "online":
         switch($type) {

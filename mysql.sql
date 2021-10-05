@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.0.4
+-- version 5.1.1
 -- https://www.phpmyadmin.net/
 --
 -- 主机： localhost
--- 生成日期： 2021-07-18 00:40:32
--- 服务器版本： 8.0.25-0ubuntu0.20.10.1
--- PHP 版本： 8.0.8
+-- 生成日期： 2021-08-19 01:53:54
+-- 服务器版本： 8.0.25
+-- PHP 版本： 8.0.9
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -266,6 +266,7 @@ CREATE TABLE `v2_twitter_quote` (
 CREATE TABLE `v2_twitter_tweets` (
   `id` int NOT NULL,
   `tweet_id` bigint NOT NULL,
+  `conversation_id_str` bigint NOT NULL DEFAULT '0',
   `uid` bigint NOT NULL DEFAULT '0',
   `name` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `display_name` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -394,7 +395,8 @@ ALTER TABLE `v2_twitter_tweets`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `tweet_id` (`tweet_id`),
   ADD UNIQUE KEY `id` (`id`),
-  ADD KEY `uid` (`uid`);
+  ADD KEY `uid` (`uid`),
+  ADD KEY `conversation_id_str` (`conversation_id_str`);
 ALTER TABLE `v2_twitter_tweets` ADD FULLTEXT KEY `full_text_origin` (`full_text_origin`);
 
 --
