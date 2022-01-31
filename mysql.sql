@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- 主机： localhost
--- 生成日期： 2021-08-19 01:53:54
--- 服务器版本： 8.0.25
--- PHP 版本： 8.0.9
+-- 生成日期： 2022-01-19 14:46:21
+-- 服务器版本： 8.0.27
+-- PHP 版本： 8.0.14
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -214,7 +214,7 @@ CREATE TABLE `v2_twitter_media` (
   `origin_info_height` int NOT NULL,
   `media_key` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `source` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
-  `blurhash` text COLLATE utf8mb4_general_ci,
+  `blurhash` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `deleted` tinyint DEFAULT '0',
   `hidden` tinyint NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=COMPACT;
@@ -266,6 +266,7 @@ CREATE TABLE `v2_twitter_quote` (
 CREATE TABLE `v2_twitter_tweets` (
   `id` int NOT NULL,
   `tweet_id` bigint NOT NULL,
+  `origin_tweet_id` bigint NOT NULL DEFAULT '0',
   `conversation_id_str` bigint NOT NULL DEFAULT '0',
   `uid` bigint NOT NULL DEFAULT '0',
   `name` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
@@ -396,7 +397,8 @@ ALTER TABLE `v2_twitter_tweets`
   ADD UNIQUE KEY `tweet_id` (`tweet_id`),
   ADD UNIQUE KEY `id` (`id`),
   ADD KEY `uid` (`uid`),
-  ADD KEY `conversation_id_str` (`conversation_id_str`);
+  ADD KEY `conversation_id_str` (`conversation_id_str`),
+  ADD KEY `origin_tweet_id` (`origin_tweet_id`);
 ALTER TABLE `v2_twitter_tweets` ADD FULLTEXT KEY `full_text_origin` (`full_text_origin`);
 
 --

@@ -6,7 +6,6 @@ class Info{
     //php 8.0 needn't them
     //private array $account_data;
     //private int $isGraphql;
-    private int|float|string $account_data_id_str;
     public array $in_sql_info;
     public bool $update;
     public array $monitor_data_info;
@@ -77,7 +76,7 @@ class Info{
 
     public function generateData ():self {
         //legacy userinfo
-        $this->account_data_id_str = intval(path_to_array("rest_id", $this->account_data));
+        $account_data_id_str = intval(path_to_array("rest_id", $this->account_data));
         $this->account_data = path_to_array("user_info_legacy", $this->account_data);
 
         //banner
@@ -90,7 +89,7 @@ class Info{
         }
 
         //常规
-        $this->in_sql_info["uid"] = $this->account_data_id_str;
+        $this->in_sql_info["uid"] = $account_data_id_str;
         $this->in_sql_info["name"] = $this->account_data["screen_name"];
         $this->in_sql_info["display_name"] = $this->account_data["name"];
         $this->in_sql_info["header"] = preg_replace('/\/([0-9]+)\/([\w\-]+)_normal.([\w]+)$/', '/$1/$2.$3', $this->account_data["profile_image_url_https"]);
@@ -108,13 +107,11 @@ class Info{
         $description = $this->account_data["description"];
         $this->in_sql_info["description_origin"] = $description;
         foreach ($this->account_data["entities"]["description"] as $entities => $entityValue) {
-            switch ($entities) {
-                // 其他部分参考 github twitter/twitter-text
-                case "urls":
-                    foreach ($entityValue as $single_entities) {
-                        $description = str_replace($single_entities["url"], "<a href=\"{$single_entities["expanded_url"]}\" target=\"_blank\">{$single_entities["display_url"]}</a>", $description);
-                    }
-                    break;
+            // 其他部分参考 GitHub twitter/twitter-text
+            if ($entities === "urls") {
+                foreach ($entityValue as $single_entities) {
+                    $description = str_replace($single_entities["url"], "<a href=\"{$single_entities["expanded_url"]}\" target=\"_blank\">{$single_entities["display_url"]}</a>", $description);
+                }
             }
         }
 

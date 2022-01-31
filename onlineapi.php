@@ -1,7 +1,7 @@
 <?php
 /*
  * twitter monitor online api
- * @banka2017 && KDNETWORK
+ * @banka2017 && NEST.MOE
  */
 
 ini_set('display_errors',1);
@@ -304,7 +304,7 @@ switch ($mode) {
                 }
                 $tweets = $fetch->tw_get_tweets($queryString, "", "", $queryCount, true, false, true);
 
-                $generateTweetData = new Tmv2\Core\Core($tweets, false, false, false, true);
+                $generateTweetData = new Tmv2\Core\Core($tweets, false, [], false, true);
 
                 if ($generateTweetData->errors[0] !== 0) {
                     $ReturnJson["code"] = $generateTweetData->errors[0];

@@ -1,7 +1,7 @@
 <?php
 /*
  * twitter monitor v2 api
- * @banka2017 && KDNETWORK
+ * @banka2017 && NEST.MOE
  */
 //use this script you must create a folder name `cache`
 header("Access-Control-Allow-Origin: *");

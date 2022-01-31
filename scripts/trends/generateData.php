@@ -1,7 +1,7 @@
 <?php
 /*
  * twitter monitor v2 lovelive trends
- * @banka2017 && KDNETWORK
+ * @banka2017 && NEST.MOE
  */
 
 //GMT+9 Asia/Tokyo, Sunday is the first day

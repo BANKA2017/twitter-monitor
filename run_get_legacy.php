@@ -1,7 +1,7 @@
 <?php
 /*
  * twitter monitor v2
- * @banka2017 && KDNETWORK
+ * @banka2017 && NEST.MOE
  */
 require(dirname(__FILE__) . '/init.php');
 //所有中文化的标准https://abs.twimg.com/responsive-web/web/i18n-rweb/zh.95401bf4.js
@@ -15,13 +15,12 @@ $sssql = new ssql($servername,$username,$password,$dbname);
 $fetch = new Tmv2\Fetch\Fetch();
 //rate-limit是靠csrf token判断的, 需要定期刷新csrf token
 //获取csrf token
-$get_csrf_token = $fetch->tw_get_token();
+$get_token = $fetch->tw_get_token();
 $tw_server_info["total_req_times"]++;
-if(!$get_csrf_token[0]){
-    kd_push("Twitter Monitor: 无法获取csrf token #nocsrfToken");//KDpush
-    die("Twitter Monitor: 无法获取csrf token #nocsrfToken\n");
+if(!$get_token[0]){
+    kd_push("Twitter Monitor: 无法获取 token #noToken");//KDpush
+    die("Twitter Monitor: 无法获取 token #noToken\n");
 }
-$csrfToken = $get_csrf_token[1];
 //$account_info = json_decode(file_get_contents(SYSTEM_ROOT . '/account_info.json'), true);
 
 $config = json_decode(file_get_contents(SYSTEM_ROOT . '/config.json'), true);//原始配置文件
@@ -52,7 +51,7 @@ foreach ($config["users"] as $account_s => $account) {
     $refreshList[$account_s] = $account;
     $refreshIdList[$account_s] = $account['uid']??$account['name']??0;
 }
-$allInfoForAccount = $fetch->tw_get_userinfo($refreshIdList, $csrfToken, $run_options["twitter"]["graphql_mode"]);
+$allInfoForAccount = $fetch->tw_get_userinfo($refreshIdList, $get_token, false);//TODO $run_options["twitter"]["graphql_mode"]);
 $realAccountOrder = 0;
 foreach ($refreshList as $account_s => $account) {
     echo $account["display_name"];
@@ -60,19 +59,19 @@ foreach ($refreshList as $account_s => $account) {
     //一般不需要使用
     //此处限制是 1000req/15min //此处亦可使用user_id={$uid}//已支持自动切换
     //if ($userinfoReqCount > 999) {
-    //    $get_csrf_token = $fetch->tw_get_token();
+    //    $get_token = $fetch->tw_get_token();
     //    $tw_server_info["total_req_times"]++;
-    //    if(!count($get_csrf_token)){
-    //        kd_push("Twitter Monitor: 无法获取csrf token #nocsrfToken");//KDpush
-    //        die("Twitter Monitor: 无法获取csrf token #nocsrfToken\n");
+    //    if(!count($get_token)){
+    //        kd_push("Twitter Monitor: 无法获取 token #noToken");//KDpush
+    //        die("Twitter Monitor: 无法获取 token #noToken\n");
     //    }
-    //    $csrfToken = $get_csrf_token[1];
     //    $userinfoReqCount = 0;
     //}
     $user_info = $allInfoForAccount[$realAccountOrder];
+    $realAccountOrder++;
     $tw_server_info["total_req_times"]++;
     //$userinfoReqCount++;
-    
+
     //处理特殊警告
     //"profile_interstitial_type": "sensitive_media",//这是其一, 另外几个用空再找
 
@@ -105,7 +104,7 @@ foreach ($refreshList as $account_s => $account) {
                 $config["users"][$account_s]["error_count"] = $accountErrorCount;
             }
         }
-        
+
         //删号自动添加
         continue;
     } else {
@@ -129,7 +128,7 @@ foreach ($refreshList as $account_s => $account) {
     //处理uid
     if (($account["uid"]??0) != $user_info["uid"]) {
         $update_names = true;
-        $config["users"][$account_s]["uid"] = $user_info["uid"];
+        $config["users"][$account_s]["uid"] = (string)$user_info["uid"];
     }
 
     //处理id
@@ -138,14 +137,14 @@ foreach ($refreshList as $account_s => $account) {
         $update_names = true;
         $config["users"][$account_s]["name"] = $user_info["name"];
     }
-    
+
     //处理display_name
     //警告: 若取消注释则会强制同步display_name为该账户的twitter名称且无法使用自定义display_name
     //if ($user_info["name"] && $account["display_name"] != $user_info["name"]) {
     //    $update_names = true;
     //    $config["users"][$account_s]["display_name"] = $user_info["name"];
     //}
-    
+
     //使用uid或名字检查
     $verify_info = $sssql->load("v2_account_info", ["uid", "name", "display_name", "header", "banner", "description_origin", "top", "statuses_count", "hidden", "locked", "deleted", "new", "cursor", "last_cursor"], [["uid", "=", $user_info["uid"]]]);
     //由于早期设计失误, new字段0时为新帐号, 为1时是完成首次爬取的帐号
@@ -204,7 +203,6 @@ foreach ($refreshList as $account_s => $account) {
         echo "\n";
         $sssql->update("v2_account_info", $user_info, [["uid", "=", $user_info["uid"]]]);
     }
-    $realAccountOrder++;
 }
 
 if ($userInfoErrorsForPush !== "") {
@@ -267,7 +265,7 @@ if (count($name_count) && $run_options["twitter"]["tweets"]) {
 //elseif ($run_options["twitter"]["local_data"]) {
 //    $sssql->insert("v2_server_info", $tw_server_info);
 //    echo "没有更新\n";
-//} 
+//}
 else {
     echo "没有更新\n";
 }
@@ -298,14 +296,13 @@ foreach ($name_count as $account_info) {
     if (($tw_server_info["total_req_tweets"] && $tw_server_info["total_req_tweets"] % 180 == 0) && time() <= $start_time+900) {
         //15分钟
         $sleep_time = ($start_time+900-time());
-        $get_csrf_token = $fetch->tw_get_token();
+        $get_token = $fetch->tw_get_token();
         $tw_server_info["total_req_times"]++;
-        if(!$get_csrf_token[0]){
-            kd_push("Twitter Monitor: 无法获取csrf token #nocsrfToken");//KDpush
-            die("Twitter Monitor: 无法获取csrf token #nocsrfToken\n");
+        if(!$get_token[0]){
+            kd_push("Twitter Monitor: 无法获取 token #noToken");//KDpush
+            die("Twitter Monitor: 无法获取 token #noToken\n");
         }
-        $csrfToken = $get_csrf_token[1];
-        echo "system: 请求超限, 刷新token->{$csrfToken}\n";
+        echo "system: 请求超限, 刷新token->{$get_token[1]}\n";
         $start_time = time();
     }
 
@@ -314,8 +311,8 @@ foreach ($name_count as $account_info) {
         echo "全新抓取{$account_info["display_name"]}\n";
     }
     $tw_server_info["total_req_tweets"]++;
-    $tweets = $fetch->tw_get_tweets($account_info["uid"], $account_info["cursor"], $csrfToken, false, false, $run_options["twitter"]["graphql_mode"]);
-    $generateTweetData = new Tmv2\Core\Core($tweets, $run_options["twitter"]["graphql_mode"], false, $account_info["hidden"]);
+    $tweets = $fetch->tw_get_tweets($account_info["uid"], $account_info["cursor"], $get_token, false, false, $run_options["twitter"]["graphql_mode"]);
+    $generateTweetData = new Tmv2\Core\Core($tweets, $run_options["twitter"]["graphql_mode"], [], $account_info["hidden"]);
 
 
     if ($generateTweetData->errors[0] !== 0) {
@@ -370,7 +367,7 @@ foreach ($name_count as $account_info) {
 
             //再次重写, 全部都检查, 只要重复就丢弃
             if ($account_info["last_cursor"] && count($sssql->load("v2_twitter_tweets", ["id"], [["tweet_id", "=", $in_sql["tweet_id"]]]))) {
-                echo "已丢弃第" . ($singleAccountTweetsCount + 1) . "条->{$in_sql["tweet_id"]} (置顶推文)\n";
+                echo "已丢弃第" . ($singleAccountTweetsCount + 1) . "条->{$in_sql["tweet_id"]} (重复推文)\n";
                 $singleAccountTweetsCount++;
                 $tw_server_info["total_throw_tweets"]++;
             } else {
@@ -399,7 +396,7 @@ foreach ($name_count as $account_info) {
                 //v2_twitter_polls
                 if ($in_sql["poll"]) {
                     foreach ($generateTweetData->polls as $in_sql_poll) {
-                        $insert["v2_twitter_polls"][] = array_merge($in_sql_poll, ["origin_tweet_id" => $in_sql["tweet_id"]]);
+                        $insert["v2_twitter_polls"][] = array_merge($in_sql_poll, ["origin_tweet_id" => $in_sql["origin_tweet_id"]]);
                     }
                 }
                 //v2_twitter_cards
@@ -423,6 +420,10 @@ foreach ($name_count as $account_info) {
             $tw_server_info["total_throw_tweets"]++;
             echo "已丢弃->" . path_to_array("tweet_id", $content) . " (非对应账号)\n";
         }
+
+        //resetAll
+        $generateTweetData->resetAll();
+        $generateTweetData->setup();
     }
     $tmp_sql = "START TRANSACTION;";
     foreach ($insert as $tableName => $insertItem) {

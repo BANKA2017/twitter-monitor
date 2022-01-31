@@ -1,7 +1,7 @@
 <?php
 /* Class ssql
  * @banka2017 & KD·NETWORK
- * v5.5.1
+ * v5.5.2
  */
 class ssql{
     public $conn;
@@ -41,8 +41,8 @@ class ssql{
         }
         return $returnArray;
     }
-    public function select() {
-        return call_user_func_array("load", func_get_args());
+    public function select(string $table, array $keys = ["*"], array $where = [], array $orders = [], int $limit = 0, bool $desc = false, int $offset = 0, $returnRawSql = false) {
+        return $this->load($table, $keys, $where, $orders, $limit, $desc, $offset, $returnRawSql);
     }
     public function load(string $table, array $keys = ["*"], array $where = [], array $orders = [], int $limit = 0, bool $desc = false, int $offset = 0, $returnRawSql = false) {
         $activeOr = false;
@@ -74,6 +74,9 @@ class ssql{
                         break;
                     case "MATCH":
                         $sql .= ' MATCH(`' . $this->conn->real_escape_string($where[$x][0]) . '`) AGAINST("' . $this->conn->real_escape_string($where[$x][2]) . '")';
+                        break;
+                    case "IN":
+                        $sql .= ' `' . $this->conn->real_escape_string($where[$x][0]) . '` IN (' . $this->conn->real_escape_string(is_array($where[$x][2]) ? implode(", ", $where[$x][2]) : $where[$x][2]) . ')';
                         break;
                     default:
                         $sql .= ' `' . $this->conn->real_escape_string($where[$x][0]) . '` ' . $this->conn->real_escape_string($where[$x][1]) . ' "' . $this->conn->real_escape_string($where[$x][2]) . '"';

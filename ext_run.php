@@ -1,8 +1,11 @@
 <?php
 /*
  * twitter monitor v2 ext
- * @banka2017 && KDNETWORK
+ * @banka2017 && NEST.MOE
  */
+
+use Tmv2\Fetch\Fetch;
+
 require(__DIR__ . '/init.php');
 
 //处理用户投票
@@ -26,8 +29,9 @@ foreach ($polls as $poll) {
 //request
 $tmp_sql = "START TRANSACTION;";
 foreach ($tweetIdList as $tweetid => $count) {
-    $getdata = tw_get_poll_result($tweetid, $count);
-    if ($getdata["code"]) {
+    echo "-> {$tweetid} <-\n";
+    $getdata = Fetch::tw_get_poll_result($tweetid, $count);
+    if ($getdata["code"] !== 200) {
         echo "ext_getPoll: {$getdata["message"]}\n";
         kd_push("获取{$tweetid}投票结果失败 #errorpoll ");
         $tmp_sql .= $sssql->update("v2_twitter_polls", ["count" => 0, "checked" => 1], [["origin_tweet_id", "=", $tweetid]], true);

@@ -1,7 +1,7 @@
 <?php
 /*
  * twitter monitor v2 lovelive trends
- * @banka2017 && KDNETWORK
+ * @banka2017 && NEST.MOE
  */
 //only Aqours, Nijigasaki High School Idol Club and Liella, no μ's
 //official account > persional account

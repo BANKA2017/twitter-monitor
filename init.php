@@ -14,9 +14,9 @@ require(SYSTEM_ROOT . '/rss.php');
 require(SYSTEM_ROOT . '/config.php');
 //require(SYSTEM_ROOT . '/GoogleTokenGenerator.php');
 require(SYSTEM_ROOT . '/functions.php');
-require SYSTEM_ROOT . '/lib/tmv2.fetch.class.php';
-require SYSTEM_ROOT . '/lib/tmv2.info.class.php';
-require SYSTEM_ROOT . '/lib/tmv2.core.class.php';
+require SYSTEM_ROOT . '/libs/tmv2.fetch.class.php';
+require SYSTEM_ROOT . '/libs/tmv2.info.class.php';
+require SYSTEM_ROOT . '/libs/tmv2.core.class.php';
 
 //GraphqL queryId List
 $queryhqlQueryIdList = json_decode(file_get_contents(SYSTEM_ROOT . '/graphqlQueryIdList.json'), true);
@@ -60,6 +60,9 @@ const tw_supportUnifiedCardNameList = [
     "video_app",
     "image_carousel_app",
     "video_carousel_app",
+    "image_multi_dest_carousel_website",
+    "video_multi_dest_carousel_website",
+    "twitter_list_details"
 ];
 
 //TODO remove them

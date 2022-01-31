@@ -128,21 +128,23 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <!--生成的数据-->
-                        <label for="uploadFile">导入配置文件</label>
-                        <div class="custom-file">
-                            <input type="file" class="custom-file-input" id="uploadFile" lang="zh" @change="jsonFileChange" accept="application/json">
-                            <label class="custom-file-label" for="uploadFile">config.json</label>
-                        </div>
-                        <div class="my-4"></div>
-                        <button class="btn btn-primary btn-block" @click="download('config.json', JSON.stringify(config))">下载配置</button>
-                        <div class="my-4"></div>
-                        <div class="input-group">
-                            <textarea class="form-control" :value="textareaData" rows="10" v-model="textareaData"></textarea>
-                        </div>
-                        <div class="text-center">
-                            >_ Twitter Monitor
+                    <div class="col-md-4" >
+                        <div style="position: sticky; top: 1.5rem;">
+                            <!--生成的数据-->
+                            <label for="uploadFile">导入配置文件</label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="uploadFile" lang="zh" @change="jsonFileChange" accept="application/json">
+                                <label class="custom-file-label" for="uploadFile">config.json</label>
+                            </div>
+                            <div class="my-4"></div>
+                            <button class="btn btn-primary btn-block" @click="download('config.json', JSON.stringify(config))">下载配置</button>
+                            <div class="my-4"></div>
+                            <div class="input-group">
+                                <textarea class="form-control" :value="textareaData" rows="10" v-model="textareaData"></textarea>
+                            </div>
+                            <div class="text-center my-2">
+                                >_ Twitter Monitor
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -235,6 +237,7 @@
                             try {
                                 let textareaDataArray = JSON.parse(this.textareaData);
                                 if(textareaDataArray !== this.config && (textareaDataArray.users && textareaDataArray.links && textareaDataArray.nsfwList)){
+                                    textareaDataArray.users.map(user => {user.uid = String(user.uid); return user})
                                     this.config = textareaDataArray;
                                 }
                             } catch {

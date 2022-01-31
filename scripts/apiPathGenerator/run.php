@@ -14,12 +14,14 @@ const apiPath = [
         "data.user.result.timeline.timeline.instructions.0.entries",
     ],
     "tweet_content" => [
-        "content.itemContent.tweet",
         "content.itemContent.tweet_results.result",
+        "content.itemContent.tweet",
     ],
     "tweet_id" => [
         "id_str",
         "rest_id",
+        "content.itemContent.tweet.rest_id",
+        "content.itemContent.tweet_results.result.rest_id"
     ],
     "tweet_uid" => [
         "user_id_str",
@@ -54,16 +56,16 @@ const apiPath = [
         "legacy.quoted_status_permalink.url"
     ],
     "tweet_media_path" => [
-        "extended_entities.media",
         "legacy.extended_entities.media",
+        "extended_entities.media",
     ],
     "tweet_card_name" => [
         "name",
         "legacy.name",
     ],
     "tweet_card_path" => [
-        "card",
-        "card.legacy"
+        "card.legacy",
+        "card"
     ],
     "retweet_rest_id" => [
         'retweeted_status_id_str',//rest
@@ -79,12 +81,12 @@ const apiPath = [
         "legacy.quoted_status_id_str"
     ],
     "quote_graphql_path" => [
-        "quoted_status",
-        "quoted_status_result.result"
+        "quoted_status_result.result",
+        "quoted_status"
     ],
     "graphql_user_legacy" => [
-        "core.user.legacy",
-        "core.user_results.result.legacy"
+        "core.user_results.result.legacy",
+        "core.user.legacy"
     ]
 ];
 $text = "return match (\$handle) {\n";

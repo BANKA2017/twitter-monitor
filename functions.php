@@ -1,11 +1,11 @@
 <?php
 /*
  * twitter monitor v2 functions
- * @banka2017 && KDNETWORK
+ * @banka2017 && NEST.MOE
  */
 use kornrunner\Blurhash\Blurhash;
  //translate
-function translate (string $source = "Google Translate", string $to = "", string $origin = ""): string {
+function translate (string $source = "Google Translate", string $to = "", string $text = ""): string {
     $translate = "";
     switch ($source) {
         //有想法添加百度翻译的欢迎来pr
@@ -13,116 +13,19 @@ function translate (string $source = "Google Translate", string $to = "", string
         //    break;
         case "Microsoft Translator":
             //bing translator
-            $origin = str_replace("\n", "", $origin);
-            $language = json_decode(new sscurl("https://www.translate.com/translator/ajax_lang_auto_detect", "post", ["Referer: https://www.translate.com/"], 3, ["text_to_translate" => $origin]), true)["language"];
-            $translate = json_decode(new sscurl("https://www.translate.com/translator/ajax_translate", "post", ["Referer: https://www.translate.com/"], 3, ["text_to_translate" => $origin, "source_lang" => $language, "translated_lang" => $to, "use_cache_only" => false]), true)["translated_text"];
+            $text = str_replace("\n", "", $text);
+            $language = json_decode(new sscurl("https://www.translate.com/translator/ajax_lang_auto_detect", "post", ["Referer: https://www.translate.com/"], 3, ["text_to_translate" => $text]), true)["language"];
+            $translate = json_decode(new sscurl("https://www.translate.com/translator/ajax_translate", "post", ["Referer: https://www.translate.com/"], 3, ["text_to_translate" => $text, "source_lang" => $language, "translated_lang" => $to, "use_cache_only" => false]), true)["translated_text"];
             break;
         default:
             //google translate
-            //$origin = preg_replace('/[^\x{0000}-\x{FFFF}]|\x{200D}+/', '', $origin);//去除所有非bmp平面及\u200d
-            $translate = "";
-            $g_body = ["client" => "webapp", "sl" => "auto", "tl" => $to, "hl" => $to, "dt" => "t", "clearbtn" => 1, "otf" => 1, "pc" => 1, "ssel" => 0, "tsel" => 0, "kc" => 2, "tk" => "", "q" => $origin];
-            foreach (json_decode(new sscurl("https://translate.google.com/translate_a/single?" . html_entity_decode(http_build_query($g_body)), "get", ["referer: https://translate.google.com/", "authority: translate.google.com"]), true)[0]??[] as $trs) {
-                $translate .= $trs[0];
+            //$text = preg_replace('/[^\x{0000}-\x{FFFF}]|\x{200D}+/', '', $text);//去除所有非bmp平面及\u200d
+            $query = ["client" => "webapp", "sl" => "auto", "tl" => $to, "hl" => $to, "dt" => "t", "clearbtn" => 1, "otf" => 1, "pc" => 1, "ssel" => 0, "tsel" => 0, "kc" => 2, "tk" => "", "q" => $text];
+            foreach (json_decode(new sscurl("https://translate.google.com/translate_a/single?" . html_entity_decode(http_build_query($query)), "get", ["referer: https://translate.google.com/", "authority: translate.google.com"]), true)[0]??[] as $translatedTexts) {
+                $translate .= $translatedTexts[0];
             }
     }
     return $translate;
-}
-
-//get twitter csrf token
-function tw_get_token (): array {
-    preg_match('/gt=([0-9]+);/', (new sscurl('https://twitter.com/', 'GET', [], 1))->returnBody(0)->exec(), $csrfToken);
-    //rate-limit是靠csrf token判断的，需要定期刷新csrf token
-    //获取csrf token
-    $GLOBALS["tw_server_info"]["total_req_times"]++;
-    return ($csrfToken[1]??false) ? [true, $csrfToken[1]] : [false, "No Token"];
-}
-
-//get userinfo
-//TODO full mode
-function tw_get_userinfo (string $user, string $csrfToken = "", bool $full = false, bool $graphqlMode = true): array {
-    if (!$csrfToken) {
-        $csrfToken = tw_get_token()[1];
-    }
-    $GLOBALS["tw_server_info"]["total_req_times"]++;
-    if ($graphqlMode) {
-        if (is_numeric($user)) {
-            return json_decode(new sscurl("https://mobile.twitter.com/i/api/graphql/{$GLOBALS["queryhqlQueryIdList"]["UserByRestIdWithoutResults"]["queryId"]}/UserByRestIdWithoutResults?variables=" . urlencode(json_encode(["userId" => $user, "withHighlightedLabel" => true])), 'get', ["authorization: " . TW_AUTHORIZATION, "content-type: application/json", "x-guest-token: " . $csrfToken], 1), true);
-        } else {
-            return json_decode(new sscurl("https://mobile.twitter.com/i/api/graphql/{$GLOBALS["queryhqlQueryIdList"]["UserByScreenNameWithoutResults"]["queryId"]}/UserByScreenNameWithoutResults?variables=" . urlencode(json_encode(["screen_name" => $user, "withHighlightedLabel" => true])), 'get', ["authorization: " . TW_AUTHORIZATION, "content-type: application/json", "x-guest-token: " . $csrfToken], 1), true);
-        }
-    } else {
-        return json_decode(new sscurl("https://api.twitter.com/1.1/users/show.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&" . (is_numeric($user) ? "user_id=" : "screen_name=") . $user, 'get', ["authorization: " . TW_AUTHORIZATION, "content-type: application/json", "x-guest-token: " . $csrfToken], 1), true);
-    }
-}
-
-//get tweets
-function tw_get_tweets (string $queryString, string $cursor = "", string $csrfToken = "", bool $full = false, bool $online = false, bool $graphqlMode = true, bool $searchMode = false): array {
-    if (!$csrfToken) {
-        $csrfToken = tw_get_token()[1];
-    }
-    $GLOBALS["tw_server_info"]["total_req_times"]++;
-    //实际上即使写了9999网页api返回800-900条记录, 客户端返回约400-450条记录
-    //网页版使用的
-    //https://api.twitter.com/2/timeline/conversation/:uid.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_composer_source=true&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweets=true&count=20&ext=mediaStats%2CcameraMoment
-    //card类型需要启用full//建议启用full
-    if ($graphqlMode) {
-        $graphqlObject = [
-            "userId" => $queryString,
-            "count" => ($online ? 20 : 40),
-            "withHighlightedLabel" => true,
-            "withTweetQuoteCount" => true,
-            "includePromotedContent" => true,
-            "withTweetResult" => false,
-            "withReactions" => false,
-            "withUserResults" => false,
-            "withVoice" => false,
-            "withNonLegacyCard" => true,
-            "withBirdwatchPivots" => false
-        ];
-        if ($cursor) {
-            $graphqlObject["cursor"] = $cursor;
-        } else {
-            $graphqlObject["count"] = ($online ? 20 : 9999);
-        }
-        return json_decode(new sscurl("https://mobile.twitter.com/i/api/graphql/{$GLOBALS["queryhqlQueryIdList"]["UserTweets"]["queryId"]}/UserTweets?variables=" . urlencode(json_encode($graphqlObject)), 'get', ["authorization: " . TW_AUTHORIZATION, "x-guest-token: " . $csrfToken], 1), true);
-    } elseif ($searchMode) {
-        return json_decode(new sscurl("https://twitter.com/i/api/2/search/adaptive.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweet=true&q=" . urlencode($queryString) . "&tweet_search_mode=live&count=999&query_source=typed_query&pc=1&spelling_corrections=1&ext=mediaStats%2ChighlightedLabel" . ($cursor ? '&cursor=' . $cursor : ''), 'get', ["authorization: " . TW_AUTHORIZATION, "x-guest-token: " . $csrfToken, 'cookie: gt=' . $csrfToken], 1), true);
-    } else {
-        if ($full) {
-            return json_decode(new sscurl("https://api.twitter.com/2/timeline/profile/{$queryString}.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_composer_source=true&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweets=true&ext=mediaStats%2CcameraMoment&count=" . ($cursor ? ($online ? 20 : 40)  . "&cursor=" . urlencode($cursor) : ($online ? 20 : 9999)), 'get', ["authorization: " . TW_AUTHORIZATION, "x-guest-token: " . $csrfToken], 1), true);
-        } else {
-            return json_decode(new sscurl("https://api.twitter.com/2/timeline/profile/{$queryString}.json?tweet_mode=extended&count=" . ($cursor ? ($online ? 20 : 40) . "&cursor=" . urlencode($cursor) : ($online ? 20 : 9999)), 'get', ["authorization: " . TW_AUTHORIZATION, "x-guest-token: " . $csrfToken], 1), true);
-        }
-    }
-}
-
-//get conversation
-function tw_get_conversation (string $tweet_id, string $csrfToken = ""): array {
-    if (!$csrfToken) {
-        $csrfToken = tw_get_token()[1];
-    }
-    //时隔多月又要更新这玩意了, 这次是因为卡片的图片时间久远了会失效......确实有点让人绝望
-    return json_decode(new sscurl("https://api.twitter.com/2/timeline/conversation/{$tweet_id}.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_composer_source=true&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweets=true&count=1&ext=mediaStats%2CcameraMoment", 'get', ["authorization: " . TW_AUTHORIZATION, "x-guest-token: " . $csrfToken], 1), true);
-}
-
-//get poll result
-function tw_get_poll_result (string $tweet_id, int $count = 2, string $csrfToken = ""): array {
-    if (!$csrfToken) {
-        $csrfToken = tw_get_token()[1];
-    }
-    $tweets = json_decode(new sscurl("https://api.twitter.com/2/timeline/conversation/{$tweet_id}.json?cards_platform=Web-12&include_cards=1&count=1", 'get', ["authorization: " . TW_AUTHORIZATION, "x-guest-token: " . $csrfToken], 1), true);
-    if (isset($tweets["globalObjects"]["tweets"][$tweet_id])) {
-        $data = [];
-        for ($x = 1; $x <= $count; $x++) {
-            $data[] = $tweets["globalObjects"]["tweets"][$tweet_id]["card"]["binding_values"]["choice{$x}_count"]["string_value"];
-        }
-        return ["code" => 0, "message" => "ok", "data" => $data];
-    } elseif (isset($tweets["errors"])) {
-        return $tweets["errors"][0];
-    } else {
-        return ["code" => -9999, "message" => "Error"];
-    }
 }
 
 //处理entities
@@ -385,9 +288,9 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
         //$tmpComponents = $cardInfo["components"];
         //看不懂啊，这都是啥啊
         $card["data"]["media"] = 1;//是否有媒体
-        $card["data"]["secondly_type"] = $childCardInfo["type"];//子类型
+        $card["data"]["secondly_type"] = $childCardInfo["type"]??$childCardInfo["component_objects"]["details_1"]["type"]??"";//子类型
         //处理子组件类型
-        switch ($childCardInfo["type"]) {
+        switch ($card["data"]["secondly_type"]) {
             //上面是 图/视频 加链接, 虽然也没看明白
             case "image_website":
             case "video_website":
@@ -414,7 +317,7 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
                     $card["app_data"][] = [
                         "tweet_id" => $tweetid,
                         "uid" => $uid,
-                        "unified_card_type" => $childCardInfo["type"],//子类型
+                        "unified_card_type" => $card["data"]["secondly_type"],//子类型
                         "type" => $childCardAppInfo["type"],//android_app iphone_app ipad_app
                         "appid" => $childCardAppInfo["id"],
                         "country_code" => $childCardAppInfo["country_code"],
@@ -423,15 +326,47 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
                     ];
                 }
                 break;
-            //不知道还有什么，现在只找到这些
-            //不知道说什么，报个警吧
-            default: 
-                kd_push("快来研究新的子卡片\n #new_child_card #{$childCardInfo["type"]} \nid: {$tweetid}\nhttps://twitter.com/i/status/{$tweetid}\n" . $cardInfo["binding_values"]["unified_card"]["string_value"], $GLOBALS["token"], $GLOBALS["push_to"]);//喵喵喵
+            case "image_multi_dest_carousel_website":
+            case "video_multi_dest_carousel_website":
+                //TODO dest were not same, but i have to join them in the same string
+                foreach ($childCardInfo["layout"]["data"]["slides"] as $slide) {
+                    //use "STRING".split("\t")
+                    $card["data"]["description"] .= $childCardInfo["component_objects"][$slide[1]]["data"]["title"]["content"] . "\t";
+                    $card["data"]["vanity_url"] .= $childCardInfo["component_objects"][$slide[1]]["data"]["subtitle"]["content"] . "\t";
+                    $card["data"]["url"] .= $childCardInfo["destination_objects"][$childCardInfo["component_objects"][$slide[1]]["data"]["destination"]]["data"]["url_data"]["url"] . "\t";
+                }
+                //remove latest \t
+                $card["data"]["description"] = substr($card["data"]["description"], 0, -1);
+                $card["data"]["vanity_url"] = substr($card["data"]["vanity_url"], 0, -1);
+                $card["data"]["url"] = substr($card["data"]["url"], 0, -1);
+                break;
+            //twitter_list_details 看起来是一个账号列表，连类型都不给了，我不是很能接受
+            case "twitter_list_details":
+                //TODO rtl [...is_rtl]
+                //item count \t content
+                $card["data"]["description"] = $childCardInfo["component_objects"]["details_1"]["data"]["member_count"] . "\t" . $childCardInfo["component_objects"]["details_1"]["data"]["name"]["content"];
+                //display_name \t name
+                $card["data"]["vanity_url"] = $childCardInfo["users"][$childCardInfo["component_objects"]["details_1"]["data"]["user_id"]]["name"] . "\t" . $childCardInfo["users"][$childCardInfo["component_objects"]["details_1"]["data"]["user_id"]]["screen_name"] . "\t" . (int)($childCardInfo["users"][$childCardInfo["component_objects"]["details_1"]["data"]["user_id"]]["verified"]);
+                $card["data"]["url"] = $childCardInfo["destination_objects"][$childCardInfo["component_objects"]["details_1"]["data"]["destination"]]["data"]["url_data"]["url"];
+                break;
+            default:
+                //https://developer.twitter.com/en/docs/twitter-ads-api/creatives/api-reference/cards
+                //不知道还有什么，现在只找到这些
+                //不知道说什么，报个警吧
+                kd_push("快来研究新的子卡片\n #new_child_card #{$card["data"]["secondly_type"]} \nid: {$tweetid}\nhttps://twitter.com/i/status/{$tweetid}\n" . $cardInfo["binding_values"]["unified_card"]["string_value"], $GLOBALS["token"], $GLOBALS["push_to"]);//喵喵喵
         }
         if (isset($childCardInfo["media_entities"])) {
             //媒体
-            foreach ($childCardInfo["component_objects"]["swipeable_media_1"]["data"]["media_list"]??[$childCardInfo["component_objects"]["media_1"]["data"]] as $childCardMediaInfoKeyInfo) {
-                $card["media"] = array_merge($card["media"], tw_media ($childCardInfo["media_entities"][$childCardMediaInfoKeyInfo["id"]], $uid, $tweetid, $hidden, "cards", "{$card["data"]["type"]}_{$childCardInfo["type"]}_card_{$childCardInfo["media_entities"][$childCardMediaInfoKeyInfo["id"]]["type"]}", "", $online));
+            $tmpChildMediaList = [];
+            if ($card["data"]["secondly_type"] === "image_multi_dest_carousel_website" || $card["data"]["secondly_type"] === "video_multi_dest_carousel_website") {
+                foreach ($childCardInfo["layout"]["data"]["slides"] as $slide) {
+                    $tmpChildMediaList[] = $childCardInfo["component_objects"][$slide[0]]["data"];
+                }
+            } else {
+                $tmpChildMediaList = $childCardInfo["component_objects"]["swipeable_media_1"]["data"]["media_list"]??[$childCardInfo["component_objects"]["media_1"]["data"]];
+            }
+            foreach ($tmpChildMediaList as $childCardMediaInfoKeyInfo) {
+                $card["media"] = array_merge($card["media"], tw_media ($childCardInfo["media_entities"][$childCardMediaInfoKeyInfo["id"]], $uid, $tweetid, $hidden, "cards", "{$card["data"]["type"]}_{$card["data"]["secondly_type"]}_card_{$childCardInfo["media_entities"][$childCardMediaInfoKeyInfo["id"]]["type"]}", "", $online));
             }
         }
         return $card;
@@ -490,7 +425,7 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
                 $tmp_whereIsInfoFrom["vanity_url"] = "thank_you_vanity_url";
                 $tmp_whereIsInfoFrom["cover"] = "promo_image_large";
                 $tmp_whereIsInfoFrom["origin"] = "promo_image_original";
-                $card["data"]["url"] = $cardInfo["binding_values"]["thank_you_url"]["string_value"];//这种类型的卡片自带源链接
+                $card["data"]["url"] = $cardInfo["binding_values"]["thank_you_url"]["string_value"]??"";//这种类型的卡片自带源链接
                 break;
             //个人感觉是 promo_website 和 player 的混合体
             case "promo_video_convo":
@@ -820,10 +755,10 @@ function str_to_array (string|array $path = "", array $arr = []): mixed {
 function path_to_array (string $handle = "", array $source = []): mixed {
     return match ($handle) {
         "rest_id" => $source["id_str"]??$source["data"]["user"]["rest_id"]??false,
-        "user_info_legacy" => $source["data"]["user"]["legacy"]??$source??false,
+        "user_info_legacy" => $source??$source["data"]["user"]["legacy"]??false,
         "tweets_contents" => $source["globalObjects"]["tweets"]??$source["data"]["user"]["result"]["timeline"]["timeline"]["instructions"][0]["entries"]??false,
-        "tweet_content" => $source["content"]["itemContent"]["tweet"]??$source["content"]["itemContent"]["tweet_results"]["result"]??false,
-        "tweet_id" => $source["id_str"]??$source["rest_id"]??false,
+        "tweet_content" => $source["content"]["itemContent"]["tweet_results"]["result"]??$source["content"]["itemContent"]["tweet"]??false,
+        "tweet_id" => $source["id_str"]??$source["rest_id"]??$source["content"]["itemContent"]["tweet"]["rest_id"]??$source["content"]["itemContent"]["tweet_results"]["result"]["rest_id"]??false,
         "tweet_uid" => $source["user_id_str"]??$source["legacy"]["user_id_str"]??false,
         "tweet_conversation_id_str" => $source["conversation_id_str"]??$source["legacy"]["conversation_id_str"]??false,
         "tweet_created_at" => $source["created_at"]??$source["legacy"]["created_at"]??false,
@@ -832,14 +767,14 @@ function path_to_array (string $handle = "", array $source = []): mixed {
         "tweet_entities" => $source["entities"]??$source["legacy"]["entities"]??false,
         "tweet_card_url" => $source["url"]??$source["rest_id"]??false,
         "tweet_quote_url" => $source["quoted_status_permalink"]["url"]??$source["legacy"]["quoted_status_permalink"]["url"]??false,
-        "tweet_media_path" => $source["extended_entities"]["media"]??$source["legacy"]["extended_entities"]["media"]??[],
+        "tweet_media_path" => $source["legacy"]["extended_entities"]["media"]??$source["extended_entities"]["media"]??false,
         "tweet_card_name" => $source["name"]??$source["legacy"]["name"]??false,
-        "tweet_card_path" => $source["card"]??$source["card"]["legacy"]??false,
+        "tweet_card_path" => $source["card"]["legacy"]??$source["card"]??false,
         "retweet_rest_id" => $source["retweeted_status_id_str"]??$source["legacy"]["retweeted_status"]["rest_id"]??$source["legacy"]["retweeted_status_result"]["result"]["rest_id"]??false,
         "retweet_graphql_path" => $source["legacy"]["retweeted_status"]??$source["legacy"]["retweeted_status_result"]["result"]??false,
         "quote_tweet_id" => $source["quoted_status_id_str"]??$source["legacy"]["quoted_status_id_str"]??false,
-        "quote_graphql_path" => $source["quoted_status"]??$source["quoted_status_result"]["result"]??false,
-        "graphql_user_legacy" => $source["core"]["user"]["legacy"]??$source["core"]["user_results"]["result"]["legacy"]??false,
+        "quote_graphql_path" => $source["quoted_status_result"]["result"]??$source["quoted_status"]??false,
+        "graphql_user_legacy" => $source["core"]["user_results"]["result"]["legacy"]??$source["core"]["user"]["legacy"]??false,
         default => false
     };
 }

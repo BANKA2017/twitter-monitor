@@ -1,7 +1,7 @@
 <?php
 /*
  * twitter monitor v2 ext blurhash
- * @banka2017 && KDNETWORK
+ * @banka2017 && NEST.MOE
  */
 require(dirname(__FILE__) . '/../../init.php');
 use kornrunner\Blurhash\Blurhash;

@@ -3,6 +3,7 @@
         "kornrunner/blurhash": "^1.2",
         "ext-curl": "*",
         "ext-mysqli": "*",
-        "ext-gd": "*"
+        "ext-gd": "*",
+        "ext-mbstring": "*"
     }
 }

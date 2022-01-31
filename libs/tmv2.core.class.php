@@ -1,15 +1,17 @@
 <?php
 /*
  * twitter monitor v2 core class
- * @banka2017 && KDNETWORK
+ * @banka2017 && NEST.MOE
  */
 namespace Tmv2\Core;
+
+use Tmv2\Fetch\Fetch;
 
 class Core {
     public array $tags, $media, $card, $polls, $in_sql_tweet, $errors, $quote, $cardMessage = [], $cursor = ["top" => "", "bottom" => ""];
     public bool $isGraphql, $isSelf, $isQuote, $online;
-    private bool $isRetweet, $reCrawlMode, $hidden;
-    private array $globalObjects;
+    private bool $isRetweet, $hidden, $isRecrawlMode;
+    private array $globalObjects, $reCrawlObject, $reCrawlQuoteUsers = [];//$reCrawlObject => 0: off, 1: localMode, 2: remoteMode
     public mixed $contents, $tweet_id, $cardApp;
     public int $globalObjectsLength;
     public string $max_tweetid, $min_tweetid;
@@ -17,9 +19,9 @@ class Core {
     public function __construct(
         array $globalObjects = [],
         bool $isGraphql = false,
-        bool $reCrawlMode = false,
+        array $reCrawlObject = [],
         bool $hidden = false,
-        bool $online = false
+        bool $online = false,
     ) {
         //转移
         //$this->content = $content;
@@ -30,7 +32,8 @@ class Core {
         //全局信息
         $this->globalObjects = $globalObjects;
         $this->isGraphql = $isGraphql;
-        $this->reCrawlMode = $reCrawlMode;
+        $this->reCrawlObject = $reCrawlObject;
+        $this->isRecrawlMode = $this->reCrawlObject !== [];
         $this->hidden = $hidden;
         $this->online = $online;
 
@@ -56,6 +59,7 @@ class Core {
             $content = path_to_array("tweet_content", $content);
         }
         $this->in_sql_tweet["tweet_id"] = path_to_array("tweet_id", $content);
+        $this->in_sql_tweet["origin_tweet_id"] = $this->in_sql_tweet["tweet_id"];
         $this->in_sql_tweet["uid"] = path_to_array("tweet_uid", $content);
         $this->in_sql_tweet["conversation_id_str"] = path_to_array("tweet_conversation_id_str", $content) ?: $this->in_sql_tweet["tweet_id"];
         $this->in_sql_tweet["time"] = strtotime(path_to_array("tweet_created_at", $content));//提前处理时间
@@ -75,22 +79,60 @@ class Core {
 
         //个人信息
         //此处涉及较多处理暂不使用 apiPath
-        $this->in_sql_tweet["name"] = $this->findUserInGlobalObjects($this->in_sql_tweet["uid"])["screen_name"]??$content["content"]["itemContent"]["tweet"]["core"]["user"]["legacy"]["screen_name"]??$content["content"]["itemContent"]["tweet_results"]["result"]["core"]["user"]["legacy"]["screen_name"]??"";
-        $this->in_sql_tweet["display_name"] = $this->findUserInGlobalObjects($this->in_sql_tweet["uid"])["name"]??$content["content"]["itemContent"]["tweet"]["core"]["user"]["legacy"]["name"]??$content["content"]["itemContent"]["tweet_results"]["result"]["core"]["user"]["legacy"]["name"]??"";
-
+        //recrawl 模式下自动填充
+        if ($this->isRecrawlMode) {
+            $this->in_sql_tweet["name"] = $this->reCrawlObject["name"];
+            $this->in_sql_tweet["display_name"] = $this->reCrawlObject["display_name"];
+        } else {
+            $this->in_sql_tweet["name"] = $this->findUserInGlobalObjects($this->in_sql_tweet["uid"])["screen_name"]??path_to_array("graphql_user_legacy", $content)["screen_name"]??"";
+            $this->in_sql_tweet["display_name"] = $this->findUserInGlobalObjects($this->in_sql_tweet["uid"])["name"]??path_to_array("graphql_user_legacy", $content)["name"]??"";
+        }
         //判断是否转推
         //TODO 处理local模式下的 recrawl
         if (path_to_array("retweet_rest_id", $content)) {
             $this->isRetweet = true;
+            $this->in_sql_tweet["origin_tweet_id"] = path_to_array("retweet_rest_id", $content);
+
             if ($this->isGraphql) {
                 $content = path_to_array("retweet_graphql_path", $content);
                 //quoted_status_result.result.core.user_results.result.legacy.screen_name
-                $this->in_sql_tweet["retweet_from"] = path_to_array("graphql_user_legacy", $content["core"])["name"];
-                $this->in_sql_tweet["retweet_from_name"] = path_to_array("graphql_user_legacy", $content["core"])["screen_name"];
+                $this->in_sql_tweet["retweet_from"] = path_to_array("graphql_user_legacy", $content)["name"];
+                $this->in_sql_tweet["retweet_from_name"] = path_to_array("graphql_user_legacy", $content)["screen_name"];
             } else {
-                $content = $this->globalObjects["globalObjects"]["tweets"][$content["retweeted_status_id_str"]];
-                $this->in_sql_tweet["retweet_from"] = $this->globalObjects["globalObjects"]["users"][$content["user_id_str"]]["name"];
-                $this->in_sql_tweet["retweet_from_name"] = $this->globalObjects["globalObjects"]["users"][$content["user_id_str"]]["screen_name"];
+                if ($this->isRecrawlMode) {
+                    //TODO 抽离耦合
+                    //$content = (file_exists(SYSTEM_ROOT . "/savetweets/{$content["retweeted_status_id_str"]}.json") ?
+                    //    json_decode(file_get_contents(SYSTEM_ROOT . "/savetweets/{$content["retweeted_status_id_str"]}.json"), true) :
+                    //    (($this->reCrawlObject["online"]) ?
+                    //        $this->reCrawlObject["onlineTweets"][$content["retweeted_status_id_str"]]??[] :
+                    //        []
+                    //    )
+                    //);
+                    if (file_exists(SYSTEM_ROOT . "/savetweets/{$content["retweeted_status_id_str"]}.json")) {
+                        $content = json_decode(file_get_contents(SYSTEM_ROOT . "/savetweets/{$content["retweeted_status_id_str"]}.json"), true);
+                    } elseif (isset($this->reCrawlObject["onlineTweets"][$content["retweeted_status_id_str"]])) {
+                        $content = $this->reCrawlObject["onlineTweets"][$content["retweeted_status_id_str"]];
+                    } else {
+                        $tmpContent = Fetch::tw_get_conversation($content["retweeted_status_id_str"])["globalObjects"]["tweets"][$content["retweeted_status_id_str"]]??[];
+                        if ($tmpContent === []) {
+                            kd_push("recrawler: empty tweet info {$content["id"]} - {$content["tweet_id"]} - {$content["display_name"]} (@{$content["name"]}) #empty_recrawl ");
+                        } else {
+                            $content = $tmpContent;
+                            file_put_contents(SYSTEM_ROOT . "/savetweets/{$content["retweeted_status_id_str"]}.json", json_encode($content, JSON_UNESCAPED_UNICODE));
+                        }
+                    }
+                    //is graphql
+                    if (isset($content["content"])) {
+                        $content = path_to_array("tweet_content", $content);
+                    }
+
+                    $this->in_sql_tweet["retweet_from"] = $this->reCrawlObject["retweet_from"];
+                    $this->in_sql_tweet["retweet_from_name"] = $this->reCrawlObject["retweet_from_name"];
+                } else {
+                    $content = $this->globalObjects["globalObjects"]["tweets"][$content["retweeted_status_id_str"]];
+                    $this->in_sql_tweet["retweet_from"] = $this->globalObjects["globalObjects"]["users"][$content["user_id_str"]]["name"];
+                    $this->in_sql_tweet["retweet_from_name"] = $this->globalObjects["globalObjects"]["users"][$content["user_id_str"]]["screen_name"];
+                }
             }
         }
 
@@ -102,7 +144,9 @@ class Core {
         //推文不可用不等于原推被删, 虽然真正的原因是什么我只能说我也不知道
         //群友说可能是被屏蔽了, 仅供参考
         $this->isQuote = (
-            ((($content["is_quote_status"]??false) && isset($this->globalObjects["globalObjects"]["tweets"][$content["quoted_status_id_str"]??0]))) ||
+            ((($content["is_quote_status"]??false) &&
+                (isset($this->globalObjects["globalObjects"]["tweets"][$content["quoted_status_id_str"]??0]) || file_exists(SYSTEM_ROOT . "/savetweets/" . ($content["quoted_status_id_str"]??"notexist") . ".json"))
+            )) ||
             ((($content["legacy"]["is_quote_status"]??false) && isset($content["quoted_status"])))
         );
         $quoteUrl = $this->isQuote ? path_to_array("tweet_quote_url", $content) : "";
@@ -126,7 +170,15 @@ class Core {
             $this->in_sql_tweet["quote_status"] = path_to_array("quote_tweet_id", $content);
             $quoteObject = $this->getQuote(($this->isGraphql ?
                 path_to_array("quote_graphql_path", $content) :
-                $this->globalObjects["globalObjects"]["tweets"][$this->in_sql_tweet["quote_status"]]), $this->in_sql_tweet["uid"], $this->in_sql_tweet["tweet_id"], $this->hidden
+                ($this->isRecrawlMode ?
+                    (file_exists(SYSTEM_ROOT . "/savetweets/{$content["quoted_status_id_str"]}.json") ?
+                        json_decode(file_get_contents(SYSTEM_ROOT . "/savetweets/{$content["quoted_status_id_str"]}.json"), true) :
+                        (($this->reCrawlObject["online"]) ?
+                            $this->reCrawlObject["onlineTweets"][$content["quoted_status_id_str"]]??[] :
+                            []
+                        )
+                    ) :
+                    $this->globalObjects["globalObjects"]["tweets"][$this->in_sql_tweet["quote_status"]])), $this->in_sql_tweet["uid"], $this->in_sql_tweet["tweet_id"], $this->hidden
             );
             $this->quote = $quoteObject["in_sql_quote"];
             $this->media = array_merge($this->media, $quoteObject["media"]);
@@ -241,8 +293,8 @@ class Core {
         return $this->globalObjects["globalObjects"]["users"][$uid]??[];
     }
     public function setup (): self {
-        //reCrawlMode needn't it
-        if ($this->reCrawlMode) {
+        //reCrawlObject needn't it
+        if ($this->isRecrawlMode) {
             return $this;
         }
 
@@ -267,16 +319,14 @@ class Core {
             } else {
                 foreach ($this->globalObjects["timeline"]["instructions"] as $first_instructions) {
                     foreach ($first_instructions as $second_instructions => $second_instructions_value) {
-                        switch ($second_instructions) {
-                            case "addEntries":
-                                foreach ($second_instructions_value["entries"] as $third_entries_value) {
-                                    if (str_starts_with($third_entries_value["entryId"], "cursor-top")) {
-                                        $this->cursor["top"] = $third_entries_value["content"]["operation"]["cursor"]["value"];
-                                    } elseif (str_starts_with($third_entries_value["entryId"], "cursor-bottom")) {
-                                        $this->cursor["bottom"] = $third_entries_value["content"]["operation"]["cursor"]["value"];
-                                    }
+                        if ($second_instructions === "addEntries") {
+                            foreach ($second_instructions_value["entries"] as $third_entries_value) {
+                                if (str_starts_with($third_entries_value["entryId"], "cursor-top")) {
+                                    $this->cursor["top"] = $third_entries_value["content"]["operation"]["cursor"]["value"];
+                                } elseif (str_starts_with($third_entries_value["entryId"], "cursor-bottom")) {
+                                    $this->cursor["bottom"] = $third_entries_value["content"]["operation"]["cursor"]["value"];
                                 }
-                                break;
+                            }
                         }
                     }
                 }
@@ -293,7 +343,7 @@ class Core {
     public function getMedia(array $content = [], int|float|string $uid = 0, int|float|string $tweet_id = 0, bool $hidden = false, string $source = "tweets", string $card_type = ""): array {//, bool $returnSql
         $tmpMedia = [];
         $autoMergeArray = false;
-        foreach (path_to_array("tweet_media_path", $content) as $order => $single_entities) {
+        foreach (path_to_array("tweet_media_path", $content)?:[] as $order => $single_entities) {
             if ($order === 0) {
                 $tmpMediaItem = tw_media($single_entities, $uid, $tweet_id, $hidden, $source, $card_type, "", $this->online);
                 if (isset($tmpMediaItem[0])) {
@@ -319,6 +369,11 @@ class Core {
         //从返回的数据里面重新抽出该条推文
         //$content = $tweets["globalObjects"]["tweets"][$content["quoted_status_id_str"]];//来吧
         //$in_sql["quote_status"] = $content["quoted_status_id_str"];//TODO get quote tweet_id in main
+
+        //is graphql
+        if (isset($content["content"])) {
+            $content = path_to_array("tweet_content", $content);
+        }
         $in_sql_quote = [
             "tweet_id" => path_to_array("tweet_id", $content),
             "uid" => path_to_array("tweet_uid", $content),
@@ -338,15 +393,35 @@ class Core {
         //name and display_name
         if ($this->isGraphql) {
             //quoted_status_result.result.core.user_results.result.legacy
-            $in_sql_quote["display_name"] = path_to_array("graphql_user_legacy", $content["core"])["name"];
-            $in_sql_quote["name"] = path_to_array("graphql_user_legacy", $content["core"])["screen_name"];
+            $in_sql_quote["display_name"] = path_to_array("graphql_user_legacy", $content)["name"];
+            $in_sql_quote["name"] = path_to_array("graphql_user_legacy", $content)["screen_name"];
         } else {
-            $in_sql_quote["display_name"] = $this->globalObjects["globalObjects"]["users"][$content["user_id_str"]]["name"];
-            $in_sql_quote["name"] = $this->globalObjects["globalObjects"]["users"][$content["user_id_str"]]["screen_name"];
+            if ($this->isRecrawlMode) {
+                if ($this->reCrawlObject["quote_name"]) {
+                    $in_sql_quote["display_name"] = $this->reCrawlObject["quote_display_name"];
+                    $in_sql_quote["name"] = $this->reCrawlObject["quote_name"];
+                } else {
+                    //从头获取
+                    //TODO 优先尝试本地获取
+                    if (!isset($this->reCrawlObject["globalUserInfo"][$in_sql_quote["uid"]])) {
+                        echo "quote: {$in_sql_quote["uid"]} {$in_sql_quote["tweet_id"]} not exist\n";
+                        $quoteUserInfo = (new Fetch())->tw_get_userinfo($in_sql_quote["uid"], "", false);
+                        $in_sql_quote["display_name"] = $quoteUserInfo["name"]??"";
+                        $in_sql_quote["name"] = $quoteUserInfo["screen_name"]??"";
+                    } else {
+                        echo "quote: {$in_sql_quote["uid"]} {$in_sql_quote["tweet_id"]} cached\n";
+                        $in_sql_quote["display_name"] = $this->reCrawlObject["globalUserInfo"][$in_sql_quote["uid"]]["display_name"]??"";
+                        $in_sql_quote["name"] = $this->reCrawlObject["globalUserInfo"][$in_sql_quote["uid"]]["name"]??"";
+                    }
+                }
+            } else {
+                $in_sql_quote["display_name"] = $this->globalObjects["globalObjects"]["users"][$content["user_id_str"]]["name"];
+                $in_sql_quote["name"] = $this->globalObjects["globalObjects"]["users"][$content["user_id_str"]]["screen_name"];
+            }
         }
 
         //full_text
-        $tmpEntities = path_to_array("tweet_entities", $content);
+        $tmpEntities = path_to_array("tweet_entities", $content) ?: [];
 
         foreach (($tmpEntities["urls"]??[]) as $quote_entity) {
             $in_sql_quote["full_text"] = str_replace($quote_entity["url"], "<a href=\"//{$quote_entity["expanded_url"]}\" id=\"quote_url\" target=\"_blank\" style=\"color: black\">{$quote_entity["display_url"]}</a>", $in_sql_quote["full_text"]);
@@ -412,6 +487,7 @@ class Core {
         $this->in_sql_tweet = [
             "retweet_from" => "",//display_name
             "retweet_from_name" => "",//name
+            "origin_tweet_id" => "0",
             "tweet_id" => "0",
             "uid" => "0",
             "conversation_id_str" => 0,

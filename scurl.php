@@ -1,6 +1,6 @@
 <?php
 /* Class scurl
- * @banka2017 & KDNETWORK
+ * @banka2017 & NEST.MOE
  * v6.0.0
  */
 class sscurl{
@@ -43,7 +43,7 @@ class sscurl{
                         $this->saveAsFile();
                     }
                 }
-                $this->setHeader($head)->setUserAgent($user_agent)->post($type, $data)->addProxy("http://192.168.123.154", "1081");
+                $this->setHeader($head)->setUserAgent($user_agent)->post($type, $data);
             }
 
         }
@@ -81,7 +81,7 @@ class sscurl{
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_TIMEOUT => 10
+            CURLOPT_TIMEOUT => 20
         ];
         return $this;
     }
@@ -139,9 +139,9 @@ class sscurl{
     }
     public function setUserAgent($ua): self{
         $ua = match ($ua) {
-            1 => 'Mozilla/5.0 (Linux; Android 8.0.0; Pixel 2 XL Build/OPD1.170816.004) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Mobile Safari/537.36',
-            2 => 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1',
-            3 => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36',
+            1 => 'Mozilla/5.0 (Linux; Android 8.0.0; Pixel 2 XL Build/OPD1.170816.004) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Mobile Safari/537.36',
+            2 => 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
+            3 => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36',
             default => $ua,
         };
         if($ua != ""){
