@@ -3,15 +3,20 @@
 const apiPath = [
     "rest_id" => [
         'id_str',
-        'data.user.rest_id',
+        'data.user.result.rest_id',
     ],
     "user_info_legacy" => [
+        'data.user.result.legacy',
         '',
-        'data.user.legacy',
     ],
     "tweets_contents" => [
         "globalObjects.tweets",
+        "data.user.result.timeline_v2.timeline.instructions.0.entries",
+        "data.user.result.timeline_v2.timeline.instructions.1.entries",
         "data.user.result.timeline.timeline.instructions.0.entries",
+        "data.user.result.timeline.timeline.instructions.1.entries",
+        "data.threaded_conversation_with_injections.instructions.0.entries",
+        "data.threaded_conversation_with_injections.instructions.1.entries",
     ],
     "tweet_content" => [
         "content.itemContent.tweet_results.result",
@@ -91,7 +96,7 @@ const apiPath = [
 ];
 $text = "return match (\$handle) {\n";
 foreach (apiPath as $name => $path) {
-    $text .= '"' . $name . '" => ';
+    $text .= '        "' . $name . '" => ';
     foreach ($path as $item) {
         $text .= "\$source";
         foreach(explode(".", $item) as $value) {
@@ -106,6 +111,6 @@ foreach (apiPath as $name => $path) {
     $text .= "false,\n";
     //"rest_id" => $source["id_str"]??$source["data"]["user"]["rest_id"],
 }
-$text .= "default => false\n};";
-
-echo "--> \n$text\n <--";
+$text .= "        default => false\n    };";
+file_put_contents(__DIR__ . '/../../libs/api_path.php', "<?php\n\n//path between restapi and graphql\n//see also ~ scripts/apiPathGenerator/run.php\nfunction path_to_array (string \$handle = \"\", array | null \$source = []): mixed {\n    if (\$source === null) {\n        return false;\n    }\n    $text\n}\n");
+echo "<?php\n\n//path between restapi and graphql\n//see also ~ scripts/apiPathGenerator/run.php\nfunction path_to_array (string \$handle = \"\", array | null \$source = []): mixed {\n    if (\$source === null) {\n        return false;\n    }\n    $text\n}\n";

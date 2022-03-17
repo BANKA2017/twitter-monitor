@@ -12,6 +12,12 @@ $username = "root";
 $password = "password";
 $dbname = "twittermonitor";
 
+//redis
+const REDIS_CONFIG = [
+    "redis_server" => "127.0.0.1",
+    "redis_port" => "6379",
+    "redis_password" => "",
+];
 
 $translate_source = "Google Translate";
 
@@ -40,6 +46,6 @@ $run_options = [
         "tweets" => true,//获取推文，同时会更新cursor
         "save_tweets_rawjson" => true,//将原始json数据保存到额外文件夹
         "save_raw_media" => false,//TODO 保存媒体文件到本地，包括large和thumb，若为视频则保存视频文件及封面
-        "graphql_mode" => true,//Twitter 已全面启用 Graphql，虽然我们默认启用
+        "graphql_mode" => true,//Twitter 已全面启用 Graphql
     ],
 ];

@@ -1,3 +1,5 @@
 config.json
 config.php
 vendor/
+savetweets/
+!savetweets/.gitkeep

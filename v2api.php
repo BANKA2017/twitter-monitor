@@ -11,24 +11,24 @@ ob_implicit_flush();
 require(__DIR__ . '/init.php');
 
 $parseReferrer = parse_url($_SERVER["HTTP_REFERER"]??"");
-if ($referrerWhiteList !== "" && preg_match('/^(' . $referrerWhiteList . ')$/', $parseReferrer["host"]??"")) {
-    header("Access-Control-Allow-Origin: " . $parseReferrer["scheme"] . '://' . $parseReferrer["host"] . (isset($parseReferrer["port"]) ? ':' . $parseReferrer["port"] : ""));
-}
+//if ($referrerWhiteList !== "" && preg_match('/^(' . $referrerWhiteList . ')$/', $parseReferrer["host"]??"")) {
+//    header("Access-Control-Allow-Origin: " . $parseReferrer["scheme"] . '://' . $parseReferrer["host"] . (isset($parseReferrer["port"]) ? ':' . $parseReferrer["port"] : ""));
+//}
 
 //json
 $ReturnJson = [
     "code" => 403,
-    "message" => "Forbidden request",
+    "message" => "Invalid Request",
     "data" => [],
     "query" => ($_SERVER["QUERY_STRING"]??""),
-    "version" => "v2",
+    "version" => "compat_v3",
 ];
 
 //svg
 $ReturnSvg = '<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" focusable="false" role="img" aria-label="Placeholder: Deleted"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>';
 
 $rssMode = ($_GET["format"]??"json") == "rss";
-$defaultTweetsCount = $rssMode ? 20 : 10;//rss模式应该有更多内容
+$defaultTweetsCount = $rssMode ? 40 : 20;//rss模式应该有更多内容
 
 //创建连接
 try {
@@ -39,7 +39,7 @@ try {
     die(json_encode($returnJson, JSON_UNESCAPED_UNICODE));
 }
 
-$config_data = $sssql->load("v2_config", ["data_origin", "data_output"], [["id", "=", $config_id]], [], 1);
+$config_data = $sssql->select("v2_config", ["data_origin", "data_output"], [["id", "=", $config_id]], [], 1);
 if (count($config_data) === 0) {
     $ReturnJson["code"] = 404;
     $ReturnJson["message"] = "No Record Found";
@@ -80,12 +80,12 @@ function returnDataForTweets (array $tweets = [], int $count = 0, string $top = 
         //select all tweet_id
         $tweetIdList = array_column($tweets, "tweet_id");
         $quoteTweetIdList = array_column($tweets, "quote_status");
-        $tmpEntities = $GLOBALS['sssql']->load("v2_twitter_entities", ["tweet_id", "type", "text", "expanded_url", "indices_start", "indices_end"], [["tweet_id", "IN", $tweetIdList]])??[];
-        $tmpPollObject = $GLOBALS['sssql']->load("v2_twitter_polls", ["tweet_id", "choice_label", "poll_order", "end_datetime", "count", "checked"], [["tweet_id", "IN", $tweetIdList]])??[];
-        $tmpCardObject = $GLOBALS['sssql']->load("v2_twitter_cards", ["tweet_id", "title", "description", "vanity_url", "type", "secondly_type", "url", "media", "unified_card_app"], [["tweet_id", "IN", $tweetIdList]])??[];
-        $tmpCardApps = $GLOBALS['sssql']->load("v2_twitter_card_app", ["tweet_id", "unified_card_type", "type", "appid", "country_code", "title", "category"], [["tweet_id", "IN", $tweetIdList]]);
-        $tmpQuoteObject = $GLOBALS['sssql']->load("v2_twitter_quote", ["tweet_id", "name", "display_name", "full_text", "time", "media", "video"], [["tweet_id", "IN", $quoteTweetIdList]])??[];
-        $tmpMediaObject = $GLOBALS['sssql']->load("v2_twitter_media", ["tweet_id", "uid", "cover", "url", "extension", "filename", "origin_type", "source", "content_type", "origin_info_height", "origin_info_width", "blurhash"], [["tweet_id", "IN", array_unique(array_merge($tweetIdList, $quoteTweetIdList))], ["source", "!=", "cover"]]);
+        $tmpEntities = $GLOBALS['sssql']->select("v2_twitter_entities", ["tweet_id", "type", "text", "expanded_url", "indices_start", "indices_end"], [["tweet_id", "IN", $tweetIdList]])??[];
+        $tmpPollObject = $GLOBALS['sssql']->select("v2_twitter_polls", ["tweet_id", "choice_label", "poll_order", "end_datetime", "count", "checked"], [["tweet_id", "IN", $tweetIdList]])??[];
+        $tmpCardObject = $GLOBALS['sssql']->select("v2_twitter_cards", ["tweet_id", "title", "description", "vanity_url", "type", "secondly_type", "url", "media", "unified_card_app"], [["tweet_id", "IN", $tweetIdList]])??[];
+        $tmpCardApps = $GLOBALS['sssql']->select("v2_twitter_card_app", ["tweet_id", "unified_card_type", "type", "appid", "country_code", "title", "category"], [["tweet_id", "IN", $tweetIdList]]);
+        $tmpQuoteObject = $GLOBALS['sssql']->select("v2_twitter_quote", ["tweet_id", "name", "display_name", "full_text", "time", "media", "video"], [["tweet_id", "IN", $quoteTweetIdList]])??[];
+        $tmpMediaObject = $GLOBALS['sssql']->select("v2_twitter_media", ["tweet_id", "uid", "cover", "url", "extension", "filename", "origin_type", "source", "content_type", "origin_info_height", "origin_info_width", "blurhash"], [["tweet_id", "IN", array_unique(array_merge($tweetIdList, $quoteTweetIdList))], ["source", "!=", "cover"]]);
     }
 
     for ($x = 0; $x < $real_count; $x++) {
@@ -109,6 +109,7 @@ function returnDataForTweets (array $tweets = [], int $count = 0, string $top = 
             foreach ($tmpPollObject as $pollObject) {
                 if ($pollObject["tweet_id"] === $tweets[$x]["tweet_id"]) {
                     unset($pollObject["tweet_id"]);
+                    $pollObject["checked"] = (bool)$pollObject["checked"];
                     $tweets[$x]["pollObject"][] = $pollObject;
                 }
             }
@@ -118,14 +119,13 @@ function returnDataForTweets (array $tweets = [], int $count = 0, string $top = 
         if ($tweets[$x]["card"]) {
             foreach ($tmpCardObject as $cardObject) {
                 if ($cardObject["tweet_id"] === $tweets[$x]["tweet_id"]) {
-                    $cardObject["app"] = new ArrayObject();
                     if ($cardObject["unified_card_app"]) {
                         $cardObject["unified_card_app"] = true;
+                        $cardObject["app"] = [];
                         foreach ($tmpCardApps as $cardApp) {
                             if ($cardApp["tweet_id"] === $tweets[$x]["tweet_id"]) {
                                 unset($cardApp["tweet_id"]);
-                                $cardObject["app"] = $cardApp;
-                                break;
+                                $cardObject["app"][] = $cardApp;
                             }
                         }
                     } else {
@@ -139,11 +139,14 @@ function returnDataForTweets (array $tweets = [], int $count = 0, string $top = 
         }
         //处理引用
         $tweets[$x]["quoteObject"] = new ArrayObject();
+        $tweets[$x]["quote_status_str"] = "0";
         if ($tweets[$x]["quote_status"]) {
             foreach ($tmpQuoteObject as $quoteObject) {
                 if ($quoteObject["tweet_id"] === $tweets[$x]["quote_status"]) {
                     $tweets[$x]["quoteObject"] = $quoteObject;
+                    $tweets[$x]["quoteObject"]["id_str"] = (string)$quoteObject["tweet_id"];
                     $tweets[$x]["quoteObject"]["full_text"] = strip_tags($tweets[$x]["quoteObject"]["full_text"]);
+                    $tweets[$x]["quote_status_str"] = $tweets[$x]["quoteObject"]["id_str"];
                     break;
                 }
             }
@@ -192,6 +195,7 @@ function returnDataForTweets (array $tweets = [], int $count = 0, string $top = 
         //$tweets[$x]["full_text_origin"] = preg_replace('/https:\/\/t.co\/[\w]+/', '', $tweets[$x]["full_text_origin"]);
         $tweets[$x]["tweet_id_str"] = (string)$tweets[$x]["tweet_id"];//Number.MAX_SAFE_INTEGER => 9007199254740991 "9007199254740991".length => 16
         $tweets[$x]["origin_tweet_id_str"] = (string)$tweets[$x]["origin_tweet_id"];//Number.MAX_SAFE_INTEGER => 9007199254740991 "9007199254740991".length => 16
+        $tweets[$x]["conversation_id_str"] = (string)$tweets[$x]["conversation_id_str"];
         $tweets[$x]["uid_str"] = (string)$tweets[$x]["uid"];//同上
         $tweet_id = $tweets[$x]["tweet_id"];//底部tweetid
         if ($rssMode) {
@@ -257,10 +261,14 @@ switch ($mode) {
         if(!$mediaLinkArray["filename"]){
             header("content-type: image/svg+xml");
             echo $ReturnSvg;
-        }else{
+        } elseif ($mediaLinkArray["basename"] === "banner.jpg") {
+            header("content-type: image/jpeg");
+            header("Content-Disposition:attachment;filename=banner.jpg");
+            echo (new sscurl("https://{$mediaLinkArray["dirname"]}"))->addMore([CURLOPT_TIMEOUT => 999])->addMore([CURLOPT_RETURNTRANSFER => false]);
+        } else {
             switch ($mediaLinkArray["extension"]) {
                 case "banner": 
-                    if(count($sssql->load("v2_account_info", ["id"], [["banner", "=", $mediaLinkArray["filename"]]]))) {
+                    if(count($sssql->select("v2_account_info", ["id"], [["banner", "=", $mediaLinkArray["filename"]]]))) {
                         header("content-type: image/jpeg");
                         header("Content-Disposition:attachment;filename=banner.jpg");
                         echo (new sscurl("https://{$mediaLinkArray["dirname"]}/{$mediaLinkArray["filename"]}"))->addMore([CURLOPT_TIMEOUT => 999])->addMore([CURLOPT_RETURNTRANSFER => false]);
@@ -273,7 +281,7 @@ switch ($mode) {
                 case "png":
                 case "mp4":
                     //TODO 此处可能需要修改
-                    if(($type == "userinfo" && count($sssql->load("v2_account_info", ["id"], [["header", "=", "https://" . str_replace('_bigger', '', $_GET["link"])]]))) || count($sssql->load("v2_twitter_media", ["id"], [["basename", "=", $mediaLinkArray["basename"]]], [], 1))) {
+                    if(($type == "userinfo" && count($sssql->select("v2_account_info", ["id"], [["header", "=", "https://" . str_replace('_bigger', '', $_GET["link"])]]))) || count($sssql->select("v2_twitter_media", ["id"], [["basename", "=", $mediaLinkArray["basename"]]], [], 1))) {
 
                         //TODO 下面是一些暂时无法解决的想法, 可能需要到v3解决
                         ////获取长度
@@ -282,7 +290,7 @@ switch ($mode) {
                         ////如果喜提空白//一般为卡片
                         //preg_match("/Content-Length: ([0-9]+)/i", $tmpLength, $tmpLength);
                         //if (!$tmpLength[1]) {
-                        //    $tmpAutoUpdateCardImageData = tw_card(tw_get_conversation($sssql->load("v2_twitter_media", ["tweet_id"], [["basename", "=", $mediaLinkArray["basename"]]], [], 1)[0]["tweet_id"])["card"], 0, 0)["media"];
+                        //    $tmpAutoUpdateCardImageData = tw_card(tw_get_conversation($sssql->select("v2_twitter_media", ["tweet_id"], [["basename", "=", $mediaLinkArray["basename"]]], [], 1)[0]["tweet_id"])["card"], 0, 0)["media"];
                         //    //回写
                         //    echo $sssql->update("v2_twitter_media", ["cover"=> $tmpAutoUpdateCardImageData["cover"], "url"=> $tmpAutoUpdateCardImageData["url"], "origin_info_width"=> $tmpAutoUpdateCardImageData["origin_info_width"], "origin_info_height"=> $tmpAutoUpdateCardImageData["origin_info_height"], "filename"=> $tmpAutoUpdateCardImageData["filename"], "basename"=> $tmpAutoUpdateCardImageData["basename"], "extension"=> $tmpAutoUpdateCardImageData["extension"], "content_type"=> $tmpAutoUpdateCardImageData["content_type"],], [["basename", "=", $mediaLinkArray["basename"]]]);
                         //    die();
@@ -355,7 +363,7 @@ switch ($mode) {
                 // /?mode=data&type=userinfo&name=bang_dream_info
                 // /?mode=data&type=userinfo&uid=3009772568
                 
-                $baseInfo = $sssql->load("v2_account_info", ["uid", "name", "display_name", "header", "banner", "following", "followers", "description", "statuses_count", "top", "locked", "deleted", "verified"], [["uid", "=", $uid]], [], 1);
+                $baseInfo = $sssql->select("v2_account_info", ["uid", "name", "display_name", "header", "banner", "following", "followers", "description", "statuses_count", "top", "locked", "deleted", "verified"], [["uid", "=", $uid]], [], 1);
                 if(!count($baseInfo)){
                     $ReturnJson["code"] = 404;
                     $ReturnJson["message"] = "No Record Found";
@@ -412,50 +420,57 @@ switch ($mode) {
                 $tweet_id = $_GET["tweet_id"]??0;
                 if (is_numeric($tweet_id) && $tweet_id >= 0) {
                     $queryForStatus = (bool)($_GET["is_status"]??false);
-                    $queryForTop = false;
-                    $querySql = [["tweet_id", $queryForStatus ? '=' : (!isset($_GET["tweet_id"]) ? '>' : ($_GET["refresh"]??0 ? '>' : '<')), $tweet_id]];
-                    if ($uid) {
-                        $querySql[] = ["uid", "=", $uid];
-                    }
-                    //查询类型
-                    switch ($_GET["display"] ?? "all") {
-                        case "self":
-                            $querySql[] = ["retweet_from", "=", null];
-                            break;
-                        case "retweet":
-                            $querySql[] = ["retweet_from", "!=", null];
-                            break;
-                        case "media":
-                            $querySql[] = ["media", "=", "1"];
-                            break;
-                        default:
-                            $queryForTop = ($queryForStatus || $tweet_id) ? false : true;
-                    }
-                    //查询时间
-                    $queryDate = $_GET["date"]??0;
-                    if ($queryDate && is_numeric($queryDate)) {
+                    $queryForConversation = (bool)($_GET["load_conversation"]??false);
+                    if (!$queryForConversation) {
                         $queryForTop = false;
-                        $querySql[] = ["time", ">=", $queryDate];
-                        $querySql[] = ["time", "<", $queryDate + 86400];
-                    }
-                    //是否隐藏
-                    if (!(bool)($_GET["hidden"]??0) && $uid === 0) {// 开放隐藏系统
-                        $querySql[] = ["hidden", "=", 0];
-                    }
-                    $tmpTweets = [];
-                    //置顶
-                    $topStatusId = 0;
-                    if ($queryForTop && !$rssMode) {
-                        //查找是否有置顶
-                        $topStatusId = ($sssql->load("v2_account_info", ["top"], [["uid", "=", $uid]]))[0]["top"]??0;
-                        if ($topStatusId) {
-                            $tmpTweets = array_merge($tmpTweets, $sssql->load("v2_twitter_tweets", ["tweet_id", "origin_tweet_id", "uid", "name", "display_name", "media", "video", "card", "poll", "quote_status", "source",  "full_text", "full_text_origin", "retweet_from", "retweet_from_name", "dispute", "time"], [["tweet_id", "=", $topStatusId]], [], 1, true));
+                        $querySql = [["tweet_id", $queryForStatus ? '=' : (!isset($_GET["tweet_id"]) ? '>' : ($_GET["refresh"] ?? 0 ? '>' : '<')), $tweet_id]];
+                        if ($uid) {
+                            $querySql[] = ["uid", "=", $uid];
                         }
+                        //查询类型
+                        switch ($_GET["display"] ?? "all") {
+                            case "self":
+                                $querySql[] = ["retweet_from", "=", null];
+                                break;
+                            case "retweet":
+                                $querySql[] = ["retweet_from", "!=", null];
+                                break;
+                            case "media":
+                                $querySql[] = ["media", "=", "1"];
+                                break;
+                            default:
+                                $queryForTop = !(($queryForStatus || $tweet_id));
+                        }
+                        //查询时间
+                        $queryDate = $_GET["date"] ?? 0;
+                        if ($queryDate && is_numeric($queryDate)) {
+                            $queryForTop = false;
+                            $querySql[] = ["time", ">=", $queryDate];
+                            $querySql[] = ["time", "<", $queryDate + 86400];
+                        }
+                        //是否隐藏
+                        if (!(bool)($_GET["hidden"] ?? 0) && $uid === 0) {// 开放隐藏系统
+                            $querySql[] = ["hidden", "=", 0];
+                        }
+                        $tmpTweets = [];
+                        //置顶
+                        $topStatusId = 0;
+                        if ($queryForTop && !$rssMode) {
+                            //查找是否有置顶
+                            $topStatusId = ($sssql->select("v2_account_info", ["top"], [["uid", "=", $uid]]))[0]["top"] ?? 0;
+                            if ($topStatusId) {
+                                $tmpTweets = array_merge($tmpTweets, $sssql->select("v2_twitter_tweets", ["tweet_id", "origin_tweet_id", "conversation_id_str", "uid", "name", "display_name", "media", "video", "card", "poll", "quote_status", "source", "full_text", "full_text_origin", "retweet_from", "retweet_from_name", "dispute", "time"], [["tweet_id", "=", $topStatusId]], [], 1, true));
+                            }
+                        }
+                        //query
+                        $getCount = ($_GET["count"] ?? $defaultTweetsCount);
+                        $queryCount = (is_numeric($getCount) ? (($getCount > 200) ? 200 : (($getCount < 1) ? 1 : $getCount)) : $defaultTweetsCount) + (int)($topStatusId == 0);
+                        $tmpTweets = array_merge($tmpTweets, $sssql->select("v2_twitter_tweets", ["tweet_id", "origin_tweet_id", "conversation_id_str", "uid", "name", "display_name", "media", "video", "card", "poll", "quote_status", "source", "full_text", "full_text_origin", "retweet_from", "retweet_from_name", "dispute", "time"], $querySql, [["tweet_id", true]], $queryCount, true));
+                    } else {
+                        $tmpTweets = $sssql->multi("SELECT `tweet_id`, `origin_tweet_id`, `conversation_id_str`, `uid`, `name`, `display_name`, `media`, `video`, `card`, `poll`, `quote_status`, `source`,  `full_text`, `full_text_origin`, `retweet_from`, `retweet_from_name`, `dispute`, `time` FROM `v2_twitter_tweets` WHERE `conversation_id_str` = (SELECT `conversation_id_str` FROM `v2_twitter_tweets` WHERE `tweet_id` = '$tweet_id') ORDER BY `time`;", true);
+                        $queryCount = count($tmpTweets) + 1;
+                        $topStatusId = 0;
                     }
-                    //query
-                    $getCount = ($_GET["count"]??$defaultTweetsCount);
-                    $queryCount = (is_numeric($getCount) ? (($getCount > 1000) ? 1000 : (($getCount < 1) ? 1 : $getCount)) : $defaultTweetsCount) + (int)($topStatusId == 0);
-                    $tmpTweets = array_merge($tmpTweets, $sssql->load("v2_twitter_tweets", ["tweet_id", "origin_tweet_id", "uid", "name", "display_name", "media", "video", "card", "poll", "quote_status", "source",  "full_text", "full_text_origin", "retweet_from", "retweet_from_name", "dispute", "time"], $querySql, [["tweet_id", true]], $queryCount, true));
                     $ReturnJson["code"] = 200;
                     $ReturnJson["message"] = "OK";
                     $ReturnJson["data"] = returnDataForTweets($tmpTweets, $queryCount + (int)($topStatusId != 0), $topStatusId, true, $rssMode, $uid === 0);
@@ -465,12 +480,12 @@ switch ($mode) {
                 }
                 break;
             case "chart":
-                // /data/chart/?name={$username}[&end={$endTimestamp}[&refresh=1[&length={$length}]]] etc.
+                // /data/chart/?name={$username}[&end={$endTimestamp}[&refresh=1[&length={$length}[&dataset=0]]]] etc.
                 // /?mode=data&type=chart&name=bang_dream_info
                 // /?mode=data&type=chart&uid=3009772568
 
                 //TODO 自定义精度
-
+                $dataSetMode = ($_GET["dataset"]??'0') === '1';
                 $endTimestamp = is_numeric($_GET["end"]??false) ? $_GET["end"] : time();//最后时间
                 $length = is_numeric($_GET["length"]??false) ? ($_GET["length"] > 2880 ? 2880 : ($_GET["length"] < 1 ? 1 : $_GET["length"])) : 720;
                 $querySql = [["uid", "=", $uid]];
@@ -480,14 +495,25 @@ switch ($mode) {
                     $querySql = array_merge($querySql, [["timestamp", "<", $endTimestamp], ["timestamp", ">", $endTimestamp - (60 * $length)]]);
                 }
 
-                $chartData = $sssql->load("twitter_data", ["timestamp", "followers", "following", "statuses_count"], $querySql, [["timestamp", true]], $length, true);//最近三小时//一天144个记录点
+                $chartData = $sssql->load("twitter_data", ["timestamp", "followers", "following", "statuses_count"], $querySql, ["timestamp"], $length);//最近三小时//一天144个记录点
                 if (count($chartData)) {
                     //foreach($chartData as $s => $sData){
                     //    $chartData[$s]["timestamp"] = date('Y-n-j G:i', $sData["timestamp"]);
                     //}
+                    //dataset
+                    $chartDataSet = [];
+
                     $ReturnJson["code"] = 200;
                     $ReturnJson["message"] = "OK";
-                    $ReturnJson["data"] = array_reverse($chartData);
+                    if ($dataSetMode) {
+                        foreach ($chartData as $tmpChartData) {
+                            $chartDataSet[] = [$tmpChartData["timestamp"], $tmpChartData["followers"], $tmpChartData["following"], $tmpChartData["statuses_count"]];
+                        }
+                        $ReturnJson["data"] = array_merge([["timestamp", "followers", "following", "statuses_count"]], $chartDataSet);
+
+                    } else {
+                        $ReturnJson["data"] = $chartData;
+                    }
                 } else {
                     $ReturnJson["code"] = 404;
                     $ReturnJson["message"] = "No Record Found";
@@ -601,7 +627,7 @@ switch ($mode) {
                             $firstSql = false;
                         }
                         
-                        $querySql = 'SELECT `tweet_id`, `origin_tweet_id`, `uid`, `name`, `display_name`, `media`, `video`, `card`, `poll`, `quote_status`, `source`, `full_text`, `full_text_origin`, `retweet_from`, `retweet_from_name`, `dispute`, `time` FROM `v2_twitter_tweets` ' . $querySql . ' ORDER BY `tweet_id`' . ($queryOrder ? '' : ' DESC') . " LIMIT {$queryCount};";
+                        $querySql = 'SELECT `tweet_id`, `origin_tweet_id`, `conversation_id_str`, `uid`, `name`, `display_name`, `media`, `video`, `card`, `poll`, `quote_status`, `source`, `full_text`, `full_text_origin`, `retweet_from`, `retweet_from_name`, `dispute`, `time` FROM `v2_twitter_tweets` ' . $querySql . ' ORDER BY `tweet_id`' . ($queryOrder ? '' : ' DESC') . " LIMIT {$queryCount};";
                         
                         //$ReturnJson["sql"] = $querySql;
                         $ReturnJson["code"] = 200;
@@ -645,7 +671,7 @@ switch ($mode) {
                         }
                         $querySql[] = $tweetIdSqlQuery;
                         $querySql[] = ["hidden", "=", 0];
-                        $tweets = $sssql -> load("v2_twitter_tweets", ["tweet_id", "origin_tweet_id", "uid", "name", "display_name", "media", "video", "card", "poll", "quote_status", "source",  "full_text", "full_text_origin", "retweet_from", "retweet_from_name", "dispute", "time"], $querySql, [["tweet_id", true]], $queryCount, true);
+                        $tweets = $sssql->select("v2_twitter_tweets", ["tweet_id", "origin_tweet_id", "conversation_id_str", "uid", "name", "display_name", "media", "video", "card", "poll", "quote_status", "source",  "full_text", "full_text_origin", "retweet_from", "retweet_from_name", "dispute", "time"], $querySql, [["tweet_id", true]], $queryCount, true);
                     }
                     $ReturnJson["code"] = 200;
                     $ReturnJson["message"] = "OK";
@@ -663,7 +689,7 @@ switch ($mode) {
                 $queryCount = (is_numeric($getCount) ? (($getCount > 1000) ? 1000 : (($getCount < 1) ? 1 : $getCount)) : $defaultTweetsCount) + 1;
 
 
-                $tweets = $sssql->multi("SELECT `tweet_id`, `origin_tweet_id`, `uid`, `name`, `display_name`, `media`, `video`, `card`, `poll`, `quote_status`, `source`,  `full_text`, `full_text_origin`, `retweet_from`, `retweet_from_name`, `dispute`, `time` FROM `v2_twitter_tweets` WHERE `tweet_id` = ANY(SELECT `tweet_id` FROM (SELECT `tweet_id` FROM `v2_twitter_entities` WHERE `text` = '" . $sssql->conn->real_escape_string($_GET["hash"]) . "'" . ((isset($_GET["tweet_id"]) && is_numeric($_GET["tweet_id"]) && $_GET["tweet_id"] > 0) ? (" AND `tweet_id` " . (($_GET["refresh"]??0) == 1 ? ">" : "<") . $sssql->conn->real_escape_string($_GET["tweet_id"])) : '') . "  AND `type` = '" . $sssql->conn->real_escape_string($type) . "' AND `hidden` = '0' ORDER BY `tweet_id` DESC LIMIT {$queryCount}) AS t) ORDER BY `tweet_id` DESC", true);
+                $tweets = $sssql->multi("SELECT `tweet_id`, `origin_tweet_id`, `conversation_id_str`, `uid`, `name`, `display_name`, `media`, `video`, `card`, `poll`, `quote_status`, `source`,  `full_text`, `full_text_origin`, `retweet_from`, `retweet_from_name`, `dispute`, `time` FROM `v2_twitter_tweets` WHERE `tweet_id` = ANY(SELECT `tweet_id` FROM (SELECT `tweet_id` FROM `v2_twitter_entities` WHERE `text` = '" . $sssql->conn->real_escape_string($_GET["hash"]) . "'" . ((isset($_GET["tweet_id"]) && is_numeric($_GET["tweet_id"]) && $_GET["tweet_id"] > 0) ? (" AND `tweet_id` " . (($_GET["refresh"]??0) == 1 ? ">" : "<") . $sssql->conn->real_escape_string($_GET["tweet_id"])) : '') . "  AND `type` = '" . $sssql->conn->real_escape_string($type) . "' AND `hidden` = '0' ORDER BY `tweet_id` DESC LIMIT {$queryCount}) AS t) ORDER BY `tweet_id` DESC", true);
 
                 if (count($tweets)) {
                     $ReturnJson["code"] = 200;
@@ -687,11 +713,11 @@ switch ($mode) {
                 if (($translate_type == "tweets" && $tweet_id > 0) || ($translate_type == "profile" && $uid > 0)) {
                     switch($translate_type){
                         case 'tweets':
-                            $tr_info = $sssql->load("v2_twitter_tweets", ["translate", "full_text_origin", "translate_source"], [["tweet_id", "=", $tweet_id]]);
+                            $tr_info = $sssql->select("v2_twitter_tweets", ["translate", "full_text_origin", "translate_source"], [["tweet_id", "=", $tweet_id]]);
                             $tr_info = count($tr_info) ? $tr_info[0] : [];
                             break;
                         case 'profile':
-                            $tr_info = $sssql->load("v2_account_info", ["description"], [["uid", "=", $uid]]);//读取个人资料
+                            $tr_info = $sssql->select("v2_account_info", ["description"], [["uid", "=", $uid]]);//读取个人资料
                             $tr_info = count($tr_info) ? ["translate" => "", "full_text_origin" => strip_tags($tr_info[0]["description"]), "translate_source" => ""] : [];//兼容上层
                             break;
                     }
@@ -720,7 +746,7 @@ switch ($mode) {
                 // /?mode=data&type=stats
 
                 //select all data
-                $tmpStats = $sssql->load("tmp_twitter_data", ["uid", "name", "followers", "following", "statuses_count"], [["visible", "=", "1"]]);
+                $tmpStats = $sssql->select("tmp_twitter_data", ["uid", "name", "followers", "following", "statuses_count"], [["visible", "=", "1"]]);
                 $findOutGroups = function ($list, $name) {
                     $tmpData = [];
                     $tmpDisplayName = "";
@@ -751,7 +777,7 @@ switch ($mode) {
 
                 //dataset mode
                 $dataSetMode = ($_GET["dataset"]??'0') === '1';
-                $Status = array_reverse($sssql->load('v2_server_info', ["time", "total_users", "total_tweets", "total_req_tweets", "total_throw_tweets", "total_req_times", "total_errors_count", "total_media_count", "total_time_cost"], [], [["time", true]], 1440, true));
+                $Status = array_reverse($sssql->select('v2_server_info', ["time", "total_users", "total_tweets", "total_req_tweets", "total_throw_tweets", "total_req_times", "total_errors_count", "total_media_count", "total_time_cost"], [], [["time", true]], 1440, true));
                 //foreach ($Status as $order => $tmpStatus) {
                 //    $Status[$order]["time"] = date('Y-n-j G:i', $tmpStatus["time"]);
                 //}
@@ -771,6 +797,10 @@ switch ($mode) {
                 $ReturnJson["code"] = 200;
                 $ReturnJson["message"] = "OK";
                 $ReturnJson["data"] = json_decode($config_data[0]["data_output"], true);
+                //if (in_array($_SERVER["HTTP_X_FORWARDED_FOR"] ?? $_SERVER["REMOTE_ADDR"] ?? $_SERVER["HTTP_CLIENT_IP"] ?? '', $whiteIPList)) {
+                //    //activeAdminMode
+                //    $ReturnJson["whiteIP"] = true;
+                //}
                 break;
             case "trends":
                 // /data/trends/ etc.
@@ -779,13 +809,13 @@ switch ($mode) {
                 $now = time();
                 $length = 24;//hours
                 $count = 50;//count
-                $tweetIdList = $sssql->multi("SELECT COUNT(text) as total, text FROM v2_twitter_entities WHERE type = 'hashtag' AND `hidden` = '0' AND `timestamp` >= \"" . ($now - $length * 3600) . "\" AND `timestamp` <= \"{$now}\" GROUP BY text ORDER BY `total` DESC LIMIT {$count}");
+                $tweetIdList = $sssql->multi("SELECT COUNT(text) as total, text FROM v2_twitter_entities WHERE type = 'hashtag' AND `hidden` = '0' AND `timestamp` >= \"" . ($now - $length * 3600) . "\" AND `timestamp` <= \"$now\" GROUP BY text ORDER BY `total` DESC LIMIT $count");
                 $hashtagList = [];
                 foreach ($tweetIdList as $hashtag) {
                     $hashtagList[] = ["text" => $hashtag[1], "count" => $hashtag[0]];
                 };
                 //tweetsCount
-                $tweetsTimeList = $sssql->load('v2_twitter_tweets', ["time"], [["time", ">=", ($now - $length * 3600)], ["time", "<=", $now], ["hidden", "=", 0]]);
+                $tweetsTimeList = $sssql->select('v2_twitter_tweets', ["time"], [["time", ">=", ($now - $length * 3600)], ["time", "<=", $now], ["hidden", "=", 0]]);
                 $tmpTimeList = array_fill(0, 24, 0);
                 foreach ($tweetsTimeList as $time) {
                     $tmpTimeList[date('G', $time["time"])]++;
@@ -819,17 +849,32 @@ switch ($mode) {
                 $tmpFollowingData = array_merge(array_slice($endData, 0, 5), array_slice($endData, -5));
                 $followingData = [];
                 foreach ($tmpFollowingData as $followingDataS) {
-                    $followingData[] = array_merge($sssql->load('v2_account_info', ["name", "display_name", "header"], [["uid", "=", $followingDataS[0]]])[0], ["count" => $followingDataS[2]]);
+                    $followingData[] = array_merge($sssql->select('v2_account_info', ["name", "display_name", "header"], [["uid", "=", $followingDataS[0]]])[0], ["count" => $followingDataS[2]]);
                 }
                 $followingData = [array_slice($followingData, 0, 5), array_slice($followingData, -5)];
                 usort($endData,"statuses_sort");
                 $tmpStatusesData = array_slice($endData, 0, 5);
                 $statusesData = [];
                 foreach ($tmpStatusesData as $statusesDataS) {
-                    $statusesData[] = array_merge($sssql->load('v2_account_info', ["name", "display_name", "header"], [["uid", "=", $statusesDataS[0]]])[0], ["count" => $statusesDataS[3]]);
+                    $statusesData[] = array_merge($sssql->select('v2_account_info', ["name", "display_name", "header"], [["uid", "=", $statusesDataS[0]]])[0], ["count" => $statusesDataS[3]]);
                 }
                 
                 $ReturnJson["data"] = ["hashtag_list" => $hashtagList, "tweet_time_list" => $tmpTimeList, "following" => $followingData, "statuses" => $statusesData, "timestamp" => $now];
+                $ReturnJson["code"] = 200;
+                $ReturnJson["message"] = "OK";
+                break;
+            case "hashtag_rank":
+                $toTime = time();
+                $startTime = $toTime - 86400;
+                $hashTagRank = $sssql->multi("SELECT COUNT(text) as value, text as name FROM v2_twitter_entities WHERE timestamp >= $startTime AND timestamp < $toTime AND type = 'hashtag' AND hidden = '0' GROUP BY name ORDER BY `value` DESC LIMIT 200;", true);
+                //$hashTagData = [];
+                //foreach ($hashTagRank as $hashTag) {
+                //    $hashTagData[] = [
+                //        "count" => (int)$hashTag[0],
+                //        "text" => $hashTag[1],
+                //    ];
+                //}
+                $ReturnJson["data"] = ["list" => $hashTagRank, "start" => $startTime, "end" => $toTime];
                 $ReturnJson["code"] = 200;
                 $ReturnJson["message"] = "OK";
                 break;
@@ -853,9 +898,6 @@ switch ($mode) {
                     $ReturnJson["message"] = $wholeInfo["errors"][0]["message"];
                 } else {
                     //extended_entities
-                    
-                    
-                    
                     $ReturnJson["code"] = 200;
                     $ReturnJson["message"] = "OK";
                     $ReturnJson["data"] = ["tweets" => $wholeInfo["globalObjects"]["tweets"], "users" => $wholeInfo["globalObjects"]["users"]];
@@ -865,28 +907,26 @@ switch ($mode) {
                 // /online/media/?tweet_id={$tweet_id} etc.
                 // /?mode=online&type=media&tweet_id={$tweet_id}
                 $wholeInfo = (new Tmv2\Fetch\Fetch())->tw_get_conversation($_GET["tweet_id"]??"");
-                if (isset($wholeInfo["errors"]) || !isset($wholeInfo["globalObjects"]["tweets"][$_GET["tweet_id"]])) {
-                    $ReturnJson["code"] = $wholeInfo["errors"][0]["code"]??404;
-                    $ReturnJson["message"] = $wholeInfo["errors"][0]["message"]??"No such tweet";
+                $generateTweetData = new Tmv2\Core\Core($wholeInfo, true, [], false);
+
+                if ($generateTweetData->errors[0] !== 0) {
+                    $ReturnJson["code"] = $generateTweetData->errors[0]??404;
+                    $ReturnJson["message"] = $generateTweetData->errors[1]??"No such tweet";
                 } else {
-                    //extended_entities
-                    $tweetMeta = isset($wholeInfo["globalObjects"]["tweets"][$_GET["tweet_id"]]["retweeted_status_id_str"]) ? $wholeInfo["globalObjects"]["tweets"][$wholeInfo["globalObjects"]["tweets"][$_GET["tweet_id"]]["retweeted_status_id_str"]]["entities"] : $wholeInfo["globalObjects"]["tweets"][$_GET["tweet_id"]];
-                    $entities = $tweetMeta["extended_entities"] ?? "";
-                    $isVideo = false;
-                    $tmpVideoInfo = [];
+                    $generateTweetData->generateTweetObject(($generateTweetData->contents)[0]);
+                    $isVideo = (bool)$generateTweetData->in_sql_tweet["video"];
+                    $tmpMedia = $generateTweetData->media;
                     $returnMedia = [];
-                    foreach ($entities["media"]??[] as $mediaMeta) {
-                        $tmpMedia = tw_media($mediaMeta, $wholeInfo["globalObjects"]["tweets"][$_GET["tweet_id"]]["user_id_str"], $_GET["tweet_id"], false);
-                        if ($tmpMedia[0]["origin_type"] == "video" || $tmpMedia[0]["origin_type"] == "animated_gif") {
-                            $isVideo = true;
-                            $tmpVideoInfo = $mediaMeta["video_info"];
-                        }
-                        foreach ($tmpMedia as $tmpMediaMeta) {
-                            if ($tmpMediaMeta["source"] != "cover") {
-                                $tmpMediaMeta["cover"] = preg_replace("/(https:\/\/|http:\/\/)/", "", $tmpMediaMeta["cover"]);
-                                $tmpMediaMeta["url"] = preg_replace("/(https:\/\/|http:\/\/)/", "", $tmpMediaMeta["url"]);
-                                $returnMedia[] = $tmpMediaMeta;
-                            }
+                    $tmpVideoInfo = new ArrayObject();
+                    if ($generateTweetData->video) {
+                        $isVideo = true;
+                        $tmpVideoInfo = $generateTweetData->video;
+                    }
+                    foreach ($tmpMedia as $tmpMediaMeta) {
+                        if ($tmpMediaMeta["source"] != "cover") {
+                            $tmpMediaMeta["cover"] = preg_replace("/(https:\/\/|http:\/\/)/", "", $tmpMediaMeta["cover"]);
+                            $tmpMediaMeta["url"] = preg_replace("/(https:\/\/|http:\/\/)/", "", $tmpMediaMeta["url"]);
+                            $returnMedia[] = $tmpMediaMeta;
                         }
                     }
                     $ReturnJson["code"] = 200;

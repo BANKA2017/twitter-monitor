@@ -1,7 +1,7 @@
 Twitter Monitor v2
 ---
 
-This is crawler and api, frontend repository is [here](https://github.com/BANKA2017/twitter-monitor-frontend/).
+This is the crawler and api, frontend repository is [here](https://github.com/BANKA2017/twitter-monitor-frontend/).
 
 这是爬虫以及api，前端仓库位于[这里](https://github.com/BANKA2017/twitter-monitor-frontend/)
 
@@ -9,6 +9,7 @@ This is crawler and api, frontend repository is [here](https://github.com/BANKA2
 
 * php8.0
 * php-mbstring php-xml php-mysqli php-gd
+* Composer
 * Nginx / Apache (we are not provide apache config file .htaccess)
 * MySQL 8.0 (it will have some issues while using MySql 5.x based database system)
 * Linux (No Windows, I am not own any Windows servers; And 64-bit system)
@@ -18,8 +19,8 @@ This is crawler and api, frontend repository is [here](https://github.com/BANKA2
 * ```git clone https://github.com/BANKA2017/twitter-monitor```
 * import ```mysql.sql``` to database
 * copy and rename ```config_sample.php``` to ```config.php``` , open and edit it
-* open ```config.html``` edit and save config file `config.json` in root path [Online1](https://banka2017.github.io/twitter-monitor/config.html)
-* *include ```nginx.conf``` in your nginx config, this is an optional step and can be ignored for crawling information only
+* open ```config.html``` edit and save config file `config.json` in root path [Online](https://banka2017.github.io/twitter-monitor/config.html)
+* *include ```nginx.conf``` in your nginx config, only crawl data is needn't
 * then run
 
     ```shell
@@ -91,6 +92,7 @@ Those are Chinese articles
 
 * php8.0
 * php-mbstring php-xml php-mysqli
+* Composer
 * Nginx / Apache (使用 Apache 请自行生成 .htaccess)
 * MySQL 8.0 (使用MariaDB等基于 MySQL 5.x 的可能会有奇怪的支持问题)
 * Linux (使用Windows可能会遇上奇奇怪怪的问题, 以及64位系统)
@@ -100,9 +102,9 @@ Those are Chinese articles
 * ```git clone https://github.com/BANKA2017/twitter-monitor```
 * 导入 ```mysql.sql```
 * 将 ```config_sample.php``` 复制一份副本并重命名为 ```config.php``` ，打开并根据实际情况编辑
-* 使用浏览器打开 ```config.html``` 编辑并保存配置文件 [在线1](https://banka2017.github.io/twitter-monitor/config.html)
+* 使用浏览器打开 ```config.html``` 编辑并保存配置文件 [在线](https://banka2017.github.io/twitter-monitor/config.html)
 * *在网站 Nginx 配置文件中添加 ```nginx.conf``` 的内容，这是可选的步骤，仅爬取数据不使用api功能可忽略此步
-* 执行
+* 运行
 
     ```shell
     composer install

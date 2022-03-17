@@ -8,8 +8,7 @@ require(SYSTEM_ROOT . '/vendor/autoload.php');
 //此值固定, 出现在https://abs.twimg.com/responsive-web/web/main.22e26814.js
 const TW_AUTHORIZATION = "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA";
 //核心文件
-require(SYSTEM_ROOT . '/mysql.php');
-require(SYSTEM_ROOT . '/scurl.php');
+
 require(SYSTEM_ROOT . '/rss.php');
 require(SYSTEM_ROOT . '/config.php');
 //require(SYSTEM_ROOT . '/GoogleTokenGenerator.php');
@@ -17,6 +16,9 @@ require(SYSTEM_ROOT . '/functions.php');
 require SYSTEM_ROOT . '/libs/tmv2.fetch.class.php';
 require SYSTEM_ROOT . '/libs/tmv2.info.class.php';
 require SYSTEM_ROOT . '/libs/tmv2.core.class.php';
+require(SYSTEM_ROOT . '/libs/mysql.php');
+require(SYSTEM_ROOT . '/libs/scurl.php');
+require(SYSTEM_ROOT . '/libs/api_path.php');
 
 //GraphqL queryId List
 $queryhqlQueryIdList = json_decode(file_get_contents(SYSTEM_ROOT . '/graphqlQueryIdList.json'), true);

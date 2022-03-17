@@ -1,7 +1,2 @@
 User-agent: *
-Disallow: /api/
-Disallow: /account/*
-Disallow: /i/*
-Disallow: /search/*
-Disallow: /hashtag/*
-Disallow: /cashtag/*
+Disallow: /

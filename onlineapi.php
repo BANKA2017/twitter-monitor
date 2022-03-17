@@ -18,7 +18,7 @@ $fetch = new Tmv2\Fetch\Fetch();
 //json
 $ReturnJson = [
     "code" => 403,
-    "message" => "Forbidden request",
+    "message" => "Invalid Request",
     "data" => [],
     "query" => ($_SERVER["QUERY_STRING"]??""),
     "version" => "online v2",
@@ -150,7 +150,7 @@ switch ($mode) {
         }else{
             switch ($mediaLinkArray["extension"]) {
                 case "banner":
-                    if(count($sssql->load("v2_account_info", ["id"], [["banner", "=", $mediaLinkArray["filename"]]]))) {
+                    if(count($sssql->select("v2_account_info", ["id"], [["banner", "=", $mediaLinkArray["filename"]]]))) {
                         header("content-type: image/jpeg");
                         header("Content-Disposition:attachment;filename=banner.jpg");
                         echo (new sscurl("https://{$mediaLinkArray["dirname"]}/{$mediaLinkArray["filename"]}"))->addMore([CURLOPT_TIMEOUT => 999])->addMore([CURLOPT_RETURNTRANSFER => false]);
@@ -163,7 +163,7 @@ switch ($mode) {
                 case "png":
                 case "mp4":
                     //TODO 此处可能需要修改
-                    if(($type == "userinfo" && count($sssql->load("v2_account_info", ["id"], [["header", "=", "https://" . str_replace('_bigger', '', $_GET["link"])]]))) || count($sssql->load("v2_twitter_media", ["id"], [["basename", "=", $mediaLinkArray["basename"]]], [], 1))) {
+                    if(($type == "userinfo" && count($sssql->select("v2_account_info", ["id"], [["header", "=", "https://" . str_replace('_bigger', '', $_GET["link"])]]))) || count($sssql->select("v2_twitter_media", ["id"], [["basename", "=", $mediaLinkArray["basename"]]], [], 1))) {
 
                         //TODO 下面是一些暂时无法解决的想法, 可能需要到v3解决
                         ////获取长度
@@ -172,7 +172,7 @@ switch ($mode) {
                         ////如果喜提空白//一般为卡片
                         //preg_match("/Content-Length: ([0-9]+)/i", $tmpLength, $tmpLength);
                         //if (!$tmpLength[1]) {
-                        //    $tmpAutoUpdateCardImageData = tw_card(tw_get_conversation($sssql->load("v2_twitter_media", ["tweet_id"], [["basename", "=", $mediaLinkArray["basename"]]], [], 1)[0]["tweet_id"])["card"], 0, 0)["media"];
+                        //    $tmpAutoUpdateCardImageData = tw_card(tw_get_conversation($sssql->select("v2_twitter_media", ["tweet_id"], [["basename", "=", $mediaLinkArray["basename"]]], [], 1)[0]["tweet_id"])["card"], 0, 0)["media"];
                         //    //回写
                         //    echo $sssql->update("v2_twitter_media", ["cover"=> $tmpAutoUpdateCardImageData["cover"], "url"=> $tmpAutoUpdateCardImageData["url"], "origin_info_width"=> $tmpAutoUpdateCardImageData["origin_info_width"], "origin_info_height"=> $tmpAutoUpdateCardImageData["origin_info_height"], "filename"=> $tmpAutoUpdateCardImageData["filename"], "basename"=> $tmpAutoUpdateCardImageData["basename"], "extension"=> $tmpAutoUpdateCardImageData["extension"], "content_type"=> $tmpAutoUpdateCardImageData["content_type"],], [["basename", "=", $mediaLinkArray["basename"]]]);
                         //    die();
@@ -234,7 +234,7 @@ switch ($mode) {
 
                 $user_info = $fetch->tw_get_userinfo($name?:$uid?:'', '', true);
 
-                $generateData = (new Tmv2\Info\Info($user_info, false))->generateMonitorData();
+                $generateData = (new Tmv2\Info\Info($user_info))->generateMonitorData();
 
                 $ReturnJson["code"] = 200;
                 $ReturnJson["message"] = "OK";
@@ -520,7 +520,7 @@ switch ($mode) {
                         }
                         $querySql[] = $tweetIdSqlQuery;
                         $querySql[] = ["hidden", "=", 0];
-                        $tweets = $sssql -> load("v2_twitter_tweets", ["tweet_id", "uid", "name", "display_name", "media", "video", "card", "poll", "quote_status", "source",  "full_text", "full_text_origin", "retweet_from", "retweet_from_name", "dispute", "time"], $querySql, [["tweet_id", true]], $queryCount, true);
+                        $tweets = $sssql->select("v2_twitter_tweets", ["tweet_id", "uid", "name", "display_name", "media", "video", "card", "poll", "quote_status", "source",  "full_text", "full_text_origin", "retweet_from", "retweet_from_name", "dispute", "time"], $querySql, [["tweet_id", true]], $queryCount, true);
                     }
                     $ReturnJson["code"] = 200;
                     $ReturnJson["message"] = "OK";
@@ -539,11 +539,11 @@ switch ($mode) {
                 if (($translate_type == "tweets" && $tweet_id > 0) || ($translate_type == "profile" && $uid > 0)) {
                     switch($translate_type){
                         case 'tweets':
-                            $tr_info = $sssql->load("v2_twitter_tweets", ["translate", "full_text_origin", "translate_source"], [["tweet_id", "=", $tweet_id]]);
+                            $tr_info = $sssql->select("v2_twitter_tweets", ["translate", "full_text_origin", "translate_source"], [["tweet_id", "=", $tweet_id]]);
                             $tr_info = count($tr_info) ? $tr_info[0] : [];
                             break;
                         case 'profile':
-                            $tr_info = $sssql->load("v2_account_info", ["description"], [["uid", "=", $uid]]);//读取个人资料
+                            $tr_info = $sssql->select("v2_account_info", ["description"], [["uid", "=", $uid]]);//读取个人资料
                             $tr_info = count($tr_info) ? ["translate" => "", "full_text_origin" => strip_tags($tr_info[0]["description"]), "translate_source" => ""] : [];//兼容上层
                             break;
                     }

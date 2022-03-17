@@ -4,6 +4,7 @@
         "ext-curl": "*",
         "ext-mysqli": "*",
         "ext-gd": "*",
-        "ext-mbstring": "*"
+        "ext-mbstring": "*",
+        "ext-redis": "*"
     }
 }

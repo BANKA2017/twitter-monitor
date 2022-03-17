@@ -15,7 +15,7 @@ $now = time() - 300;
 $sssql = new ssql($servername,$username,$password,$dbname);
 //取出已结束但未处理的
 //只取当前时刻5分钟前结束的以防统计出错
-$polls = $sssql->load("v2_twitter_polls", ["origin_tweet_id", "poll_order"], [["end_datetime", "<", $now], ["count", "=", 0], ["checked", "=", 0], ["origin_tweet_id", "!=", 0]], ["origin_tweet_id"])??[];
+$polls = $sssql->select("v2_twitter_polls", ["origin_tweet_id", "poll_order", "uid"], [["end_datetime", "<", $now], ["count", "=", 0], ["checked", "=", 0], ["origin_tweet_id", "!=", 0]], ["origin_tweet_id"])??[];
 //select tweetid
 $tweetIdList = [];
 foreach ($polls as $poll) {
@@ -28,9 +28,16 @@ foreach ($polls as $poll) {
 
 //request
 $tmp_sql = "START TRANSACTION;";
+$token = Fetch::tw_get_token();
+$tokenCount = 0;
 foreach ($tweetIdList as $tweetid => $count) {
+    if ($tokenCount > 950) {
+        $token = Fetch::tw_get_token();
+        $tokenCount = 0;
+    }
     echo "-> {$tweetid} <-\n";
-    $getdata = Fetch::tw_get_poll_result($tweetid, $count);
+    $getdata = Fetch::tw_get_poll_result($tweetid, $count, $token);
+    $tokenCount++;
     if ($getdata["code"] !== 200) {
         echo "ext_getPoll: {$getdata["message"]}\n";
         kd_push("获取{$tweetid}投票结果失败 #errorpoll ");

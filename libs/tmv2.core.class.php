@@ -8,8 +8,8 @@ namespace Tmv2\Core;
 use Tmv2\Fetch\Fetch;
 
 class Core {
-    public array $tags, $media, $card, $polls, $in_sql_tweet, $errors, $quote, $cardMessage = [], $cursor = ["top" => "", "bottom" => ""];
-    public bool $isGraphql, $isSelf, $isQuote, $online;
+    public array $tags, $media, $video, $card, $polls, $in_sql_tweet, $errors, $quote, $cardMessage = [], $cursor = ["top" => "", "bottom" => ""];
+    public bool $isGraphql, $isConversation, $isSelf, $isQuote, $online;
     private bool $isRetweet, $hidden, $isRecrawlMode;
     private array $globalObjects, $reCrawlObject, $reCrawlQuoteUsers = [];//$reCrawlObject => 0: off, 1: localMode, 2: remoteMode
     public mixed $contents, $tweet_id, $cardApp;
@@ -26,8 +26,6 @@ class Core {
         //转移
         //$this->content = $content;
         //$this->account_info = $account_info;
-
-
 
         //全局信息
         $this->globalObjects = $globalObjects;
@@ -147,7 +145,7 @@ class Core {
             ((($content["is_quote_status"]??false) &&
                 (isset($this->globalObjects["globalObjects"]["tweets"][$content["quoted_status_id_str"]??0]) || file_exists(SYSTEM_ROOT . "/savetweets/" . ($content["quoted_status_id_str"]??"notexist") . ".json"))
             )) ||
-            ((($content["legacy"]["is_quote_status"]??false) && isset($content["quoted_status"])))
+            ((($content["legacy"]["is_quote_status"]??false) && (isset($content["quoted_status"]) || isset($content["quoted_status_result"]))))
         );
         $quoteUrl = $this->isQuote ? path_to_array("tweet_quote_url", $content) : "";
 
@@ -164,6 +162,11 @@ class Core {
 
         //media
         $this->media = $this->getMedia($content, $this->in_sql_tweet["uid"], $this->in_sql_tweet["tweet_id"], $this->hidden);
+
+        //video
+        if ($this->media && ($this->media[0]["origin_type"] == "video" || $this->media[0]["origin_type"] == "animated_gif")) {
+            $this->video = path_to_array("tweet_media_path", $content)[0]["video_info"]??[];
+        }
 
         //quote
         if ($this->isQuote) {
@@ -305,7 +308,7 @@ class Core {
             $this->errors = [0, "Success"];
         } elseif (isset($this->globalObjects["errors"]) && !$this->isGraphql) {
             $this->errors = [$this->globalObjects["errors"][0]["code"], $this->globalObjects["errors"][0]["message"]];
-        } elseif (!isset($this->globalObjects["data"]["user"]["result"]["timeline"])) {
+        } elseif (!isset($this->globalObjects["data"]["user"]["result"]["timeline"]) && !isset($this->globalObjects["data"]["threaded_conversation_with_injections"]["instructions"])) {
             $this->errors = [1002, $this->globalObjects["data"]["user"]["result"]["__typename"]??"Nothing here"];
         }
 
@@ -515,6 +518,7 @@ class Core {
         $this->tags = [];//不止tag, 还有cashtag urls
         $this->quote = [];//引用
         $this->media = [];//媒体
+        $this->video = [];//视频
         $this->card = [];//卡片
         $this->cardApp = [];
         //$this->geo = [];//地理坐标

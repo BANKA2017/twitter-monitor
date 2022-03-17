@@ -3,7 +3,7 @@
  * twitter monitor v2
  * @banka2017 && NEST.MOE
  */
-require(dirname(__FILE__) . '/init.php');
+require(__DIR__ . '/init.php');
 //所有中文化的标准https://abs.twimg.com/responsive-web/web/i18n-rweb/zh.95401bf4.js
 
 //关闭
@@ -51,7 +51,7 @@ foreach ($config["users"] as $account_s => $account) {
     $refreshList[$account_s] = $account;
     $refreshIdList[$account_s] = $account['uid']??$account['name']??0;
 }
-$allInfoForAccount = $fetch->tw_get_userinfo($refreshIdList, $get_token, false);//TODO $run_options["twitter"]["graphql_mode"]);
+$allInfoForAccount = $fetch->tw_get_userinfo($refreshIdList, $get_token, $run_options["twitter"]["graphql_mode"]);
 $realAccountOrder = 0;
 foreach ($refreshList as $account_s => $account) {
     echo $account["display_name"];
@@ -110,7 +110,6 @@ foreach ($refreshList as $account_s => $account) {
     } else {
         $config["users"][$account_s]["error_count"] = 0;
     }
-
     $generateData = (new Tmv2\Info\Info($user_info))->importFromAccountInfo($account)->generateMonitorData();
 
     //legacy userinfo
@@ -146,7 +145,7 @@ foreach ($refreshList as $account_s => $account) {
     //}
 
     //使用uid或名字检查
-    $verify_info = $sssql->load("v2_account_info", ["uid", "name", "display_name", "header", "banner", "description_origin", "top", "statuses_count", "hidden", "locked", "deleted", "new", "cursor", "last_cursor"], [["uid", "=", $user_info["uid"]]]);
+    $verify_info = $sssql->select("v2_account_info", ["uid", "name", "display_name", "header", "banner", "description_origin", "top", "statuses_count", "hidden", "locked", "deleted", "new", "cursor", "last_cursor"], [["uid", "=", $user_info["uid"]]]);
     //由于早期设计失误, new字段0时为新帐号, 为1时是完成首次爬取的帐号
 
     //TODO 一万倍数检测
@@ -293,7 +292,8 @@ foreach ($name_count as $account_info) {
 
     //更多关于请求限制的信息请参阅 https://developer.twitter.com/en/docs/developer-utilities/rate-limit-status/api-reference/get-application-rate_limit_status
     //太长不看: 180req/15min
-    if (($tw_server_info["total_req_tweets"] && $tw_server_info["total_req_tweets"] % 180 == 0) && time() <= $start_time+900) {
+    //graphql只需要在999更换即可
+    if (($tw_server_info["total_req_tweets"] && $tw_server_info["total_req_tweets"] % 980 == 0) && time() <= $start_time+900) {
         //15分钟
         $sleep_time = ($start_time+900-time());
         $get_token = $fetch->tw_get_token();
@@ -326,7 +326,7 @@ foreach ($name_count as $account_info) {
     echo "cursor: --> $cursor <-- (" . count($generateTweetData->contents) . ")\n";
     foreach ($generateTweetData->contents as $order => $content) {
         //判断非推文//graphql only
-        if ($generateTweetData->isGraphql && $content["content"]["entryType"] != "TimelineTimelineItem") {
+        if ($generateTweetData->isGraphql && ($content["content"]["entryType"] != "TimelineTimelineItem" || is_bool($content))) {
             continue;
         }
 
@@ -340,8 +340,6 @@ foreach ($name_count as $account_info) {
             //}
             saveTo(SYSTEM_ROOT . "/savetweets/" . path_to_array("tweet_id", $content) . ".json", $content);
         }
-
-
 
         //判断是否本人发推
         if (path_to_array("tweet_uid", ($generateTweetData->isGraphql ? path_to_array("tweet_content", $content) : $content)) == $account_info["uid"]) {
@@ -366,7 +364,7 @@ foreach ($name_count as $account_info) {
             //丢弃策略重写, 非置顶均放行, 请自行处理重复问题, 内容锁运行正常
 
             //再次重写, 全部都检查, 只要重复就丢弃
-            if ($account_info["last_cursor"] && count($sssql->load("v2_twitter_tweets", ["id"], [["tweet_id", "=", $in_sql["tweet_id"]]]))) {
+            if ($account_info["last_cursor"] && count($sssql->select("v2_twitter_tweets", ["id"], [["tweet_id", "=", $in_sql["tweet_id"]]]))) {
                 echo "已丢弃第" . ($singleAccountTweetsCount + 1) . "条->{$in_sql["tweet_id"]} (重复推文)\n";
                 $singleAccountTweetsCount++;
                 $tw_server_info["total_throw_tweets"]++;

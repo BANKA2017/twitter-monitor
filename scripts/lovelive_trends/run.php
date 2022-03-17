@@ -65,7 +65,7 @@ foreach ($menberList as $menber) {
     $userData["team"] = $menber["team"];
     $userData["color"] = $menber["color"];
     //followers && display_name
-    $sqlFollowersData = $sssql->load("twitter_data", ["display_name", "followers", "statuses_count", "timestamp"], [["id", ">", $guestLatestTwitterDataId], ["uid", "=", $userData["uid"]], ["timestamp", ">=", $range["start"]], ["timestamp", "<=", $range["end"]]]);
+    $sqlFollowersData = $sssql->select("twitter_data", ["display_name", "followers", "statuses_count", "timestamp"], [["id", ">", $guestLatestTwitterDataId], ["uid", "=", $userData["uid"]], ["timestamp", ">=", $range["start"]], ["timestamp", "<=", $range["end"]]]);
     foreach ($sqlFollowersData as $sqlFollowersDataP) {
         //display_name
         if (!in_array($sqlFollowersDataP["display_name"], $userData["display_name"])) {
@@ -89,7 +89,7 @@ foreach ($menberList as $menber) {
         }
     }
     //tweets && tweetsCount
-    $sqlTweetsData = $sssql->load("v2_twitter_tweets", ["tweet_id", "card", "quote_status", "media", "video", "retweet_from", "time"], [["time", ">=", $range["start"]], ["time", "<=", $range["end"]], ["uid", "=", $userData["uid"]]]);
+    $sqlTweetsData = $sssql->select("v2_twitter_tweets", ["tweet_id", "card", "quote_status", "media", "video", "retweet_from", "time"], [["time", ">=", $range["start"]], ["time", "<=", $range["end"]], ["uid", "=", $userData["uid"]]]);
     foreach ($sqlTweetsData as $sqlTweetsDataP) {
         $userData["tweets"]["count"] += 1;
         $userData["tweets"]["hour_count"][date('G', $sqlTweetsDataP["time"])] += 1;

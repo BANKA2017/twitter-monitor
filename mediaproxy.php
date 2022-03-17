@@ -22,6 +22,10 @@ if (isset($_GET["format"]) && isset($_GET["name"])) {
 if(!$mediaLinkArray["filename"] || !preg_match('/^(pbs|video)\.twimg\.com\//', $mediaLinkArray["dirname"])){
     header("content-type: image/svg+xml");
     echo $ReturnSvg;
+} elseif ($mediaLinkArray["basename"] === "banner.jpg") {
+    header("content-type: image/jpeg");
+    header("Content-Disposition:attachment;filename=banner.jpg");
+    echo (new sscurl("https://{$mediaLinkArray["dirname"]}"))->addMore([CURLOPT_TIMEOUT => 999])->addMore([CURLOPT_RETURNTRANSFER => false]);
 } else {
     switch ($mediaLinkArray["extension"]) {
         case "banner": 
@@ -61,7 +65,6 @@ if(!$mediaLinkArray["filename"] || !preg_match('/^(pbs|video)\.twimg\.com\//', $
                     }
                 }
             }
-            
             break;
         default: 
             header("content-type: image/svg+xml");

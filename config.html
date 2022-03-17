@@ -70,7 +70,7 @@
                                             <div class="my-4"></div>
                                         </template>
                                         
-                                        <small id="projectHelp" class="form-text text-muted">两格从左到右分别是<code>一级目录|二级目录</code></small>
+                                        <small id="projectHelp" class="form-text text-muted">两格从左到右分别是 <code>一级目录 -> 二级目录</code></small>
                                     </div>
                                     <template v-for="(checkInfo, checkType) in {hidden: '隐藏此帐号', deleted: '帐号已删除', locked: '推文已被保护', organization: '机构帐号', not_analytics: '不统计数据'}">
                                         <div class="form-group form-check">
@@ -88,7 +88,7 @@
                             <div class="tab-pane fade" id="config-url" role="tabpanel" aria-labelledby="config-url-tab">
                                 <div v-for="(url, s) in config.links">
                                     <div class="form-group">
-                                        <label :for="`url`+s+`url`" :style="/(http|https|ftp):\/\/[^\.]+\..*/gm.test(url.url) ? '' : 'color: red'">url</label>
+                                        <label :for="`url`+s+`url`">url <small class="text-muted" v-if="!(/(http|https|ftp):\/\/[^\.]+\..*/gm.test(url.url))">若没有协议，则会使用 <code>&lt;router-link&gt;</code> 处理</small></label>
                                         <input type="text" class="form-control" v-model="config.links[s].url" :value="url.url" :id="`url`+s+`url`">
                                     </div>
                                     <div class="form-group">
