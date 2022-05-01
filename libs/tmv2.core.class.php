@@ -8,7 +8,7 @@ namespace Tmv2\Core;
 use Tmv2\Fetch\Fetch;
 
 class Core {
-    public array $tags, $media, $video, $card, $polls, $in_sql_tweet, $errors, $quote, $cardMessage = [], $cursor = ["top" => "", "bottom" => ""];
+    public array $tags, $media, $cardMedia, $quoteMedia, $video, $card, $polls, $in_sql_tweet, $errors, $quote, $cardMessage = [], $cursor = ["top" => "", "bottom" => ""];
     public bool $isGraphql, $isConversation, $isSelf, $isQuote, $online;
     private bool $isRetweet, $hidden, $isRecrawlMode;
     private array $globalObjects, $reCrawlObject, $reCrawlQuoteUsers = [];//$reCrawlObject => 0: off, 1: localMode, 2: remoteMode
@@ -184,6 +184,7 @@ class Core {
                     $this->globalObjects["globalObjects"]["tweets"][$this->in_sql_tweet["quote_status"]])), $this->in_sql_tweet["uid"], $this->in_sql_tweet["tweet_id"], $this->hidden
             );
             $this->quote = $quoteObject["in_sql_quote"];
+            $this->quoteMedia = $quoteObject["media"];
             $this->media = array_merge($this->media, $quoteObject["media"]);
         }
 
@@ -199,6 +200,7 @@ class Core {
                 $this->card = array_diff_key($this->card, ["polls" => []]);
             }
             $this->cardApp = $cardObjects["app_data"];
+            $this->cardMedia = $cardObjects["media"];
             $this->media = array_merge($this->media, $cardObjects["media"]);
             $this->cardMessage = [
                 "card_name" => $cardObjects["card_name"],
@@ -313,7 +315,21 @@ class Core {
         }
 
         if ($this->errors[0] === 0) {
-            $this->contents = path_to_array("tweets_contents", $this->globalObjects);
+            //generate tweets list
+            $this->contents = [];
+            $tmpTweets = path_to_array("tweets_instructions", $this->globalObjects);
+            //TimelineAddEntries
+            //TimelinePinEntry
+            foreach ($tmpTweets as $tmpTweet) {
+                switch ($tmpTweet["type"]) {
+                    case "TimelineAddEntries":
+                        $this->contents = array_merge($this->contents, $tmpTweet["entries"]);
+                        break;
+                    case "TimelinePinEntry":
+                        $this->contents[] = $tmpTweet["entry"];
+                        break;
+                }
+            }
             $this->globalObjectsLength = count($this->contents);
 
             if ($this->isGraphql) {
@@ -396,8 +412,11 @@ class Core {
         //name and display_name
         if ($this->isGraphql) {
             //quoted_status_result.result.core.user_results.result.legacy
-            $in_sql_quote["display_name"] = path_to_array("graphql_user_legacy", $content)["name"];
-            $in_sql_quote["name"] = path_to_array("graphql_user_legacy", $content)["screen_name"];
+            $in_sql_quote["display_name"] = path_to_array("graphql_user_legacy", $content)["name"]??"";
+            $in_sql_quote["name"] = path_to_array("graphql_user_legacy", $content)["screen_name"]??"";
+            if (!($in_sql_quote["display_name"] && $in_sql_quote["name"])) {
+                echo "tmv2: warning, no display name [{$in_sql_quote["tweet_id"]}]\n";
+            }
         } else {
             if ($this->isRecrawlMode) {
                 if ($this->reCrawlObject["quote_name"]) {
@@ -427,7 +446,7 @@ class Core {
         $tmpEntities = path_to_array("tweet_entities", $content) ?: [];
 
         foreach (($tmpEntities["urls"]??[]) as $quote_entity) {
-            $in_sql_quote["full_text"] = str_replace($quote_entity["url"], "<a href=\"//{$quote_entity["expanded_url"]}\" id=\"quote_url\" target=\"_blank\" style=\"color: black\">{$quote_entity["display_url"]}</a>", $in_sql_quote["full_text"]);
+            $in_sql_quote["full_text"] = str_replace($quote_entity["url"], "<a href=\"{$quote_entity["expanded_url"]}\" id=\"quote_url\" target=\"_blank\" style=\"color: black\">{$quote_entity["display_url"]}</a>", $in_sql_quote["full_text"]);
         }
         $in_sql_quote["full_text"] = nl2br(preg_replace('/ https:\/\/t.co\/[\w]+/', '', $in_sql_quote["full_text"]));
 
@@ -518,6 +537,8 @@ class Core {
         $this->tags = [];//不止tag, 还有cashtag urls
         $this->quote = [];//引用
         $this->media = [];//媒体
+        $this->quoteMedia = [];//引用媒体
+        $this->cardMedia = [];//卡片媒体
         $this->video = [];//视频
         $this->card = [];//卡片
         $this->cardApp = [];

@@ -14,7 +14,7 @@ do {
     try {
         //SELECT cover, ANY_VALUE(tweet_id) as tweet_id FROM v2_twitter_media WHERE extension != 'mp4' AND blurhash IS NULL GROUP BY cover
         //SELECT cover FROM v2_twitter_media WHERE extension != 'mp4' AND source = 'tweets' AND blurhash IS NULL GROUP BY cover
-        $data = $sssql->multi("SELECT cover, ANY_VALUE(tweet_id), ANY_VALUE(source) as tweet_id FROM v2_twitter_media WHERE blurhash IS NULL GROUP BY cover LIMIT 100;");
+        $data = $sssql->multi("SELECT cover, ANY_VALUE(tweet_id), ANY_VALUE(source) as tweet_id FROM v2_twitter_media WHERE source != 'cards' AND blurhash IS NULL GROUP BY cover LIMIT 100;");
     } catch (Exception $e) {
         $data = [];
     }

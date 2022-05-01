@@ -145,41 +145,60 @@ function returnDataForTweets (array $tweets = [], int $count = 0, string $top = 
                 if ($quoteObject["tweet_id"] === $tweets[$x]["quote_status"]) {
                     $tweets[$x]["quoteObject"] = $quoteObject;
                     $tweets[$x]["quoteObject"]["id_str"] = (string)$quoteObject["tweet_id"];
-                    $tweets[$x]["quoteObject"]["full_text"] = strip_tags($tweets[$x]["quoteObject"]["full_text"]);
                     $tweets[$x]["quote_status_str"] = $tweets[$x]["quoteObject"]["id_str"];
+
+                    $tmpFullText = $tweets[$x]["quoteObject"]["full_text"];
+                    $tweets[$x]["quoteObject"]["full_text"] = strip_tags($tweets[$x]["quoteObject"]["full_text"]);
+                    preg_match_all('/<a href="([^"]+)"[^>]+>([^<]+)<\/a>|(?:\s|\p{P}|^)#([^\s\p{P}]+)/u', $tmpFullText, $Match);
+                    $List = [];
+                    $lastEnd = 0;
+                    foreach ($Match[2] as $order => $value) {
+                        if ($value === "") {
+                            $text = $Match[3][$order];
+                            $beforeLength = mb_strlen(stristr(mb_substr($tweets[$x]["quoteObject"]["full_text"], $lastEnd), "#{$text}", true)) + $lastEnd;
+                            $lastEnd = $beforeLength + mb_strlen($text) + 1;
+                            $List[] = [
+                                "expanded_url" => "",
+                                "indices_end" => $lastEnd,
+                                "indices_start" => $beforeLength,
+                                "text" => $text,
+                                "type" => "hashtag",
+                            ];
+                        } else {
+                            $beforeLength = mb_strlen(stristr(mb_substr($tweets[$x]["quoteObject"]["full_text"], $lastEnd), $value, true)) + $lastEnd;
+                            $lastEnd = $beforeLength + mb_strlen($value);
+                            $List[] = [
+                                "expanded_url" => str_replace("//http", "http", $Match[1][$order]),
+                                "indices_end" => $lastEnd,
+                                "indices_start" => $beforeLength,
+                                "text" => $value,
+                                "type" => "url",
+                            ];
+                        }
+                    }
+                    $tweets[$x]["quoteObject"]["entities"] = $List;
                     break;
                 }
             }
         }
         $tmpImageText = "";
         //寻找媒体
-        $tweets[$x]["mediaObject"] = ["tweetsMedia" => [], "quoteMedia" => [], "cardMedia" => []];
+        $tweets[$x]["mediaObject"] = [];
         if ($tweets[$x]["media"] || ($tweets[$x]["cardObject"]["media"]??0) || ($tweets[$x]["quoteObject"]["media"]??0)) {
             foreach ($tmpMediaObject as $queryMedia_single) {
                 if ($queryMedia_single["tweet_id"] === $tweets[$x]["tweet_id"] || $queryMedia_single["tweet_id"] === $tweets[$x]["quote_status"]) {
                     $queryMedia_single["cover"] = str_replace(["http://", "https://"], "", $queryMedia_single["cover"]);
                     $queryMedia_single["url"] = str_replace(["http://", "https://"], "", $queryMedia_single["url"]);
-                    switch ($queryMedia_single["source"]) {
-                        case "tweets":
-                            //不符合的直接丢弃
-                            if ($queryMedia_single["tweet_id"] == $tweets[$x]["tweet_id"]) {
-                                $tweets[$x]["mediaObject"]["tweetsMedia"][] = $queryMedia_single;
-                                $tmpImageText .= '<img src="https://pbs.twimg.com/media/' . $queryMedia_single["filename"] . '?format=' . $queryMedia_single["extension"] . '&name=orig">';
-                            }
-                            break;
-                        case "cards":
-                            $tweets[$x]["mediaObject"]["cardMedia"][] = $queryMedia_single;
-                            break;
-                        case "quote_status":
-                            $tweets[$x]["mediaObject"]["quoteMedia"][] = $queryMedia_single;
-                            break;
+                    if ($queryMedia_single["source"] === "tweets" && $queryMedia_single["tweet_id"] == $tweets[$x]["tweet_id"]) {
+                        $tmpImageText .= '<img src="https://pbs.twimg.com/media/' . $queryMedia_single["filename"] . '?format=' . $queryMedia_single["extension"] . '&name=orig">';
+                        $tweets[$x]["mediaObject"][] = $queryMedia_single;
+                    } elseif ($queryMedia_single["source"] === "cards" || $queryMedia_single["source"] === "quote_status") {
+                        $tweets[$x]["mediaObject"][] = $queryMedia_single;
                     }
                 }
             }
             //处理重复
-            $tweets[$x]["mediaObject"]["tweetsMedia"] = mediaObject($tweets[$x]["mediaObject"]["tweetsMedia"]);
-            $tweets[$x]["mediaObject"]["cardMedia"] = mediaObject($tweets[$x]["mediaObject"]["cardMedia"]);
-            $tweets[$x]["mediaObject"]["quoteMedia"] = mediaObject($tweets[$x]["mediaObject"]["quoteMedia"]);
+            $tweets[$x]["mediaObject"] = mediaObject($tweets[$x]["mediaObject"]);
         }
         //foreach($tweets[$x]["media"] as $single_media){
         //    if($single_media["origin"]["origin_type"] != "photo"){
@@ -356,7 +375,11 @@ switch ($mode) {
                 }
             }
         }
-        
+
+        if ($uid === "undefined") {
+            $uid = 0;
+        }
+
         switch ($type) {
             case "userinfo":
                 // /data/userinfo/?name={$username} etc.
@@ -382,7 +405,7 @@ switch ($mode) {
                     $descriptionText = $ReturnJson["data"]["description"];
                     $textWithoutTags = strip_tags($descriptionText);
                     $ReturnJson["data"]["description_origin"] = $textWithoutTags;
-                    preg_match_all('/<a href="([^"]+)" target="_blank">([^<]+)<\/a>|(?:\s|\p{P}|^)#([^\s\p{P}]+)/u', $descriptionText, $Match);
+                    preg_match_all('/<a href="([^"]+)"[^>]+>([^<]+)<\/a>|(?:\s|\p{P}|^)#([^\s\p{P}]+)/u', $descriptionText, $Match);
                     $List = [];
                     $lastEnd = 0;
                     foreach ($Match[2] as $order => $value) {

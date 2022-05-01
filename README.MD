@@ -40,7 +40,7 @@ This is the crawler and api, frontend repository is [here](https://github.com/BA
 
 ## Supported Cards
 
-* summary*
+    * summary*
     * summary_large_image
     * promo_image_convo
     * promo_video_convo
@@ -73,7 +73,11 @@ This is the crawler and api, frontend repository is [here](https://github.com/BA
         * image_carousel_app
         * video_carousel_app
         * image_multi_dest_carousel_website
+        * video_multi_dest_carousel_website
+        * mixed_media_single_dest_carousel_website
+        * mixed_media_single_dest_carousel_app
         * twitter_list_details
+        * media_with_details_horizontal (for topic ?)
 
 ## Thanks
 
@@ -159,7 +163,11 @@ Those are Chinese articles
         * image_carousel_app
         * video_carousel_app
         * image_multi_dest_carousel_website
+        * video_multi_dest_carousel_website
+        * mixed_media_single_dest_carousel_website
+        * mixed_media_single_dest_carousel_app
         * twitter_list_details
+        * media_with_details_horizontal (for topic ?)
 
     这些卡片示例都可以在 ```docs/cards.json``` 找到
 

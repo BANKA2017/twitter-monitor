@@ -83,7 +83,7 @@ class Fetch{
     //get tweets
     public static function tw_get_tweets (int|float|string $queryString, string $cursor = "", array | string $guestToken = [], int|bool $count = false, bool $online = false, bool $graphqlMode = false, bool $searchMode = false): array {
         $guestToken = $guestToken ?: self::tw_get_token();
-        $count = $count ?: ($cursor ? 20 : ($online ? 20 : ($graphqlMode ? 499 : 999)));
+        $count = $count ?: ($cursor ? 40 : ($online ? 40 : ($graphqlMode ? 499 : 999)));
         //TODO move server info to global scripts//$GLOBALS["tw_server_info"]["total_req_times"]++;
         //实际上即使写了999网页api返回800-900条记录, 客户端返回约400-450条记录
         //网页版使用的

@@ -2,14 +2,16 @@
 
 //path between restapi and graphql
 //see also ~ scripts/apiPathGenerator/run.php
-function path_to_array (string $handle = "", array | null $source = []): mixed {
-    if ($source === null) {
+function path_to_array (string $handle = "", array | bool | null $source = []): mixed {
+    if ($source === null || $source === false) {
         return false;
     }
     return match ($handle) {
         "rest_id" => $source["id_str"]??$source["data"]["user"]["result"]["rest_id"]??false,
         "user_info_legacy" => $source["data"]["user"]["result"]["legacy"]??$source??false,
+        "tweets_instructions" => $source["globalObjects"]["tweets"]??$source["data"]["user"]["result"]["timeline_v2"]["timeline"]["instructions"]??$source["data"]["user"]["result"]["timeline"]["timeline"]["instructions"]??$source["data"]["threaded_conversation_with_injections"]["instructions"]??false,
         "tweets_contents" => $source["globalObjects"]["tweets"]??$source["data"]["user"]["result"]["timeline_v2"]["timeline"]["instructions"][0]["entries"]??$source["data"]["user"]["result"]["timeline_v2"]["timeline"]["instructions"][1]["entries"]??$source["data"]["user"]["result"]["timeline"]["timeline"]["instructions"][0]["entries"]??$source["data"]["user"]["result"]["timeline"]["timeline"]["instructions"][1]["entries"]??$source["data"]["threaded_conversation_with_injections"]["instructions"][0]["entries"]??$source["data"]["threaded_conversation_with_injections"]["instructions"][1]["entries"]??false,
+        "tweets_top_content" => $source["data"]["user"]["result"]["timeline_v2"]["timeline"]["instructions"][2]["entry"]??$source["data"]["user"]["result"]["timeline"]["timeline"]["instructions"][2]["entry"]??false,
         "tweet_content" => $source["content"]["itemContent"]["tweet_results"]["result"]??$source["content"]["itemContent"]["tweet"]??false,
         "tweet_id" => $source["id_str"]??$source["rest_id"]??$source["content"]["itemContent"]["tweet"]["rest_id"]??$source["content"]["itemContent"]["tweet_results"]["result"]["rest_id"]??false,
         "tweet_uid" => $source["user_id_str"]??$source["legacy"]["user_id_str"]??false,

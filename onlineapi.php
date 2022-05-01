@@ -5,7 +5,7 @@
  */
 
 ini_set('display_errors',1);
-header("Access-Control-Allow-Origin: *");
+//header("Access-Control-Allow-Origin: *");
 
 ob_implicit_flush();
 require(__DIR__ . '/init.php');
@@ -21,7 +21,7 @@ $ReturnJson = [
     "message" => "Invalid Request",
     "data" => [],
     "query" => ($_SERVER["QUERY_STRING"]??""),
-    "version" => "online v2",
+    "version" => "test",
 ];
 
 //svg
@@ -47,53 +47,47 @@ function returnDataForTweets (
         $tweet["entities"] = $tweetEntities;
     }
     //$tweet["full_text_origin"] = preg_replace('/ https:\/\/t.co\/[\w]+/', '', $tweet["full_text_origin"]);//TODO for history mode
-    //处理投票
-    if ($tweet["poll"]) {
-        $tweet["pollObject"] = $tweetPolls;
-    }
+    //TODO 处理投票
+    $tweet["poll"] = 0;
+    //if ($tweet["poll"]) {
+    //    $tweet["pollObject"] = $tweetPolls;
+    //}
     //处理卡片
-    $tweet["cardObject"] = [];
+    $tweet["cardObject"] = new ArrayObject();
     if ($tweet["card"]) {
         $tweet["cardObject"] = $tweetCard;
-        if ($tweet["cardObject"] !== [] && $tweet["cardObject"]["unified_card_app"]) {
+        if ($tweet["cardObject"] && $tweet["cardObject"]["unified_card_app"]) {
             $tweet["cardObject"]["unified_card_app"] = (bool)$tweet["cardObject"]["unified_card_app"];
             $tweet["cardObject"]["app"] = $tweetCardApp;
+            $tweet["cardObject"]["secondly_type"] = $tweet["cardObject"]["secondly_type"] ? $tweet["cardObject"]["secondly_type"] : '';
         }
     }
     //处理引用
-    $tweet["quoteObject"] = [];
+    $tweet["quoteObject"] = new ArrayObject();
     if ($tweet["quote_status"]) {
         $tweet["quoteObject"] = $tweetQuote;
         //$tweet["quoteObject"]["full_text"] = strip_tags($tweet["quoteObject"]["full_text"]);
     }
     $tmpImageText = "";
     //寻找媒体
-    $tweet["mediaObject"] = ["tweetsMedia" => [], "quoteMedia" => [], "cardMedia" => []];
+    $tweet["mediaObject"] = [];
     if ($tweet["media"] || ($tweet["cardObject"]["media"]??0) || ($tweet["quoteObject"]["media"]??0)) {
         foreach ($tweetMedia as $queryMedia_single) {
-            $queryMedia_single["cover"] = str_replace(["http://", "https://"], "", $queryMedia_single["cover"]);
-            $queryMedia_single["url"] = str_replace(["http://", "https://"], "", $queryMedia_single["url"]);
-            switch ($queryMedia_single["source"]) {
-                case "tweets":
-                    //不符合的直接丢弃
-                    if ($queryMedia_single["tweet_id"] == $tweet["tweet_id"]) {
-                        $tweet["mediaObject"]["tweetsMedia"][] = $queryMedia_single;
-                        $tmpImageText .= '<img src="https://pbs.twimg.com/media/' . $queryMedia_single["filename"] . '?format=' . $queryMedia_single["extension"] . '&name=orig">';
-                    }
-                    break;
-                case "cards":
-                    $tweet["mediaObject"]["cardMedia"][] = $queryMedia_single;
-                    break;
-                case "quote_status":
-                    $tweet["mediaObject"]["quoteMedia"][] = $queryMedia_single;
-                    break;
+            if ($queryMedia_single["tweet_id"] === $tweet["tweet_id"] || $queryMedia_single["tweet_id"] === $tweet["quote_status"]) {
+                $queryMedia_single["cover"] = str_replace(["http://", "https://"], "", $queryMedia_single["cover"]);
+                $queryMedia_single["url"] = str_replace(["http://", "https://"], "", $queryMedia_single["url"]);
+                if ($queryMedia_single["source"] === "tweets" && $queryMedia_single["tweet_id"] == $tweet["tweet_id"]) {
+                    $tmpImageText .= '<img src="https://pbs.twimg.com/media/' . $queryMedia_single["filename"] . '?format=' . $queryMedia_single["extension"] . '&name=orig">';
+                    $tweet["mediaObject"][] = $queryMedia_single;
+                } elseif ($queryMedia_single["source"] === "cards" || $queryMedia_single["source"] === "quote_status") {
+                    $tweet["mediaObject"][] = $queryMedia_single;
+                }
             }
         }
         //处理重复
-        $tweet["mediaObject"]["tweetsMedia"] = mediaObject($tweet["mediaObject"]["tweetsMedia"]);
-        $tweet["mediaObject"]["cardMedia"] = mediaObject($tweet["mediaObject"]["cardMedia"]);
-        $tweet["mediaObject"]["quoteMedia"] = mediaObject($tweet["mediaObject"]["quoteMedia"]);
+        $tweet["mediaObject"] = mediaObject($tweet["mediaObject"]);
     }
+
     $tweet["tweet_id_str"] = (string)$tweet["tweet_id"];//Number.MAX_SAFE_INTEGER => 9007199254740991 "9007199254740991".length => 16
     $tweet["uid_str"] = (string)$tweet["uid"];//同上
 
@@ -225,6 +219,11 @@ switch ($mode) {
         $uid = is_numeric($_GET["uid"]??false)? $_GET["uid"] :0;
 
         switch ($type) {
+            case "accounts":
+                $ReturnJson["code"] = 200;
+                $ReturnJson["message"] = "OK";
+                $ReturnJson["data"] = [];
+                break;
             case "userinfo":
                 // /data/userinfo/?name={$username} etc.
                 // /?mode=data&type=userinfo&name=bang_dream_info
@@ -294,13 +293,12 @@ switch ($mode) {
                 //TODO $_GET["date"] no use
                 //TODO $_GET["count"] means count
                 //TODO merge search mode
-                //TODO fix refresh bug '1 new'
                 $getCount = ($_GET["count"]??$defaultTweetsCount);
                 $queryCount = (is_numeric($getCount) ? (($getCount > 1000) ? 1000 : (($getCount < 1) ? 1 : $getCount)) : $defaultTweetsCount);
                 //filter:media
-                $queryString = "from:$name since:2000-01-01 include:nativeretweets";//$name 2000-01-01 include retweets
+                $queryString = "from:$name since:2000-01-01 include:nativeretweets include:retweets include:quote";//$name 2000-01-01 include retweets
                 if ($cursor) {
-                    $queryString .= ((int)($_GET["refresh"]??false) != 0) ? (" since_id:" . $cursor) : (" max_id:" . $cursor);
+                    $queryString .= ((int)($_GET["refresh"]??false) != 0) ? (" since_id:" . $cursor + 1) : (" max_id:" . $cursor - 1);
                 }
                 $tweets = $fetch->tw_get_tweets($queryString, "", "", $queryCount, true, false, true);
 
@@ -344,13 +342,15 @@ switch ($mode) {
                                 ($in_sql["card"] && !$in_sql["poll"]) ? $generateTweetData->card : [],
                                 ($in_sql["card"] && !$in_sql["poll"] && $generateTweetData->cardApp) ? $generateTweetData->cardApp : [],
                                 $generateTweetData->isQuote ? $generateTweetData->quote : [],
-                                $generateTweetData->media??[]
+                                $generateTweetData->media??[],
                             );
                         }
 
                         krsort($tweetData);
 
-
+                        //resetAll
+                        $generateTweetData->resetAll();
+                        $generateTweetData->setup();
                     }
                     //data
                     $ReturnJson["code"] = 200;

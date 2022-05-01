@@ -9,6 +9,12 @@ const apiPath = [
         'data.user.result.legacy',
         '',
     ],
+    "tweets_instructions" => [
+        "globalObjects.tweets",
+        "data.user.result.timeline_v2.timeline.instructions",
+        "data.user.result.timeline.timeline.instructions",
+        "data.threaded_conversation_with_injections.instructions",
+    ],
     "tweets_contents" => [
         "globalObjects.tweets",
         "data.user.result.timeline_v2.timeline.instructions.0.entries",
@@ -17,6 +23,10 @@ const apiPath = [
         "data.user.result.timeline.timeline.instructions.1.entries",
         "data.threaded_conversation_with_injections.instructions.0.entries",
         "data.threaded_conversation_with_injections.instructions.1.entries",
+    ],
+    "tweets_top_content" => [
+        "data.user.result.timeline_v2.timeline.instructions.2.entry",
+        "data.user.result.timeline.timeline.instructions.2.entry",
     ],
     "tweet_content" => [
         "content.itemContent.tweet_results.result",
@@ -113,4 +123,4 @@ foreach (apiPath as $name => $path) {
 }
 $text .= "        default => false\n    };";
 file_put_contents(__DIR__ . '/../../libs/api_path.php', "<?php\n\n//path between restapi and graphql\n//see also ~ scripts/apiPathGenerator/run.php\nfunction path_to_array (string \$handle = \"\", array | null \$source = []): mixed {\n    if (\$source === null) {\n        return false;\n    }\n    $text\n}\n");
-echo "<?php\n\n//path between restapi and graphql\n//see also ~ scripts/apiPathGenerator/run.php\nfunction path_to_array (string \$handle = \"\", array | null \$source = []): mixed {\n    if (\$source === null) {\n        return false;\n    }\n    $text\n}\n";
+echo "<?php\n\n//path between restapi and graphql\n//see also ~ scripts/apiPathGenerator/run.php\nfunction path_to_array (string \$handle = \"\", array | bool | null \$source = []): mixed {\n    if (\$source === null || \$source === false) {\n        return false;\n    }\n    $text\n}\n";

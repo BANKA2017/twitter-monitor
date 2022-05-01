@@ -200,7 +200,7 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
             "vanity_url" => "",//用于展示的域名
             "url" => $url,//实际域名
             "media" => 0,//是否有媒体
-            "secondly_type" => null,
+            "secondly_type" => "",
             "unified_card_app" => 0,
             //"poll" => 0,//是否有投票
         ],
@@ -288,7 +288,8 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
         //$tmpComponents = $cardInfo["components"];
         //看不懂啊，这都是啥啊
         $card["data"]["media"] = 1;//是否有媒体
-        $card["data"]["secondly_type"] = $childCardInfo["type"]??$childCardInfo["component_objects"]["details_1"]["type"]??"";//子类型
+        //子类型
+        $card["data"]["secondly_type"] = $childCardInfo["type"]??$childCardInfo["component_objects"]["details_1"]["type"]??$childCardInfo["component_objects"]["media_with_details_horizontal_1"]["type"]??"";//子类型
         //处理子组件类型
         switch ($card["data"]["secondly_type"]) {
             //上面是 图/视频 加链接, 虽然也没看明白
@@ -306,6 +307,7 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
             case "video_app":
             case "image_carousel_app"://https://twitter.com/stc_ksa/status/1359170192706703360
             case "video_carousel_app"://没找到实例, 但我觉得存在
+            case "mixed_media_single_dest_carousel_app":
                 $card["data"]["unified_card_app"] = 1;
                 $card["data"]["title"] = $childCardInfo["app_store_data"]["app_1"][0]["title"]["content"];//标题
                 $card["data"]["description"] = $childCardInfo["app_store_data"]["app_1"][0]["category"]["content"];//内容
@@ -325,6 +327,11 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
                         "category" => $childCardAppInfo["category"]["content"],//类型
                     ];
                 }
+                break;
+            case "mixed_media_single_dest_carousel_website":
+                $card["data"]["description"] = $childCardInfo["component_objects"]["details_1"]["data"]["title"]["content"];
+                $card["data"]["vanity_url"] = $childCardInfo["component_objects"]["details_1"]["data"]["subtitle"]["content"];
+                $card["data"]["url"] = $childCardInfo["destination_objects"]["browser_1"]["data"]["url_data"]["url"];
                 break;
             case "image_multi_dest_carousel_website":
             case "video_multi_dest_carousel_website":
@@ -349,11 +356,16 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
                 $card["data"]["vanity_url"] = $childCardInfo["users"][$childCardInfo["component_objects"]["details_1"]["data"]["user_id"]]["name"] . "\t" . $childCardInfo["users"][$childCardInfo["component_objects"]["details_1"]["data"]["user_id"]]["screen_name"] . "\t" . (int)($childCardInfo["users"][$childCardInfo["component_objects"]["details_1"]["data"]["user_id"]]["verified"]);
                 $card["data"]["url"] = $childCardInfo["destination_objects"][$childCardInfo["component_objects"]["details_1"]["data"]["destination"]]["data"]["url_data"]["url"];
                 break;
+            case "media_with_details_horizontal":
+                $card["data"]["description"] = $childCardInfo["component_objects"]["media_with_details_horizontal_1"]["data"]["topic_detail"]["title"]["content"];
+                $card["data"]["vanity_url"] = $childCardInfo["destination_objects"]["browser_1"]["data"]["url_data"]["vanity"];
+                $card["data"]["url"] = $childCardInfo["destination_objects"]["browser_1"]["data"]["url_data"]["url"];
+                break;
             default:
                 //https://developer.twitter.com/en/docs/twitter-ads-api/creatives/api-reference/cards
                 //不知道还有什么，现在只找到这些
                 //不知道说什么，报个警吧
-                kd_push("快来研究新的子卡片\n #new_child_card #{$card["data"]["secondly_type"]} \nid: {$tweetid}\nhttps://twitter.com/i/status/{$tweetid}\n" . $cardInfo["binding_values"]["unified_card"]["string_value"], $GLOBALS["token"], $GLOBALS["push_to"]);//喵喵喵
+                kd_push("快来研究新的子卡片\n #new_child_card #{$card["data"]["secondly_type"]} \nid: {$tweetid}\nhttps://twitter.com/i/status/{$tweetid}\n" . $cardInfo["binding_values"]["unified_card"]["string_value"]);//喵喵喵
         }
         if (isset($childCardInfo["media_entities"])) {
             //媒体
@@ -363,10 +375,10 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
                     $tmpChildMediaList[] = $childCardInfo["component_objects"][$slide[0]]["data"];
                 }
             } else {
-                $tmpChildMediaList = $childCardInfo["component_objects"]["swipeable_media_1"]["data"]["media_list"]??[$childCardInfo["component_objects"]["media_1"]["data"]];
+                $tmpChildMediaList = $childCardInfo["component_objects"]["swipeable_media_1"]["data"]["media_list"]??[$childCardInfo["component_objects"]["media_1"]["data"]??["id" => "media_1"]];
             }
             foreach ($tmpChildMediaList as $childCardMediaInfoKeyInfo) {
-                $card["media"] = array_merge($card["media"], tw_media ($childCardInfo["media_entities"][$childCardMediaInfoKeyInfo["id"]], $uid, $tweetid, $hidden, "cards", "{$card["data"]["type"]}_{$card["data"]["secondly_type"]}_card_{$childCardInfo["media_entities"][$childCardMediaInfoKeyInfo["id"]]["type"]}", "", $online));
+                $card["media"] = array_merge($card["media"], tw_media($childCardInfo["media_entities"][$childCardMediaInfoKeyInfo["id"]], $uid, $tweetid, $hidden, "cards", "{$card["data"]["type"]}_{$card["data"]["secondly_type"]}_card_{$childCardInfo["media_entities"][$childCardMediaInfoKeyInfo["id"]]["type"]}", "", $online));
             }
         }
         return $card;
