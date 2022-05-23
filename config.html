@@ -239,7 +239,7 @@
                             try {
                                 let textareaDataArray = JSON.parse(this.textareaData);
                                 if(textareaDataArray !== this.config && (textareaDataArray.users && textareaDataArray.links && textareaDataArray.nsfwList)){
-                                    textareaDataArray.users.map(user => {user.uid = String(user.uid); return user})
+                                    textareaDataArray.users.map(user => {user.uid = user.uid !== undefined ? String(user.uid) : ""; return user})
                                     this.config = textareaDataArray;
                                 }
                             } catch {
