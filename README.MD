@@ -74,6 +74,7 @@ This is the crawler and api, frontend repository is [here](https://github.com/BA
         * video_carousel_app
         * image_multi_dest_carousel_website
         * video_multi_dest_carousel_website
+        * mixed_media_multi_dest_carousel_website
         * mixed_media_single_dest_carousel_website
         * mixed_media_single_dest_carousel_app
         * twitter_list_details
@@ -164,6 +165,7 @@ Those are Chinese articles
         * video_carousel_app
         * image_multi_dest_carousel_website
         * video_multi_dest_carousel_website
+        * mixed_media_multi_dest_carousel_website
         * mixed_media_single_dest_carousel_website
         * mixed_media_single_dest_carousel_app
         * twitter_list_details

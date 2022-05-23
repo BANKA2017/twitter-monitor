@@ -310,7 +310,7 @@ class Core {
             $this->errors = [0, "Success"];
         } elseif (isset($this->globalObjects["errors"]) && !$this->isGraphql) {
             $this->errors = [$this->globalObjects["errors"][0]["code"], $this->globalObjects["errors"][0]["message"]];
-        } elseif (!isset($this->globalObjects["data"]["user"]["result"]["timeline"]) && !isset($this->globalObjects["data"]["threaded_conversation_with_injections"]["instructions"])) {
+        } elseif (!path_to_array("tweets_instructions", $this->globalObjects) && $this->isGraphql) {
             $this->errors = [1002, $this->globalObjects["data"]["user"]["result"]["__typename"]??"Nothing here"];
         }
 
@@ -333,8 +333,21 @@ class Core {
             $this->globalObjectsLength = count($this->contents);
 
             if ($this->isGraphql) {
-                $this->cursor["top"] = $this->contents[$this->globalObjectsLength - 2]["content"]["value"]??"";
-                $this->cursor["bottom"] = $this->contents[$this->globalObjectsLength - 1]["content"]["value"]??"";
+                $this->cursor["top"] = "";
+                $this->cursor["bottom"] = "";
+                $tmpIndex = $this->globalObjectsLength > 3 ? ($this->globalObjectsLength - 3) : 0;
+                for (; $tmpIndex < $this->globalObjectsLength; $tmpIndex++) {
+                    if ($this->contents[$tmpIndex]["content"]["entryType"] !== "TimelineTimelineCursor") { continue; }
+                    switch ($this->contents[$tmpIndex]["content"]["cursorType"]) {
+                        case "Top":
+                            $this->cursor["top"] = $this->contents[$tmpIndex]["content"]["value"];
+                            break;
+                        case "Bottom":
+                            $this->cursor["bottom"] = $this->contents[$tmpIndex]["content"]["value"];
+                            break;
+                    }
+                }
+
             } else {
                 foreach ($this->globalObjects["timeline"]["instructions"] as $first_instructions) {
                     foreach ($first_instructions as $second_instructions => $second_instructions_value) {

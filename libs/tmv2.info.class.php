@@ -149,4 +149,9 @@ class Info{
                 "deleted" => $this->in_sql_info["deleted"]
             ]);
     }
+
+    //just for check
+    public function verifyData2 (int | string $statuses_count): bool {
+        return (string)$statuses_count !== (string)($this->in_sql_info["statuses_count"]);
+    }
 }

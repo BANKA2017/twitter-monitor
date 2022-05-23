@@ -147,7 +147,7 @@ function returnDataForTweets (array $tweets = [], int $count = 0, string $top = 
                     $tweets[$x]["quoteObject"]["id_str"] = (string)$quoteObject["tweet_id"];
                     $tweets[$x]["quote_status_str"] = $tweets[$x]["quoteObject"]["id_str"];
 
-                    $tmpFullText = $tweets[$x]["quoteObject"]["full_text"];
+                    $tmpFullText = str_replace('<br />', '', $tweets[$x]["quoteObject"]["full_text"]);
                     $tweets[$x]["quoteObject"]["full_text"] = strip_tags($tweets[$x]["quoteObject"]["full_text"]);
                     preg_match_all('/<a href="([^"]+)"[^>]+>([^<]+)<\/a>|(?:\s|\p{P}|^)#([^\s\p{P}]+)/u', $tmpFullText, $Match);
                     $List = [];

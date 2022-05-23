@@ -333,8 +333,11 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
                 $card["data"]["vanity_url"] = $childCardInfo["component_objects"]["details_1"]["data"]["subtitle"]["content"];
                 $card["data"]["url"] = $childCardInfo["destination_objects"]["browser_1"]["data"]["url_data"]["url"];
                 break;
+            //case "mixed_media_multi_dest_carousel_app":
+            //    break;
             case "image_multi_dest_carousel_website":
             case "video_multi_dest_carousel_website":
+            case "mixed_media_multi_dest_carousel_website":
                 //TODO dest were not same, but i have to join them in the same string
                 foreach ($childCardInfo["layout"]["data"]["slides"] as $slide) {
                     //use "STRING".split("\t")
@@ -370,7 +373,8 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
         if (isset($childCardInfo["media_entities"])) {
             //媒体
             $tmpChildMediaList = [];
-            if ($card["data"]["secondly_type"] === "image_multi_dest_carousel_website" || $card["data"]["secondly_type"] === "video_multi_dest_carousel_website") {
+            //$card["data"]["secondly_type"] === "image_multi_dest_carousel_website" || $card["data"]["secondly_type"] === "video_multi_dest_carousel_website"
+            if (isset($childCardInfo["layout"]["data"]["slides"])) {
                 foreach ($childCardInfo["layout"]["data"]["slides"] as $slide) {
                     $tmpChildMediaList[] = $childCardInfo["component_objects"][$slide[0]]["data"];
                 }
@@ -494,7 +498,7 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
                 $tmp_whereIsInfoFrom["origin"] = "photo_image";
                 $card["data"]["url"] = $cardInfo["binding_values"]["url"]["string_value"];
                 break;
-            //类似clubhouse的玩意, 仅限600fo以上的iOS用户发起
+            //类似clubhouse的玩意
             //https://help.twitter.com/en/using-twitter/spaces
             //https://twitter.com/twitterspaces
             case "audiospace":
@@ -788,8 +792,8 @@ function getBlurHash (string $fileUrl): string {
             }
             $pixels[] = $row;
         }
-        $components_x = $width / 10;
-        $components_y = $height / 10;
+        $components_x = 3;//$width / 10;
+        $components_y = 3;//$height / 10;
         return Blurhash::encode($pixels, $components_x, $components_y);
     } catch (Exception $e) {
         return "deleted";

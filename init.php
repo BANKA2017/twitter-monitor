@@ -64,6 +64,7 @@ const tw_supportUnifiedCardNameList = [
     "video_carousel_app",
     "image_multi_dest_carousel_website",
     "video_multi_dest_carousel_website",
+    "mixed_media_multi_dest_carousel_website",
     "mixed_media_single_dest_carousel_website",
     "mixed_media_single_dest_carousel_app",
     "twitter_list_details",

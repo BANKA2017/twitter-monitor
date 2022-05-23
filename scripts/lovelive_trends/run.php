@@ -53,6 +53,7 @@ $dataTemplate = [
 
 $menberList = json_decode(file_get_contents(__DIR__ . "/userlist.json"), true);
 $generateData = ["data" => [], "range" => $range ];
+//-->重跑时需要注意下一行的减号<--
 $guestLatestTwitterDataId = $sssql->multi("SELECT id FROM `twitter_data` ORDER BY id DESC LIMIT 1;", true)[0]["id"] - 1500000;
 foreach ($menberList as $menber) {
     $startTime = microtime(true);

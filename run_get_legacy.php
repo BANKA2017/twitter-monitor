@@ -49,7 +49,7 @@ foreach ($config["users"] as $account_s => $account) {
         continue;
     }
     $refreshList[$account_s] = $account;
-    $refreshIdList[$account_s] = $account['uid']??$account['name']??0;
+    $refreshIdList[$account_s] = isset($account['uid']) ? ($account['uid']?:$account['name']?:0) : ($account['name']??0);
 }
 $allInfoForAccount = $fetch->tw_get_userinfo($refreshIdList, $get_token, $run_options["twitter"]["graphql_mode"]);
 $realAccountOrder = 0;
@@ -117,7 +117,7 @@ foreach ($refreshList as $account_s => $account) {
     $user_info = $generateData->in_sql_info;
 
     if (!$user_info["uid"]) {
-        $userInfoErrorsForPush .= $account["name"] . "出现数据错误 #account_info";//KDpush
+        $userInfoErrorsForPush .= $account["name"] . "出现数据错误 #account_info\n";//KDpush
         continue;
     }
 
@@ -183,7 +183,7 @@ foreach ($refreshList as $account_s => $account) {
         echo " - 刷新记录";
 
         $verify_info[0]["top"] = (string)$verify_info[0]["top"];
-        if ($verify_info[0]["new"] == '1' && $generateData->verifyData(array_slice($verify_info[0], 0, 11))) {
+        if ($verify_info[0]["new"] == '1' && $generateData->verifyData2($verify_info[0]["statuses_count"]??'0')) {
 
             echo " - 需要更新";
             $name_count[] = [
@@ -260,13 +260,14 @@ if (count($name_count) && $run_options["twitter"]["tweets"]) {
     echo "开始抓取推文\n";
     $tw_server_info["total_users"] = count($name_count);
     //各api独立计算, 无需cd sleep(60);//强制cd已启动
-}
-//elseif ($run_options["twitter"]["local_data"]) {
-//    $sssql->insert("v2_server_info", $tw_server_info);
-//    echo "没有更新\n";
-//}
-else {
-    echo "没有更新\n";
+} else {
+    echo $run_options["twitter"]["tweets"] ? "没有更新\n" : "已关闭推文抓取\n";
+    $tw_server_info["total_time_cost"] = microtime(true) - $tw_server_info["microtime"];
+    //echo "system: cost {$tw_server_info["total_time_cost"]}s\n";
+    //v2_server_info
+    if ($run_options["twitter"]["local_data"]) {
+        $sssql->insert("v2_server_info", $tw_server_info);
+    }
 }
 //$tw_server_info["total_req_tweets"] = 1;//次数
 $start_time = time();

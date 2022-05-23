@@ -214,5 +214,29 @@
         "project": "Lovelive!",
         "team": "Liella!",
         "color": "#0000a0"
+    },
+    {
+        "name": "NozomiSuzuhara",
+        "name_cn": "鈴原希実",
+        "uid": "1524521415017639937",
+        "project": "Lovelive!",
+        "team": "Liella!",
+        "color": "#fff442"
+    },
+    {
+        "name": "AyaEmori_BOX",
+        "name_cn": "絵森彩",
+        "uid": "1430478886299525126",
+        "project": "Lovelive!",
+        "team": "Liella!",
+        "color": "#ff51c4"
+    },
+    {
+        "name": "a_yabushima",
+        "name_cn": "薮島朱音",
+        "uid": "1524967746752348161",
+        "project": "Lovelive!",
+        "team": "Liella!",
+        "color": "#ff3535"
     }
 ]
