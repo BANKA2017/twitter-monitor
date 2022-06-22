@@ -114,7 +114,7 @@ Those are Chinese articles
     ```shell
     composer install
     ```
-    
+
 * 根据个人喜好设定crontab，下面是例子
 
     ```shell
@@ -171,9 +171,9 @@ Those are Chinese articles
         * twitter_list_details
         * media_with_details_horizontal (for topic ?)
 
-    这些卡片示例都可以在 ```docs/cards.json``` 找到
+  这些卡片示例都可以在 ```docs/cards.json``` 找到
 
-    *其中 `unified_card` 的示例不齐，将在未来补齐
+  *其中 `unified_card` 的示例不齐，将在未来补齐
 
 ## 出处 & 感谢
 

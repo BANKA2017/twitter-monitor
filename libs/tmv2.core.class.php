@@ -8,8 +8,8 @@ namespace Tmv2\Core;
 use Tmv2\Fetch\Fetch;
 
 class Core {
-    public array $tags, $media, $cardMedia, $quoteMedia, $video, $card, $polls, $in_sql_tweet, $errors, $quote, $cardMessage = [], $cursor = ["top" => "", "bottom" => ""];
-    public bool $isGraphql, $isConversation, $isSelf, $isQuote, $online;
+    public array $tags, $media, $cardMedia, $quoteMedia, $video, $card, $polls, $in_sql_tweet, $errors, $quote, $cardMessage = [], $cursor = ["top" => "", "bottom" => ""], $interactiveData = ["favorite_count" => 0, "retweet_count" => 0, "quote_count" => 0];
+    public bool $isGraphql, $isConversation, $isSelf, $isQuote, $online, $isRtl;
     private bool $isRetweet, $hidden, $isRecrawlMode;
     private array $globalObjects, $reCrawlObject, $reCrawlQuoteUsers = [];//$reCrawlObject => 0: off, 1: localMode, 2: remoteMode
     public mixed $contents, $tweet_id, $cardApp;
@@ -214,8 +214,14 @@ class Core {
         if ($this->media) {
             $this->in_sql_tweet["media"] = 1;
         }
-
-
+        //interactive data
+        $this->interactiveData = [
+            "favorite_count" => $content["legacy"]["favorite_count"]??$content["favorite_count"]??0,
+            "retweet_count" => $content["legacy"]["retweet_count"]??$content["retweet_count"]??0,
+            "quote_count" => $content["legacy"]["quote_count"]??$content["quote_count"]??0,
+        ];
+        //rtl
+        $this->isRtl = in_array($content["legacy"]["lang"]??$content["lang"]??"", ["ar", "fa", "iw", "ur"]);
         return $this;
     }
 
@@ -318,21 +324,20 @@ class Core {
             //generate tweets list
             $this->contents = [];
             $tmpTweets = path_to_array("tweets_instructions", $this->globalObjects);
-            //TimelineAddEntries
-            //TimelinePinEntry
-            foreach ($tmpTweets as $tmpTweet) {
-                switch ($tmpTweet["type"]) {
-                    case "TimelineAddEntries":
-                        $this->contents = array_merge($this->contents, $tmpTweet["entries"]);
-                        break;
-                    case "TimelinePinEntry":
-                        $this->contents[] = $tmpTweet["entry"];
-                        break;
-                }
-            }
-            $this->globalObjectsLength = count($this->contents);
-
             if ($this->isGraphql) {
+                //TimelineAddEntries
+                //TimelinePinEntry
+                foreach ($tmpTweets as $tmpTweet) {
+                    switch ($tmpTweet["type"]) {
+                        case "TimelineAddEntries":
+                            $this->contents = array_merge($this->contents, $tmpTweet["entries"]);
+                            break;
+                        case "TimelinePinEntry":
+                            $this->contents[] = $tmpTweet["entry"];
+                            break;
+                    }
+                }
+                $this->globalObjectsLength = count($this->contents);
                 $this->cursor["top"] = "";
                 $this->cursor["bottom"] = "";
                 $tmpIndex = $this->globalObjectsLength > 3 ? ($this->globalObjectsLength - 3) : 0;
@@ -349,6 +354,7 @@ class Core {
                 }
 
             } else {
+                $this->contents = array_merge($this->contents, $tmpTweets);
                 foreach ($this->globalObjects["timeline"]["instructions"] as $first_instructions) {
                     foreach ($first_instructions as $second_instructions => $second_instructions_value) {
                         if ($second_instructions === "addEntries") {
@@ -372,7 +378,10 @@ class Core {
         return $this;
     }
 
-    public function getMedia(array $content = [], int|float|string $uid = 0, int|float|string $tweet_id = 0, bool $hidden = false, string $source = "tweets", string $card_type = ""): array {//, bool $returnSql
+    public function getMedia(array | bool $content = [], int|float|string $uid = 0, int|float|string $tweet_id = 0, bool $hidden = false, string $source = "tweets", string $card_type = ""): array {//, bool $returnSql
+        if (is_bool($content)) {
+            return [];
+        }
         $tmpMedia = [];
         $autoMergeArray = false;
         foreach (path_to_array("tweet_media_path", $content)?:[] as $order => $single_entities) {
@@ -557,5 +566,7 @@ class Core {
         $this->cardApp = [];
         //$this->geo = [];//地理坐标
         $this->polls = [];
+        $this->interactiveData = ["favorite_count" => 0, "retweet_count" => 0, "quote_count" => 0];//reset data
+        $this->isRtl = false;
     }
 }

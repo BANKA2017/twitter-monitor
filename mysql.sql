@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.1.1
+-- version 5.2.0
 -- https://www.phpmyadmin.net/
 --
 -- 主机： localhost
--- 生成日期： 2022-01-19 14:46:21
--- 服务器版本： 8.0.27
--- PHP 版本： 8.0.14
+-- 生成日期： 2022-06-21 14:23:29
+-- 服务器版本： 8.0.29
+-- PHP 版本： 8.0.20
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -212,12 +212,14 @@ CREATE TABLE `v2_twitter_media` (
   `origin_type` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `origin_info_width` int NOT NULL,
   `origin_info_height` int NOT NULL,
+  `title` text COLLATE utf8mb4_general_ci,
+  `description` text COLLATE utf8mb4_general_ci,
   `media_key` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `source` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `blurhash` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `deleted` tinyint DEFAULT '0',
   `hidden` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=COMPACT;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
 
 -- --------------------------------------------------------
 

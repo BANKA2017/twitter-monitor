@@ -76,6 +76,8 @@ function tw_media (array $media, string $uid, string $tweetid, bool $hidden = fa
         "hidden" => $hidden,//是否隐藏
         "source" => $source,//来源tweets cards
         //"blurhash" => "",
+        "title" => "",
+        "description" => "",
     ];
     $single_media["uid"] = $uid;//用户id
     $single_media["tweet_id"] = $tweetid;//tweet id
@@ -83,6 +85,10 @@ function tw_media (array $media, string $uid, string $tweetid, bool $hidden = fa
     $single_media["origin_info_width"] = $media["original_info"]["width"];
     $single_media["origin_info_height"] = $media["original_info"]["height"];
     $single_media["media_key"] = $media["media_key"]??"";//你问我这个media_key是啥我只能说我也不知道
+    if (isset($media["additional_media_info"])) {
+        $single_media["title"] = $media["additional_media_info"]["title"]??"";
+        $single_media["description"] = $media["additional_media_info"]["description"]??"";
+    }
     switch ($media["type"]) {
         case "video":
         case "animated_gif":
@@ -120,6 +126,8 @@ function tw_media (array $media, string $uid, string $tweetid, bool $hidden = fa
                     "media_key" => $media["media_key"]??"",
                     "source" => "cover",
                     //"blurhash" => "",
+                    "title" => "",
+                    "description" => "",
                 ]
             ];
 

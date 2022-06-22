@@ -31,12 +31,16 @@ const apiPath = [
     "tweet_content" => [
         "content.itemContent.tweet_results.result",
         "content.itemContent.tweet",
+        "item.itemContent.tweet_results.result",
+        "item.itemContent.tweet",
     ],
     "tweet_id" => [
         "id_str",
         "rest_id",
         "content.itemContent.tweet.rest_id",
-        "content.itemContent.tweet_results.result.rest_id"
+        "content.itemContent.tweet_results.result.rest_id",
+        "item.itemContent.tweet.rest_id",
+        "item.itemContent.tweet_results.result.rest_id",
     ],
     "tweet_uid" => [
         "user_id_str",
@@ -122,5 +126,5 @@ foreach (apiPath as $name => $path) {
     //"rest_id" => $source["id_str"]??$source["data"]["user"]["rest_id"],
 }
 $text .= "        default => false\n    };";
-file_put_contents(__DIR__ . '/../../libs/api_path.php', "<?php\n\n//path between restapi and graphql\n//see also ~ scripts/apiPathGenerator/run.php\nfunction path_to_array (string \$handle = \"\", array | null \$source = []): mixed {\n    if (\$source === null) {\n        return false;\n    }\n    $text\n}\n");
+file_put_contents(__DIR__ . '/../../libs/api_path.php', "<?php\n\n//path between restapi and graphql\n//see also ~ scripts/apiPathGenerator/run.php\nfunction path_to_array (string \$handle = \"\", array | bool | null \$source = []): mixed {\n    if (\$source === null || \$source === false) {\n        return false;\n    }\n    $text\n}\n");
 echo "<?php\n\n//path between restapi and graphql\n//see also ~ scripts/apiPathGenerator/run.php\nfunction path_to_array (string \$handle = \"\", array | bool | null \$source = []): mixed {\n    if (\$source === null || \$source === false) {\n        return false;\n    }\n    $text\n}\n";

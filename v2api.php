@@ -85,7 +85,7 @@ function returnDataForTweets (array $tweets = [], int $count = 0, string $top = 
         $tmpCardObject = $GLOBALS['sssql']->select("v2_twitter_cards", ["tweet_id", "title", "description", "vanity_url", "type", "secondly_type", "url", "media", "unified_card_app"], [["tweet_id", "IN", $tweetIdList]])??[];
         $tmpCardApps = $GLOBALS['sssql']->select("v2_twitter_card_app", ["tweet_id", "unified_card_type", "type", "appid", "country_code", "title", "category"], [["tweet_id", "IN", $tweetIdList]]);
         $tmpQuoteObject = $GLOBALS['sssql']->select("v2_twitter_quote", ["tweet_id", "name", "display_name", "full_text", "time", "media", "video"], [["tweet_id", "IN", $quoteTweetIdList]])??[];
-        $tmpMediaObject = $GLOBALS['sssql']->select("v2_twitter_media", ["tweet_id", "uid", "cover", "url", "extension", "filename", "origin_type", "source", "content_type", "origin_info_height", "origin_info_width", "blurhash"], [["tweet_id", "IN", array_unique(array_merge($tweetIdList, $quoteTweetIdList))], ["source", "!=", "cover"]]);
+        $tmpMediaObject = $GLOBALS['sssql']->select("v2_twitter_media", ["tweet_id", "uid", "cover", "url", "extension", "filename", "origin_type", "source", "content_type", "origin_info_height", "origin_info_width", "title", "description", "blurhash"], [["tweet_id", "IN", array_unique(array_merge($tweetIdList, $quoteTweetIdList))], ["source", "!=", "cover"]]);
     }
 
     for ($x = 0; $x < $real_count; $x++) {
@@ -149,7 +149,7 @@ function returnDataForTweets (array $tweets = [], int $count = 0, string $top = 
 
                     $tmpFullText = str_replace('<br />', '', $tweets[$x]["quoteObject"]["full_text"]);
                     $tweets[$x]["quoteObject"]["full_text"] = strip_tags($tweets[$x]["quoteObject"]["full_text"]);
-                    preg_match_all('/<a href="([^"]+)"[^>]+>([^<]+)<\/a>|(?:\s|\p{P}|^)#([^\s\p{P}]+)/u', $tmpFullText, $Match);
+                    preg_match_all('/<a href="([^"]+)"[^>]+>([^<]+)<\/a>|(?:\s|\p{P}|^)#([_^\s\p{P}]+)/u', $tmpFullText, $Match);
                     $List = [];
                     $lastEnd = 0;
                     foreach ($Match[2] as $order => $value) {
@@ -189,6 +189,13 @@ function returnDataForTweets (array $tweets = [], int $count = 0, string $top = 
                 if ($queryMedia_single["tweet_id"] === $tweets[$x]["tweet_id"] || $queryMedia_single["tweet_id"] === $tweets[$x]["quote_status"]) {
                     $queryMedia_single["cover"] = str_replace(["http://", "https://"], "", $queryMedia_single["cover"]);
                     $queryMedia_single["url"] = str_replace(["http://", "https://"], "", $queryMedia_single["url"]);
+                    //remove it if not exist
+                    if (!($queryMedia_single["title"]??false)) {
+                        unset($queryMedia_single["title"]);
+                    }
+                    if (!($queryMedia_single["description"]??false)) {
+                        unset($queryMedia_single["description"]);
+                    }
                     if ($queryMedia_single["source"] === "tweets" && $queryMedia_single["tweet_id"] == $tweets[$x]["tweet_id"]) {
                         $tmpImageText .= '<img src="https://pbs.twimg.com/media/' . $queryMedia_single["filename"] . '?format=' . $queryMedia_single["extension"] . '&name=orig">';
                         $tweets[$x]["mediaObject"][] = $queryMedia_single;
@@ -405,7 +412,7 @@ switch ($mode) {
                     $descriptionText = $ReturnJson["data"]["description"];
                     $textWithoutTags = strip_tags($descriptionText);
                     $ReturnJson["data"]["description_origin"] = $textWithoutTags;
-                    preg_match_all('/<a href="([^"]+)"[^>]+>([^<]+)<\/a>|(?:\s|\p{P}|^)#([^\s\p{P}]+)/u', $descriptionText, $Match);
+                    preg_match_all('/<a href="([^"]+)"[^>]+>([^<]+)<\/a>|(?:\s|\p{P}|^)#([_^\s\p{P}]+)/u', $descriptionText, $Match);
                     $List = [];
                     $lastEnd = 0;
                     foreach ($Match[2] as $order => $value) {
@@ -887,9 +894,14 @@ switch ($mode) {
                 $ReturnJson["message"] = "OK";
                 break;
             case "hashtag_rank":
+                // /data/hashtag_rank/[?count={$count}] etc.
+                // /?mode=data&type=hashtag_rank[&count={$count}]
+                $count = (is_numeric($_GET["count"]??"") ? $_GET["count"] : 20);
+                if ($count > 200) {$count = 200;}
+                if ($count < 1) {$count = 1;}
                 $toTime = time();
                 $startTime = $toTime - 86400;
-                $hashTagRank = $sssql->multi("SELECT COUNT(text) as value, text as name FROM v2_twitter_entities WHERE timestamp >= $startTime AND timestamp < $toTime AND type = 'hashtag' AND hidden = '0' GROUP BY name ORDER BY `value` DESC LIMIT 200;", true);
+                $hashTagRank = $sssql->multi("SELECT COUNT(text) as value, text as name FROM v2_twitter_entities WHERE timestamp >= $startTime AND timestamp < $toTime AND type = 'hashtag' AND hidden = '0' GROUP BY name ORDER BY `value` DESC LIMIT $count;", true);
                 //$hashTagData = [];
                 //foreach ($hashTagRank as $hashTag) {
                 //    $hashTagData[] = [
