@@ -51,13 +51,13 @@ class Fetch{
     //generate url
     private static function generate_url (string|int $user, bool $isGraphql = false): string {
         if ($isGraphql) {
-            $graphqlObject = ["withSuperFollowsUserFields" => true];
+            $graphqlVariables = ["withSuperFollowsUserFields" => true];
             if (is_numeric($user)) {
-                $graphqlObject["userId"] = $user;
-                return "https://twitter.com/i/api/graphql/" . queryhqlQueryIdList["UserByRestId"]["queryId"] . "/UserByRestId?variables=" . urlencode(json_encode($graphqlObject));
+                $graphqlVariables["userId"] = $user;
+                return "https://twitter.com/i/api/graphql/" . queryhqlQueryIdList["UserByRestId"]["queryId"] . "/UserByRestId?variables=" . urlencode(json_encode($graphqlVariables));
             } else {
-                $graphqlObject["screen_name"] = $user;
-                return "https://twitter.com/i/api/graphql/" . queryhqlQueryIdList["UserByScreenName"]["queryId"] . "/UserByScreenName?variables=" . urlencode(json_encode($graphqlObject));
+                $graphqlVariables["screen_name"] = $user;
+                return "https://twitter.com/i/api/graphql/" . queryhqlQueryIdList["UserByScreenName"]["queryId"] . "/UserByScreenName?variables=" . urlencode(json_encode($graphqlVariables));
             }
         } else {
             return "https://api.twitter.com/1.1/users/show.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&" . (is_numeric($user) ? "user_id=" : "screen_name=") . $user;
@@ -92,7 +92,7 @@ class Fetch{
         if ($graphqlMode) {
             //{"includePromotedContent":true,,,"withBirdwatchPivots":false,,,,"withSuperFollowsTweetFields":true,"withVoice":true,,"__fs_interactive_text":false,"__fs_dont_mention_me_view_api_enabled":false}
 
-            $graphqlObject = [
+            $graphqlVariables = [
                 "userId" => $queryString,
                 "count" => $count,
                 "withTweetQuoteCount" => true,
@@ -108,10 +108,20 @@ class Fetch{
                 "withNonLegacyCard" => true,
                 "withV2Timeline" => false,
             ];
+
+            $graphqlFeatures = [
+                "dont_mention_me_view_api_enabled" => true,
+                "interactive_text_enabled" => true,
+                "responsive_web_uc_gql_enabled" => false,
+                "vibe_tweet_context_enabled" => false,
+                "responsive_web_edit_tweet_api_enabled" => false,
+                "standardized_nudges_misinfo" => false,
+                "responsive_web_enhance_cards_enabled" => false
+            ];
             if ($cursor) {
-                $graphqlObject["cursor"] = $cursor;
+                $graphqlVariables["cursor"] = $cursor;
             }
-            return (new Fetch)->tw_fetch("https://twitter.com/i/api/graphql/" . queryhqlQueryIdList["UserTweets"]["queryId"] . "/UserTweets?variables=" . urlencode(json_encode($graphqlObject)), $guestToken);
+            return (new Fetch)->tw_fetch("https://twitter.com/i/api/graphql/" . queryhqlQueryIdList["UserTweets"]["queryId"] . "/UserTweets?" . http_build_query(["variables" => json_encode($graphqlVariables), "features" => json_encode($graphqlFeatures)]), $guestToken);
         } elseif ($searchMode) {
             //TODO Graphql for search
             //https://twitter.com/i/api/2/search/adaptive.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweet=true&q=from%3Abang_dream_info%20since%3A2000-01-01&tweet_search_mode=live&count=20&query_source=typed_query&pc=1&spelling_corrections=1&ext=mediaStats%2ChighlightedLabel%2CsignalsReactionMetadata%2CsignalsReactionPerspective%2CvoiceInfo
@@ -126,7 +136,7 @@ class Fetch{
         $guestToken = $guestToken ?: self::tw_get_token();
         //时隔多月又要更新这玩意了, 这次是因为卡片的图片时间久远了会失效......确实有点让人绝望
         if ($graphqlMode) {
-            $graphqlObject = [
+            $graphqlVariables = [
                 "focalTweetId" => $tweet_id,
                 "with_rux_injections" => false,
                 "includePromotedContent" => true,
@@ -141,7 +151,16 @@ class Fetch{
                 "withVoice" => true,
                 "withV2Timeline" => false,
             ];
-            return (new Fetch)->tw_fetch("https://twitter.com/i/api/graphql/" . queryhqlQueryIdList["TweetDetail"]["queryId"] . "/TweetDetail?variables=" . urlencode(json_encode($graphqlObject)), $guestToken);
+            $graphqlFeatures = [
+                "dont_mention_me_view_api_enabled" => true,
+                "interactive_text_enabled" => true,
+                "responsive_web_uc_gql_enabled" => false,
+                "vibe_tweet_context_enabled" => false,
+                "responsive_web_edit_tweet_api_enabled" => false,
+                "standardized_nudges_misinfo" => false,
+                "responsive_web_enhance_cards_enabled" => false
+            ];
+            return (new Fetch)->tw_fetch("https://twitter.com/i/api/graphql/" . queryhqlQueryIdList["TweetDetail"]["queryId"] . "/TweetDetail?" . http_build_query(["variables" => json_encode($graphqlVariables), "features" => json_encode($graphqlFeatures)]), $guestToken);
         } else {
             return (new Fetch)->tw_fetch("https://api.twitter.com/2/timeline/conversation/$tweet_id.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_composer_source=true&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweets=true&count=1&ext=mediaStats%2CcameraMoment", $guestToken);
         }
