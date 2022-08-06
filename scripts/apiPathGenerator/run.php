@@ -4,6 +4,7 @@ const apiPath = [
     "rest_id" => [
         'id_str',
         'data.user.result.rest_id',
+        'core.user_results.result.rest_id',
     ],
     "user_info_legacy" => [
         'data.user.result.legacy',
@@ -13,16 +14,19 @@ const apiPath = [
         "globalObjects.tweets",
         "data.user.result.timeline_v2.timeline.instructions",
         "data.user.result.timeline.timeline.instructions",
+        "data.threaded_conversation_with_injections_v2.instructions",
         "data.threaded_conversation_with_injections.instructions",
     ],
     "tweets_contents" => [
         "globalObjects.tweets",
-        "data.user.result.timeline_v2.timeline.instructions.0.entries",
         "data.user.result.timeline_v2.timeline.instructions.1.entries",
-        "data.user.result.timeline.timeline.instructions.0.entries",
+        "data.user.result.timeline_v2.timeline.instructions.0.entries",
         "data.user.result.timeline.timeline.instructions.1.entries",
-        "data.threaded_conversation_with_injections.instructions.0.entries",
+        "data.user.result.timeline.timeline.instructions.0.entries",
+        "data.threaded_conversation_with_injections_v2.instructions.1.entries",
+        "data.threaded_conversation_with_injections_v2.instructions.0.entries",
         "data.threaded_conversation_with_injections.instructions.1.entries",
+        "data.threaded_conversation_with_injections.instructions.0.entries",
     ],
     "tweets_top_content" => [
         "data.user.result.timeline_v2.timeline.instructions.2.entry",

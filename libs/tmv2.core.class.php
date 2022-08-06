@@ -6,9 +6,10 @@
 namespace Tmv2\Core;
 
 use Tmv2\Fetch\Fetch;
+use Tmv2\Info\Info;
 
 class Core {
-    public array $tags, $media, $cardMedia, $quoteMedia, $video, $card, $polls, $in_sql_tweet, $errors, $quote, $cardMessage = [], $cursor = ["top" => "", "bottom" => ""], $interactiveData = ["favorite_count" => 0, "retweet_count" => 0, "quote_count" => 0];
+    public array $userInfo, $retweetUserInfo, $tags, $media, $cardMedia, $quoteMedia, $video, $card, $polls, $in_sql_tweet, $errors, $quote, $cardMessage = [], $cursor = ["top" => "", "bottom" => ""], $interactiveData = ["favorite_count" => 0, "retweet_count" => 0, "quote_count" => 0];
     public bool $isGraphql, $isConversation, $isSelf, $isQuote, $online, $isRtl;
     private bool $isRetweet, $hidden, $isRecrawlMode;
     private array $globalObjects, $reCrawlObject, $reCrawlQuoteUsers = [];//$reCrawlObject => 0: off, 1: localMode, 2: remoteMode
@@ -56,6 +57,12 @@ class Core {
         if ($this->isGraphql) {
             $content = path_to_array("tweet_content", $content);
         }
+        /* * 需要从数据库取得
+         * * id 锁定位置
+         * * tweet_id 唯一id
+         * * ~uid~ name display_name 用户信息, 因为无法取得当时数据
+         * * retweet_from retweet_from_name 转推原始用户信息, 原因同上
+         * */
         $this->in_sql_tweet["tweet_id"] = path_to_array("tweet_id", $content);
         $this->in_sql_tweet["origin_tweet_id"] = $this->in_sql_tweet["tweet_id"];
         $this->in_sql_tweet["uid"] = path_to_array("tweet_uid", $content);
@@ -82,8 +89,23 @@ class Core {
             $this->in_sql_tweet["name"] = $this->reCrawlObject["name"];
             $this->in_sql_tweet["display_name"] = $this->reCrawlObject["display_name"];
         } else {
-            $this->in_sql_tweet["name"] = $this->findUserInGlobalObjects($this->in_sql_tweet["uid"])["screen_name"]??path_to_array("graphql_user_legacy", $content)["screen_name"]??"";
-            $this->in_sql_tweet["display_name"] = $this->findUserInGlobalObjects($this->in_sql_tweet["uid"])["name"]??path_to_array("graphql_user_legacy", $content)["name"]??"";
+            $tmpInfo = $this->findUserInGlobalObjects($this->in_sql_tweet["uid"])?:path_to_array("graphql_user_legacy", $content)?:[];
+            if ($tmpInfo && isset($tmpInfo["screen_name"])) {
+                $tmpInfoHandle = (new Info($tmpInfo))->generateMonitorData();
+                $this->userInfo = $tmpInfoHandle->in_sql_info;
+                $this->userInfo["description"] = nl2br($this->userInfo["description"]);
+                $this->userInfo["top"] = (string)($this->userInfo["top"] ?: 0);
+                $this->userInfo["header"] = preg_replace("/http:\/\/|https:\/\//", "", $this->userInfo["header"]);
+                $this->userInfo["uid_str"] = (string)$this->userInfo["uid"];
+
+                //description
+                $descriptionText = $this->userInfo["description"];
+                $textWithoutTags = strip_tags($descriptionText);
+                $this->userInfo["description_origin"] = $textWithoutTags;
+                $this->userInfo["description_entities"] = getEntitiesFromText($descriptionText, $textWithoutTags);
+                $this->in_sql_tweet["name"] = $this->userInfo["name"]??"";
+                $this->in_sql_tweet["display_name"] = $this->userInfo["display_name"]??"";
+            }
         }
         //判断是否转推
         //TODO 处理local模式下的 recrawl
@@ -94,8 +116,23 @@ class Core {
             if ($this->isGraphql) {
                 $content = path_to_array("retweet_graphql_path", $content);
                 //quoted_status_result.result.core.user_results.result.legacy.screen_name
-                $this->in_sql_tweet["retweet_from"] = path_to_array("graphql_user_legacy", $content)["name"];
-                $this->in_sql_tweet["retweet_from_name"] = path_to_array("graphql_user_legacy", $content)["screen_name"];
+                $tmpInfo = path_to_array("graphql_user_legacy", $content)??[];
+                if ($tmpInfo && isset($tmpInfo["screen_name"])) {
+                    $tmpInfoHandle = (new Info($tmpInfo))->generateMonitorData();
+                    $this->retweetUserInfo = $tmpInfoHandle->in_sql_info;
+                    $this->retweetUserInfo["description"] = nl2br($this->retweetUserInfo["description"]);
+                    $this->retweetUserInfo["top"] = (string)($this->retweetUserInfo["top"] ?: 0);
+                    $this->retweetUserInfo["header"] = preg_replace("/http:\/\/|https:\/\//", "", $this->retweetUserInfo["header"]);
+                    $this->retweetUserInfo["uid_str"] = (string)$this->retweetUserInfo["uid"];
+
+                    //description
+                    $descriptionText = $this->retweetUserInfo["description"];
+                    $textWithoutTags = strip_tags($descriptionText);
+                    $this->retweetUserInfo["description_origin"] = $textWithoutTags;
+                    $this->retweetUserInfo["description_entities"] = getEntitiesFromText($descriptionText, $textWithoutTags);
+                    $this->in_sql_tweet["retweet_from"] = $this->retweetUserInfo["display_name"]??"";
+                    $this->in_sql_tweet["retweet_from_name"] = $this->retweetUserInfo["name"]??"";
+                }
             } else {
                 if ($this->isRecrawlMode) {
                     //TODO 抽离耦合
@@ -127,9 +164,24 @@ class Core {
                     $this->in_sql_tweet["retweet_from"] = $this->reCrawlObject["retweet_from"];
                     $this->in_sql_tweet["retweet_from_name"] = $this->reCrawlObject["retweet_from_name"];
                 } else {
-                    $content = $this->globalObjects["globalObjects"]["tweets"][$content["retweeted_status_id_str"]];
-                    $this->in_sql_tweet["retweet_from"] = $this->globalObjects["globalObjects"]["users"][$content["user_id_str"]]["name"];
-                    $this->in_sql_tweet["retweet_from_name"] = $this->globalObjects["globalObjects"]["users"][$content["user_id_str"]]["screen_name"];
+                    $content = $this->globalObjects["globalObjects"]["tweets"][$content["retweeted_status_id_str"]]??[];
+                    $tmpInfo = $this->findUserInGlobalObjects($content["user_id_str"]);
+                    if ($tmpInfo && isset($tmpInfo["screen_name"])) {
+                        $tmpInfoHandle = (new Info($tmpInfo))->generateMonitorData();
+                        $this->retweetUserInfo = $tmpInfoHandle->in_sql_info;
+                        $this->retweetUserInfo["description"] = nl2br($this->retweetUserInfo["description"]);
+                        $this->retweetUserInfo["top"] = (string)($this->retweetUserInfo["top"] ?: 0);
+                        $this->retweetUserInfo["header"] = preg_replace("/http:\/\/|https:\/\//", "", $this->retweetUserInfo["header"]);
+                        $this->retweetUserInfo["uid_str"] = (string)$this->retweetUserInfo["uid"];
+
+                        //description
+                        $descriptionText = $this->retweetUserInfo["description"];
+                        $textWithoutTags = strip_tags($descriptionText);
+                        $this->retweetUserInfo["description_origin"] = $textWithoutTags;
+                        $this->retweetUserInfo["description_entities"] = getEntitiesFromText($descriptionText, $textWithoutTags);
+                        $this->in_sql_tweet["retweet_from"] = $this->retweetUserInfo["display_name"]??"";
+                        $this->in_sql_tweet["retweet_from_name"] = $this->retweetUserInfo["name"]??"";
+                    }
                 }
             }
         }
@@ -556,6 +608,8 @@ class Core {
             //"translate" => "",
             //"translate_source" => "",
         ];
+        $this->userInfo = [];//用户信息
+        $this->retweetUserInfo = [];//转推的用户信息
         $this->tags = [];//不止tag, 还有cashtag urls
         $this->quote = [];//引用
         $this->media = [];//媒体

@@ -80,6 +80,27 @@ class Fetch{
         }
     }
 
+    //get followers && following
+    //MUST ADD COOKIE
+    public static function tw_get_following_and_followers (int|string $uid, string $cursor = "", array $guestToken = [], int|bool $count = false, string $type = "Followers") {
+        $guestToken = $guestToken ?: self::tw_get_token();
+        $count = $count ?: 20;
+        $graphqlVariables = [
+            "userId" => $uid,
+            "count" => $count,
+            "includePromotedContent" => false,
+            "withSuperFollowsUserFields" => true,
+            "withDownvotePerspective" => false,
+            "withReactionsMetadata" => false,
+            "withReactionsPerspective" => false,
+            "withSuperFollowsTweetFields" => true,
+            "__fs_interactive_text" => false,
+            "__fs_responsive_web_uc_gql_enabled" => false,
+            "__fs_dont_mention_me_view_api_enabled" => false
+        ];
+        return (new Fetch)->tw_fetch("https://twitter.com/i/api/graphql/" . queryhqlQueryIdList[$type]["queryId"] . "/$type?variables=" . urlencode(json_encode($graphqlVariables)), $guestToken);
+    }
+
     //get tweets
     public static function tw_get_tweets (int|float|string $queryString, string $cursor = "", array | string $guestToken = [], int|bool $count = false, bool $online = false, bool $graphqlMode = false, bool $searchMode = false): array {
         $guestToken = $guestToken ?: self::tw_get_token();
@@ -91,6 +112,16 @@ class Fetch{
         //card类型需要启用full//建议启用full
         if ($graphqlMode) {
             //{"includePromotedContent":true,,,"withBirdwatchPivots":false,,,,"withSuperFollowsTweetFields":true,"withVoice":true,,"__fs_interactive_text":false,"__fs_dont_mention_me_view_api_enabled":false}
+
+            $graphqlFeatures = [
+                "dont_mention_me_view_api_enabled" => true,
+                "interactive_text_enabled" => true,
+                "responsive_web_uc_gql_enabled" => false,
+                "vibe_tweet_context_enabled" => false,
+                "responsive_web_edit_tweet_api_enabled" => false,
+                "standardized_nudges_misinfo" => false,
+                "responsive_web_enhance_cards_enabled" => false
+            ];
 
             $graphqlVariables = [
                 "userId" => $queryString,
@@ -106,61 +137,80 @@ class Fetch{
                 "withUserResults" => false,
                 "withVoice" => true,
                 "withNonLegacyCard" => true,
-                "withV2Timeline" => false,
+                "withV2Timeline" => true,
             ];
 
-            $graphqlFeatures = [
-                "dont_mention_me_view_api_enabled" => true,
-                "interactive_text_enabled" => true,
-                "responsive_web_uc_gql_enabled" => false,
-                "vibe_tweet_context_enabled" => false,
-                "responsive_web_edit_tweet_api_enabled" => false,
-                "standardized_nudges_misinfo" => false,
-                "responsive_web_enhance_cards_enabled" => false
-            ];
             if ($cursor) {
                 $graphqlVariables["cursor"] = $cursor;
             }
             return (new Fetch)->tw_fetch("https://twitter.com/i/api/graphql/" . queryhqlQueryIdList["UserTweets"]["queryId"] . "/UserTweets?" . http_build_query(["variables" => json_encode($graphqlVariables), "features" => json_encode($graphqlFeatures)]), $guestToken);
         } elseif ($searchMode) {
             //TODO Graphql for search
-            //https://twitter.com/i/api/2/search/adaptive.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweet=true&q=from%3Abang_dream_info%20since%3A2000-01-01&tweet_search_mode=live&count=20&query_source=typed_query&pc=1&spelling_corrections=1&ext=mediaStats%2ChighlightedLabel%2CsignalsReactionMetadata%2CsignalsReactionPerspective%2CvoiceInfo
-            return (new Fetch)->tw_fetch("https://twitter.com/i/api/2/search/adaptive.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweet=true&q=" . urlencode($queryString) . "&tweet_search_mode=live&count=$count&query_source=typed_query&pc=1&spelling_corrections=1&ext=mediaStats%2ChighlightedLabel" . ($cursor ? '&cursor=' . urlencode($cursor) : ''), $guestToken);
+            //https://twitter.com/i/api/2/search/adaptive.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_collab_control=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&q=from%3Abang_dream_info%20since%3A2000-01-01&tweet_search_mode=live&count=20&query_source=typed_query&pc=1&spelling_corrections=1&include_ext_edit_control=false&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CreplyvotingDownvotePerspective%2CvoiceInfo%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2Ccollab_control%2Cvibe
+            return (new Fetch)->tw_fetch("https://twitter.com/i/api/2/search/adaptive.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_collab_control=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&q=" . urlencode($queryString) . "&tweet_search_mode=live&count=$count&query_source=typed_query&pc=1&spelling_corrections=1&include_ext_edit_control=false&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CreplyvotingDownvotePerspective%2CvoiceInfo%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2Ccollab_control%2Cvibe" . ($cursor ? '&cursor=' . urlencode($cursor) : ''), $guestToken);
         } else {
             return (new Fetch)->tw_fetch("https://api.twitter.com/2/timeline/profile/$queryString.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_composer_source=true&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweets=true&ext=mediaStats%2CcameraMoment&count=$count" . ($cursor ? "&cursor=" . urlencode($cursor) : ''), $guestToken);
         }
     }
 
     //get conversation
-    public static function tw_get_conversation (string $tweet_id, array | string $guestToken = [], bool | int $graphqlMode = true): array {
+    public static function tw_get_conversation (string|array $tweet_id, array | string $guestToken = [], bool | int $graphqlMode = true): array {
         $guestToken = $guestToken ?: self::tw_get_token();
         //时隔多月又要更新这玩意了, 这次是因为卡片的图片时间久远了会失效......确实有点让人绝望
+
         if ($graphqlMode) {
-            $graphqlVariables = [
-                "focalTweetId" => $tweet_id,
-                "with_rux_injections" => false,
-                "includePromotedContent" => true,
-                "withCommunity" => false,
-                "withQuickPromoteEligibilityTweetFields" => true,
-                "withBirdwatchNotes" => false,
-                "withSuperFollowsUserFields" => true,
-                "withDownvotePerspective" => false,
-                "withReactionsMetadata" => false,
-                "withReactionsPerspective" => false,
-                "withSuperFollowsTweetFields" => true,
-                "withVoice" => true,
-                "withV2Timeline" => false,
-            ];
             $graphqlFeatures = [
                 "dont_mention_me_view_api_enabled" => true,
                 "interactive_text_enabled" => true,
                 "responsive_web_uc_gql_enabled" => false,
+                "vibe_api_enabled" => true,
                 "vibe_tweet_context_enabled" => false,
                 "responsive_web_edit_tweet_api_enabled" => false,
                 "standardized_nudges_misinfo" => false,
+                "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled" => false,
                 "responsive_web_enhance_cards_enabled" => false
             ];
-            return (new Fetch)->tw_fetch("https://twitter.com/i/api/graphql/" . queryhqlQueryIdList["TweetDetail"]["queryId"] . "/TweetDetail?" . http_build_query(["variables" => json_encode($graphqlVariables), "features" => json_encode($graphqlFeatures)]), $guestToken);
+
+            if (is_array($tweet_id)) {
+                $tmpUrl = [];
+                foreach ($tweet_id as $tweet) {
+                    $graphqlVariables = [
+                        "focalTweetId" => $tweet,
+                        "with_rux_injections" => false,
+                        "includePromotedContent" => true,
+                        "withCommunity" => true,
+                        "withQuickPromoteEligibilityTweetFields" => true,
+                        "withBirdwatchNotes" => false,
+                        "withSuperFollowsUserFields" => true,
+                        "withDownvotePerspective" => false,
+                        "withReactionsMetadata" => false,
+                        "withReactionsPerspective" => false,
+                        "withSuperFollowsTweetFields" => true,
+                        "withVoice" => true,
+                        "withV2Timeline" => true,
+                    ];
+                    $tmpUrl[] = "https://twitter.com/i/api/graphql/" . queryhqlQueryIdList["TweetDetail"]["queryId"] . "/TweetDetail?" . http_build_query(["variables" => json_encode($graphqlVariables), "features" => json_encode($graphqlFeatures)]);
+                }
+                return (new Fetch)->tw_fetch_multi($tmpUrl, $guestToken);
+            } else {
+                $graphqlVariables = [
+                    "focalTweetId" => $tweet_id,
+                    "with_rux_injections" => false,
+                    "includePromotedContent" => true,
+                    "withCommunity" => true,
+                    "withQuickPromoteEligibilityTweetFields" => true,
+                    "withBirdwatchNotes" => false,
+                    "withSuperFollowsUserFields" => true,
+                    "withDownvotePerspective" => false,
+                    "withReactionsMetadata" => false,
+                    "withReactionsPerspective" => false,
+                    "withSuperFollowsTweetFields" => true,
+                    "withVoice" => true,
+                    "withV2Timeline" => true,
+                ];
+                return (new Fetch)->tw_fetch("https://twitter.com/i/api/graphql/" . queryhqlQueryIdList["TweetDetail"]["queryId"] . "/TweetDetail?" . http_build_query(["variables" => json_encode($graphqlVariables), "features" => json_encode($graphqlFeatures)]), $guestToken);
+            }
+
         } else {
             return (new Fetch)->tw_fetch("https://api.twitter.com/2/timeline/conversation/$tweet_id.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_composer_source=true&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweets=true&count=1&ext=mediaStats%2CcameraMoment", $guestToken);
         }

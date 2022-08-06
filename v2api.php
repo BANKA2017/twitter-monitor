@@ -149,34 +149,7 @@ function returnDataForTweets (array $tweets = [], int $count = 0, string $top = 
 
                     $tmpFullText = str_replace('<br />', '', $tweets[$x]["quoteObject"]["full_text"]);
                     $tweets[$x]["quoteObject"]["full_text"] = strip_tags($tweets[$x]["quoteObject"]["full_text"]);
-                    preg_match_all('/<a href="([^"]+)"[^>]+>([^<]+)<\/a>|(?:\s|\p{P}|^)#([_^\s\p{P}]+)/u', $tmpFullText, $Match);
-                    $List = [];
-                    $lastEnd = 0;
-                    foreach ($Match[2] as $order => $value) {
-                        if ($value === "") {
-                            $text = $Match[3][$order];
-                            $beforeLength = mb_strlen(stristr(mb_substr($tweets[$x]["quoteObject"]["full_text"], $lastEnd), "#{$text}", true)) + $lastEnd;
-                            $lastEnd = $beforeLength + mb_strlen($text) + 1;
-                            $List[] = [
-                                "expanded_url" => "",
-                                "indices_end" => $lastEnd,
-                                "indices_start" => $beforeLength,
-                                "text" => $text,
-                                "type" => "hashtag",
-                            ];
-                        } else {
-                            $beforeLength = mb_strlen(stristr(mb_substr($tweets[$x]["quoteObject"]["full_text"], $lastEnd), $value, true)) + $lastEnd;
-                            $lastEnd = $beforeLength + mb_strlen($value);
-                            $List[] = [
-                                "expanded_url" => str_replace("//http", "http", $Match[1][$order]),
-                                "indices_end" => $lastEnd,
-                                "indices_start" => $beforeLength,
-                                "text" => $value,
-                                "type" => "url",
-                            ];
-                        }
-                    }
-                    $tweets[$x]["quoteObject"]["entities"] = $List;
+                    $tweets[$x]["quoteObject"]["entities"] = getEntitiesFromText($tmpFullText, $tweets[$x]["quoteObject"]["full_text"], 'quote');;
                     break;
                 }
             }
@@ -412,34 +385,7 @@ switch ($mode) {
                     $descriptionText = $ReturnJson["data"]["description"];
                     $textWithoutTags = strip_tags($descriptionText);
                     $ReturnJson["data"]["description_origin"] = $textWithoutTags;
-                    preg_match_all('/<a href="([^"]+)"[^>]+>([^<]+)<\/a>|(?:\s|\p{P}|^)#([_^\s\p{P}]+)/u', $descriptionText, $Match);
-                    $List = [];
-                    $lastEnd = 0;
-                    foreach ($Match[2] as $order => $value) {
-                        if ($value === "") {
-                            $text = $Match[3][$order];
-                            $beforeLength = mb_strlen(stristr(mb_substr($textWithoutTags, $lastEnd), "#{$text}", true)) + $lastEnd;
-                            $lastEnd = $beforeLength + mb_strlen($text) + 1;
-                            $List[] = [
-                                "expanded_url" => "",
-                                "indices_end" => $lastEnd,
-                                "indices_start" => $beforeLength,
-                                "text" => $text,
-                                "type" => "hashtag",
-                            ];
-                        } else {
-                            $beforeLength = mb_strlen(stristr(mb_substr($textWithoutTags, $lastEnd), $value, true)) + $lastEnd;
-                            $lastEnd = $beforeLength + mb_strlen($value);
-                            $List[] = [
-                                "expanded_url" => $Match[1][$order],
-                                "indices_end" => $lastEnd,
-                                "indices_start" => $beforeLength,
-                                "text" => $value,
-                                "type" => "url",
-                            ];
-                        }
-                    }
-                    $ReturnJson["data"]["description_entities"] = $List;
+                    $ReturnJson["data"]["description_entities"] = getEntitiesFromText($descriptionText, $textWithoutTags);
                 }
                 break;
             case "tweets":
@@ -852,8 +798,8 @@ switch ($mode) {
                 }
                 //topData
                 //startData
-                $startData = $sssql->multi("SELECT uid, MIN(timestamp) as time, ANY_VALUE(followers) AS followers, ANY_VALUE(statuses_count) AS statuses_count FROM `twitter_data` WHERE `timestamp` >= " . ($now - $length * 3600) . " GROUP BY uid LIMIT 100");
-                $endData = $sssql->multi("SELECT uid, timestamp, followers, statuses_count FROM `tmp_twitter_data` WHERE `visible` = 1");
+                $startData = $sssql->multi("SELECT uid, MIN(timestamp) as time, ANY_VALUE(followers) AS followers, ANY_VALUE(statuses_count) AS statuses_count FROM `twitter_data` WHERE `timestamp` >= " . ($now - $length * 3600) . " GROUP BY uid");
+                $endData = $sssql->multi("SELECT uid, timestamp, followers, statuses_count FROM `tmp_twitter_data` WHERE `visible` = 1 AND  `timestamp` >= " . ($now - 120));
                 foreach ($endData as $order => $userData) {
                     foreach ($startData as $startUserData) {
                         if ($startUserData[0] === $userData[0]) {

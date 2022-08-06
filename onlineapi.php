@@ -77,34 +77,7 @@ function returnDataForTweets (
 
         $tmpFullText = str_replace('<br />', '', $tweet["quoteObject"]["full_text"]);
         $tweet["quoteObject"]["full_text"] = strip_tags($tweet["quoteObject"]["full_text"]);
-        preg_match_all('/<a href="([^"]+)"[^>]+>([^<]+)<\/a>|(?:\s|\p{P}|^)#([_^\s\p{P}]+)/u', $tmpFullText, $Match);
-        $List = [];
-        $lastEnd = 0;
-        foreach ($Match[2] as $order => $value) {
-            if ($value === "") {
-                $text = $Match[3][$order];
-                $beforeLength = mb_strlen(stristr(mb_substr($tweet["quoteObject"]["full_text"], $lastEnd), "#{$text}", true)) + $lastEnd;
-                $lastEnd = $beforeLength + mb_strlen($text) + 1;
-                $List[] = [
-                    "expanded_url" => "",
-                    "indices_end" => $lastEnd,
-                    "indices_start" => $beforeLength,
-                    "text" => $text,
-                    "type" => "hashtag",
-                ];
-            } else {
-                $beforeLength = mb_strlen(stristr(mb_substr($tweet["quoteObject"]["full_text"], $lastEnd), $value, true)) + $lastEnd;
-                $lastEnd = $beforeLength + mb_strlen($value);
-                $List[] = [
-                    "expanded_url" => str_replace("//http", "http", $Match[1][$order]),
-                    "indices_end" => $lastEnd,
-                    "indices_start" => $beforeLength,
-                    "text" => $value,
-                    "type" => "url",
-                ];
-            }
-        }
-        $tweet["quoteObject"]["entities"] = $List;
+        $tweet["quoteObject"]["entities"] = getEntitiesFromText($tmpFullText, $tweet["quoteObject"]["full_text"], 'quote');
     }
     $tmpImageText = "";
     //寻找媒体
@@ -229,34 +202,7 @@ switch ($mode) {
                 $descriptionText = $ReturnJson["data"]["description"];
                 $textWithoutTags = strip_tags($descriptionText);
                 $ReturnJson["data"]["description_origin"] = $textWithoutTags;
-                preg_match_all('/<a href="([^"]+)" target="_blank">([^<]+)<\/a>|(?:\s|\p{P}|^)#([_^\s\p{P}]+)/u', $descriptionText, $Match);
-                $List = [];
-                $lastEnd = 0;
-                foreach ($Match[2] as $order => $value) {
-                    if ($value === "") {
-                        $text = $Match[3][$order];
-                        $beforeLength = mb_strlen(stristr(mb_substr($textWithoutTags, $lastEnd), "#{$text}", true)) + $lastEnd;
-                        $lastEnd = $beforeLength + mb_strlen($text) + 1;
-                        $List[] = [
-                            "expanded_url" => "",
-                            "indices_end" => $lastEnd,
-                            "indices_start" => $beforeLength,
-                            "text" => $text,
-                            "type" => "hashtag",
-                        ];
-                    } else {
-                        $beforeLength = mb_strlen(stristr(mb_substr($textWithoutTags, $lastEnd), $value, true)) + $lastEnd;
-                        $lastEnd = $beforeLength + mb_strlen($value);
-                        $List[] = [
-                            "expanded_url" => $Match[1][$order],
-                            "indices_end" => $lastEnd,
-                            "indices_start" => $beforeLength,
-                            "text" => $value,
-                            "type" => "url",
-                        ];
-                    }
-                }
-                $ReturnJson["data"]["description_entities"] = $List;
+                $ReturnJson["data"]["description_entities"] = getEntitiesFromText($descriptionText, $textWithoutTags);
 
                 break;
             case "tweets":
@@ -310,12 +256,16 @@ switch ($mode) {
                             foreach ($content["content"]["items"] as $contentItem) {
                                 $tmpData = generateData($contentItem, $generateTweetData, $name);
                                 if ($tmpData !== [] && $tmpData["tweet_id"]) {
+                                    $tmpData["user_info"] = $generateTweetData->userInfo;
+                                    $tmpData["retweet_user_info"] = $generateTweetData->retweetUserInfo;
                                     $tweetData[$generateTweetData->in_sql_tweet["tweet_id"]] = $tmpData;
                                 }
                             }
                         } else {
                             $tmpData = generateData($content, $generateTweetData, $name);
                             if ($tmpData !== []) {
+                                $tmpData["user_info"] = $generateTweetData->userInfo;
+                                $tmpData["retweet_user_info"] = $generateTweetData->retweetUserInfo;
                                 $tweetData[$generateTweetData->in_sql_tweet["tweet_id"]] = $tmpData;
                             }
                         }
@@ -416,6 +366,8 @@ switch ($mode) {
                         }
                         $tmpData = generateData($content, $generateTweetData, "");
                         if ($tmpData !== []) {
+                            $tmpData["user_info"] = $generateTweetData->userInfo;
+                            $tmpData["retweet_user_info"] = $generateTweetData->retweetUserInfo;
                             $tweetData[$generateTweetData->in_sql_tweet["tweet_id"]] = $tmpData;
                         }
 

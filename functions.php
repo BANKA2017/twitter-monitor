@@ -810,4 +810,41 @@ function getBlurHash (string $fileUrl): string {
     } catch (Exception $e) {
         return "deleted";
     }
-};
+}
+
+// get entities from raw text
+function getEntitiesFromText (string $textWithTags = '', string $text = '', $type = 'description'): array {
+    // description
+    $pattern = '/<a href="([^"]+)" target="_blank">([^<]+)<\/a>|(?:\s|\p{P}|^)#((?:[^\s\p{P}]|_)+)/u';
+    if ($type !== 'description') {
+        $pattern = '/<a href="([^"]+)"[^>]+>([^<]+)<\/a>|(?:\s|\p{P}|^)#((?:[^\s\p{P}]|_)+)/u';
+    }
+    preg_match_all($pattern, $textWithTags, $Match);
+    $List = [];
+    $lastEnd = 0;
+    foreach ($Match[2] as $order => $value) {
+        if ($value === "") {
+            $hashTagText = $Match[3][$order];
+            $beforeLength = mb_strlen(stristr(mb_substr($text, $lastEnd), "#{$hashTagText}", true)) + $lastEnd;
+            $lastEnd = $beforeLength + mb_strlen($hashTagText) + 1;
+            $List[] = [
+                "expanded_url" => "",
+                "indices_end" => $lastEnd,
+                "indices_start" => $beforeLength,
+                "text" => $hashTagText,
+                "type" => "hashtag",
+            ];
+        } else {
+            $beforeLength = mb_strlen(stristr(mb_substr($text, $lastEnd), $value, true)) + $lastEnd;
+            $lastEnd = $beforeLength + mb_strlen($value);
+            $List[] = [
+                "expanded_url" => str_replace("//http", "http", $Match[1][$order]),
+                "indices_end" => $lastEnd,
+                "indices_start" => $beforeLength,
+                "text" => $value,
+                "type" => "url",
+            ];
+        }
+    }
+    return $List;
+}
