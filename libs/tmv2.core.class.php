@@ -408,12 +408,18 @@ class Core {
             } else {
                 $this->contents = array_merge($this->contents, $tmpTweets);
                 foreach ($this->globalObjects["timeline"]["instructions"] as $first_instructions) {
-                    foreach ($first_instructions as $second_instructions => $second_instructions_value) {
-                        if ($second_instructions === "addEntries") {
+                    foreach ($first_instructions as $second_instructions_value) {
+                        if (isset($second_instructions_value["entry"])) {
+                            if (str_ends_with($second_instructions_value["entryIdToReplace"], "cursor-top")) {
+                                $this->cursor["top"] = $second_instructions_value["entry"]["content"]["operation"]["cursor"]["value"];
+                            } elseif (str_ends_with($second_instructions_value["entryIdToReplace"], "cursor-bottom")) {
+                                $this->cursor["bottom"] = $second_instructions_value["entry"]["content"]["operation"]["cursor"]["value"];
+                            }
+                        } else {
                             foreach ($second_instructions_value["entries"] as $third_entries_value) {
-                                if (str_starts_with($third_entries_value["entryId"], "cursor-top")) {
+                                if (str_ends_with($third_entries_value["entryId"], "cursor-top")) {
                                     $this->cursor["top"] = $third_entries_value["content"]["operation"]["cursor"]["value"];
-                                } elseif (str_starts_with($third_entries_value["entryId"], "cursor-bottom")) {
+                                } elseif (str_ends_with($third_entries_value["entryId"], "cursor-bottom")) {
                                     $this->cursor["bottom"] = $third_entries_value["content"]["operation"]["cursor"]["value"];
                                 }
                             }

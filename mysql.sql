@@ -142,16 +142,16 @@ CREATE TABLE `v2_twitter_cards` (
   `id` bigint NOT NULL,
   `uid` bigint NOT NULL DEFAULT '0',
   `tweet_id` bigint NOT NULL DEFAULT '0',
-  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
-  `vanity_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
-  `type` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
-  `secondly_type` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
-  `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
+  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `vanity_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `type` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `secondly_type` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `media` tinyint NOT NULL DEFAULT '0',
   `unified_card_app` tinyint NOT NULL DEFAULT '0',
   `hidden` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_is_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -232,13 +232,13 @@ CREATE TABLE `v2_twitter_polls` (
   `uid` bigint NOT NULL DEFAULT '0',
   `tweet_id` bigint NOT NULL DEFAULT '0',
   `origin_tweet_id` bigint NOT NULL DEFAULT '0',
-  `choice_label` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci NOT NULL,
+  `choice_label` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `poll_order` tinyint NOT NULL,
   `end_datetime` int NOT NULL,
   `count` int NOT NULL DEFAULT '0',
   `checked` tinyint NOT NULL DEFAULT '0',
   `hidden` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_is_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -250,14 +250,14 @@ CREATE TABLE `v2_twitter_quote` (
   `id` bigint NOT NULL,
   `uid` bigint NOT NULL DEFAULT '0',
   `tweet_id` bigint NOT NULL DEFAULT '0',
-  `name` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
-  `display_name` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
-  `full_text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
-  `full_text_origin` text CHARACTER SET utf8mb4 COLLATE utf8mb4_is_0900_ai_ci,
+  `name` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `display_name` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `full_text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `full_text_origin` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `time` int NOT NULL DEFAULT '0',
   `media` tinyint NOT NULL DEFAULT '0',
   `video` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_is_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
