@@ -217,7 +217,7 @@ class Fetch{
     }
 
     //get poll result
-    public static function tw_get_poll_result (string $tweet_id, int $count = 2, array | string $guestToken = []): array {
+    public static function tw_get_poll_result (string $tweet_id, array | string $guestToken = []): array {
         $guestToken = $guestToken ?: self::tw_get_token();
         $tweet = self::tw_get_conversation($tweet_id, $guestToken);
         if (isset($tweet["errors"])) {
@@ -240,7 +240,8 @@ class Fetch{
                     $tmpBindingValueList[$bindingValue["key"]] = $bindingValue["value"];
                 }
                 $cardInfo["binding_values"] = $tmpBindingValueList;
-                for ($x = 1; $x <= $count; $x++) {
+
+                for ($x = 1; $x <= 4; $x++) {
                     if (!isset($cardInfo["binding_values"]["choice{$x}_count"])) {
                         break;
                     }
@@ -252,6 +253,53 @@ class Fetch{
             }
         } else {
             return ["code" => 404, "message" => "Nothing here", "data" => []];
+        }
+    }
+    // get audio space
+    public static function tw_get_audio_space_result (string | array $id, array | string $guestToken = []): array {
+        $guestToken = $guestToken ?: self::tw_get_token();
+        $graphqlFeatures = [
+            "spaces_2022_h2_clipping" => true,
+            "spaces_2022_h2_spaces_communities" => false,
+            "dont_mention_me_view_api_enabled" => true,
+            "interactive_text_enabled" => true,
+            "responsive_web_uc_gql_enabled" => true,
+            "vibe_api_enabled" => true,
+            "vibe_tweet_context_enabled" => true,
+            "responsive_web_edit_tweet_api_enabled" => true,
+            "standardized_nudges_misinfo" => true,
+            "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled" => false,
+            "responsive_web_enhance_cards_enabled" => false
+        ];
+        if (is_array($id)) {
+            $tmpUrl = [];
+            foreach ($id as $idString) {
+                $graphqlVariables = [
+                    "id" => $idString,
+                    "isMetatagsQuery" => true,
+                    "withSuperFollowsUserFields" => true,
+                    "withDownvotePerspective" => false,
+                    "withReactionsMetadata" => false,
+                    "withReactionsPerspective" => false,
+                    "withSuperFollowsTweetFields" => true,
+                    "withReplays" => true
+                ];
+                $tmpUrl[] = "https://twitter.com/i/api/graphql/" . queryhqlQueryIdList["AudioSpaceById"]["queryId"] . "/AudioSpaceById?" . http_build_query(["variables" => json_encode($graphqlVariables), "features" => json_encode($graphqlFeatures)]);
+            }
+            return (new Fetch)->tw_fetch_multi($tmpUrl, $guestToken);
+        } else {
+            $graphqlVariables = [
+                "id" => $id,
+                "isMetatagsQuery" => true,
+                "withSuperFollowsUserFields" => true,
+                "withDownvotePerspective" => false,
+                "withReactionsMetadata" => false,
+                "withReactionsPerspective" => false,
+                "withSuperFollowsTweetFields" => true,
+                "withReplays" => true
+            ];
+
+            return (new Fetch)->tw_fetch("https://twitter.com/i/api/graphql/" . queryhqlQueryIdList["AudioSpaceById"]["queryId"] . "/AudioSpaceById?" . http_build_query(["variables" => json_encode($graphqlVariables), "features" => json_encode($graphqlFeatures)]), $guestToken);
         }
     }
 }

@@ -250,14 +250,22 @@ switch ($mode) {
         //For example:
         //https://pbs.twimg.com/media/DOhM30VVwAEpIHq?format=jpg&name=large
 
-        $mediaLinkArray = tw_pathinfo($_GET["link"]??"");//处理链接
-        if (isset($_GET["format"]) && isset($_GET["name"])) {
-            $mediaLinkArray["size"] = $_GET["name"];
-            $mediaLinkArray["extension"] = $_GET["format"];
-            $mediaLinkArray["basename"] .= "." . $_GET["format"];
+        // from $_GET
+        $link = $_GET["link"]??"";
+        $format = $_GET["format"]??"";
+        $name = $_GET["name"]??"";
+
+        $ext = $_GET["ext"]??"";
+
+        $mediaLinkArray = tw_pathinfo($link);//处理链接
+        if ($format && $name) {
+            $mediaLinkArray["size"] = $name;
+            $mediaLinkArray["extension"] = $format;
+            $mediaLinkArray["basename"] .= "." . $format;
         }
         //$mediaSize = $mediaLinkArray["size"]??":medium";
-        if(!$mediaLinkArray["filename"]){
+        //鉴权
+        if(!$mediaLinkArray["filename"] || (!preg_match('/^(pbs|video)\.twimg\.com\//', $mediaLinkArray["dirname"]) && $ext !== 'ext_tw_video')){
             header("content-type: image/svg+xml");
             echo $ReturnSvg;
         } elseif ($mediaLinkArray["basename"] === "banner.jpg") {
@@ -266,71 +274,48 @@ switch ($mode) {
             echo (new sscurl("https://{$mediaLinkArray["dirname"]}"))->addMore([CURLOPT_TIMEOUT => 999])->addMore([CURLOPT_RETURNTRANSFER => false]);
         } else {
             switch ($mediaLinkArray["extension"]) {
-                case "banner": 
-                    if(count($sssql->select("v2_account_info", ["id"], [["banner", "=", $mediaLinkArray["filename"]]]))) {
-                        header("content-type: image/jpeg");
-                        header("Content-Disposition:attachment;filename=banner.jpg");
-                        echo (new sscurl("https://{$mediaLinkArray["dirname"]}/{$mediaLinkArray["filename"]}"))->addMore([CURLOPT_TIMEOUT => 999])->addMore([CURLOPT_RETURNTRANSFER => false]);
-                    } else {
-                        header("content-type: image/svg+xml");
-                        echo $ReturnSvg;
-                    }
+                case "banner":
+                    header("content-type: image/jpeg");
+                    header("Content-Disposition:attachment;filename=banner.jpg");
+                    echo (new sscurl("https://{$mediaLinkArray["dirname"]}/{$mediaLinkArray["filename"]}"))->addMore([CURLOPT_TIMEOUT => 999])->addMore([CURLOPT_RETURNTRANSFER => false]);
                     break;
-                case "jpg": 
+                case "jpg":
                 case "png":
                 case "mp4":
-                    //TODO 此处可能需要修改
-                    if(($type == "userinfo" && count($sssql->select("v2_account_info", ["id"], [["header", "=", "https://" . str_replace('_bigger', '', $_GET["link"])]]))) || count($sssql->select("v2_twitter_media", ["id"], [["basename", "=", $mediaLinkArray["basename"]]], [], 1))) {
-
-                        //TODO 下面是一些暂时无法解决的想法, 可能需要到v3解决
-                        ////获取长度
-                        ////die("https://" . $_GET["link"] . ($mediaLinkArray["pathtype"] == 2 ? ":{$mediaLinkArray["size"]}" : $mediaLinkArray["pathtype"] == 1 ? "?format={$mediaLinkArray["extension"]}&name={$mediaLinkArray["size"]}" : ""));
-                        //$tmpLength = (new sscurl("https://" . $_GET["link"] . ($mediaLinkArray["pathtype"] == 2 ? ":{$mediaLinkArray["size"]}" : $mediaLinkArray["pathtype"] == 1 ? "?format={$mediaLinkArray["extension"]}&name={$mediaLinkArray["size"]}" : "")))->returnBody(2);
+                case "m3u8":
+                case "m4s":
+                case "ts":
+                    // api版不做缓存
+                    $realLink = match ($mediaLinkArray["pathtype"]) {
+                        2 => "https://" . $link,
+                        1 => "https://" . $link . "?format={$mediaLinkArray["extension"]}&name={$mediaLinkArray["size"]}",
+                        0 => ($ext === 'ext_tw_video' ? 'https://video.twimg.com/ext_tw_video/' : 'https://') . $link
+                    };
+                    //最后都用上了//处理拖动进度条的问题//仅mp4
+                    //咕完了//咕咕咕
+                    //获取长度
+                    $tmpLength = (new sscurl($realLink))->addMore([CURLOPT_TIMEOUT => 999])->returnBody(2);
+                    preg_match("/Content-Length: ([0-9]+)/i", $tmpLength, $tmpLength);
+                    header("Content-Length: {$tmpLength[1]}");
+                    header("Accept-Ranges: bytes");
+                    if ($tmpLength[1] == 0) {
+                        //TODO 回写已失效链接
                         ////如果喜提空白//一般为卡片
-                        //preg_match("/Content-Length: ([0-9]+)/i", $tmpLength, $tmpLength);
-                        //if (!$tmpLength[1]) {
-                        //    $tmpAutoUpdateCardImageData = tw_card(tw_get_conversation($sssql->select("v2_twitter_media", ["tweet_id"], [["basename", "=", $mediaLinkArray["basename"]]], [], 1)[0]["tweet_id"])["card"], 0, 0)["media"];
-                        //    //回写
-                        //    echo $sssql->update("v2_twitter_media", ["cover"=> $tmpAutoUpdateCardImageData["cover"], "url"=> $tmpAutoUpdateCardImageData["url"], "origin_info_width"=> $tmpAutoUpdateCardImageData["origin_info_width"], "origin_info_height"=> $tmpAutoUpdateCardImageData["origin_info_height"], "filename"=> $tmpAutoUpdateCardImageData["filename"], "basename"=> $tmpAutoUpdateCardImageData["basename"], "extension"=> $tmpAutoUpdateCardImageData["extension"], "content_type"=> $tmpAutoUpdateCardImageData["content_type"],], [["basename", "=", $mediaLinkArray["basename"]]]);
-                        //    die();
-                        //}
+                        //$tmpAutoUpdateCardImageData = tw_card(tw_get_conversation($sssql->select("v2_twitter_media", ["tweet_id"], [["basename", "=", $mediaLinkArray["basename"]]], [], 1)[0]["tweet_id"])["card"], 0, 0)["media"];
+                        ////回写
+                        //echo $sssql->update("v2_twitter_media", ["cover"=> $tmpAutoUpdateCardImageData["cover"], "url"=> $tmpAutoUpdateCardImageData["url"], "origin_info_width"=> $tmpAutoUpdateCardImageData["origin_info_width"], "origin_info_height"=> $tmpAutoUpdateCardImageData["origin_info_height"], "filename"=> $tmpAutoUpdateCardImageData["filename"], "basename"=> $tmpAutoUpdateCardImageData["basename"], "extension"=> $tmpAutoUpdateCardImageData["extension"], "content_type"=> $tmpAutoUpdateCardImageData["content_type"],], [["basename", "=", $mediaLinkArray["basename"]]]);
                         //die();
-                        //header("content-type: " . get_mime($mediaLinkArray["extension"]));
-                        //header("Content-Disposition:attachment;filename=file." . $mediaLinkArray["extension"]);
-                        //header("Content-Length: {$tmpLength[1]}");
-                        //header("Accept-Ranges: bytes");
-
-                        //处理小图片
-                        //if ($mediaLinkArray["size"] === 'small' && $run_options["twitter"]["save_raw_media"]) {
-                        //    if (!file_exists(__DIR__ . '/savemedia/image/small/' . $mediaLinkArray["basename"])) {//TODO 未来应该能够自定义目录而不是硬编码
-                        //        copy("https://" . $_GET["link"] . ($mediaLinkArray["pathtype"] == 2 ? ":{$mediaLinkArray["size"]}" : $mediaLinkArray["pathtype"] == 1 ? "?format={$mediaLinkArray["extension"]}&name={$mediaLinkArray["size"]}" : ""), __DIR__ . '/savemedia/image/small/' . $mediaLinkArray["basename"]);
-                        //    }
-                        //    
-                        //} else {
-                            //最后都用上了//处理拖动进度条的问题//仅mp4
-                            //咕完了//咕咕咕
-                            //获取长度
-                            $tmpLength = (new sscurl("https://" . $_GET["link"] . ($mediaLinkArray["pathtype"] == 2 ? '' : ($mediaLinkArray["pathtype"] == 1 ? "?format={$mediaLinkArray["extension"]}&name={$mediaLinkArray["size"]}" : ""))))->returnBody(2);
-                            preg_match("/Content-Length: ([0-9]+)/i", $tmpLength, $tmpLength);
-                            header("Content-Length: {$tmpLength[1]}");
-                            header("Accept-Ranges: bytes");
-                            if ($tmpLength[1] == 0) {
-                                header("content-type: image/svg+xml");
-                                echo $ReturnSvg;
-                            } else {
-                                //video or gif or image
-                                //在twitter中gif会被转换为mp4
-                                header("content-type: " . get_mime($mediaLinkArray["extension"]));
-                                header("Content-Disposition:attachment;filename=." . $mediaLinkArray["basename"]);
-                                echo (new sscurl("https://" . $_GET["link"] . ($mediaLinkArray["pathtype"] == 2 ? '' : ($mediaLinkArray["pathtype"] == 1 ? "?format={$mediaLinkArray["extension"]}&name={$mediaLinkArray["size"]}" : ""))))->addMore([CURLOPT_TIMEOUT => 999])->addMore([CURLOPT_RETURNTRANSFER => false]);//mp4不会删//use CURLOPT_RETURNTRANSFER to stdout
-                            }
-                        //}
-                    } else {
                         header("content-type: image/svg+xml");
                         echo $ReturnSvg;
+                    } else {
+                        //video or gif or image
+                        //在twitter中gif会被转换为mp4
+                        header("content-type: " . get_mime($mediaLinkArray["extension"]));
+                        header("Content-Disposition:attachment;filename=." . $mediaLinkArray["basename"]);
+                        echo (new sscurl($realLink))->addMore([CURLOPT_RETURNTRANSFER => false]);//mp4不会删//use CURLOPT_RETURNTRANSFER to stdout
                     }
                     break;
-                default: 
+                default:
                     header("content-type: image/svg+xml");
                     echo $ReturnSvg;
             }

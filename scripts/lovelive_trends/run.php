@@ -52,9 +52,17 @@ $dataTemplate = [
 ];
 
 $menberList = json_decode(file_get_contents(__DIR__ . "/userlist.json"), true);
+$globalList = json_decode(file_get_contents(SYSTEM_ROOT . "/config.json"), true)["users"];
+$globalListCount = 0;
+foreach ($globalList as $globalListItem) {
+    if ($globalListItem["name"]??false) {
+        $globalListCount++;
+    }
+}
+
 $generateData = ["data" => [], "range" => $range ];
 //-->重跑时需要注意下一行的减号<--
-$guestLatestTwitterDataId = $sssql->multi("SELECT id FROM `twitter_data` ORDER BY id DESC LIMIT 1;", true)[0]["id"] - 1500000;
+$guestLatestTwitterDataId = $sssql->multi("SELECT id FROM `twitter_data` ORDER BY id DESC LIMIT 1;", true)[0]["id"] - ($globalListCount * 11520);
 foreach ($menberList as $menber) {
     $startTime = microtime(true);
     echo $menber["name_cn"] . "\n";

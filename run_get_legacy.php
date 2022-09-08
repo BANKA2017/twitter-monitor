@@ -240,7 +240,7 @@ if ($update_names) {
         }
         //TODO reUse NSFW list
         //nsfwList
-        $newAccountInfo["nsfwList"] = $config["nsfwList"];
+        //$newAccountInfo["nsfwList"] = $config["nsfwList"];
         //links
         $newAccountInfo["links"] = $config["links"];
         //hash

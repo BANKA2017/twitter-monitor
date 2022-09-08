@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- 主机： localhost
--- 生成日期： 2022-08-02 09:23:21
--- 服务器版本： 8.0.29
--- PHP 版本： 8.0.21
+-- 生成日期： 2022-09-07 03:55:54
+-- 服务器版本： 8.0.30
+-- PHP 版本： 8.0.22
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -75,7 +75,7 @@ CREATE TABLE `v2_account_info` (
   `top` bigint NOT NULL DEFAULT '0',
   `last_check` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `statuses_count` int NOT NULL DEFAULT '0',
-  `cursor` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `cursor` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `last_cursor` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `deleted` tinyint NOT NULL DEFAULT '0',
   `locked` tinyint NOT NULL DEFAULT '0',
@@ -91,8 +91,8 @@ CREATE TABLE `v2_account_info` (
 
 CREATE TABLE `v2_config` (
   `id` int NOT NULL,
-  `data_origin` longtext NOT NULL,
-  `data_output` longtext NOT NULL,
+  `data_origin` longtext COLLATE utf8mb4_general_ci NOT NULL,
+  `data_output` longtext COLLATE utf8mb4_general_ci NOT NULL,
   `md5` char(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `timestamp` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -106,7 +106,7 @@ CREATE TABLE `v2_config` (
 CREATE TABLE `v2_error_log` (
   `id` bigint NOT NULL,
   `uid` bigint NOT NULL DEFAULT '0',
-  `name` text,
+  `name` text COLLATE utf8mb4_general_ci,
   `code` bigint NOT NULL,
   `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `timestamp` bigint NOT NULL DEFAULT '0'
@@ -163,12 +163,12 @@ CREATE TABLE `v2_twitter_card_app` (
   `id` bigint NOT NULL,
   `tweet_id` bigint NOT NULL DEFAULT '0',
   `uid` bigint NOT NULL DEFAULT '0',
-  `unified_card_type` text NOT NULL,
-  `type` text NOT NULL,
-  `appid` text NOT NULL,
-  `country_code` text,
-  `title` text NOT NULL,
-  `category` text NOT NULL
+  `unified_card_type` text COLLATE utf8mb4_general_ci NOT NULL,
+  `type` text COLLATE utf8mb4_general_ci NOT NULL,
+  `appid` text COLLATE utf8mb4_general_ci NOT NULL,
+  `country_code` text COLLATE utf8mb4_general_ci,
+  `title` text COLLATE utf8mb4_general_ci NOT NULL,
+  `category` text COLLATE utf8mb4_general_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -212,8 +212,8 @@ CREATE TABLE `v2_twitter_media` (
   `origin_type` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `origin_info_width` int NOT NULL,
   `origin_info_height` int NOT NULL,
-  `title` text COLLATE utf8mb4_general_ci,
-  `description` text COLLATE utf8mb4_general_ci,
+  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `media_key` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `source` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `blurhash` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,

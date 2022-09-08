@@ -7,7 +7,6 @@
 ini_set('display_errors',1);
 //header("Access-Control-Allow-Origin: *");
 
-ob_implicit_flush();
 require(__DIR__ . '/init.php');
 $fetch = new Tmv2\Fetch\Fetch();
 //$parseReferrer = parse_url($_SERVER["HTTP_REFERER"]??"");
@@ -54,6 +53,7 @@ function returnDataForTweets (
             if ($pollObject["tweet_id"] === $tweet["tweet_id"]) {
                 unset($pollObject["tweet_id"]);
                 $pollObject["checked"] = (bool)($pollObject["checked"]??true);
+                $pollObject["count"] = 0;
                 $tweet["pollObject"][] = $pollObject;
             }
         }
@@ -123,6 +123,8 @@ function generateData (&$content, &$generateTweetData, string $precheckName = ""
     $in_sql["quote_count"] = $generateTweetData->interactiveData["quote_count"];
     //rtl
     $in_sql["rtl"] = $generateTweetData->isRtl;
+    // display text range
+    $in_sql["display_text_range"] = $generateTweetData->displayTextRange;
     //判断是否本人发推
     if ($precheckName === "" || strtolower($in_sql["name"]) === strtolower($precheckName)) {
         //v2_twitter_media
@@ -214,24 +216,45 @@ switch ($mode) {
                 $queryArray = [];
                 //use $tweet_id to replace $cursor
                 //TODO reuse cursor as name
-                //TODO online mode in fetch
-                //TODO $_GET["refresh"] means top cursor
-                //TODO $_GET["display"] means type
-                //TODO $_GET["date"] no use
-                //TODO $_GET["count"] means count
+
+                // display type all, self, retweet, media
+                $displayType = $_GET["display"]??'all';
+                if (!in_array($displayType, ["all", "self", "retweet", "media"])) {
+                    $displayType = "all";
+                }
 
                 //conversation
                 $is_conversation = ($_GET["is_status"]??false) && ($_GET["tweet_id"]??false) && is_numeric($_GET["tweet_id"]);
                 if ($is_conversation) {
                     $tweets = $fetch->tw_get_conversation($_GET["tweet_id"], [], true);
                 } else {
+                    $queryArray[] = '-filter:replies';
                     $getCount = ($_GET["count"]??$defaultTweetsCount);
                     $queryCount = (is_numeric($getCount) ? (($getCount > 100) ? 100 : (($getCount < 1) ? 1 : $getCount)) : $defaultTweetsCount);
                     //filter:media
                     if ($name) {
                         $queryArray[] = 'from:' . $name;
-                        $queryArray = array_merge($queryArray, ['include:nativeretweets', 'include:retweets', 'include:quote', '-filter:replies']);
                     }
+                    switch ($displayType) {
+                        case 'self':
+                            $queryArray[] = '-filter:nativeretweets';
+                            $queryArray[] = '-filter:retweets';
+                            $queryArray[] = 'include:quote';
+                            break;
+                        case 'retweet':
+                            $queryArray[] = 'filter:nativeretweets';
+                            $queryArray[] = 'filter:retweets';
+                            $queryArray[] = 'include:quote';
+                            break;
+                        case 'media':
+                            $queryArray[] = 'filter:media';
+                        default:
+                            $queryArray[] = 'include:nativeretweets';
+                            $queryArray[] = 'include:retweets';
+                            $queryArray[] = 'include:quote';
+                            $queryArray[] = 'include:replies';
+                    }
+
                     //$queryString = "from:$name since:2000-01-01 include:nativeretweets include:retweets include:quote";//$name 2000-01-01 include retweets
                     if ($cursor) {
                         $queryArray[] = ((int)($_GET["refresh"]??false) != 0) ? ("since_id:" . $cursor + 1) : ("max_id:" . $cursor - 1);
@@ -389,6 +412,43 @@ switch ($mode) {
                 }
 
                 break;
+            case "audiospace":
+                // /data/audiospace/?id={$audio_space_id}
+                // /?mode=data&type=audiospace&id=1skdvn
+
+                $id = $_GET["id"]??'';
+                if ($id !== '') {
+                    $tmpAudioSpaceData = $fetch->tw_get_audio_space_result($id);
+                    if (!isset($tmpAudioSpaceData["errors"]) && $tmpAudioSpaceData["data"]["audioSpace"]??false) {
+                        $ReturnJson["code"] = 200;
+                        $ReturnJson["message"] = "OK";
+                        $ReturnJson["data"] = tw_audio_space($tmpAudioSpaceData);
+                    } elseif (isset($tmpAudioSpaceData["errors"]) || isset($tmpAudioSpaceData["code"])) {
+                        $ReturnJson["code"] = 500;
+                        $ReturnJson["message"] = "Something wrong";
+                    } elseif (!$tmpAudioSpaceData["data"]["audioSpace"]) {
+                        $ReturnJson["code"] = 404;
+                        $ReturnJson["message"] = "No such space";
+                    }
+                }
+                break;
+            case "poll":
+                // /data/poll/?tweet_id={$tweet_id}
+                // /?mode=data&type=poll&tweet_id=0
+
+                $tweet_id = $_GET["tweet_id"]??NULL;
+                if (is_numeric($tweet_id)) {
+                    $tmpPollData = $fetch->tw_get_poll_result($tweet_id);
+                    if ($tmpPollData["code"] === 200) {
+                        foreach($tmpPollData["data"] as $index => $count) {
+                            $tmpPollData["data"][$index] = (int)$count;
+                        }
+                        $ReturnJson["code"] = 200;
+                        $ReturnJson["message"] = "OK";
+                        $ReturnJson["data"] = $tmpPollData["data"];
+                    }
+                }
+                break;
             case "translate":
                 // /data/translate/?tweet_id={$tweet_id}&to={$language}&tr_type={$translate_type} etc.
                 // /?mode=data&type=translate&tweet_id=0&to=zh_CN&tr_type=tweets //for tweets
@@ -435,6 +495,53 @@ switch ($mode) {
         } else {
             header("content-type: text/json");
             echo json_encode($ReturnJson, JSON_UNESCAPED_UNICODE);//request nothing
+        }
+        break;
+    case "stream":
+        //v2api for twitter monitor
+        $name = $_GET["name"]??'';
+        $uid = is_numeric($_GET["uid"]??false)? $_GET["uid"] :0;
+
+        switch ($type) {
+            case "userinfo":
+                // /stream/userinfo/?name={$username} etc.
+                // /?mode=stream&type=userinfo&name=bang_dream_info
+                // /?mode=stream&type=userinfo&uid=3009772568
+                header("content-type: text/event-stream");
+                //TODO errors
+                $tmpCounter = 0;
+                while(true) {
+                    $tmpCounter--;
+                    if ($tmpCounter <= 0) {
+                        $user_info = $fetch->tw_get_userinfo($name?:$uid?:'', '', true);
+
+                        $generateData = (new Tmv2\Info\Info($user_info))->generateMonitorData();
+
+                        $ReturnJson["code"] = 200;
+                        $ReturnJson["message"] = "OK";
+                        $ReturnJson["data"] = $generateData->in_sql_info;
+                        $ReturnJson["data"]["description"] = nl2br($ReturnJson["data"]["description"]);//nl2br(preg_replace("/ #([^\s]+)/", ' <a href="#/hashtag/$1" id="hashtag_profile">#$1</a>', $ReturnJson["data"]["description"]));//处理个人简介中的hashtag//TODO remove
+                        $ReturnJson["data"]["top"] = (string)($ReturnJson["data"]["top"] ?: 0);
+                        $ReturnJson["data"]["header"] = preg_replace("/http:\/\/|https:\/\//", "", $ReturnJson["data"]["header"]);
+                        $ReturnJson["data"]["uid_str"] = (string)$ReturnJson["data"]["uid"];
+
+                        //description
+                        $descriptionText = $ReturnJson["data"]["description"];
+                        $textWithoutTags = strip_tags($descriptionText);
+                        $ReturnJson["data"]["description_origin"] = $textWithoutTags;
+                        $ReturnJson["data"]["description_entities"] = getEntitiesFromText($descriptionText, $textWithoutTags);
+
+                        echo 'data: ' . json_encode($ReturnJson, JSON_UNESCAPED_UNICODE) . "\n\n";
+                        $tmpCounter = 10;
+                    }
+
+                    ob_end_flush();
+                    flush();
+                    if ( connection_aborted() ) break;
+                    sleep(1);
+                }
+
+                break;
         }
         break;
     default:

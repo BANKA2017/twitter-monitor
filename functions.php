@@ -210,7 +210,7 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
             "media" => 0,//是否有媒体
             "secondly_type" => "",
             "unified_card_app" => 0,
-            //"poll" => 0,//是否有投票
+            "poll" => 0,//是否有投票
         ],
         "media" => [],
         "app_data" => [],//app类的数据
@@ -554,6 +554,71 @@ function tw_card (array $cardInfo, string $uid, string $tweetid, bool $hidden = 
     return $card;
 }
 
+function tw_audio_space(array $audioSpaceObject): array {
+    $tmpAudioSpaceData = [
+        "id" => "",
+        "avatar" => "",
+        "name" => "",
+        "display_name" => "",
+        "state" => "Invalid",
+        "start" => 0,
+        "end" => 0,
+        "title" => "",
+        "total" => 0,
+        "verified" => false,
+        "admins" => [],
+        "listeners" => [],
+        "speakers" => []
+    ];
+    $tmpUserInfo = [
+        "uid" => 0,
+        "uid_str" => "0",
+        "name" => "",
+        "display_name" => "",
+        "avatar" => "",
+        "start" => 0,
+    ];
+    if (!$audioSpaceObject || !$audioSpaceObject["data"]["audioSpace"]["metadata"]) {
+        return $tmpAudioSpaceData;
+    }
+    $tmpAudioSpaceData["id"] = $audioSpaceObject["data"]["audioSpace"]["metadata"]["rest_id"];
+    $tmpAudioSpaceData["avatar"] = $audioSpaceObject["data"]["audioSpace"]["metadata"]["creator_results"]["result"]["legacy"]["profile_image_url_https"];
+    $tmpAudioSpaceData["display_name"] = $audioSpaceObject["data"]["audioSpace"]["metadata"]["creator_results"]["result"]["legacy"]["name"];
+    $tmpAudioSpaceData["name"] = $audioSpaceObject["data"]["audioSpace"]["metadata"]["creator_results"]["result"]["legacy"]["screen_name"];
+    $tmpAudioSpaceData["verified"] = $audioSpaceObject["data"]["audioSpace"]["metadata"]["creator_results"]["result"]["legacy"]["verified"]??false;
+    $tmpAudioSpaceData["state"] = $audioSpaceObject["data"]["audioSpace"]["metadata"]["state"];
+    $tmpAudioSpaceData["start"] = $audioSpaceObject["data"]["audioSpace"]["metadata"]["started_at"]??$audioSpaceObject["data"]["audioSpace"]["metadata"]["scheduled_start"];
+    $tmpAudioSpaceData["end"] = $audioSpaceObject["data"]["audioSpace"]["metadata"]["ended_at"]??0;
+    $tmpAudioSpaceData["title"] = $audioSpaceObject["data"]["audioSpace"]["metadata"]["title"]??'';
+    $tmpAudioSpaceData["total"] = ($audioSpaceObject["data"]["audioSpace"]["metadata"]["total_live_listeners"]??0) + ($audioSpaceObject["data"]["audioSpace"]["metadata"]["total_replay_watched"]??0);
+
+    $getUserInfo = function (array $userInfo, array &$tmpUserInfo, array &$audioSpaceObject, string $type = "admins") {
+        $tmpUser = $tmpUserInfo;
+        $tmpUser["uid"] = $userInfo["user"]["rest_id"];
+        $tmpUser["uid_str"] = (string)$userInfo["user"]["rest_id"];
+        $tmpUser["name"] = $userInfo["twitter_screen_name"];
+        $tmpUser["display_name"] = $userInfo["display_name"];
+        $tmpUser["avatar"] = $userInfo["avatar_url"];
+        $tmpUser["start"] = $userInfo["start"];
+        $audioSpaceObject[$type][] = $tmpUser;
+    };
+    // admins
+    foreach ($audioSpaceObject["data"]["audioSpace"]["participants"]["admins"] as $admin) {
+        $getUserInfo($admin, $tmpUserInfo, $tmpAudioSpaceData, "admins");
+    }
+
+    // speakers
+    foreach ($audioSpaceObject["data"]["audioSpace"]["participants"]["speakers"] as $speaker) {
+        $getUserInfo($speaker, $tmpUserInfo, $tmpAudioSpaceData, "speakers");
+    }
+
+    // listeners
+    foreach ($audioSpaceObject["data"]["audioSpace"]["participants"]["listeners"] as $listener) {
+        $getUserInfo($listener, $tmpUserInfo, $tmpAudioSpaceData, "listeners");
+    }
+    return $tmpAudioSpaceData;
+}
+
 //loooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong
 //https://github.com/MoeNetwork/Tieba-Cloud-Sign/blob/c4ab393045bcabde97c1a70fbe8e8d56be8f7f1e/lib/sfc.functions.php#L790
 function get_mime($ext): string {
@@ -623,8 +688,10 @@ function get_mime($ext): string {
         'lha'     => 'application/octet-stream',
         'lzh'     => 'application/octet-stream',
         'm3u'     => 'audio/x-mpegurl',
+        'm3u8'    => 'application/x-mpegURL',
         'm4a'     => 'audio/mp4a-latm',
         'm4p'     => 'audio/mp4a-latm',
+        'm4s'     => 'video/mp4',
         'm4u'     => 'video/vnd.mpegurl',
         'm4v'     => 'video/x-m4v',
         'mac'     => 'image/x-macpaint',
@@ -707,6 +774,7 @@ function get_mime($ext): string {
         'tif'     => 'image/tiff',
         'tiff'    => 'image/tiff',
         'tr'      => 'application/x-troff',
+        'ts'      => 'video/MP2T',
         'tsv'     => 'text/tab-separated-values',
         'txt'     => 'text/plain',
         'ustar'   => 'application/x-ustar',
@@ -847,4 +915,40 @@ function getEntitiesFromText (string $textWithTags = '', string $text = '', $typ
         }
     }
     return $List;
+}
+
+// time to snowflake
+// 毫秒 microtime(true) * 1000
+function time2snowflake (int | string $date): int {
+    if (is_string($date)) {
+        $date = strtotime($date) * 1000;
+    }
+    $tmpSnowflake = $date - 1288834974657;
+    $tmpSnowflake <<= 22;
+    return $tmpSnowflake;
+}
+
+// snowflake parser
+function snowflakeParser (string | int $snowflake): array {
+    $data = ["creation_time_milli" => 0, "sequence_id" => 0, "machine_id" => 0, "server_id" => 0, "datacenter_id" => 0];
+    if (is_string($snowflake)) {
+        $snowflake = (int)$snowflake;
+    }
+    if (!is_numeric($snowflake)) {
+        return $data;
+    }
+
+    // Sequence number
+    $data["sequence_id"] = $snowflake & 4095;
+    $snowflake >>= 12;
+
+    // Machine id
+    $data["machine_id"] = $snowflake & 1023;
+    $data["server_id"] = $data["machine_id"] & 31;
+    $data["datacenter_id"] = ($data["machine_id"]>>5) & 31;
+    $snowflake >>= 10;
+
+    // Time
+    $data["creation_time_milli"] = 1288834974657 + ($snowflake & 2199023255551);
+    return $data;
 }

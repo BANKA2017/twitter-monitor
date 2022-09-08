@@ -9,7 +9,7 @@ use Tmv2\Fetch\Fetch;
 use Tmv2\Info\Info;
 
 class Core {
-    public array $userInfo, $retweetUserInfo, $tags, $media, $cardMedia, $quoteMedia, $video, $card, $polls, $in_sql_tweet, $errors, $quote, $cardMessage = [], $cursor = ["top" => "", "bottom" => ""], $interactiveData = ["favorite_count" => 0, "retweet_count" => 0, "quote_count" => 0];
+    public array $userInfo, $retweetUserInfo, $tags, $media, $cardMedia, $quoteMedia, $video, $card, $polls, $in_sql_tweet, $errors, $quote, $cardMessage = [], $cursor = ["top" => "", "bottom" => ""], $interactiveData = ["favorite_count" => 0, "retweet_count" => 0, "quote_count" => 0], $displayTextRange = [0, 0];
     public bool $isGraphql, $isConversation, $isSelf, $isQuote, $online, $isRtl;
     private bool $isRetweet, $hidden, $isRecrawlMode;
     private array $globalObjects, $reCrawlObject, $reCrawlQuoteUsers = [];//$reCrawlObject => 0: off, 1: localMode, 2: remoteMode
@@ -223,7 +223,7 @@ class Core {
         //quote
         if ($this->isQuote) {
             $this->in_sql_tweet["quote_status"] = path_to_array("quote_tweet_id", $content);
-            $quoteObject = $this->getQuote(($this->isGraphql ?
+            $quoteContent = ($this->isGraphql ?
                 path_to_array("quote_graphql_path", $content) :
                 ($this->isRecrawlMode ?
                     (file_exists(SYSTEM_ROOT . "/savetweets/{$content["quoted_status_id_str"]}.json") ?
@@ -233,11 +233,15 @@ class Core {
                             []
                         )
                     ) :
-                    $this->globalObjects["globalObjects"]["tweets"][$this->in_sql_tweet["quote_status"]])), $this->in_sql_tweet["uid"], $this->in_sql_tweet["tweet_id"], $this->hidden
-            );
-            $this->quote = $quoteObject["in_sql_quote"];
-            $this->quoteMedia = $quoteObject["media"];
-            $this->media = array_merge($this->media, $quoteObject["media"]);
+                    $this->globalObjects["globalObjects"]["tweets"][$this->in_sql_tweet["quote_status"]]??false));
+            if ($quoteContent && !$quoteContent["tombstone"]) {
+                $quoteObject = $this->getQuote($quoteContent, $this->in_sql_tweet["uid"], $this->in_sql_tweet["tweet_id"], $this->hidden);
+                $this->quote = $quoteObject["in_sql_quote"];
+                $this->quoteMedia = $quoteObject["media"];
+                $this->media = array_merge($this->media, $quoteObject["media"]);
+            } elseif ($quoteContent["tombstone"]) {
+                echo "tmv3 Quote deleted (from #" . $this->in_sql_tweet["tweet_id"];
+            }
         }
 
         //card
@@ -272,8 +276,12 @@ class Core {
             "retweet_count" => $content["legacy"]["retweet_count"]??$content["retweet_count"]??0,
             "quote_count" => $content["legacy"]["quote_count"]??$content["quote_count"]??0,
         ];
+
         //rtl
         $this->isRtl = in_array($content["legacy"]["lang"]??$content["lang"]??"", ["ar", "fa", "iw", "ur"]);
+
+        // display text range
+        $this->displayTextRange = $content["legacy"]["display_text_range"]??$content["display_text_range"]??[0, 0];
         return $this;
     }
 
@@ -628,5 +636,6 @@ class Core {
         $this->polls = [];
         $this->interactiveData = ["favorite_count" => 0, "retweet_count" => 0, "quote_count" => 0];//reset data
         $this->isRtl = false;
+        $this->displayTextRange = [0, 0];
     }
 }

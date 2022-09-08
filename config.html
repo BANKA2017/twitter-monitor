@@ -26,7 +26,6 @@
                             <div class="nav nav-tabs" id="nav-tab" role="tablist">
                                 <a class="nav-item nav-link active" id="config-user-tab" data-toggle="tab" href="#config-user" role="tab" aria-controls="config-user" aria-selected="true">帐号 <span class="badge badge-light">{{ realUserListLength + '/' + config.users.length }}</span></a>
                                 <a class="nav-item nav-link" id="config-url-tab" data-toggle="tab" href="#config-url" role="tab" aria-controls="config-url" aria-selected="false">链接 <span class="badge badge-light">{{ config.links.length }}</span></a>
-                                <a class="nav-item nav-link" id="config-nsfwList-tab" data-toggle="tab" href="#config-nsfwList" role="tab" aria-controls="config-nsfwList" aria-selected="false">NSFW列表 <span class="badge badge-light">{{ config.nsfwList.length }}</span></a>
                             </div>
                         </nav>
                         <div class="tab-content" id="nav-tabContent">
@@ -34,7 +33,7 @@
                                 <template id="nameList">
                                     <div class="my-4"></div>
                                     <template v-for="(info, index) in userList">
-                                        <a role="button" :class="`text-decoration-none badge badge-pill badge-` + (info.organization ? 'success' : 'primary')" :href="`#item` + index" :key="index">{{ info.display_name }}</a>
+                                        <a role="button" :class="`text-decoration-none badge badge-pill badge-` + (info.nsfw ? 'warning' : (info.organization ? 'success' : 'primary'))" :href="`#item` + index" :key="index">{{ info.display_name }}</a>
                                         <span></span>
                                     </template>
                                     <div class="my-4"></div>
@@ -72,7 +71,7 @@
                                         
                                         <small id="projectHelp" class="form-text text-muted">两格从左到右分别是 <code>一级目录 -> 二级目录</code></small>
                                     </div>
-                                    <template v-for="(checkInfo, checkType) in {hidden: '隐藏此帐号', deleted: '帐号已删除', locked: '推文已被保护', organization: '机构帐号', not_analytics: '不统计数据'}">
+                                    <template v-for="(checkInfo, checkType) in {hidden: '隐藏此帐号', deleted: '帐号已删除', locked: '推文已被保护', organization: '机构帐号', not_analytics: '不统计数据', nsfw: 'NSFW'}">
                                         <div class="form-group form-check">
                                             <input type="checkbox" class="form-check-input" :id="`user`+s+checkType" v-model="config.users[s][checkType]">
                                             <label class="form-check-label" :for="`user`+s+checkType">{{ checkInfo }}</label>
@@ -107,23 +106,6 @@
                                 <template v-if="config.links.length===0">
                                     <div class="my-4"></div>
                                     <button class="btn btn-primary" @click="action('add', 'links')">增加</button>
-                                </template>
-                            </div>
-                            <div class="tab-pane fade" id="config-nsfwList" role="tabpanel" aria-labelledby="config-nsfwList-tab">
-                                <div class="my-4"></div>
-                                <div v-for="(nsfwUser, s) in config.nsfwList">
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" v-model="config.nsfwList[s]" :value="nsfwUser" :aria-describedby="`nsfwUser`+s">
-                                        <div class="input-group-append" :id="`nsfwUser`+s">
-                                            <button :class="`btn btn-primary mx-1`+((nsfwUser && s+1==config.nsfwList.length) ? '' : ' disabled')" @click="((nsfwUser && s+1===config.nsfwList.length) ? action('add', 'nsfwList') : '')" v-if="s+1===config.nsfwList.length" type="button">增加</button>
-                                            <button class="btn btn-outline-danger mx-1" @click="action('del', 'nsfwList', s)" type="button">删除</button>
-                                        </div>
-                                    </div>
-                                    <hr class="my-4">
-                                </div>
-                                <template v-if="config.nsfwList.length===0">
-                                    <div class="my-4"></div>
-                                    <button class="btn btn-primary" @click="action('add', 'nsfwList')">增加</button>
                                 </template>
                             </div>
                         </div>
@@ -174,6 +156,7 @@
                                 uid: "",
                                 organization: false,
                                 not_analytics: false,
+                                nsfw: false,
                                 projects: [
                                     ["project1", "tag1"],
                                 ],
@@ -185,8 +168,7 @@
                                 display: "Example Domain",
                                 //badgeClass: "primary",
                             }
-                        ],
-                        nsfwList: [],
+                        ]
                     },
                     Templates: {
                         users: {
@@ -198,7 +180,8 @@
                             uid: "",
                             organization: false,
                             not_analytics: false,
-                            projects: [],
+                            nsfw: false,
+                            projects: [["project1", "tag1"]],
                         },
                         links: {
                             url: "",
@@ -215,7 +198,7 @@
                 },
                 computed: {
                     userList: function () {
-                        return this.config.users.map(x => {return {name: x.name, display_name: x.display_name, organization: x.organization}})
+                        return this.config.users.map(x => {return {name: x.name, display_name: x.display_name, organization: x.organization, nsfw: x.nsfw}})
                     },
                     realUserListLength: function () {
                         let realUsersLength = 0;
@@ -238,7 +221,7 @@
                         if(this.textareaData){
                             try {
                                 let textareaDataArray = JSON.parse(this.textareaData);
-                                if(textareaDataArray !== this.config && (textareaDataArray.users && textareaDataArray.links && textareaDataArray.nsfwList)){
+                                if(textareaDataArray !== this.config && (textareaDataArray.users && textareaDataArray.links)){
                                     textareaDataArray.users.map(user => {user.uid = user.uid !== undefined ? String(user.uid) : ""; return user})
                                     this.config = textareaDataArray;
                                 }
@@ -266,9 +249,6 @@
                             switch(action){
                                 case "add":
                                     switch(where){
-                                        case 'nsfwList':
-                                            this.config.nsfwList = this.config.nsfwList.concat([""]);
-                                            break;
                                         case 'project':
                                             this.config.users[l1].projects = this.config.users[l1].projects.concat([["", ""]]);
                                             break;

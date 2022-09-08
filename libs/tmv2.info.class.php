@@ -47,6 +47,7 @@ class Info{
             "followers" => 0,
             "statuses_count" => 0,
             "timestamp" => time(),
+            //"description" => "",
         ];
         $this->update = false;
         $this->generateData();
@@ -128,6 +129,7 @@ class Info{
         $this->monitor_data_info["followers"] = $this->in_sql_info["followers"];
         $this->monitor_data_info["statuses_count"] = $this->in_sql_info["statuses_count"];
         $this->monitor_data_info["media_count"] = $this->in_sql_info["media_count"];
+        //$this->monitor_data_info["description"] = $this->in_sql_info["description"];
         return $this;
     }
 
