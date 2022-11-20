@@ -1,0 +1,554 @@
+{
+    "account_info": {
+        "bangdream": {
+            "企划官方": [
+                {
+                    "name": "bang_dream_info",
+                    "display_name": "BanGDream企划官方",
+                    "uid": 3009772568
+                },
+                {
+                    "name": "ARGONAVIS_info",
+                    "display_name": "ARGONAVIS官方",
+                    "uid": 989407367962939393
+                }
+            ],
+            "游戏": [
+                {
+                    "name": "bang_dream_gbp",
+                    "display_name": "日服官方",
+                    "uid": 775280864674525184
+                },
+                {
+                    "name": "bangdreamgbp_EN",
+                    "display_name": "国际服官方",
+                    "uid": 925637038396735488
+                }
+            ],
+            "Poppin'Party": [
+                {
+                    "name": "aimi_sound",
+                    "display_name": "爱美",
+                    "uid": 253177157
+                },
+                {
+                    "name": "OSae1010",
+                    "display_name": "大冢纱英",
+                    "uid": 3232514690
+                },
+                {
+                    "name": "Rimi_nsmt",
+                    "display_name": "山本里美",
+                    "uid": 3152941584
+                },
+                {
+                    "name": "AyakaOhashi",
+                    "display_name": "大桥彩香",
+                    "uid": 2819975324
+                },
+                {
+                    "name": "ayasa_ito",
+                    "display_name": "伊藤彩沙",
+                    "uid": 1419890600
+                }
+            ],
+            "Afterglow": [
+                {
+                    "name": "",
+                    "display_name": "金元寿子"
+                },
+                {
+                    "name": "",
+                    "display_name": "日笠阳子"
+                },
+                {
+                    "name": "Emiryun",
+                    "display_name": "加藤英美里",
+                    "uid": 106039584
+                },
+                {
+                    "name": "misawa_official",
+                    "display_name": "三泽纱千香",
+                    "uid": 1082826501609799680
+                },
+                {
+                    "name": "",
+                    "display_name": "佐仓绫音"
+                }
+            ],
+            "Pastel*Palettes": [
+                {
+                    "name": "_maeshima_ami",
+                    "display_name": "前岛亚美",
+                    "uid": 619187741
+                },
+                {
+                    "name": "",
+                    "display_name": "小泽亚李"
+                },
+                {
+                    "name": "uesaka_official",
+                    "display_name": "上坂堇",
+                    "uid": 888252840933605377
+                },
+                {
+                    "name": "_193_",
+                    "display_name": "中上育实",
+                    "uid": 134172978
+                },
+                {
+                    "name": "shawako_914",
+                    "display_name": "秦佐和子",
+                    "uid": 3161121853
+                }
+            ],
+            "Roselia": [
+                {
+                    "name": "Kanon_Shizaki",
+                    "display_name": "志崎桦音",
+                    "uid": 1060132463584849920
+                },
+                {
+                    "name": "akekodao",
+                    "display_name": "明坂聪美*",
+                    "uid": 1968809864
+                },
+                {
+                    "name": "sakuragawa_megu",
+                    "display_name": "樱川惠",
+                    "uid": 2242605476
+                },
+                {
+                    "name": "Yuki_Nakashim",
+                    "display_name": "中岛由贵",
+                    "uid": 767898518178582528
+                },
+                {
+                    "name": "endo_yurika",
+                    "display_name": "远藤祐里香*",
+                    "uid": 1713255452
+                },
+                {
+                    "name": "kudoharuka910",
+                    "display_name": "工藤晴香",
+                    "uid": 3693557304
+                },
+                {
+                    "name": "aibaaiai",
+                    "display_name": "相羽爱奈",
+                    "uid": 748671603127398400
+                }
+            ],
+            "Hello, Happy World!": [
+                {
+                    "name": "TomoyoKurosawa",
+                    "display_name": "黑泽朋世",
+                    "uid": 242195987
+                },
+                {
+                    "name": "toyotamoe",
+                    "display_name": "丰田萌绘",
+                    "uid": 1408066855
+                },
+                {
+                    "name": "",
+                    "display_name": "吉田有里"
+                },
+                {
+                    "name": "AzusaTadokoro",
+                    "display_name": "田所梓",
+                    "uid": 3195095402
+                },
+                {
+                    "name": "InfoItomiku",
+                    "display_name": "伊藤美来",
+                    "uid": 737989496365449217
+                }
+            ],
+            "RAISE A SUILEN": [
+                {
+                    "name": "Lay0113",
+                    "display_name": "Raychell",
+                    "uid": 294626568
+                },
+                {
+                    "name": "Riko_kohara",
+                    "display_name": "小原莉子",
+                    "uid": 3060143636
+                },
+                {
+                    "name": "nananananachume",
+                    "display_name": "夏芽",
+                    "uid": 258659153
+                },
+                {
+                    "name": "kurachireo",
+                    "display_name": "仓知玲凤",
+                    "uid": 930394603097702402
+                },
+                {
+                    "name": "risa_tsumugi",
+                    "display_name": "纺木吏佐",
+                    "uid": 930439312209952768
+                }
+            ],
+            "Argonavis": [
+                {
+                    "name": "hashimotoshohey",
+                    "display_name": "(Dr)桥本祥平",
+                    "uid": 1071978466550079489
+                },
+                {
+                    "name": "morishimazo",
+                    "display_name": "(Key)森岛秀太",
+                    "uid": 133617033
+                },
+                {
+                    "name": "seiji_maeda000",
+                    "display_name": "(Ba)前田诚二",
+                    "uid": 980380854307381248
+                },
+                {
+                    "name": "hyu_hyu_hyuga",
+                    "display_name": "(Gt)日向大辅",
+                    "uid": 994487760013553664
+                },
+                {
+                    "name": "masahiro__110",
+                    "display_name": "(Vo)伊藤昌弘",
+                    "uid": 1040615535560470528
+                }
+            ]
+        },
+        "lovelive": {
+            "企划官方": [
+                {
+                    "name": "LoveLive_staff",
+                    "display_name": "LoveLive!系列官方",
+                    "uid": 347849994
+                }
+            ],
+            "游戏": [
+                {
+                    "name": "lovelive_SIF",
+                    "display_name": "SIF手游",
+                    "uid": 1346933186
+                },
+                {
+                    "name": "lovelive_SIF_AC",
+                    "display_name": "SIFAC街机",
+                    "uid": 747340248124817408
+                },
+                {
+                    "name": "lovelive_SIC",
+                    "display_name": "SIC卡牌",
+                    "uid": 4439824994
+                },
+                {
+                    "name": "lovelive_PG",
+                    "display_name": "PG消消乐(已删号)",
+                    "uid": null,
+                    "deleted": true
+                },
+                {
+                    "name": "LLAS_STAFF",
+                    "display_name": "ALL STARS",
+                    "uid": 1158675515193999360
+                }
+            ],
+            "μ's": [
+                {
+                    "name": "nittaemi85",
+                    "display_name": "新田惠海",
+                    "uid": 908617697033822208
+                },
+                {
+                    "name": "aya_uchida",
+                    "display_name": "内田彩",
+                    "uid": 297833968
+                },
+                {
+                    "name": "mimori_suzuko",
+                    "display_name": "三森铃子",
+                    "uid": 114700374
+                },
+                {
+                    "name": "pile_eric",
+                    "display_name": "Pile",
+                    "uid": 308818825
+                },
+                {
+                    "name": "shikaco_staff",
+                    "display_name": "久保由利香",
+                    "uid": 4605678433
+                },
+                {
+                    "name": "rippialoha",
+                    "display_name": "饭田里穗",
+                    "uid": 319501205
+                },
+                {
+                    "name": "tokui_sorangley",
+                    "display_name": "德井青空",
+                    "uid": 261196483
+                },
+                {
+                    "name": "nanjolno",
+                    "display_name": "南条爱乃",
+                    "uid": 119635653
+                },
+                {
+                    "name": "kusudaaina",
+                    "display_name": "楠田亚衣奈",
+                    "uid": 259302981
+                }
+            ],
+            "A-RISE": [
+                {
+                    "name": "",
+                    "display_name": "樱川惠"
+                },
+                {
+                    "name": "",
+                    "display_name": "松永真穗"
+                },
+                {
+                    "name": "",
+                    "display_name": "大桥步夕"
+                }
+            ],
+            "Aqours": [
+                {
+                    "name": "anju_inami",
+                    "display_name": "伊波杏树",
+                    "uid": 1393924040
+                },
+                {
+                    "name": "Rikako_Aida",
+                    "display_name": "逢田梨香子",
+                    "uid": 3692123006
+                },
+                {
+                    "name": "Saito_Shuka",
+                    "display_name": "齐藤朱夏",
+                    "uid": 3801397033
+                },
+                {
+                    "name": "Aikyan_",
+                    "display_name": "小林爱香",
+                    "uid": 260986258
+                },
+                {
+                    "name": "Kanako_tktk",
+                    "display_name": "高槻加奈子",
+                    "uid": 4065828913
+                },
+                {
+                    "name": "furihata_ai",
+                    "display_name": "降幡爱",
+                    "uid": 3177540343
+                },
+                {
+                    "name": "aina_suzuki723",
+                    "display_name": "铃木爱奈",
+                    "uid": 3177547086
+                },
+                {
+                    "name": "suwananaka",
+                    "display_name": "诹访奈奈香",
+                    "uid": 2598273120
+                },
+                {
+                    "name": "box_komiyaarisa",
+                    "display_name": "小宫有纱",
+                    "uid": 746579242431877121
+                }
+            ],
+            "Saint Snow": [
+                {
+                    "name": "asami_manager",
+                    "display_name": "田野麻美",
+                    "uid": 488304462
+                },
+                {
+                    "name": "satohina1223",
+                    "display_name": "佐藤日向",
+                    "uid": 2807026892
+                }
+            ],
+            "虹ヶ咲学園": [
+                {
+                    "name": "aguri_onishi",
+                    "display_name": "大西亚玖璃",
+                    "uid": 991283114885365761
+                },
+                {
+                    "name": "natyaaaaaaan07",
+                    "display_name": "村上奈津实",
+                    "uid": 760000974005997568
+                },
+                {
+                    "name": "tomori_kusunoki",
+                    "display_name": "楠木灯",
+                    "uid": 847365153691582465
+                },
+                {
+                    "name": "MayuSgr",
+                    "display_name": "相良茉优",
+                    "uid": 1057615013282631680
+                },
+                {
+                    "name": "kaor1n_n",
+                    "display_name": "前田佳织里",
+                    "uid": 880621944101404672
+                },
+                {
+                    "name": "kyome_radio",
+                    "display_name": "田中千惠美?",
+                    "uid": 1011807406886567936
+                },
+                {
+                    "name": "iRis_k_miyu",
+                    "display_name": "久保田未梦",
+                    "uid": 2384783184
+                },
+                {
+                    "name": "kitoakari_1016",
+                    "display_name": "鬼头明里",
+                    "uid": 1141319903250534400,
+                    "deleted": true
+                },
+                {
+                    "name": "sashide_m",
+                    "display_name": "指出球亚",
+                    "uid": 1075210326990217216
+                }
+            ]
+        },
+        "d4dj": {
+            "企划官方": [
+                {
+                    "name": "D4DJ_pj",
+                    "display_name": "D4DJ官方",
+                    "uid": 1108189554089947137
+                }
+            ]
+        },
+        "revuestarlight": {
+            "企划官方": [
+                {
+                    "name": "revuestarlight",
+                    "display_name": "少女歌剧官方",
+                    "uid": 857776931399319552
+                }
+            ],
+            "游戏": [
+                {
+                    "name": "starlightrelive",
+                    "display_name": "日服官方",
+                    "uid": 1006335620438843392
+                }
+            ]
+        },
+        "nekoworks": {
+            "官方": [
+                {
+                    "name": "nekopara_pr",
+                    "display_name": "NEKO WORKs@Official",
+                    "uid": 2528755729
+                }
+            ],
+            "游戏": [
+                {
+                    "name": "nekoparaiten_EN",
+                    "display_name": "Nekoparaiten (手游)",
+                    "uid": 1136471793114333186
+                },
+                {
+                    "name": "nekoparaiten_JP",
+                    "display_name": "ネコぱらいてん！ (手游)",
+                    "uid": 1136188822448816133
+                },
+                {
+                    "name": "nekopara_cfk",
+                    "display_name": "ネコぱらCS Official",
+                    "uid": 997462092675407872
+                }
+            ],
+            "动画": [
+                {
+                    "name": "nekopara_anime",
+                    "display_name": "TV动画",
+                    "uid": 1141549533173706752
+                }
+            ]
+        },
+        "kancolle": {
+            "开发\/运营": [
+                {
+                    "name": "KanColle_STAFF",
+                    "display_name": "「艦これ」開発\/運営",
+                    "uid": 294025417
+                }
+            ],
+            "C2机关": [
+                {
+                    "name": "C2_STAFF",
+                    "display_name": "C2机关",
+                    "uid": 105035479
+                }
+            ]
+        }
+    },
+    "projects": {
+        "bangdream": {
+            "name": "bang_dream_info",
+            "display_name": "BanGDream!"
+        },
+        "lovelive": {
+            "name": "LoveLive_staff",
+            "display_name": "LoveLive!"
+        },
+        "d4dj": {
+            "name": "D4DJ_pj",
+            "display_name": "D4DJ!"
+        },
+        "revuestarlight": {
+            "name": "revuestarlight",
+            "display_name": "少女☆歌劇"
+        },
+        "nekoworks": {
+            "name": "nekopara_pr",
+            "display_name": "NEKO WORKS"
+        },
+        "kancolle": {
+            "name": "KanColle_STAFF",
+            "display_name": "艦これ"
+        }
+    },
+    "nsfwList": [
+        "nekopara_pr"
+    ],
+    "links": [
+        [
+            "https:\/\/twitter.com",
+            "Twitter",
+            "primary"
+        ],
+        [
+            "https:\/\/twi.lovelive.cx",
+            "愿光蓝鸟",
+            "primary"
+        ],
+        [
+            "https:\/\/github.com\/BANKA2017\/twitter-monitor\/issues",
+            "反馈",
+            "info"
+        ],
+        [
+            "https:\/\/nest.moe",
+            "♥BANKA",
+            "primary"
+        ]
+    ]
+}

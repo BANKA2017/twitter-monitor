@@ -1,0 +1,245 @@
+Twitter Monitor v3 (DEV)
+---
+
+This repository included `core/crawler/api/scripts`, frontend repository is [here](https://github.com/BANKA2017/twitter-monitor-frontend/).
+
+这个仓库包含 `核心/爬虫/api/脚本`，前端仓库位于[这里](https://github.com/BANKA2017/twitter-monitor-frontend/)
+
+## Environment
+
+* x86_64/arm64
+* NodeJS 16+
+* Nginx
+* MySQL 8.0 / MariaDB (some function is not supported MariaDB, like function `ANY_VALUE()`, parser `ngram`)
+* *PHP8.0 and component, although we rewrited all scripts by NodeJS, some PHP scripts is better than Node version
+
+## How to
+
+### Settings
+
+* leave it as is if not necessary
+* service **tmv1** and **analytics** in `SQL_CONFIG` are not necessary, execpt you used twitter monitor before 2020-03
+
+### Core
+
+* **NO TYPESCRIPT**, core code are not yet supported typescript
+* copy and rename the setting file from `src/assets/settings_sample.mjs` to `src/assets/settings.mjs`, and edit it
+* enjoy it!
+
+### Graphql
+
+**IF POSSIBLE, DO NOT RUN THOSE SCRIPTS**
+* run `node apps/scripts/updateQueryIdList.mjs` to update `queryId`
+* run `node apps/scripts/checkGraphqlFeaturesStatus.mjs` for check after updating `queryId`
+
+### Crawler
+
+* edit `SQL_CONFIG` to enable service **twitter_monitor**
+* run `yarn run init` or `npm run init`
+* open `config.html` by browser to edit and save config file `config.json` as `src/assets/config.json`
+
+  [Online](https://banka2017.github.io/twitter-monitor/apps/config/)
+
+* [PM2](https://pm2.keymetrics.io/) is a good choice for you, you also can use screen or nohup
+
+  ```shell
+  pm2 start apps/crawler/get_tweets.mjs
+  ```
+
+* set crontab，e.g.
+
+  ```shell
+  #those are example path, use your path
+  * * * * * node apps/crawler/blurhash.mjs #PHP version is better, node version is slow
+  */10 * * * * node apps/crawler/updatePollsAndAudioSpace.mjs
+  ```
+
+* you can set `TWEETS_SAVE_PATH` to save tweet content as json in that path
+* we use another **bearer authorization token** to crawl more tweets, but this token is not supported some new feature like mix media, you can replace it by the latest token (then not support **nsfw** content)
+
+### Api
+
+* run `yarn run dbapi` to enable the api only used databases (tmv1, twitter monitor)
+* run `yarn run api` to enable full version api (dbapi and album api, online api, media proxy)
+* *you can create a better api than mine
+
+### Watch dog
+
+* a script in `apps/scripts` named `watchDog.mjs` can be added to crontab to check whether some data being added in latest 30 minites
+
+## Supported Cards
+
+    * summary*
+    * summary_large_image
+    * promo_image_convo
+    * promo_video_convo
+    * promo_website
+    * audio*
+    * player
+    * periscope_broadcast
+    * broadcast
+    * promo_video_website
+    * promo_image_app
+    * app
+    * direct_store_link_app
+    * live_event
+    * moment**
+    * poll2choice_text_only
+    * poll3choice_text_only
+    * poll4choice_text_only
+    * poll2choice_image
+    * poll3choice_image
+    * poll4choice_image
+    * appplayer
+    * audiospace
+    * unified_card
+        * image_website
+        * video_website
+        * image_carousel_website
+        * video_carousel_website
+        * image_app
+        * video_app
+        * image_carousel_app
+        * video_carousel_app
+        * image_multi_dest_carousel_website
+        * video_multi_dest_carousel_website
+        * mixed_media_multi_dest_carousel_website
+        * mixed_media_single_dest_carousel_website
+        * mixed_media_single_dest_carousel_app
+        * twitter_list_details
+        * media_with_details_horizontal (for topic ?)
+
+## Thanks
+
+* `GoogleTokenGenerator.php` from [google-translate-php](https://github.com/Stichoza/google-translate-php), I remove some unnecessary code //now we need't use tk in Google translate
+* function `get_mime` is rewrited from [Tieba-Cloud-Sign](https://github.com/MoeNetwork/Tieba-Cloud-Sign/blob/c4ab393045bcabde97c1a70fbe8e8d56be8f7f1e/lib/sfc.functions.php#L790)
+* you may notice a package named `sequelize-automate-gm` in `package.json`, this is a tiny tool to help me create model from exist tables
+
+## How it works
+
+Those are Chinese articles
+
+[怎么爬twitter](https://blog.nest.moe/how-to-crawl-twitter/)
+
+[怎么爬twitter Graphql](https://blog.nest.moe/how-to-crawl-twitter-with-graphql/)
+
+## 环境要求
+
+* x86_64/arm64 (理论上是全平台支持的)
+* NodeJS 16+
+* Nginx
+* MySQL 8.0 (使用MariaDB等基于 MySQL 5.x 的发行版可能不能支持函数 `ANY_VALUE()`, 解析器 `ngram`，会导致部分api不可用，若不使用api可忽略此处)
+* *PHP8.0 以及 component (尽管已经用NodeJS重写，但生成blurhash的效率还是不如PHP，不需要生成的blurhash可忽略此行)
+
+## 使用方法
+
+### 设定
+
+* 如无必要，保持原样
+* `SQL_CONFIG` 中的 **tmv1** 以及 **analytics** 的服务都不是必须的，除非您在 2022-03 重写前就使用了 twitter monitor
+
+### Core
+
+* **没有 Typescript**，其实是不知怎么入手
+* 拷贝编辑 `src/assets/settings_sample.mjs` 并另存为 `src/assets/settings.mjs`
+* 开始使用吧！
+
+### Graphql
+
+**如无必要，请不要跑这些脚本**
+* 运行 `node apps/scripts/updateQueryIdList.mjs` 以更新 `queryId`
+* 更新 `queryId` 后运行 `node apps/scripts/checkGraphqlFeaturesStatus.mjs` 进行检查（不通过怎么办？可以来提issue）
+
+### 爬虫
+
+* 编辑 `SQL_CONFIG` 以启用本服务
+* 运行 `yarn run init` 或 `npm run init` 以导入数据表以及在路径 `src/assets/config.json` 创建配置文件
+
+  [在线编辑器](https://banka2017.github.io/twitter-monitor/apps/config/)
+
+* 我推荐使用 [PM2](https://pm2.keymetrics.io/)，但 nohup 和 screen 也不是不行
+
+  ```shell
+  pm2 start apps/crawler/get_tweets.mjs
+  ```
+
+* 编辑crontab
+
+  ```shell
+  #这些都是示例，用你自己的路径
+  * * * * * node apps/crawler/blurhash.mjs #PHP版更好
+  */10 * * * * node apps/crawler/updatePollsAndAudioSpace.mjs
+  ```
+
+* 设定 `TWEETS_SAVE_PATH` 可以将推文内容保存为json文件
+* 我们使用旧版**bearer authorization token**以获得更多的推文，但这个token并不支持一些新版的特性，比如混合媒体，你可以用新的token替换之（然后不支持 **NSFW** 内容）
+
+### Api
+
+* 运行 `yarn run dbapi` 启用仅使用数据库的api （tmv1，twitter monitor）
+* 运行 `yarn run dbapi` 启用全部 api （上一项的全部以及 album api，online api，media proxy）
+* *欢迎自行开发一个更好的api
+
+### 看门狗
+
+* `apps/scripts` 里面有一个叫 `watchDog.mjs` 的脚本，可以添加到 crontab 中用以检查半小时内是否有数据增加
+
+## 支持的卡片类型
+
+* 支持的卡片类型 (```*``` 表示使用小图, ```**``` 表示使用小图且图片在卡片右侧)
+
+    * summary*
+    * summary_large_image
+    * promo_image_convo
+    * promo_video_convo
+    * promo_website
+    * audio*
+    * player
+    * periscope_broadcast
+    * broadcast
+    * promo_video_website
+    * promo_image_app
+    * app
+    * direct_store_link_app
+    * live_event
+    * moment**
+    * poll2choice_text_only
+    * poll3choice_text_only
+    * poll4choice_text_only
+    * poll2choice_image
+    * poll3choice_image
+    * poll4choice_image
+    * appplayer
+    * audiospace
+    * unified_card
+        * image_website
+        * video_website
+        * image_carousel_website
+        * video_carousel_website
+        * image_app
+        * video_app
+        * image_carousel_app
+        * video_carousel_app
+        * image_multi_dest_carousel_website
+        * video_multi_dest_carousel_website
+        * mixed_media_multi_dest_carousel_website
+        * mixed_media_single_dest_carousel_website
+        * mixed_media_single_dest_carousel_app
+        * twitter_list_details
+        * media_with_details_horizontal (for topic ?)
+
+## 出处 & 感谢
+
+* `GoogleTokenGenerator.php` 这个文件出自 [google-translate-php](https://github.com/Stichoza/google-translate-php) 并经过本人小幅修改; 现在使用 Google translate 不再需要生成 TKK，故已移除本文件
+* 函数 `get_mime` 重写自 [Tieba-Cloud-Sign](https://github.com/MoeNetwork/Tieba-Cloud-Sign/blob/c4ab393045bcabde97c1a70fbe8e8d56be8f7f1e/lib/sfc.functions.php#L790)
+* 在 `package.json` 里面有一个叫 `sequelize-automate-gm` 的包，这是我用来从现有的数据库中导出 model 用的小工具（虽然有一些奇奇怪怪的 bug）
+
+## 资料
+
+[怎么爬twitter](https://blog.nest.moe/how-to-crawl-twitter/)
+
+[怎么爬twitter Graphql](https://blog.nest.moe/how-to-crawl-twitter-with-graphql/)
+
+## About v2
+
+The PHP version will be updated soon... maybe?

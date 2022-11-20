@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta name="robots" content="nofollow">
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="author" content="Banka2017 (https://bangdream.fun)">
+        <meta name="description" content="Twitter Monitor Config">
+        <title>Twitter Monitor Config</title>
+        <!-- CSS only -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+        <!-- JS -->
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/js/bootstrap.min.js" integrity="sha384-oesi62hOLfzrys4LxRF63OJCXdXDipiYWBnvTl9Y9/TRlw5xlKIEHpNyvvDShgf/" crossorigin="anonymous"></script>
+    </head>
+    <body>
+        <div id="app">
+            <nav class="navbar navbar-expand-lg navbar-light text-center bg-light">
+                <span class="navbar-brand mb-0 h1">Twitter Monitor</span>
+            </nav>
+            <div class="my-4"></div>
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h4>创建配置文件 Config.json</h4>
+                        <nav>
+                            <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                                <a class="nav-item nav-link active" id="config-user-tab" data-toggle="tab" href="#config-user" role="tab" aria-controls="config-user" aria-selected="true">帐号 <span class="badge badge-light">{{ realUserListLength + '/' + config.users.length }}</span></a>
+                                <a class="nav-item nav-link" id="config-url-tab" data-toggle="tab" href="#config-url" role="tab" aria-controls="config-url" aria-selected="false">链接 <span class="badge badge-light">{{ config.links.length }}</span></a>
+                            </div>
+                        </nav>
+                        <div class="tab-content" id="nav-tabContent">
+                            <div class="tab-pane fade show active" id="config-user" role="tabpanel" aria-labelledby="config-user-tab">
+                                <template id="nameList">
+                                    <div class="my-4"></div>
+                                    <template v-for="(info, index) in userList">
+                                        <a role="button" :class="`text-decoration-none badge badge-pill badge-` + (info.nsfw ? 'warning' : (info.organization ? 'success' : 'primary'))" :href="`#item` + index" :key="index">{{ info.display_name }}</a>
+                                        <span></span>
+                                    </template>
+                                    <div class="my-4"></div>
+                                </template>
+                                <div v-for="(user, s) in config.users" :id="`item` + s">
+                                    <div class="form-group">
+                                        <label :for="`user`+s+`name`" :style="user.name ? '' : 'color: orange'">id</label>
+                                        <input type="text" class="form-control" aria-describedby="idHelp" v-model="config.users[s].name" :value="user.name" :id="`user`+s+`name`">
+                                        <small id="idHelp" class="form-text text-muted">Twitter帐号id</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label :for="`user`+s+`display_name`" :style="(!user.display_name && !user.name) ? 'color: red' : ''">备注</label>
+                                        <input type="text" class="form-control" aria-describedby="display_nameHelp" v-model="config.users[s].display_name" :value="user.display_name" :id="`user`+s+`display_name`">
+                                        <small id="display_nameHelp" class="form-text text-muted">留空则使用帐号名称</small>
+                                    </div>
+                                    <div class="form-group" v-if="user.uid">
+                                        <label :for="`user`+s+`uid`">UID</label>
+                                        <input type="text" class="form-control" aria-describedby="uidHelp" v-model="config.users[s].uid" :value="user.uid" :id="`user`+s+`uid`">
+                                        <small id="uidHelp" class="form-text text-muted">Twitter帐号uid，无需理会</small>
+                                    </div>
+                                    <div v-if="user.projects.length">
+                                        <template v-for="(project, ss) in config.users[s].projects">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" v-model="config.users[s].projects[ss][0]" value="project[0]" placeholder="一级目录">
+                                                <div class="input-group-append" :id="`project`+ss">
+                                                    <span class="input-group-text">-></span>
+                                                </div>
+                                                <input type="text" class="form-control input-group-append" v-model="config.users[s].projects[ss][1]" value="project[1]" placeholder="二级目录">
+                                                <div class="input-group-append" :id="`project`+ss">
+                                                    <button class="btn btn-outline-danger" @click="action('del', 'project', s, ss)" type="button">删除</button>
+                                                </div>
+                                            </div>
+                                            <div class="my-4"></div>
+                                        </template>
+                                        
+                                        <small id="projectHelp" class="form-text text-muted">两格从左到右分别是 <code>一级目录 -> 二级目录</code></small>
+                                    </div>
+                                    <template v-for="(checkInfo, checkType) in {hidden: '隐藏此帐号', deleted: '帐号已删除', locked: '推文已被保护', organization: '机构帐号', not_analytics: '不统计数据', nsfw: 'NSFW'}">
+                                        <div class="form-group form-check">
+                                            <input type="checkbox" class="form-check-input" :id="`user`+s+checkType" v-model="config.users[s][checkType]">
+                                            <label class="form-check-label" :for="`user`+s+checkType">{{ checkInfo }}</label>
+                                        </div>
+                                    </template>
+                                    <button class="btn btn-primary mx-1" @click="action('add', 'project', s)">添加目录</button>
+                                    <button :class="`btn btn-primary mx-1`+((!user.display_name && !user.name) ? ' disabled' : '')" @click="(!user.display_name && !user.name) ? '' : action('add', 'users', s)">新增帐号</button>
+                                    <button class="btn btn-outline-danger mx-1" @click="action('del', 'users', s)" v-if="config.users.length > 1">删除帐号</button>
+                                    
+                                    <hr class="my-4">
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="config-url" role="tabpanel" aria-labelledby="config-url-tab">
+                                <div v-for="(url, s) in config.links">
+                                    <div class="form-group">
+                                        <label :for="`url`+s+`url`">url <small class="text-muted" v-if="!(/(http|https|ftp):\/\/[^\.]+\..*/gm.test(url.url))">若没有协议，则会使用 <code>&lt;router-link&gt;</code> 处理</small></label>
+                                        <input type="text" class="form-control" v-model="config.links[s].url" :value="url.url" :id="`url`+s+`url`">
+                                    </div>
+                                    <div class="form-group">
+                                        <label :for="`url`+s+`display`">别名</label>
+                                        <input type="text" class="form-control" v-model="config.links[s].display" :value="url.display" :id="`url`+s+`display`">
+                                    </div>
+                                    <!--<div class="form-group">-->
+                                        <!--<label :for="`url`+s+`badgeClass`">类型</label>-->
+                                        <!--<select :id="`url`+s+`badgeClass`" v-model="config.links[s].badgeClass" class="form-control">-->
+                                            <!--<option :value="badgeClass[0]" v-for="badgeClass in [['primary', 'Primary'], ['secondary', 'Secondary'], ['success', 'Success'], ['danger', 'Danger'], ['warning', 'Warning'],  ['info', 'Info'], ['light', 'Light'], ['dark', 'Dark']]">{{ badgeClass[1] }}</option>-->
+                                        <!--</select>-->
+                                    <!--</div>-->
+                                    <button :class="`btn btn-primary`+(/(http|https|ftp):\/\/[^\.]+\..*/gm.test(url.url) ? '' : ' disabled')" @click="/(http|https|ftp):\/\/[^\.]+\..*/gm.test(url.url) ? action('add', 'links', config.links.length) : ''" v-if="s+1==config.links.length">增加</button> <button class="btn btn-outline-danger" @click="action('del', 'links', s)">删除</button>
+                                    <hr class="my-4">
+                                </div>
+                                <template v-if="config.links.length===0">
+                                    <div class="my-4"></div>
+                                    <button class="btn btn-primary" @click="action('add', 'links')">增加</button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4" >
+                        <div style="position: sticky; top: 1.5rem;">
+                            <!--生成的数据-->
+                            <label for="uploadFile">导入配置文件</label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="uploadFile" lang="zh" @change="jsonFileChange" accept="application/json">
+                                <label class="custom-file-label" for="uploadFile">config.json</label>
+                            </div>
+                            <div class="my-4"></div>
+                            <button class="btn btn-primary btn-block" @click="download('config.json', JSON.stringify(config))">下载配置</button>
+                            <div class="my-4"></div>
+                            <div class="input-group">
+                                <textarea class="form-control" :value="textareaData" rows="10" v-model="textareaData"></textarea>
+                            </div>
+                            <div class="text-center my-2">
+                                >_ Twitter Monitor
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary fixed-button" style="opacity: 0.8;position: fixed;bottom: 0;right: 0" @click='() => {window.scrollTo({top: 0,behavior: "smooth"}), this.scrollTop = 0}'>
+                <svg class="bi bi-chevron-up" width="25" height="25" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M9.646 6.646a.5.5 0 01.708 0l6 6a.5.5 0 01-.708.708L10 7.707l-5.646 5.647a.5.5 0 01-.708-.708l6-6z" clip-rule="evenodd"/>
+                </svg>
+            </button>
+        </div>
+        <!--load css and js-->
+        <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
+        <script src="https://cdn.jsdelivr.net/npm/axios@0.19.2/dist/axios.min.js"></script>
+        <script>
+            'use strict';
+            new Vue({
+                el: "#app",
+                data: {
+                    config: {
+                        users: [
+                            {
+                                name: "Example_user",
+                                display_name: "Example user",
+                                hidden: false,
+                                deleted: false,
+                                locked: false,
+                                uid: "",
+                                organization: false,
+                                not_analytics: false,
+                                nsfw: false,
+                                projects: [
+                                    ["project1", "tag1"],
+                                ],
+                            }
+                        ],
+                        links: [
+                            {
+                                url: "https://example.com",
+                                display: "Example Domain",
+                                //badgeClass: "primary",
+                            }
+                        ]
+                    },
+                    Templates: {
+                        users: {
+                            name: "",
+                            display_name: "",
+                            hidden: false,
+                            deleted: false,
+                            locked: false,
+                            uid: "",
+                            organization: false,
+                            not_analytics: false,
+                            nsfw: false,
+                            projects: [["project1", "tag1"]],
+                        },
+                        links: {
+                            url: "",
+                            display: "",
+                            //badgeClass: "primary",
+                        }
+                    },
+                    textareaData: "",
+                    textareaSettings: {
+                        copy: false,
+                        style: false,
+                    },
+                    projects: [],
+                },
+                computed: {
+                    userList: function () {
+                        return this.config.users.map(x => {return {name: x.name, display_name: x.display_name, organization: x.organization, nsfw: x.nsfw}})
+                    },
+                    realUserListLength: function () {
+                        let realUsersLength = 0;
+                        this.config.users.map(x => {
+                            if (x.name !== "" && !x.deleted && !x.locked) {
+                                realUsersLength++
+                            }
+                        })
+                        return realUsersLength
+                    },
+                },
+                watch: {
+                    "config": {
+                        handler: function(){
+                            this.textareaData = JSON.stringify(this.config, null, 4);
+                        },
+                        deep: true,
+                    },
+                    "textareaData": function(){
+                        if(this.textareaData){
+                            try {
+                                let textareaDataArray = JSON.parse(this.textareaData);
+                                if(textareaDataArray !== this.config && (textareaDataArray.users && textareaDataArray.links)){
+                                    textareaDataArray.users.map(user => {user.uid = user.uid !== undefined ? String(user.uid) : ""; return user})
+                                    this.config = textareaDataArray;
+                                }
+                            } catch {
+                                //console.log('error');
+                            }
+                        }
+                    }
+                },
+                mounted: function() {
+                    axios.get("./config.json").then(response => {
+                        this.config = response.data
+                        this.autoSave();
+                    }).catch(() => {
+                        if (localStorage.getItem('twitter_monitor_config')) {
+                            this.config = JSON.parse(localStorage.getItem('twitter_monitor_config'));
+                            this.autoSave();
+                        }
+                    })
+                    this.textareaData = JSON.stringify(this.config, null, 4);
+                },
+                methods: {
+                    action: function(action, where = "users", l1 = 0, l2 = 0){
+                        if(where){
+                            switch(action){
+                                case "add":
+                                    switch(where){
+                                        case 'project':
+                                            this.config.users[l1].projects = this.config.users[l1].projects.concat([["", ""]]);
+                                            break;
+                                        default:
+                                            this.config[where] = (l1 === this.config[where].length) ? this.config[where].concat(this.Templates[where]) : this.config[where].slice(0, l1 + 1).concat(this.Templates[where]).concat(this.config[where].slice(l1 + 1));
+                                    }
+                                    break;
+                                case "del":
+                                    switch(where){
+                                        case 'project':
+                                            this.config.users[l1].projects.splice(l2, 1);
+                                            break;
+                                        default:
+                                            this.config[where].splice(l1, 1);
+                                    }
+                                    break;
+                            }
+                        }
+                    },
+                    jsonFileChange: function (e) {
+                        let oFReader = new FileReader();
+                        let oFile = document.getElementById("uploadFile").files[0];
+                        oFReader.readAsText(oFile);
+                        oFReader.onload = (e) => {
+                            try{
+                                this.config = JSON.parse(oFReader.result);
+                            } catch {
+                                console.log('文件不可解析');
+                            }
+                        }
+                    },
+                    download: function (filename, text) {
+                        let element = document.createElement('a');
+                        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+                        element.setAttribute('download', filename);
+                        element.style.display = 'none';
+                        document.body.appendChild(element);
+                        element.click();
+                        document.body.removeChild(element);
+                    },
+                    autoSave: function () {
+                        localStorage.setItem('twitter_monitor_config', JSON.stringify(this.config));
+                        setTimeout(() => {this.autoSave()}, 30000);//每30秒保存
+                    },
+                }
+            })
+        </script>
+    </body>
+</html>
