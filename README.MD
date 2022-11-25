@@ -1,6 +1,14 @@
 Twitter Monitor v3 (DEV)
 ---
 
+## ⚠ WARNING / 警告
+
+This is an early release version, everything are subject to change, please **DO NOT** used for production!!!
+
+这是一个提前释出的版本，所有内容都可能会改变，请**不要**用于生产环境
+
+---
+
 This repository included `core/crawler/api/scripts`, frontend repository is [here](https://github.com/BANKA2017/twitter-monitor-frontend/).
 
 这个仓库包含 `核心/爬虫/api/脚本`，前端仓库位于[这里](https://github.com/BANKA2017/twitter-monitor-frontend/)
