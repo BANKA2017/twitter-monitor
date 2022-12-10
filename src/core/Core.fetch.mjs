@@ -98,7 +98,7 @@ const getToken = async (authorizationMode = 0) => {
       UserTweets: 970,//1000
       TweetDetail: 970,//1000//poll also use this
       AudioSpaceById: 470,//500
-      Search: 10000,//infinite
+      Search: 345,//350
       Recommendation: 55,//60
     },
     expire: (Number(new Date()) + 10500000)//10800
@@ -193,11 +193,67 @@ const getRecommendations = async (user = '', guest_token = {}, count = 40) => {
   }
 }
 
-const getMediaTimeline = async () => {
-  
+const getMediaTimeline = async (uid = [], guest_token = {}, count = 20, graphqlMode = true) => {
+  count = (count || -1) > 0 ? count : 20
+  if (!guest_token.success) {
+    guest_token = await getToken()
+  }
+  if (Array.isArray(uid)) {
+    return await Promise.allSettled(uid.map(singleUid => getMediaTimeline(singleUid, guest_token, count, graphqlMode)))
+  }
+  //if (graphqlMode) {
+  let graphqlVariables = {
+    userId: uid,
+    count,
+    includePromotedContent: false,
+    withSuperFollowsUserFields: true,
+    withDownvotePerspective: false,
+    withReactionsMetadata: false,
+    withReactionsPerspective: false,
+    withSuperFollowsTweetFields: true,
+    withClientEventToken: false,
+    withBirdwatchNotes: false,
+    withVoice: true,
+    withV2Timeline: true
+  }
+
+  let graphqlFeatures = {
+    responsive_web_twitter_blue_verified_badge_is_enabled: true,
+    verified_phone_label_enabled: false,
+    responsive_web_graphql_timeline_navigation_enabled: true,
+    view_counts_public_visibility_enabled: false,
+    tweetypie_unmention_optimization_enabled: true,
+    responsive_web_uc_gql_enabled: true,
+    vibe_api_enabled: true,
+    responsive_web_edit_tweet_api_enabled: true,
+    graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
+    standardized_nudges_misinfo: true,
+    tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: false,
+    interactive_text_enabled: true,
+    responsive_web_text_conversations_enabled: false,
+    responsive_web_enhance_cards_enabled: true
+  }
+  //TODO check exist of cursor
+  //if (cursor) {
+  //  graphqlVariables["cursor"] = cursor
+  //}
+
+  return await new Promise((resolve, reject) => {
+    coreFetch("https://twitter.com/i/api/graphql/" + graphqlQueryIdList.UserMedia.queryId + "/UserMedia?" + (new URLSearchParams({
+      variables: JSON.stringify(graphqlVariables),
+      features: JSON.stringify(graphqlFeatures)
+    }).toString()), guest_token).then(response => {
+      resolve(response)
+    }).catch(e => {
+      reject(e)
+    })
+  })
+  //} else {
+    //
+  //}
 }
 
-const getTweets = async (queryString = '', cursor = '', guest_token = {}, count = false, online = false, graphqlMode = true, searchMode = false) => {
+const getTweets = async (queryString = '', cursor = '', guest_token = {}, count = false, online = false, graphqlMode = true, searchMode = false, withReply = false) => {
   count = count ? count : (cursor ? 499 : (online ? 40 : (graphqlMode ? 499 : 999)))
   if (!guest_token.success) {
     guest_token = await getToken()
@@ -249,7 +305,7 @@ const getTweets = async (queryString = '', cursor = '', guest_token = {}, count 
     }
 
     return await new Promise((resolve, reject) => {
-      coreFetch("https://twitter.com/i/api/graphql/" + graphqlQueryIdList.UserTweets.queryId + "/UserTweets?" + (new URLSearchParams({
+      coreFetch("https://twitter.com/i/api/graphql/" + (withReply ? graphqlQueryIdList.UserTweetsAndReplies.queryId + "/UserTweetsAndReplies?" : graphqlQueryIdList.UserTweets.queryId + "/UserTweets?") + (new URLSearchParams({
         variables: JSON.stringify(graphqlVariables),
         features: JSON.stringify(graphqlFeatures)
       }).toString()), guest_token).then(response => {
@@ -271,10 +327,12 @@ const getTweets = async (queryString = '', cursor = '', guest_token = {}, count 
       include_can_dm: 1,
       include_can_media_tag: 1,
       include_ext_has_nft_avatar: 1,
+      include_ext_is_blue_verified: 1,
       skip_status: 1,
       cards_platform: 'Web-12',
       include_cards: 1,
       include_ext_alt_text: true,
+      include_ext_limited_action_results: false,
       include_quote_count: true,
       include_reply_count: 1,
       tweet_mode: 'extended',
@@ -293,8 +351,8 @@ const getTweets = async (queryString = '', cursor = '', guest_token = {}, count 
       query_source: 'typed_query',
       pc: 1,
       spelling_corrections: 1,
-      include_ext_edit_control: false,
-      ext: 'mediaStats,highlightedLabel,hasNftAvatar,replyvotingDownvotePerspective,voiceInfo,enrichments,superFollowMetadata,unmentionInfo,collab_control,vibe'
+      include_ext_edit_control: true,
+      ext: 'mediaStats,highlightedLabel,hasNftAvatar,voiceInfo,enrichments,superFollowMetadata,unmentionInfo,editControl,collab_control,vibe'
     }
     if (cursor) {
       tmpQueryObject['cursor'] = cursor
@@ -478,6 +536,19 @@ const getAudioSpaceStream = async (media_key = '', guest_token = {}) => {
   })
 }
 
+const getTypeahead = async (text = '', guest_token = {}) => {
+  if (!guest_token.success) {
+    guest_token = await getToken()
+  }
+  return await new Promise((resolve, reject) => {
+    coreFetch(`https://twitter.com/i/api/1.1/search/typeahead.json?include_ext_is_blue_verified=1&q=${text}&src=search_box&result_type=events%2Cusers%2Ctopics`, guest_token).then(response => {
+      resolve(response)
+    }).catch(e => {
+      reject(e)
+    })
+  })
+}
+
 // ANONYMOUS AND COOKIE REQUIRED
 const getTrends = async (initial_tab_id = 'trending', count = false, guest_token = {}, cookie = []) => {
   if (!guest_token.success) {
@@ -541,9 +612,6 @@ const getPollResult = async (tweet_id = '', guest_token = {}) => {
     return {code: 403, message: tmpTweet.data.errors?.[0].message, data: []}
   }
   let tmpTweet = await getConversation(tweet_id, guest_token, true)
-  if (tmpTweet.data.errors) {
-    return {code: 403, message: tmpTweet.data.errors?.[0].message, data: []}
-  }
   
   tmpTweet = path2array("tweets_contents", tmpTweet.data)
   if (!tmpTweet) {
@@ -577,4 +645,4 @@ const getImage = async (path = '') => {
   })
 }
 
-export {getToken, coreFetch, getUserInfo, getVerifiedAvatars, getRecommendations, getTweets, getConversation, getEditHistory, getPollResult, getAudioSpace, getAudioSpaceStream, getTrends, getFollowingOrFollowers, getImage, Authorization}
+export {getToken, coreFetch, getUserInfo, getVerifiedAvatars, getRecommendations, getMediaTimeline, getTweets, getConversation, getEditHistory, getPollResult, getAudioSpace, getAudioSpaceStream, getTypeahead, getTrends, getFollowingOrFollowers, getImage, Authorization}

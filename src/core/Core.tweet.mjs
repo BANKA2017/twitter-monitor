@@ -1,6 +1,6 @@
 import { SupportedCardNameList } from "../share/Constant.mjs"
 import { GetEntitiesFromText, PathInfo } from "./Core.function.mjs"
-import GetMime from "../share/Mime.mjs"
+import {GetMime} from "../share/Mime.mjs"
 import { GenerateAccountInfo } from "./Core.account.mjs"
 import path2array from "./Core.apiPath.mjs"
 

@@ -75,6 +75,13 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 
 * a script in `apps/scripts` named `watchDog.mjs` can be added to crontab to check whether some data being added in latest 30 minites
 
+### Archiver
+
+* archive userinfo, nearly all tweets(not included **reply**) and nearly **ALL MEDIA**(included avatar and banner) by search api
+* TODO: spaces, boradcast, mix media (like image and video in the same tweet)
+* **PLEASE PRECHECK THE ACCOUNT HAVEN BEEN SEARCHBAN**
+* **DO NOT RUN `init.sh` UNTIL YOU BACKUP ALL ARCHIVED DATA IN FOLDER './twitter_archiver/'**, it will clean all archived data
+
 ## Supported Cards
 
     * summary*
@@ -185,12 +192,19 @@ Those are Chinese articles
 ### Api
 
 * 运行 `yarn run dbapi` 启用仅使用数据库的api （tmv1，twitter monitor）
-* 运行 `yarn run dbapi` 启用全部 api （上一项的全部以及 album api，online api，media proxy）
+* 运行 `yarn run api` 启用全部 api （上一项的全部以及 album api，online api，media proxy）
 * *欢迎自行开发一个更好的api
 
 ### 看门狗
 
 * `apps/scripts` 里面有一个叫 `watchDog.mjs` 的脚本，可以添加到 crontab 中用以检查半小时内是否有数据增加
+
+### Archiver
+
+* 通过**搜索API**备份帐号的用户信息，几乎所有推文（不包括回复）以及几乎所有的媒体文件（包括当前头像和banner）
+* TODO: 备份最近30天的空间、播客（暂不清楚怎么搞）、混合媒体（差不多就是同一条推文上有两个或以上的视频或者图片和视频放一起）
+* **使用前请检查待备份帐号是否被搜索封禁**
+* **在备份好'./twitter_archiver/' 文件夹的内容前请不要运行 `init.sh`**，它将会清除掉相应文件夹的内容
 
 ## 支持的卡片类型
 
