@@ -1023,6 +1023,41 @@ const AudioSpace = (audioSpaceObject = {}) => {
     return tmpAudioSpaceData
 }
 
+const Broadcast = (broadcastObject = {}) => {
+    let tmpBroadcastData = {
+        id: "",
+        avatar: "",
+        name: "",
+        display_name: "",
+        state: "invalid",
+        start: '0',
+        end: '0',
+        media_key: '',
+        title: "",
+        total: 0,
+        is_space_available_for_replay: false
+    }
+    if (!broadcastObject.broadcasts || Object.keys(broadcastObject.broadcasts).length === 0) {
+        return tmpBroadcastData
+    } else {
+        broadcastObject = broadcastObject.broadcasts[Object.keys(broadcastObject.broadcasts)[0]]
+    }
+
+    tmpBroadcastData.id = broadcastObject.id
+    tmpBroadcastData.avatar = broadcastObject.profile_image_url
+    tmpBroadcastData.display_name = broadcastObject.user_display_name
+    tmpBroadcastData.name = broadcastObject.username
+    tmpBroadcastData.state = (broadcastObject.state || '').toLocaleLowerCase()
+    tmpBroadcastData.start = String(broadcastObject.start_ms??0)
+    tmpBroadcastData.end = String(broadcastObject.end_ms??0)
+    tmpBroadcastData.media_key = broadcastObject.media_key??''
+    tmpBroadcastData.is_space_available_for_replay = broadcastObject.available_for_replay??false
+    tmpBroadcastData.title = broadcastObject.status??''
+    tmpBroadcastData.total = Number(broadcastObject.total_watched??0) + Number(broadcastObject.total_watching??0)
+
+    return tmpBroadcastData
+}
+
 const Time2SnowFlake = (date = new Date(), datacenter_id = 0, server_id = 0, sequence_id = 0) => {
     let tmpSnowflake = BigInt(((typeof date === 'number' || typeof date === 'bigint') ? date : Date.parse(date)) - 1288834974657) << BigInt(5)
     if (tmpSnowflake < BigInt(0)) {return BigInt(0)}
@@ -1058,4 +1093,4 @@ const SnowFlake2Time = (snowflake) => {
     return tmpData
 }
 
-export {TweetsInfo, Tweet, Entity, Media, Card, AudioSpace, Time2SnowFlake, SnowFlake2Time}
+export {TweetsInfo, Tweet, Entity, Media, Card, AudioSpace, Broadcast, Time2SnowFlake, SnowFlake2Time}

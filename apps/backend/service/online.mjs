@@ -1,6 +1,7 @@
 import express from 'express'
 import {ApiUserInfo} from '../CoreFunctions/online/OnlineUserInfo.mjs'
-import {ApiTweets, ApiSearch, ApiPoll, ApiAudioSpace, ApiMedia} from '../CoreFunctions/online/OnlineTweet.mjs'
+import {ApiTweets, ApiSearch, ApiPoll, ApiAudioSpace, ApiMedia, ApiBroadcast} from '../CoreFunctions/online/OnlineTweet.mjs'
+import { apiTemplate } from '../../../src/share/Constant.mjs'
 
 const online = express()
 online.use(async (req, res, next) => {
@@ -33,6 +34,7 @@ online.get('/data/chart/', (req, res) => {
 online.get(/^\/data\/(hashtag|cashtag|search)(\/|)$/, ApiSearch)
 online.get('/data/poll/', ApiPoll)
 online.get('/data/audiospace/', ApiAudioSpace)
+online.get('/data/broadcasts/', ApiBroadcast)
 online.get('/data/media/', ApiMedia)
 
 export default online

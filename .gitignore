@@ -5,6 +5,12 @@ apps/backend/cache/*
 apps/scripts/trends/
 !apps/backend/cache/.gitkeep
 
+apps/archiver/twitter_archiver/rawdata/*
+apps/archiver/twitter_archiver/savedata/*
+apps/archiver/twitter_archiver/savemedia/*
+!apps/archiver/twitter_archiver/rawdata/.gitkeep
+!apps/archiver/twitter_archiver/savedata/.gitkeep
+!apps/archiver/twitter_archiver/savemedia/.gitkeep
 
 src/assets/trends/
 src/assets/setting.mjs

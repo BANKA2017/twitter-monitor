@@ -1,4 +1,5 @@
 import express from 'express'
+import { apiTemplate } from '../../../src/share/Constant.mjs'
 
 const bot = express()
 

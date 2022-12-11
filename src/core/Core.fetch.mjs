@@ -520,12 +520,28 @@ const getAudioSpace = async (id = '', guest_token = {}) => {
   })
 }
 
-const getAudioSpaceStream = async (media_key = '', guest_token = {}) => {
+const getBroadcast = async (id = '', guest_token = {}) => {
+  if (!guest_token.success) {
+    guest_token = await getToken()
+  }
+  if (Array.isArray(id)) {
+    return await Promise.allSettled(id.map(justId => getBroadcast(justId, guest_token)))
+  }
+  return await new Promise((resolve, reject) => {
+    coreFetch(`https://twitter.com/i/api/1.1/broadcasts/show.json?ids=${id}&include_events=true`, guest_token).then(response => {
+      resolve(response)
+    }).catch(e => {
+      reject(e)
+    })
+  })
+}
+
+const getLiveVideoStream = async (media_key = '', guest_token = {}) => {
   if (!guest_token.success) {
     guest_token = await getToken()
   }
   if (Array.isArray(media_key)) {
-    return await Promise.allSettled(id.map(justId => getAudioSpaceStream(justId, guest_token)))
+    return await Promise.allSettled(id.map(justId => getLiveVideoStream(justId, guest_token)))
   }
   return await new Promise((resolve, reject) => {
     coreFetch(`https://twitter.com/i/api/1.1/live_video_stream/status/${media_key}?client=web&use_syndication_guest_id=false&cookie_set_host=twitter.com`, guest_token).then(response => {
@@ -548,6 +564,10 @@ const getTypeahead = async (text = '', guest_token = {}) => {
     })
   })
 }
+
+//const getMmoment = async () => {
+//  
+//}
 
 // ANONYMOUS AND COOKIE REQUIRED
 const getTrends = async (initial_tab_id = 'trending', count = false, guest_token = {}, cookie = []) => {
@@ -645,4 +665,4 @@ const getImage = async (path = '') => {
   })
 }
 
-export {getToken, coreFetch, getUserInfo, getVerifiedAvatars, getRecommendations, getMediaTimeline, getTweets, getConversation, getEditHistory, getPollResult, getAudioSpace, getAudioSpaceStream, getTypeahead, getTrends, getFollowingOrFollowers, getImage, Authorization}
+export {getToken, coreFetch, getUserInfo, getVerifiedAvatars, getRecommendations, getMediaTimeline, getTweets, getConversation, getEditHistory, getPollResult, getAudioSpace, getBroadcast, getLiveVideoStream, getTypeahead, getTrends, getFollowingOrFollowers, getImage, Authorization}

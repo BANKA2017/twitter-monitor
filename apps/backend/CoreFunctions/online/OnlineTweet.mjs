@@ -1,7 +1,7 @@
 import path2array from "../../../../src/core/Core.apiPath.mjs"
-import { getAudioSpace, getAudioSpaceStream, getConversation, getPollResult, getTweets } from "../../../../src/core/Core.fetch.mjs"
+import { getAudioSpace, getLiveVideoStream, getConversation, getPollResult, getTweets, getBroadcast } from "../../../../src/core/Core.fetch.mjs"
 import { GetEntitiesFromText, VerifyQueryString } from "../../../../src/core/Core.function.mjs"
-import { AudioSpace, Time2SnowFlake, Tweet, TweetsInfo } from "../../../../src/core/Core.tweet.mjs"
+import { AudioSpace, Broadcast, Time2SnowFlake, Tweet, TweetsInfo } from "../../../../src/core/Core.tweet.mjs"
 import { apiTemplate } from "../../../../src/share/Constant.mjs"
 
 const ApiTweets = async (req, res) => {
@@ -222,11 +222,11 @@ const ApiAudioSpace = async (req, res) => {
     if (!tmpAudioSpaceData.data?.errors && (tmpAudioSpaceData.data?.data?.audioSpace || false)) {
         let tmpAudioSpace = AudioSpace(tmpAudioSpaceData.data)
         //get link
-        if (tmpAudioSpace.is_space_available_for_replay) {
+        if (tmpAudioSpace.is_space_available_for_replay || (Number(tmpAudioSpace.start) <= Number(new Date()) && tmpAudioSpace.end === '0')) {
             try {
-                const tmpAudioSpaceLink = await getAudioSpaceStream(tmpAudioSpace.media_key)
+                const tmpAudioSpaceLink = await getLiveVideoStream(tmpAudioSpace.media_key)
                 if (tmpAudioSpaceLink.data?.source?.noRedirectPlaybackUrl) {
-                    tmpAudioSpace.playback = tmpAudioSpaceLink.data?.source?.noRedirectPlaybackUrl.replaceAll('?type=replay', '')
+                    tmpAudioSpace.playback = tmpAudioSpaceLink.data?.source?.noRedirectPlaybackUrl.replaceAll('?type=replay', '').replaceAll('?type=live', '')
                 }
             } catch (e) {
                 console.error(e)
@@ -242,6 +242,42 @@ const ApiAudioSpace = async (req, res) => {
         res.json(apiTemplate(404, 'No such space'))
     } else {
         console.error(`[${new Date()}]: #OnlineAudioSpace #${id} #500 Unkonwn Error`)
+        res.json(apiTemplate())
+    }
+}
+
+const ApiBroadcast = async (req, res) => {
+    const id = VerifyQueryString(req.query.id, '')
+    if (!id) {
+        res.json(apiTemplate())
+        return
+    }
+    const tmpBroadcastData = await getBroadcast(id, global.guest_token.token)
+    //TODO check Broadcast api rate limit
+    //global.guest_token.updateRateLimit('AudioSpaceById')
+    if (!tmpBroadcastData?.errors && (tmpBroadcastData.data?.broadcasts || false)) {
+        let tmpBroadcast = Broadcast(tmpBroadcastData.data)
+        //get link
+        if (tmpBroadcast.is_space_available_for_replay || (Number(tmpBroadcast.start) <= Number(new Date()) && tmpBroadcast.end === '0')) {
+            try {
+                const tmpBroadcastLink = await getLiveVideoStream(tmpBroadcast.media_key)
+                if (tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl) {
+                    tmpBroadcast.playback = tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl.replaceAll('?type=replay', '').replaceAll('?type=live', '')
+                }
+            } catch (e) {
+                console.error(e)
+            }
+        }
+
+        res.json(apiTemplate(200, 'OK', tmpBroadcast))
+    } else if (tmpBroadcastData.data?.errors) {
+        console.error(`[${new Date()}]: #OnlineBroadcast #${id} #500 Something wrong`, tmpBroadcastData.data.errors[0].code, tmpBroadcastData.data.errors[0].message)
+        res.json(apiTemplate(500, 'Something wrong'))
+    } else if (!tmpBroadcastData.data?.broadcasts) {
+        console.error(`[${new Date()}]: #OnlineBroadcast #${id} #404 No such liveroom`)
+        res.json(apiTemplate(404, 'No such liveroom'))
+    } else {
+        console.error(`[${new Date()}]: #OnlineBroadcast #${id} #500 Unkonwn Error`)
         res.json(apiTemplate())
     }
 }
@@ -407,4 +443,4 @@ const GenerateData = (tweets, isConversation = false, filterName = '') => {
 }
 
 
-export {ApiTweets, ApiSearch, ApiPoll, ApiAudioSpace, ApiMedia, GenerateData}
+export {ApiTweets, ApiSearch, ApiPoll, ApiAudioSpace, ApiBroadcast, ApiMedia, GenerateData}
