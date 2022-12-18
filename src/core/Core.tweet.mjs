@@ -159,8 +159,8 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
         GeneralTweetData.name = recrawlerObject.name
         GeneralTweetData.display_name = recrawlMode.display_name
     } else {
-        tmpInfo = graphqlMode ? (path2array('graphql_user_legacy', content) ?? {}) : (users[GeneralTweetData.uid] ?? {})
-        if (Object.keys(tmpInfo).length && tmpInfo.screen_name) {
+        tmpInfo = graphqlMode ? (path2array('graphql_user_result', content) ?? {}) : (users[GeneralTweetData.uid] ?? {})
+        if (Object.keys(tmpInfo).length && (tmpInfo?.legacy?.screen_name || tmpInfo?.screen_name)) {
             const tmpInfoHandle = GenerateAccountInfo(tmpInfo)
             userInfo = tmpInfoHandle.GeneralAccountData
             userInfo.uid_str = GeneralTweetData.uid
@@ -183,8 +183,8 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
         if (graphqlMode) {
             content = path2array('retweet_graphql_path', content)
             //quoted_status_result.result.core.user_results.result.legacy.screen_name
-            tmpInfo = path2array('graphql_user_legacy', content)
-            if (tmpInfo && tmpInfo.screen_name) {
+            tmpInfo = path2array('graphql_user_result', content)
+            if (tmpInfo && (tmpInfo?.legacy?.screen_name || tmpInfo?.screen_name)) {
                 const tmpRetweetInfoHandle = GenerateAccountInfo(tmpInfo)
                 retweetUserInfo = tmpRetweetInfoHandle.GeneralAccountData
                 retweetUserInfo.description =  retweetUserInfo.description.replaceAll("\n", '<br />')
@@ -440,8 +440,8 @@ const GetQuote = (content = {}, users = {}, uid = '0', tweetId = '0', graphqlMod
     //name and display_name
     if (graphqlMode) {
         //quoted_status_result.result.core.user_results.result.legacy
-        inSqlQuote.display_name = path2array('graphql_user_legacy', content).name??''
-        inSqlQuote.name = path2array('graphql_user_legacy', content).screen_name??''
+        inSqlQuote.display_name = path2array('graphql_user_result', content)?.legacy?.name??''
+        inSqlQuote.name = path2array('graphql_user_result', content)?.legacy?.screen_name??''
         if (!inSqlQuote.name && !inSqlQuote.display_name) {
             console.log(`tmv2: warning, no display name [${inSqlQuote.tweet_id}]`)
         }
@@ -978,7 +978,7 @@ const AudioSpace = (audioSpaceObject = {}) => {
         admins: [],
         listeners: [],
         speakers: [],
-        is_space_available_for_replay: false
+        is_available_for_replay: false
     }
     const tmpUserInfo = () => ({
         uid: 0,
@@ -1001,7 +1001,7 @@ const AudioSpace = (audioSpaceObject = {}) => {
     tmpAudioSpaceData.start = String(audioSpaceObject.data.audioSpace.metadata?.started_at??audioSpaceObject.data.audioSpace.metadata?.scheduled_start??0)
     tmpAudioSpaceData.end = String(audioSpaceObject.data.audioSpace.metadata?.ended_at??0)
     tmpAudioSpaceData.media_key = audioSpaceObject.data.audioSpace.metadata.media_key??''
-    tmpAudioSpaceData.is_space_available_for_replay = audioSpaceObject.data.audioSpace.metadata.is_space_available_for_replay??false
+    tmpAudioSpaceData.is_available_for_replay = audioSpaceObject.data.audioSpace.metadata.is_available_for_replay??false
     tmpAudioSpaceData.title = audioSpaceObject.data.audioSpace.metadata?.title??''
     tmpAudioSpaceData.total = (audioSpaceObject.data.audioSpace.metadata?.total_live_listeners??0) + (audioSpaceObject.data.audioSpace.metadata?.total_replay_watched??0)
 
@@ -1035,7 +1035,7 @@ const Broadcast = (broadcastObject = {}) => {
         media_key: '',
         title: "",
         total: 0,
-        is_space_available_for_replay: false
+        is_available_for_replay: false
     }
     if (!broadcastObject.broadcasts || Object.keys(broadcastObject.broadcasts).length === 0) {
         return tmpBroadcastData
@@ -1048,10 +1048,10 @@ const Broadcast = (broadcastObject = {}) => {
     tmpBroadcastData.display_name = broadcastObject.user_display_name
     tmpBroadcastData.name = broadcastObject.username
     tmpBroadcastData.state = (broadcastObject.state || '').toLocaleLowerCase()
-    tmpBroadcastData.start = String(broadcastObject.start_ms??0)
-    tmpBroadcastData.end = String(broadcastObject.end_ms??0)
+    tmpBroadcastData.start = String(broadcastObject.start_ms??broadcastObject.scheduled_start_ms??0)
+    tmpBroadcastData.end = String(broadcastObject.end_ms??broadcastObject.scheduled_end_ms??0)
     tmpBroadcastData.media_key = broadcastObject.media_key??''
-    tmpBroadcastData.is_space_available_for_replay = broadcastObject.available_for_replay??false
+    tmpBroadcastData.is_available_for_replay = broadcastObject.available_for_replay??false
     tmpBroadcastData.title = broadcastObject.status??''
     tmpBroadcastData.total = Number(broadcastObject.total_watched??0) + Number(broadcastObject.total_watching??0)
 

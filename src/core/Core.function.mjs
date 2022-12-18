@@ -107,7 +107,8 @@ const PathInfo = (path) => {
         filename: '',
         pathtype: 0,
         extension: '',
-        size: 'normal'
+        size: 'normal',
+        firstpath: '',
     }
     const parsePath = parse(path)
     tmpPathInfo.dirname = parsePath.dir
@@ -131,6 +132,7 @@ const PathInfo = (path) => {
         tmpPathInfo.extension = parsePath.ext.slice(1)
     }
     tmpPathInfo.basename = tmpPathInfo.filename + '.' + tmpPathInfo.extension
+    tmpPathInfo.firstpath = tmpPathInfo.dirname.split('/')[0]
     return tmpPathInfo
 }
 

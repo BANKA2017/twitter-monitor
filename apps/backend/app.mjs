@@ -1,6 +1,6 @@
 import express from 'express'
-import { ACTIVE_SERVICE, ALERT_TOKEN, EXPRESS_ALLOW_ORIGIN, EXPRESS_PORT, STATIC_PATH } from '../../src/assets/setting.mjs'
-import { GuestToken, VerifyQueryString } from '../../src/core/Core.function.mjs'
+import { ACTIVE_SERVICE, EXPRESS_ALLOW_ORIGIN, EXPRESS_PORT, STATIC_PATH } from '../../src/assets/setting.mjs'
+import { GuestToken } from '../../src/core/Core.function.mjs'
 import { apiTemplate, basePath } from '../../src/share/Constant.mjs'
 //Online api
 import { MediaProxy } from './CoreFunctions/media/MediaProxy.mjs'

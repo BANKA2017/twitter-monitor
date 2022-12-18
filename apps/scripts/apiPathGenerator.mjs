@@ -7,8 +7,13 @@ const apiPathList = {
         "data.user.result.rest_id",
         "core.user_results.result.rest_id"
     ],
+    user_is_blue_verified: [
+        "data.user.result.is_blue_verified",
+        'ext_is_blue_verified'
+    ],
     user_info_legacy: [
         "data.user.result.legacy",
+        "legacy",
         ""
     ],
     tweets_instructions: [
@@ -108,9 +113,9 @@ const apiPathList = {
         "quoted_status_result.result",
         "quoted_status"
     ],
-    graphql_user_legacy: [
-        "core.user_results.result.legacy",
-        "core.user.legacy"
+    graphql_user_result: [
+        "core.user_results.result",
+        "core.user"
     ],
 }
 

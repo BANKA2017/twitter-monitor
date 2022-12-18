@@ -1,6 +1,7 @@
+import { VerifiedInt } from "../share/Constant.mjs"
 import path2array from "./Core.apiPath.mjs"
 
-const GenerateAccountInfo = (accountData, extAccountData = {}) => {
+const GenerateAccountInfo = (accountDataOriginal, extAccountData = {}) => {
     let GeneralAccountData = {
         uid: 0,
         name: "",
@@ -28,8 +29,8 @@ const GenerateAccountInfo = (accountData, extAccountData = {}) => {
         //"description: "",
     }
     let update = false
-    const accountDataIdStr = path2array("rest_id", accountData)??0
-    accountData = path2array("user_info_legacy", accountData)
+    const accountDataIdStr = path2array("rest_id", accountDataOriginal)??0
+    const accountData = path2array("user_info_legacy", accountDataOriginal)
     //banner
     if (accountData.profile_banner_url) {
         GeneralAccountData.banner = accountData.profile_banner_url.replaceAll(/.*\/([\d]+)$/gm, "$1")
@@ -52,7 +53,14 @@ const GenerateAccountInfo = (accountData, extAccountData = {}) => {
     GeneralAccountData.media_count = monitorDataInfo.media_count = accountData.media_count
     GeneralAccountData.statuses_count = monitorDataInfo.statuses_count = accountData.statuses_count
     GeneralAccountData.created_at = Math.floor(Date.parse(accountData.created_at) / 1000)
-    GeneralAccountData.verified = Number(!!accountData.verified)
+    GeneralAccountData.verified = VerifiedInt(accountData.verified, path2array('user_is_blue_verified', accountDataOriginal), accountData.ext_verified_type || accountData.verified_type || false)
+
+    //for verify
+    // 0 or '' or null:  none,
+    // 10000000: only legacy mark
+    // 01000000: only blue mark // first bit means blue mark
+    // 11000000: both
+    // 11000001: order in verified_type list // this list is updated manually
     //GeneralAccountData.lang = accountData.lang
     
 

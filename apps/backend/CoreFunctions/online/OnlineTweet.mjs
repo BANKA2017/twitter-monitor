@@ -217,12 +217,13 @@ const ApiAudioSpace = async (req, res) => {
         res.json(apiTemplate())
         return
     }
+    await global.guest_token.updateGuestToken()
     const tmpAudioSpaceData = await getAudioSpace(id, global.guest_token.token)
     global.guest_token.updateRateLimit('AudioSpaceById')
     if (!tmpAudioSpaceData.data?.errors && (tmpAudioSpaceData.data?.data?.audioSpace || false)) {
         let tmpAudioSpace = AudioSpace(tmpAudioSpaceData.data)
         //get link
-        if (tmpAudioSpace.is_space_available_for_replay || (Number(tmpAudioSpace.start) <= Number(new Date()) && tmpAudioSpace.end === '0')) {
+        if (tmpAudioSpace.is_available_for_replay || (Number(tmpAudioSpace.start) <= Number(new Date()) && tmpAudioSpace.end === '0')) {
             try {
                 const tmpAudioSpaceLink = await getLiveVideoStream(tmpAudioSpace.media_key)
                 if (tmpAudioSpaceLink.data?.source?.noRedirectPlaybackUrl) {
@@ -252,13 +253,15 @@ const ApiBroadcast = async (req, res) => {
         res.json(apiTemplate())
         return
     }
-    const tmpBroadcastData = await getBroadcast(id, global.guest_token.token)
+    
     //TODO check Broadcast api rate limit
-    //global.guest_token.updateRateLimit('AudioSpaceById')
-    if (!tmpBroadcastData?.errors && (tmpBroadcastData.data?.broadcasts || false)) {
+    await global.guest_token.updateGuestToken()
+    getBroadcast(id, global.guest_token.token).then(async response => {
+        global.guest_token.updateRateLimit('BroadCast')
+        const tmpBroadcastData = response
         let tmpBroadcast = Broadcast(tmpBroadcastData.data)
         //get link
-        if (tmpBroadcast.is_space_available_for_replay || (Number(tmpBroadcast.start) <= Number(new Date()) && tmpBroadcast.end === '0')) {
+        if (tmpBroadcast.is_available_for_replay || (Number(tmpBroadcast.start) <= Number(new Date()) && tmpBroadcast.end === '0')) {
             try {
                 const tmpBroadcastLink = await getLiveVideoStream(tmpBroadcast.media_key)
                 if (tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl) {
@@ -268,18 +271,21 @@ const ApiBroadcast = async (req, res) => {
                 console.error(e)
             }
         }
-
         res.json(apiTemplate(200, 'OK', tmpBroadcast))
-    } else if (tmpBroadcastData.data?.errors) {
-        console.error(`[${new Date()}]: #OnlineBroadcast #${id} #500 Something wrong`, tmpBroadcastData.data.errors[0].code, tmpBroadcastData.data.errors[0].message)
-        res.json(apiTemplate(500, 'Something wrong'))
-    } else if (!tmpBroadcastData.data?.broadcasts) {
-        console.error(`[${new Date()}]: #OnlineBroadcast #${id} #404 No such liveroom`)
-        res.json(apiTemplate(404, 'No such liveroom'))
-    } else {
-        console.error(`[${new Date()}]: #OnlineBroadcast #${id} #500 Unkonwn Error`)
-        res.json(apiTemplate())
-    }
+    }).catch(e => {
+        global.guest_token.updateRateLimit('BroadCast')
+        if (!(e?.code && e?.message) && e?.errors) {
+            e = e.errors[0]
+        }
+        if (e?.code && e?.message) {
+            console.error(`[${new Date()}]: #OnlineBroadcast #${id} #500 Something wrong`, e.code, e.message)
+            res.json(apiTemplate(500, `#${e.code} ${e.message}`))
+        } else {
+            console.error(`[${new Date()}]: #OnlineBroadcast #${id} #500 Unkonwn Error`)
+            res.json(apiTemplate())
+        }
+    })
+    
 }
 
 const ApiMedia = async (req, res) => {

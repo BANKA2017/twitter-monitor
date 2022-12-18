@@ -34,7 +34,7 @@ online.get('/data/chart/', (req, res) => {
 online.get(/^\/data\/(hashtag|cashtag|search)(\/|)$/, ApiSearch)
 online.get('/data/poll/', ApiPoll)
 online.get('/data/audiospace/', ApiAudioSpace)
-online.get('/data/broadcasts/', ApiBroadcast)
+online.get('/data/broadcast/', ApiBroadcast)
 online.get('/data/media/', ApiMedia)
 
 export default online

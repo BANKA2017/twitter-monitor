@@ -36,14 +36,14 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 
 ### Graphql
 
-**IF POSSIBLE, DO NOT RUN THOSE SCRIPTS**
-* run `node apps/scripts/updateQueryIdList.mjs` to update `queryId`
-* run `node apps/scripts/checkGraphqlFeaturesStatus.mjs` for check after updating `queryId`
+**IF POSSIBLE, DO NOT EXECUTE THOSE SCRIPTS**
+* execute `node apps/scripts/updateQueryIdList.mjs` to update `queryId`
+* execute `node apps/scripts/checkGraphqlFeaturesStatus.mjs` for check after updating `queryId`
 
 ### Crawler
 
 * edit `SQL_CONFIG` to enable service **twitter_monitor**
-* run `yarn run init` or `npm run init`
+* execute `yarn run init` or `npm run init`
 * open `config.html` by browser to edit and save config file `config.json` as `src/assets/config.json`
 
   [Online editor](https://banka2017.github.io/twitter-monitor/apps/config_page/)
@@ -67,8 +67,8 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 
 ### Api
 
-* run `yarn run dbapi` to enable the api only used databases (tmv1, twitter monitor)
-* run `yarn run api` to enable full version api (dbapi and album api, online api, media proxy)
+* execute `yarn run dbapi` to enable the api only used databases (tmv1, twitter monitor)
+* execute `yarn run api` to enable full version api (dbapi and album api, online api, media proxy)
 * *you can create a better api than mine
 
 ### Watch dog
@@ -80,7 +80,7 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 * archive userinfo, nearly all tweets(not included **reply**) and nearly **ALL MEDIA**(included avatar and banner) by search api
 * TODO: spaces, boradcast, mix media (like image and video in the same tweet)
 * **PLEASE PRECHECK THE ACCOUNT HAVEN BEEN SEARCHBAN**
-* **DO NOT RUN `init.sh` UNTIL YOU BACKUP ALL ARCHIVED DATA IN FOLDER './twitter_archiver/'**, it will clean all archived data
+* **DO NOT EXECUTE `init.sh` UNTIL YOU BACKUP ALL ARCHIVED DATA IN FOLDER './twitter_archiver/'**, it will clean all archived data
 
 ## Supported Cards
 

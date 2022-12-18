@@ -1,7 +1,8 @@
 const path2array = (pathName = '', source = {}) => {
     const tmpPath = {
         "rest_id": () => source?.id_str ?? source?.data?.user?.result?.rest_id ?? source?.core?.user_results?.result?.rest_id ?? false,
-        "user_info_legacy": () => source?.data?.user?.result?.legacy ?? source ?? false,
+        "user_is_blue_verified": () => source?.data?.user?.result?.is_blue_verified ?? source?.ext_is_blue_verified ?? false,
+        "user_info_legacy": () => source?.data?.user?.result?.legacy ?? source?.legacy ?? source ?? false,
         "tweets_instructions": () => source?.globalObjects?.tweets ?? source?.data?.user?.result?.timeline_v2?.timeline?.instructions ?? source?.data?.user?.result?.timeline?.timeline?.instructions ?? source?.data?.threaded_conversation_with_injections_v2?.instructions ?? source?.data?.threaded_conversation_with_injections?.instructions ?? false,
         "tweets_contents": () => source?.globalObjects?.tweets ?? source?.data?.user?.result?.timeline_v2?.timeline?.instructions[1]?.entries ?? source?.data?.user?.result?.timeline_v2?.timeline?.instructions[0]?.entries ?? source?.data?.user?.result?.timeline?.timeline?.instructions[1]?.entries ?? source?.data?.user?.result?.timeline?.timeline?.instructions[0]?.entries ?? source?.data?.threaded_conversation_with_injections_v2?.instructions[1]?.entries ?? source?.data?.threaded_conversation_with_injections_v2?.instructions[0]?.entries ?? source?.data?.threaded_conversation_with_injections?.instructions[1]?.entries ?? source?.data?.threaded_conversation_with_injections?.instructions[0]?.entries ?? false,
         "tweets_top_content": () => source?.data?.user?.result?.timeline_v2?.timeline?.instructions[2]?.entry ?? source?.data?.user?.result?.timeline?.timeline?.instructions[2]?.entry ?? false,
@@ -22,7 +23,7 @@ const path2array = (pathName = '', source = {}) => {
         "retweet_graphql_path": () => source?.legacy?.retweeted_status ?? source?.legacy?.retweeted_status_result?.result ?? false,
         "quote_tweet_id": () => source?.quoted_status_id_str ?? source?.legacy?.quoted_status_id_str ?? false,
         "quote_graphql_path": () => source?.quoted_status_result?.result ?? source?.quoted_status ?? false,
-        "graphql_user_legacy": () => source?.core?.user_results?.result?.legacy ?? source?.core?.user?.legacy ?? false
+        "graphql_user_result": () => source?.core?.user_results?.result ?? source?.core?.user ?? false
     }
 
     if (source === undefined || source === null || source === false || !tmpPath[pathName]) {

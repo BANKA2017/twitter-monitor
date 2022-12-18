@@ -51,6 +51,10 @@ const SupportedUnifiedCardNameList = [
     "media_with_details_horizontal",
 ]
 
+const verifiedTypeList = [
+    "business"
+]
+
 const apiTemplate = (code = 403, message = 'Invalid Request', data = {}, version = 'online') => {
     if (version === 'v1') {
         return {error: code, message, data, version}
@@ -59,6 +63,20 @@ const apiTemplate = (code = 403, message = 'Invalid Request', data = {}, version
     }
 }
 
+const VerifiedInt = (verified = false, blue_verified = false, verified_type = undefined) => {
+    let tmpVerifiedStatus = 0 //0000 0000
+    if (verified) {
+        tmpVerifiedStatus |= 128
+    }
+    if (blue_verified) {
+        tmpVerifiedStatus |= 64
+    }
+    if (verified_type) {
+        tmpVerifiedStatus |= (verifiedTypeList.indexOf(String(verified_type).toLocaleLowerCase())) + 1
+    }
+    return ((tmpVerifiedStatus > 255 || tmpVerifiedStatus < 0) ? 0 : tmpVerifiedStatus)
+}
+
 const basePath = __dirname + '/..'
 
-export {SupportedCardNameList, SupportedUnifiedCardNameList, apiTemplate, basePath}
+export {SupportedCardNameList, SupportedUnifiedCardNameList, apiTemplate, VerifiedInt, basePath}

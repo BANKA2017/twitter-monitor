@@ -1,16 +1,17 @@
 import { getImage } from '../../../../src/core/Core.fetch.mjs'
-import { existsSync, writeFile } from 'fs'
+import { existsSync, writeFile } from 'node:fs'
 import { PathInfo, VerifyQueryString } from '../../../../src/core/Core.function.mjs'
 import { basePath } from '../../../../src/share/Constant.mjs'
 
 const MediaProxy = async (req, res) => {
-    const resSvg = '<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" focusable="false" role="img" aria-label="Placeholder: Deleted"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>'
+    //const resSvg = '<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" focusable="false" role="img" aria-label="Placeholder: Deleted"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>'
     const link = req.params[1]
     const format = VerifyQueryString(req.query.format, '')
     const name = VerifyQueryString(req.query.name, '')
+    const prefix = VerifyQueryString(req.query.prefix, '/media/proxy/')//for some m3u8
 
     //for m3u8
-    const ext = req.params[0] === 'ext_tw_video' || req.params[0] === 'amplify_video'
+    const ext = ['ext_tw_video', 'amplify_video'].includes(req.params[0])
 
     let mediaLinkArray = PathInfo(link)
     if (format !== '' && name !== '') {
@@ -44,16 +45,13 @@ const MediaProxy = async (req, res) => {
             case "m4s":
             case "ts":
             case "aac":
-                let hit = 0
-
-                if (mediaLinkArray.extension !== 'mp4') {
-                    hit = existsSync(`${basePath}/../apps/backend/cache/${mediaLinkArray.basename}`) ? 1 : 0
-                }
-
-                res.setHeader('X-TMCache', hit)
-                if (!['mp4', 'm4s', 'ts', 'm3u8', 'aac'].includes(mediaLinkArray.extension) && hit && mediaLinkArray.size === 'small') {
+                if (!['mp4', 'm4s', 'm3u8', 'aac'].includes(mediaLinkArray.extension) && (mediaLinkArray.size === 'small' || mediaLinkArray.extension === 'ts') && existsSync(`${basePath}/../apps/backend/cache/${mediaLinkArray.basename}`)) {
+                    //hit
+                    res.setHeader('X-TMCache', 1)
                     res.redirect(307, `/media/cache/${mediaLinkArray.basename}`)
+                    return
                 } else {
+                    res.setHeader('X-TMCache', 0)
                     let realLink = ''
                     switch (mediaLinkArray.pathtype) {
                         case 3:
@@ -67,36 +65,39 @@ const MediaProxy = async (req, res) => {
                             realLink = (ext ? `https://video.twimg.com/${req.params[0]}/` : 'https://') + link
                             break
                         default:
-                            res.setHeader('Content-Type', 'image/svg+xml')
                             res.status(403).end()
                             return
                     }
-                    getImage(realLink).then(response => {
+                    try {
+                        const tmpBuffer = await getImage(realLink, {referer: 'https://twitter.com/'})
+                        const contentLength = (tmpBuffer?.data || new ArrayBuffer(0)).byteLength
                         //res.setHeader('Accept-Ranges', 'bytes')
-                        const contentLength = (response?.data || new ArrayBuffer(0)).byteLength
                         if (contentLength === 0) {
                             //res.setHeader('Content-Type', 'image/svg+xml')
                             res.status(404).end()
                         } else {
-                            res.setHeader('Content-Length', contentLength)
-                            res.setHeader('Content-Type', response?.headers?.['content-type'])
-                            //res.setHeader('content-disposition', `attachment;filename=${mediaLinkArray.basename}`)
-                            if (mediaLinkArray.extension !== 'mp4' && !hit && mediaLinkArray.size === 'small') {
-                                writeFile(`${basePath}/../apps/backend/cache/${mediaLinkArray.basename}`, response.data, e => {
+                            if ( ((mediaLinkArray.extension !== 'mp4' && mediaLinkArray.size === 'small') || mediaLinkArray.extension === 'ts')) {
+                                writeFile(`${basePath}/../apps/backend/cache/${mediaLinkArray.basename}`, tmpBuffer.data, e => {
                                     if (e) {console.error(`MediaProxy: #MediaProxy error`, e)}
                                 })
                             }
+                            //res.setHeader('content-disposition', `attachment;filename=${mediaLinkArray.basename}`)
+                            res.setHeader('Content-Length', contentLength)
+                            res.setHeader('Content-Type', tmpBuffer?.headers?.['content-type'])
                             //response.data.pipe(res)
-                            res.send(response.data)
+                            if ((mediaLinkArray.pathtype === 3) && ['m3u8', 'm3u'].includes(mediaLinkArray.extension) && prefix) {
+                                res.send(tmpBuffer.data.toString().replaceAll(/^\//gm, `${prefix}${mediaLinkArray.firstpath}/`))
+                            } else {
+                                res.send(tmpBuffer.data)
+                            }
+                            //res.send(response.data)
                         }
-                    }).catch(e => {
+                    } catch(e) {
                         //TODO solve sometimes 500
                         console.error('Media PROXY', realLink, e)
-                        //res.setHeader('Content-Type', 'image/svg+xml')
                         res.status(500).end()
-                    })
+                    }
                 }
-                
                 break
             default:
                 //res.setHeader('content-type', 'image/svg+xml')

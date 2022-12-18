@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs'
 import { basePath } from "../share/Constant.mjs"
 
 const graphqlQueryIdList = JSON.parse(readFileSync(basePath + "/assets/graphqlQueryIdList.json").toString())
+const featuresValueList = JSON.parse(readFileSync(basePath + "/assets/featuresValueList.json").toString())
 
 const generateCsrfToken = () => createHash('md5').update('' + new Date()).digest("hex")
 
@@ -30,20 +31,23 @@ if (PROXY_CONFIG) {
 
 const axiosFetch = axios.create(axoisConfig)
 
+const getGraphqlFeatures = (queryName) => {
+  if (graphqlQueryIdList[queryName]) {
+    return Object.fromEntries(new Map(graphqlQueryIdList[queryName].metadata.featureSwitches.map(feature => [feature, featuresValueList[feature]])))
+  } else {
+    return {}
+  }
+}
+
 const generateUrl = (user = '', isGraphql = false) => {
   if (isGraphql) {
     let graphqlVariables = {withSuperFollowsUserFields: true}
-    const graphqlFeatures = {
-      responsive_web_twitter_blue_verified_badge_is_enabled: true,
-      verified_phone_label_enabled: false,
-      responsive_web_graphql_timeline_navigation_enabled: true
-    }
     if (!isNaN(user)) {
       graphqlVariables["userId"] = user
-      return "https://twitter.com/i/api/graphql/" + graphqlQueryIdList.UserByRestId.queryId + "/UserByRestId?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(graphqlFeatures)})).toString()
+      return "https://twitter.com/i/api/graphql/" + graphqlQueryIdList.UserByRestId.queryId + "/UserByRestId?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures('UserByRestId'))})).toString()
     } else {
       graphqlVariables["screen_name"] = user
-      return "https://twitter.com/i/api/graphql/" + graphqlQueryIdList.UserByScreenName.queryId + "/UserByScreenName?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(graphqlFeatures)})).toString()
+      return "https://twitter.com/i/api/graphql/" + graphqlQueryIdList.UserByScreenName.queryId + "/UserByScreenName?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures('UserByScreenName'))})).toString()
     }
   } else {
     return "https://api.twitter.com/1.1/users/show.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&" + ((!isNaN(user)) ? "user_id=" : "screen_name=") + user
@@ -98,6 +102,7 @@ const getToken = async (authorizationMode = 0) => {
       UserTweets: 970,//1000
       TweetDetail: 970,//1000//poll also use this
       AudioSpaceById: 470,//500
+      BroadCast: 185,//187
       Search: 345,//350
       Recommendation: 55,//60
     },
@@ -157,14 +162,11 @@ const getVerifiedAvatars = async (uid = [], guest_token = {}) => {
   const graphqlVariables = {
     userIds: uid
   }
-  const graphqlFeatures = {
-    responsive_web_twitter_blue_verified_badge_is_enabled: true
-  }
   //https://twitter.com/i/api/graphql/AkfLpq1RURPtDOcd56qyCg/UsersVerifiedAvatars?variables=%7B%22userIds%22%3A%5B%222392179773%22%2C%22815928932759285760%22%5D%7D&features=%7B%22responsive_web_twitter_blue_verified_badge_is_enabled%22%3Atrue%7D
   return await (new Promise((resolve, reject) => {
     coreFetch(`https://twitter.com/i/api/graphql/${graphqlQueryIdList.UsersVerifiedAvatars.queryId}/UsersVerifiedAvatars?` + (new URLSearchParams({
       variables: JSON.stringify(graphqlVariables),
-      features: JSON.stringify(graphqlFeatures)
+      features: JSON.stringify(getGraphqlFeatures('UsersVerifiedAvatars'))
     }).toString()), guest_token).then(response => {
       resolve(response)
     }).catch(e => {
@@ -217,22 +219,6 @@ const getMediaTimeline = async (uid = [], guest_token = {}, count = 20, graphqlM
     withV2Timeline: true
   }
 
-  let graphqlFeatures = {
-    responsive_web_twitter_blue_verified_badge_is_enabled: true,
-    verified_phone_label_enabled: false,
-    responsive_web_graphql_timeline_navigation_enabled: true,
-    view_counts_public_visibility_enabled: false,
-    tweetypie_unmention_optimization_enabled: true,
-    responsive_web_uc_gql_enabled: true,
-    vibe_api_enabled: true,
-    responsive_web_edit_tweet_api_enabled: true,
-    graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
-    standardized_nudges_misinfo: true,
-    tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: false,
-    interactive_text_enabled: true,
-    responsive_web_text_conversations_enabled: false,
-    responsive_web_enhance_cards_enabled: true
-  }
   //TODO check exist of cursor
   //if (cursor) {
   //  graphqlVariables["cursor"] = cursor
@@ -241,7 +227,7 @@ const getMediaTimeline = async (uid = [], guest_token = {}, count = 20, graphqlM
   return await new Promise((resolve, reject) => {
     coreFetch("https://twitter.com/i/api/graphql/" + graphqlQueryIdList.UserMedia.queryId + "/UserMedia?" + (new URLSearchParams({
       variables: JSON.stringify(graphqlVariables),
-      features: JSON.stringify(graphqlFeatures)
+      features: JSON.stringify(getGraphqlFeatures('UserMedia'))
     }).toString()), guest_token).then(response => {
       resolve(response)
     }).catch(e => {
@@ -283,23 +269,6 @@ const getTweets = async (queryString = '', cursor = '', guest_token = {}, count 
       withV2Timeline: true,
     }
 
-    let graphqlFeatures = {
-      responsive_web_twitter_blue_verified_badge_is_enabled: true,
-      verified_phone_label_enabled: false,
-      responsive_web_graphql_timeline_navigation_enabled: true,
-      unified_cards_ad_metadata_container_dynamic_card_content_query_enabled: true,
-      tweetypie_unmention_optimization_enabled: true,
-      responsive_web_uc_gql_enabled: true,
-      vibe_api_enabled: true,
-      responsive_web_edit_tweet_api_enabled: true,
-      graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
-      standardized_nudges_misinfo: true,
-      tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: false,
-      interactive_text_enabled: true,
-      responsive_web_text_conversations_enabled: false,
-      responsive_web_enhance_cards_enabled: true
-    }
-
     if (cursor) {
         graphqlVariables["cursor"] = cursor
     }
@@ -307,7 +276,7 @@ const getTweets = async (queryString = '', cursor = '', guest_token = {}, count 
     return await new Promise((resolve, reject) => {
       coreFetch("https://twitter.com/i/api/graphql/" + (withReply ? graphqlQueryIdList.UserTweetsAndReplies.queryId + "/UserTweetsAndReplies?" : graphqlQueryIdList.UserTweets.queryId + "/UserTweets?") + (new URLSearchParams({
         variables: JSON.stringify(graphqlVariables),
-        features: JSON.stringify(graphqlFeatures)
+        features: JSON.stringify(getGraphqlFeatures(withReply ? 'UserTweetsAndReplies' : 'UserTweets'))
       }).toString()), guest_token).then(response => {
         resolve(response)
       }).catch(e => {
@@ -316,7 +285,7 @@ const getTweets = async (queryString = '', cursor = '', guest_token = {}, count 
     })
   } else if (searchMode) {
     //TODO Graphql for search
-    //https://twitter.com/i/api/2/search/adaptive.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_collab_control=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&q=from%3Abang_dream_info%20since%3A2000-01-01&tweet_search_mode=live&count=20&query_source=typed_query&pc=1&spelling_corrections=1&include_ext_edit_control=false&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CreplyvotingDownvotePerspective%2CvoiceInfo%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2Ccollab_control%2Cvibe
+    //https://twitter.com/i/api/2/search/adaptive.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=false&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_collab_control=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&q=from%3Abang_dream_info&tweet_search_mode=live&count=20&query_source=recent_search_click&pc=1&spelling_corrections=1&include_ext_edit_control=true&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2CbirdwatchPivot%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl%2Ccollab_control%2Cvibe
     let tmpQueryObject = {
       include_profile_interstitial_type: 1,
       include_blocking: 1,
@@ -328,6 +297,7 @@ const getTweets = async (queryString = '', cursor = '', guest_token = {}, count 
       include_can_media_tag: 1,
       include_ext_has_nft_avatar: 1,
       include_ext_is_blue_verified: 1,
+      include_ext_verified_type: 1,
       skip_status: 1,
       cards_platform: 'Web-12',
       include_cards: 1,
@@ -352,7 +322,7 @@ const getTweets = async (queryString = '', cursor = '', guest_token = {}, count 
       pc: 1,
       spelling_corrections: 1,
       include_ext_edit_control: true,
-      ext: 'mediaStats,highlightedLabel,hasNftAvatar,voiceInfo,enrichments,superFollowMetadata,unmentionInfo,editControl,collab_control,vibe'
+      ext: 'mediaStats,highlightedLabel,hasNftAvatar,voiceInfo,birdwatchPivot,enrichments,superFollowMetadata,unmentionInfo,editControl,collab_control,vibe'
     }
     if (cursor) {
       tmpQueryObject['cursor'] = cursor
@@ -399,25 +369,9 @@ const getConversation = async (tweet_id = '', guest_token = {}, graphqlMode = tr
       withVoice: true,
       withV2Timeline: true,
     }
-    const graphqlFeatures = {
-      responsive_web_twitter_blue_verified_badge_is_enabled: true,
-      verified_phone_label_enabled: false,
-      responsive_web_graphql_timeline_navigation_enabled: true,
-      unified_cards_ad_metadata_container_dynamic_card_content_query_enabled: true,
-      tweetypie_unmention_optimization_enabled: true,
-      responsive_web_uc_gql_enabled: true,
-      vibe_api_enabled: true,
-      responsive_web_edit_tweet_api_enabled: true,
-      graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
-      standardized_nudges_misinfo: true,
-      tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: false,
-      interactive_text_enabled: true,
-      responsive_web_text_conversations_enabled: false,
-      responsive_web_enhance_cards_enabled: true
-    }
     
     return await new Promise((resolve, reject) => {
-      coreFetch("https://twitter.com/i/api/graphql/" + graphqlQueryIdList.TweetDetail.queryId + "/TweetDetail?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(graphqlFeatures)})).toString(), guest_token, [], authorization).then(response => {
+      coreFetch("https://twitter.com/i/api/graphql/" + graphqlQueryIdList.TweetDetail.queryId + "/TweetDetail?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures('TweetDetail'))})).toString(), guest_token, [], authorization).then(response => {
         resolve(response)
       }).catch(e => {
         reject(e)
@@ -450,25 +404,9 @@ const getEditHistory = async (tweet_id = '', guest_token = {}) => {
     withSuperFollowsTweetFields: true,
     withQuickPromoteEligibilityTweetFields: true
   }
-  const graphqlFeatures = {
-    standardized_nudges_misinfo: true,
-    tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: false,
-    tweetypie_unmention_optimization_enabled: true,
-    responsive_web_uc_gql_enabled: true,
-    vibe_api_enabled: true,
-    responsive_web_edit_tweet_api_enabled: true,
-    graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
-    interactive_text_enabled: true,
-    responsive_web_text_conversations_enabled: false,
-    responsive_web_twitter_blue_verified_badge_is_enabled: true,
-    verified_phone_label_enabled: false,
-    responsive_web_graphql_timeline_navigation_enabled: true,
-    responsive_web_enhance_cards_enabled: true,
-    unified_cards_ad_metadata_container_dynamic_card_content_query_enabled: true
-  }
   
   return await new Promise((resolve, reject) => {
-    coreFetch("https://twitter.com/i/api/graphql/" + graphqlQueryIdList.TweetEditHistory.queryId + "/TweetEditHistory?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(graphqlFeatures)})).toString(), guest_token).then(response => {
+    coreFetch("https://twitter.com/i/api/graphql/" + graphqlQueryIdList.TweetEditHistory.queryId + "/TweetEditHistory?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures('TweetEditHistory'))})).toString(), guest_token).then(response => {
       resolve(response)
     }).catch(e => {
       reject(e)
@@ -493,26 +431,9 @@ const getAudioSpace = async (id = '', guest_token = {}) => {
     withSuperFollowsTweetFields: true,
     withReplays: true
   }
-  const graphqlFeatures = {
-    spaces_2022_h2_clipping: true,
-    spaces_2022_h2_spaces_communities: true,
-    responsive_web_twitter_blue_verified_badge_is_enabled: true,
-    verified_phone_label_enabled: false,
-    tweetypie_unmention_optimization_enabled: true,
-    responsive_web_uc_gql_enabled: true,
-    vibe_api_enabled: true,
-    responsive_web_edit_tweet_api_enabled: true,
-    graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
-    standardized_nudges_misinfo: true,
-    tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: false,
-    responsive_web_graphql_timeline_navigation_enabled: true,
-    interactive_text_enabled: true,
-    responsive_web_text_conversations_enabled: false,
-    responsive_web_enhance_cards_enabled: true
-  }
 
   return await new Promise((resolve, reject) => {
-    coreFetch("https://twitter.com/i/api/graphql/" + graphqlQueryIdList.AudioSpaceById.queryId + "/AudioSpaceById?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(graphqlFeatures)})).toString(), guest_token).then(response => {
+    coreFetch("https://twitter.com/i/api/graphql/" + graphqlQueryIdList.AudioSpaceById.queryId + "/AudioSpaceById?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures('AudioSpaceById'))})).toString(), guest_token).then(response => {
       resolve(response)
     }).catch(e => {
       reject(e)
@@ -604,22 +525,8 @@ const getFollowingOrFollowers = async (uid = '0', guest_token = {}, count = fals
     __fs_dont_mention_me_view_api_enabled: false
   }
 
-  const graphqlFeatures = {
-    standardized_nudges_misinfo: true,
-    vibe_api_enabled: true,
-    responsive_web_edit_tweet_api_enabled: true,
-    interactive_text_enabled: true,
-    responsive_web_graphql_timeline_navigation_enabled: true,
-    responsive_web_text_conversations_enabled: true,
-    tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: true,
-    unified_cards_ad_metadata_container_dynamic_card_content_query_enabled: true,
-    responsive_web_enhance_cards_enabled: true,
-    graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
-    dont_mention_me_view_api_enabled: true,
-    responsive_web_uc_gql_enabled: true
-  }
   return await new Promise((resolve, reject) => {
-    coreFetch("https://twitter.com/i/api/graphql/" + graphqlQueryIdList[type]["queryId"] + `/${type}?` + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(graphqlFeatures)}).toString()), guest_token, cookie).then(response => {
+    coreFetch("https://twitter.com/i/api/graphql/" + graphqlQueryIdList[type]["queryId"] + `/${type}?` + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures(type))}).toString()), guest_token, cookie).then(response => {
       resolve(response)
     }).catch(e => {
       reject(e)
@@ -655,12 +562,13 @@ const getPollResult = async (tweet_id = '', guest_token = {}) => {
   }
 }
 
-const getImage = async (path = '') => {
+const getImage = async (path = '', headers = {}) => {
   if (path === '') {
     return ''
   }
   return axiosFetch.get(path, {
     responseType: 'arraybuffer',
+    headers
     //timeout: 10000
   })
 }

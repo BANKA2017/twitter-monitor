@@ -6,7 +6,7 @@ import dbHandle from '../../src/core/Core.db.mjs'
 import { getAudioSpace, getPollResult, getToken } from '../../src/core/Core.fetch.mjs'
 //import { TGPush } from '../../src/core/Core.push.mjs'
 
-const now = Math.floor(new Date()) - 300
+const now = Math.floor(Number(new Date())/1000) - 300
 
 // POLLS
 const polls = await V2TwitterPolls.findAll({

@@ -111,7 +111,7 @@ const attributes = {
     field: 'description_origin'
   },
   verified: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.INTEGER.UNSIGNED,
     allowNull: false,
     defaultValue: '0',
     primaryKey: false,

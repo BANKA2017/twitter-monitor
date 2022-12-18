@@ -1,6 +1,6 @@
 //This file is used for check graphql features after update QueryID
 
-import { getAudioSpace, getConversation, getTweets, getUserInfo, getVerifiedAvatars } from "../../src/core/Core.fetch.mjs";
+import { getAudioSpace, getConversation, getEditHistory, getTweets, getUserInfo, getVerifiedAvatars } from "../../src/core/Core.fetch.mjs";
 import { GuestToken } from "../../src/core/Core.function.mjs";
 
 
@@ -41,10 +41,17 @@ try {
 }
 
 try {
-    //YOU HAVE TO FIND A SPACE_ID BECAUSE STATIC SPACE_ID MIGHT OUT DATE
     await getAudioSpace("1nAJErvvVXgxL", token.token)
     console.log(`tmv3_check: getAudioSpace checked`)
 } catch (e) {
     console.error(`tmv3_check: getAudioSpace failed`)
+    console.log(e.message.replace("The following features cannot be null: ", "").split(', '))
+}
+
+try {
+    await getEditHistory("1580661436132757506", token.token)
+    console.log(`tmv3_check: getEditHistory checked`)
+} catch (e) {
+    console.error(`tmv3_check: getEditHistory failed`)
     console.log(e.message.replace("The following features cannot be null: ", "").split(', '))
 }
