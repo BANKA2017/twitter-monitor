@@ -28,13 +28,13 @@ import V2TwitterTweets from '../../src/model/twitter_monitor/v2_twitter_tweets.j
 import { GuestToken, setGlobalServerInfo, Sleep } from '../../src/core/Core.function.mjs'
 import path2array from '../../src/core/Core.apiPath.mjs'
 import { Tweet, TweetsInfo } from '../../src/core/Core.tweet.mjs'
-import { GRAPHQL_MODE } from '../../src/assets/setting.mjs'
+import { GRAPHQL_MODE } from '../../assets/setting.mjs'
 import dbHandle from '../../src/core/Core.db.mjs'
 import { TGPush } from '../../src/core/Core.push.mjs'
-import { TWEETS_SAVE_PATH } from '../../src/assets/setting.mjs'
+import { TWEETS_SAVE_PATH } from '../../assets/setting.mjs'
 import { ConfigFile } from '../../src/share/UpdateConfig.mjs'
 import { basePath } from '../../src/share/Constant.mjs'
-import { CYCLE_SECONDS } from '../../src/assets/setting_sample.mjs'
+import { CYCLE_SECONDS } from '../../assets/setting_sample.mjs'
 
 
 const once = (process.argv[2] || '') === 'once'
@@ -54,7 +54,7 @@ while (true) {
     }
 
     // get config from file system
-    let config = JSON.parse(readFileSync(basePath + '/assets/config.json').toString())
+    let config = JSON.parse(readFileSync(basePath + '/../assets/config.json').toString())
 
     const server_info = new setGlobalServerInfo()
     if (global.guest_token.token.nextActiveTime) {
@@ -129,7 +129,7 @@ while (true) {
         //TODO accountInfo.code === 336 means feature issue
         console.log(refreshableList[index][0].display_name, `(${refreshableList[index][0].name})`, refreshableList[index][1], index)
         server_info.updateValue('total_req_times')
-        if (accountInfo.status !== 'fulfilled' || accountInfo.value?.data.errors || path2array("user_info_legacy", accountInfo.value?.data || false)?.protected) {
+        if (accountInfo.status !== 'fulfilled' || (accountInfo?.value?.data?.errors && !accountInfo?.value?.data?.data?.user) || path2array("user_info_legacy", accountInfo.value?.data || false)?.protected) {
             if (accountInfo.status !== 'fulfilled') {
                 console.log('tmv3: #Autobreak' +  refreshableList[index][0].display_name + ' -' + accountInfo.status)
             } else {

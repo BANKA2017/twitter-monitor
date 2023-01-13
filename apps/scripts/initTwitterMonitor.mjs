@@ -11,7 +11,7 @@ import V2TwitterMedia from "../../src/model/twitter_monitor/v2_twitter_media.js"
 import V2TwitterPolls from "../../src/model/twitter_monitor/v2_twitter_polls.js"
 import V2TwitterQuote from "../../src/model/twitter_monitor/v2_twitter_quote.js"
 import V2TwitterTweets from "../../src/model/twitter_monitor/v2_twitter_tweets.js"
-import { ACTIVE_SERVICE, SQL_CONFIG } from "../../src/assets/setting.mjs"
+import { ACTIVE_SERVICE, SQL_CONFIG } from "../../assets/setting.mjs"
 import dbHandle from "../../src/core/Core.db.mjs"
 
 import { writeFileSync, existsSync } from 'node:fs'
@@ -47,8 +47,8 @@ if (twitterMonitorSettings.dbtype === 'mysql') {
 }
 
 //write config
-if (!existsSync(basePath + '/assets/config.json')) {
-    writeFileSync(basePath + '/assets/config.json', JSON.stringify({
+if (!existsSync(basePath + '/../assets/config.json')) {
+    writeFileSync(basePath + '/../assets/config.json', JSON.stringify({
         users: [],
         links: []
     }))

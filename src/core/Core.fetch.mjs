@@ -2,12 +2,12 @@ import { createHash } from "crypto"
 import axios from "axios"
 import HttpsProxyAgent from "https-proxy-agent"
 import path2array from "./Core.apiPath.mjs"
-import { PROXY_CONFIG } from '../assets/setting.mjs'
+import { PROXY_CONFIG } from '../../assets/setting.mjs'
 import { readFileSync } from 'node:fs'
 import { basePath } from "../share/Constant.mjs"
 
-const graphqlQueryIdList = JSON.parse(readFileSync(basePath + "/assets/graphqlQueryIdList.json").toString())
-const featuresValueList = JSON.parse(readFileSync(basePath + "/assets/featuresValueList.json").toString())
+const graphqlQueryIdList = JSON.parse(readFileSync(basePath + "/../assets/graphqlQueryIdList.json").toString())
+const featuresValueList = JSON.parse(readFileSync(basePath + "/../assets/featuresValueList.json").toString())
 
 const generateCsrfToken = () => createHash('md5').update('' + new Date()).digest("hex")
 
@@ -41,7 +41,7 @@ const getGraphqlFeatures = (queryName) => {
 
 const generateUrl = (user = '', isGraphql = false) => {
   if (isGraphql) {
-    let graphqlVariables = {withSuperFollowsUserFields: true}
+    let graphqlVariables = {withSuperFollowsUserFields: true, withSafetyModeUserFields: true}
     if (!isNaN(user)) {
       graphqlVariables["userId"] = user
       return "https://twitter.com/i/api/graphql/" + graphqlQueryIdList.UserByRestId.queryId + "/UserByRestId?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures('UserByRestId'))})).toString()
@@ -360,14 +360,14 @@ const getConversation = async (tweet_id = '', guest_token = {}, graphqlMode = tr
       includePromotedContent: true,
       withCommunity: true,
       withQuickPromoteEligibilityTweetFields: true,
-      withBirdwatchNotes: false,
+      withBirdwatchNotes: true,
       withSuperFollowsUserFields: true,
       withDownvotePerspective: false,
       withReactionsMetadata: false,
       withReactionsPerspective: false,
       withSuperFollowsTweetFields: true,
       withVoice: true,
-      withV2Timeline: true,
+      withV2Timeline: true
     }
     
     return await new Promise((resolve, reject) => {
@@ -491,12 +491,12 @@ const getTypeahead = async (text = '', guest_token = {}) => {
 //}
 
 // ANONYMOUS AND COOKIE REQUIRED
-const getTrends = async (initial_tab_id = 'trending', count = false, guest_token = {}, cookie = []) => {
+const getTrends = async (initial_tab_id = 'trending', count = 20, guest_token = {}, cookie = []) => {
   if (!guest_token.success) {
     guest_token = await getToken()
   }
   return await new Promise((resolve, reject) => {
-    coreFetch(cookie.length ? `https://twitter.com/i/api/2/guide.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=false&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_collab_control=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&count=${count}&include_page_configuration=true&initial_tab_id=${initial_tab_id}&entity_tokens=false&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CreplyvotingDownvotePerspective%2CvoiceInfo%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl%2Ccollab_control%2Cvibe` : `https://twitter.com/i/api/2/guide.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweet=true&count=${count}&include_page_configuration=true&entity_tokens=false&ext=mediaStats%2ChighlightedLabel&initial_tab_id=${initial_tab_id}`, guest_token, cookie).then(response => {
+    coreFetch(initial_tab_id === 'trends' ? `https://twitter.com/i/api/2/guide.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=false&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_collab_control=true&include_ext_views=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&count=${count}&candidate_source=trends&include_page_configuration=false&entity_tokens=false&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl%2Ccollab_control%2Cvibe` : `https://twitter.com/i/api/2/guide.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=false&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_collab_control=true&include_ext_views=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&count=${count}&include_page_configuration=true&initial_tab_id=${initial_tab_id}&entity_tokens=false&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl%2Ccollab_control%2Cvibe${cookie.length ? '%2CbirdwatchPivot' : ''}`, guest_token, cookie, 1).then(response => {
       resolve(response)
     }).catch(e => {
       reject(e)

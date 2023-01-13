@@ -31,7 +31,7 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 ### Core
 
 * **NO TYPESCRIPT**, core code are not yet supported typescript
-* copy and rename the setting file from `src/assets/settings_sample.mjs` to `src/assets/settings.mjs`, and edit it
+* copy and rename the setting file from `assets/settings_sample.mjs` to `assets/settings.mjs`, and edit it
 * enjoy it!
 
 ### Graphql
@@ -44,7 +44,7 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 
 * edit `SQL_CONFIG` to enable service **twitter_monitor**
 * execute `yarn run init` or `npm run init`
-* open `config.html` by browser to edit and save config file `config.json` as `src/assets/config.json`
+* open `config.html` by browser to edit and save config file `config.json` as `assets/config.json`
 
   [Online editor](https://banka2017.github.io/twitter-monitor/apps/config_page/)
 
@@ -123,6 +123,12 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
         * mixed_media_single_dest_carousel_app
         * twitter_list_details
         * media_with_details_horizontal (for topic ?)
+        * twitter_article
+
+## Sub packages
+
+- `FastText` for language identity, [Read more](./tree/master/packages/fasttext)
+- `Translator` is a translator toolkit in development, [Read more](./tree/master/packages/translator)
 
 ## Thanks
 
@@ -156,7 +162,7 @@ Those are Chinese articles
 ### Core
 
 * **没有 Typescript**，其实是不知怎么入手
-* 拷贝编辑 `src/assets/settings_sample.mjs` 并另存为 `src/assets/settings.mjs`
+* 拷贝编辑 `assets/settings_sample.mjs` 并另存为 `assets/settings.mjs`
 * 开始使用吧！
 
 ### Graphql
@@ -168,7 +174,7 @@ Those are Chinese articles
 ### 爬虫
 
 * 编辑 `SQL_CONFIG` 以启用本服务
-* 运行 `yarn run init` 或 `npm run init` 以导入数据表以及在路径 `src/assets/config.json` 创建配置文件
+* 运行 `yarn run init` 或 `npm run init` 以导入数据表以及在路径 `assets/config.json` 创建配置文件
 
   [在线编辑器](https://banka2017.github.io/twitter-monitor/apps/config_page/)
 
@@ -249,6 +255,12 @@ Those are Chinese articles
         * mixed_media_single_dest_carousel_app
         * twitter_list_details
         * media_with_details_horizontal (for topic ?)
+        * twitter_article
+
+## 子包
+
+- `FastText` 用于识别语言, [阅读更多](./tree/master/packages/fasttext)
+- `Translator` 是一个开发中的翻译工具包, [阅读更多](./tree/master/packages/translator)
 
 ## 出处 & 感谢
 

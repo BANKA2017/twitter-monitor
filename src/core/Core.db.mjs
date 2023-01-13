@@ -1,5 +1,5 @@
 import Sequelize from 'sequelize';
-import { ACTIVE_SERVICE, SQL_CONFIG } from '../assets/setting.mjs'
+import { ACTIVE_SERVICE, SQL_CONFIG } from '../../assets/setting.mjs'
 import { TGPush } from './Core.push.mjs';
 
 let dbHandle = {}

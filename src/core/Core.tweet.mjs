@@ -34,7 +34,7 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
             for (const tmpTweet of tmpTweets) {
                 if (tmpTweet.type === 'TimelineAddEntries') {
                     cursorList = tmpTweet.entries.filter(content => content.entryId.startsWith('cursor-'))
-                    objectForReturn.contents = objectForReturn.contents.concat(tmpTweet.entries).filter(content => content.entryId.startsWith('tweet-'))
+                    objectForReturn.contents = objectForReturn.contents.concat(tmpTweet.entries).filter(content => content.entryId.startsWith('tweet-') || content.entryId.startsWith('conversationthread-'))
                     objectForReturn.tweetRange.max = path2array('tweet_id', objectForReturn.contents[0]) || 0
                     objectForReturn.tweetRange.min = path2array('tweet_id', objectForReturn.contents.slice(-1)[0]) || 0
                 } else if (tmpTweet.type === 'TimelinePinEntry') {
@@ -134,7 +134,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
     }
     //let geo = {}
     let polls = []
-    let interactiveData = {favorite_count: 0, retweet_count: 0, quote_count: 0}
+    let interactiveData = {favorite_count: 0, retweet_count: 0, quote_count: 0, view_count: 0, reply_count: 0}
     let isQuote = false
     let isRetweet = false
     let isRtl = false
@@ -303,6 +303,9 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
     interactiveData.favorite_count = content?.legacy?.favorite_count ?? content?.favorite_count ?? 0
     interactiveData.retweet_count = content?.legacy?.retweet_count ?? content?.retweet_count ?? 0
     interactiveData.quote_count = content?.legacy?.quote_count ?? content?.quote_count ?? 0
+    interactiveData.reply_count = content?.legacy?.reply_count ?? content?.reply_count ?? 0
+    
+    interactiveData.view_count = content?.views?.count ?? content?.views_count ?? 0
 
     //rtl
     isRtl = (content?.legacy?.lang ?? content?.lang ?? '').includes(["ar", "fa", "iw", "ur"])
@@ -339,7 +342,7 @@ const GenerateEntities = (entities = [], uid = '0', tweetId = '0', hidden = fals
 const GenerateFullTextWithHtml = (fullText = '', cardUrl = '', quoteUrl = '', entities = []) => {
     let newText = ''
     let lastEnd = 0
-    fullText = [...fullText]
+    fullText = typeof fullText === 'string' ?[...fullText] : []
     const entitiesLength = entities.length
     for (const entityIndex in entities) {
         const singleTag = entities[entityIndex]
@@ -799,6 +802,12 @@ const Card = (cardInfo = {}, uid = '0', tweetId = '0', hidden = false, url = '',
                 tmpCardInfo.data.vanity_url = childCardInfo.destination_objects.browser_1.data.url_data.vanity
                 tmpCardInfo.data.url = childCardInfo.destination_objects.browser_1.data.url_data.url
                 break
+            //TODO note
+            case "twitter_article":
+                tmpCardInfo.data.description = childCardInfo.component_objects.text.data.title.content
+                tmpCardInfo.data.vanity_url = childCardInfo.component_objects.text.data.subtitle.content
+                tmpCardInfo.data.url = childCardInfo.destination_objects.article.data.url_data.url
+                break
             default:
                 //https://developer.twitter.com/en/docs/twitter-ads-api/creatives/api-reference/cards
                 //不知道还有什么，现在只找到这些
@@ -807,13 +816,40 @@ const Card = (cardInfo = {}, uid = '0', tweetId = '0', hidden = false, url = '',
                 //kd_push("快来研究新的子卡片\n #new_child_card #{$card["data"]["secondly_type"]} \nid: {$tweetid}\nhttps://twitter.com/i/status/{$tweetid}\n" . $cardInfo["binding_values"]["unified_card"]["string_value"]);//喵喵喵
         }
         if (childCardInfo.media_entities) {
+            //TODO fix unified_card media status
+            tmpCardInfo.data.media = 1
             let tmpChildMediaList = []
-            if (childCardInfo?.layout?.data?.slides) {
-                tmpChildMediaList = childCardInfo.layout.data.slides.map(slide => childCardInfo.component_objects[slide[0]].data)
+            if (tmpCardInfo.data.secondly_type === 'twitter_article') {
+                tmpCardInfo.media.push({
+                    media_key: '',//卡片(card)没有media_key
+                    uid,//TODO 从后面的users获得用户
+                    tweet_id: tweetId,
+                    hidden,
+                    origin_type: `${cardType}_${tmpCardInfo.data.secondly_type}_card_${childCardInfo.media_entities.cover_image.type}`,
+                    bitrate: 0,
+                    title: '',
+                    description: '',
+                    cover: childCardInfo.media_entities.cover_image.media_url_https,//由于封面只是size不同，所以无需额外创建记录
+                    url: childCardInfo.media_entities.cover_image.media_url_https,//原始文件
+                    origin_info_width: childCardInfo.media_entities.cover_image.original_info.width,
+                    origin_info_height: childCardInfo.media_entities.cover_image.original_info.height,
+                    source: 'cards'
+                    //empty blurhash
+                    //blurhash: '',
+                })
+                let pathInfo = PathInfo(tmpCardInfo.media[0].url)
+                tmpCardInfo.media[0].filename = pathInfo.filename
+                tmpCardInfo.media[0].basename = pathInfo.basename
+                tmpCardInfo.media[0].extension = pathInfo.extension
+                tmpCardInfo.media[0].content_type = GetMime(pathInfo.extension)
             } else {
-                tmpChildMediaList = childCardInfo?.component_objects?.swipeable_media_1?.data?.media_list??[childCardInfo?.component_objects?.media_1?.data??{id: 'media_1'}]
+                if (childCardInfo?.layout?.data?.slides) {
+                    tmpChildMediaList = childCardInfo.layout.data.slides.map(slide => childCardInfo.component_objects[slide[0]].data)
+                } else {
+                    tmpChildMediaList = childCardInfo?.component_objects?.swipeable_media_1?.data?.media_list??[childCardInfo?.component_objects?.media_1?.data??{id: 'media_1'}]
+                }
+                tmpCardInfo.media = tmpChildMediaList.map(tmpChildMedia => Media(childCardInfo.media_entities[tmpChildMedia.id], uid, tweetId, hidden, 'cards', `${cardType}_${tmpCardInfo.data.secondly_type}_card_${childCardInfo.media_entities[tmpChildMedia.id].type}`, online)).flat()
             }
-            tmpCardInfo.media = tmpChildMediaList.map(tmpChildMedia => Media(childCardInfo.media_entities[tmpChildMedia.id], uid, tweetId, hidden, 'cards', `${cardType}_${tmpCardInfo.data.secondly_type}_card_${childCardInfo.media_entities[tmpChildMedia.id].type}`, online)).flat()
         }
         return tmpCardInfo
     }

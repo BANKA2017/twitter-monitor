@@ -1,5 +1,5 @@
 import express from 'express'
-import { ApiLocalAccount, ApiLocalChart, ApiLocalHashtagRank, ApiLocalSearch, ApiLocalStats, ApiLocalStatus, ApiLocalTag, ApiLocalTranslate, ApiLocalTrends, ApiLocalTweets, ApiLocalUserInfo } from '../CoreFunctions/local/Local.mjs'
+import { ApiLocalAccount, ApiLocalChart, ApiLocalHashtagRank, ApiLocalSearch, ApiLocalStats, ApiLocalStatus, ApiLocalTag, ApiLocalTrends, ApiLocalTweets, ApiLocalUserInfo } from '../CoreFunctions/local/Local.mjs'
 
 const local = express()
 
@@ -26,7 +26,5 @@ local.get('/data/hashtag_rank', ApiLocalHashtagRank)
 //search
 local.get('/data/search/', ApiLocalSearch)
 
-//translate
-local.get('/data/translate/', ApiLocalTranslate)
 
 export default local

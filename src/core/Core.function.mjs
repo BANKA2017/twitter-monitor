@@ -1,5 +1,6 @@
 import {parse} from 'node:path'
 import { getToken } from './Core.fetch.mjs'
+//import * as twitter_text from 'twitter-text'
 
 export class setGlobalServerInfo {
     tw_server_info = {
@@ -49,7 +50,7 @@ export class GuestToken {
     async updateGuestToken (authorizationMode = 0) {
         const now = Number(new Date())
         if ((!this.#guest_token.nextActiveTime || (this.#guest_token.nextActiveTime && this.#guest_token.nextActiveTime < now) ) && (Object.keys(this.#guest_token).length === 0 || Object.values(this.#guest_token.rate_limit).some(value => value <= 0) || this.#guest_token.expire < now || (now - this.heartBeat) > 1700000)) {
-            console.log(`[${new Date()}]: #GuestToken Update guest token`)
+            console.log(`[${new Date()}]: #GuestToken Update guest token #${authorizationMode}`)
             do {
                 this.#guest_token = await getToken(authorizationMode)
                 this.errorCount--
@@ -137,12 +138,9 @@ const PathInfo = (path) => {
 }
 
 const GetEntitiesFromText = (text = '', type = 'description') => {
-    let pattern = /<a href="([^"]+)" target="_blank">([^<]+)<\/a>|(?:\s|\p{P}|^)#((?:[^\s\p{P}]|_)+)|(?:\s|\p{P}|^)@([\w]+)/gmu
-    if (type !== 'description') {
-        pattern = /<a href="([^"]+)"[^>]+>([^<]+)<\/a>|(?:\s|\p{P}|^)#((?:[^\s\p{P}]|_)+)|(?:\s|\p{P}|^)@([\w]+)/gmu
-    }
+    let pattern = /<a href="([^"]+)"(?: id="[^"]"+|)(?: target="_blank"|)[^>]+>([^<]+)<\/a>|(?:\s|\p{P}|\p{S}|^)(#|\$)((?:[^\s\p{P}\p{S}]|_)+)|(?:\s|\p{P}|\p{S}|^)@([\w]+)/gmu
 
-    text = text.replaceAll(/<br>|<br \/>/gm, '')
+    text = text.replaceAll(/(?:|\n)(?:<br>|<br \/>)(?:|\n)/gm, "\n")
     const originText = text.replaceAll(/<a[^>]+>([^<]+)<\/a>/gm, "$1")
     let match;
     const tmpList = []
@@ -153,21 +151,23 @@ const GetEntitiesFromText = (text = '', type = 'description') => {
             pattern.lastIndex++;
         }
         //hashtag
-        if (match[2] === undefined && match[3] !== undefined) {
-            const hashtagText = match[3]
+        if (match[2] === undefined && match[4] !== undefined) {
+            const prefix = match[3]
+            const hashtagText = match[4]
             //console.log([originText.slice(lastEnd).split(`#${hashtagText}`), originText.slice(lastEnd).split(`#${hashtagText}`).length])
-            const beforeLength = [...[...originText].slice(lastEnd).join('').split(`#${hashtagText}`)[0]].length + lastEnd
-            lastEnd = beforeLength + [...match[3]].length + 1
-            tmpList.push({ expanded_url: "", indices_end: lastEnd, indices_start: beforeLength, text: hashtagText, type: "hashtag" })
-        } else if (match[2] === undefined && match[4] !== undefined) {
-            const userMention = match[4]
-            const beforeLength = [...[...originText].slice(lastEnd).join('').split(`@${userMention}`)[0]].length + lastEnd
+            const beforeLength = [...[...originText].slice(lastEnd).join('').split(`${prefix}${hashtagText}`)[0]].length + lastEnd
             lastEnd = beforeLength + [...match[4]].length + 1
+            tmpList.push({ expanded_url: "", indices_end: lastEnd, indices_start: beforeLength, text: hashtagText, type: prefix === '#' ? "hashtag" : "symbol"})
+        } else if (match[2] === undefined && match[5] !== undefined) {
+            const userMention = match[5]
+            const beforeLength = [...[...originText].slice(lastEnd).join('').split(`@${userMention}`)[0]].length + lastEnd
+            lastEnd = beforeLength + [...match[5]].length + 1
             tmpList.push({ expanded_url: "", indices_end: lastEnd, indices_start: beforeLength, text: `@${userMention}`, type: "user_mention" })
         } else {
             const beforeLength = [...[...originText].slice(lastEnd).join('').split(match[2])[0]].length + lastEnd// + (type === 'description' ? 0 : 1)
             lastEnd = beforeLength + [...match[2]].length
-            tmpList.push({ expanded_url: match[1].replaceAll("//http", "http"), indices_end: lastEnd, indices_start: beforeLength, text: match[2], type: "url"})
+            let type = (match[1].replaceAll("//http", "http").startsWith('https://twitter.com/') && match[2].startsWith('@')) ? 'user_mention' : (match[2].startsWith('#') ? 'hashtag' : (match[2].startsWith('$') ? 'symbol' : "url"))
+            tmpList.push({ expanded_url: match[1].replaceAll("//http", "http"), indices_end: lastEnd, indices_start: beforeLength, text: ['hashtag', 'symbol'].includes(type) ? match[2].slice(1) : match[2], type})
         }
     }
     

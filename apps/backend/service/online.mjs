@@ -2,6 +2,7 @@ import express from 'express'
 import {ApiUserInfo} from '../CoreFunctions/online/OnlineUserInfo.mjs'
 import {ApiTweets, ApiSearch, ApiPoll, ApiAudioSpace, ApiMedia, ApiBroadcast} from '../CoreFunctions/online/OnlineTweet.mjs'
 import { apiTemplate } from '../../../src/share/Constant.mjs'
+import { ApiTrends } from '../CoreFunctions/online/OnlineTrends.mjs'
 
 const online = express()
 online.use(async (req, res, next) => {
@@ -36,5 +37,6 @@ online.get('/data/poll/', ApiPoll)
 online.get('/data/audiospace/', ApiAudioSpace)
 online.get('/data/broadcast/', ApiBroadcast)
 online.get('/data/media/', ApiMedia)
+online.get('/data/trends/', ApiTrends)
 
 export default online

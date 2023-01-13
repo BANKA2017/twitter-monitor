@@ -12,11 +12,11 @@ apps/archiver/twitter_archiver/savemedia/*
 !apps/archiver/twitter_archiver/savedata/.gitkeep
 !apps/archiver/twitter_archiver/savemedia/.gitkeep
 
-src/assets/trends/
-src/assets/setting.mjs
-src/assets/config.json
-src/assets/sagm_config.cjs
-src/assets/analytics/account.json
+assets/trends/
+assets/setting.mjs
+assets/config.json
+assets/sagm_config.cjs
+assets/analytics/account.json
 
 !savetweets/.gitkeep
 

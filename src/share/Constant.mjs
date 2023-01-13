@@ -49,10 +49,12 @@ const SupportedUnifiedCardNameList = [
     "mixed_media_single_dest_carousel_app",
     "twitter_list_details",
     "media_with_details_horizontal",
+    "twitter_article",
 ]
 
 const verifiedTypeList = [
-    "business"
+    "business",
+    'government'
 ]
 
 const apiTemplate = (code = 403, message = 'Invalid Request', data = {}, version = 'online') => {

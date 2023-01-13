@@ -1,6 +1,6 @@
 import { encode } from "blurhash"
 import axios from "axios"
-import { PROXY_CONFIG } from '../assets/setting.mjs'
+import { PROXY_CONFIG } from '../../assets/setting.mjs'
 import HttpsProxyAgent from "https-proxy-agent"
 import sharp from 'sharp'
 let axoisConfig = {

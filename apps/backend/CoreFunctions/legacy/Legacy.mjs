@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { Op } from 'sequelize'
 import { QueryTypes } from 'sequelize'
-import { TRANSLATE_TARGET } from '../../../../src/assets/setting.mjs'
+import { GoogleTranslate } from '../../../../packages/translator/src/google.mjs'
+import { TRANSLATE_TARGET } from '../../../../assets/setting.mjs'
 import dbHandle from '../../../../src/core/Core.db.mjs'
 import { VerifyQueryString } from '../../../../src/core/Core.function.mjs'
-import { GoogleTranslate } from '../../../../src/core/Core.translate.mjs'
 import AccountInfo from '../../../../src/model/tmv1/account_info.js'
 import TwitterData from '../../../../src/model/tmv1/twitter_data.js'
 import TwitterTweets from '../../../../src/model/tmv1/twitter_tweets.js'
@@ -13,7 +13,7 @@ import { apiTemplate, basePath } from '../../../../src/share/Constant.mjs'
 const ApiLegacyInfo = async (req, res) => {
     const {uid} = getUid(req.query)
     if (uid === '0' || !uid) {
-        res.status(404).json(apiTemplate(1, 'No record', {}, 'v1'))
+        res.json(apiTemplate(1, 'No record', {}, 'v1'))
         return
     }
     let baseInfo = null
@@ -26,11 +26,11 @@ const ApiLegacyInfo = async (req, res) => {
             raw: true
         })
     } catch (e) {
-        res.status(500).json(apiTemplate(1, 'Unknown error #GetAccount', {}, 'v1'))
+        res.json(apiTemplate(1, 'Unknown error #GetAccount', {}, 'v1'))
         return
     }
     if (baseInfo === null) {
-        res.status(404).json(apiTemplate(1, 'No record', {}, 'v1'))
+        res.json(apiTemplate(1, 'No record', {}, 'v1'))
     } else {
         baseInfo.header = baseInfo.header.replace(/\/([^\.]+)\.(.*)$/, "/$1_400x400.$2")
         baseInfo.description = baseInfo.description.replace(/ #([^\s]+)/, ' <a href="#/tag/$1">#$1</a>')
@@ -49,7 +49,7 @@ const ApiLegacyInfo = async (req, res) => {
 const ApiLegacyTweets = async (req, res) => {
     const {uid} = getUid(req.query)
     if (uid === '0' || !uid) {
-        res.status(404).json(apiTemplate(1, 'No record', {}, 'v1'))
+        res.json(apiTemplate(1, 'No record', {}, 'v1'))
         return
     }
     const tweetId = String(VerifyQueryString(req.query.tweet_id, 0))
@@ -116,11 +116,11 @@ const ApiLegacyTweets = async (req, res) => {
             raw: true
         })
     } catch (e) {
-        res.status(500).json(apiTemplate(0, 'Unknown error #Tweets', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
+        res.json(apiTemplate(0, 'Unknown error #Tweets', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
         return
     }
     if (tweets === null) {
-        res.status(404).json(apiTemplate(0, 'No records #Tweets', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
+        res.json(apiTemplate(0, 'No records #Tweets', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
         return
     }
     res.json(apiTemplate(0, 'OK', returnData(tweets, 11), 'v1'))
@@ -129,7 +129,7 @@ const ApiLegacyTweets = async (req, res) => {
 const ApiLegacyData = async (req, res) => {
     const {uid} = getUid(req.query)
     if (uid === '0' || !uid) {
-        res.status(404).json(apiTemplate(0, 'No record', [], 'v1'))
+        res.json(apiTemplate(0, 'No record', [], 'v1'))
         return
     }
     let chartData = null
@@ -144,11 +144,11 @@ const ApiLegacyData = async (req, res) => {
             raw: true
         })
     } catch (e) {
-        res.status(500).json(apiTemplate(1, 'Unknown error #GetData', [], 'v1'))
+        res.json(apiTemplate(1, 'Unknown error #GetData', [], 'v1'))
         return
     }
     if (chartData === null) {
-        res.status(404).json(apiTemplate(0, 'No record', [], 'v1'))
+        res.json(apiTemplate(0, 'No record', [], 'v1'))
     } else {
         res.json(apiTemplate(0, 'OK', chartData.map(data => {
             const tmpDate = new Date(data.timestamp*1000)
@@ -166,7 +166,7 @@ const ApiLegacyTag = async (req, res) => {
     const tweetId = String(VerifyQueryString(req.query.tweet_id, 0))
     const hash = VerifyQueryString(req.query.hash, '')
     if (hash === '') {
-        res.status(404).json(apiTemplate(0, 'Empty request #GetTag', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
+        res.json(apiTemplate(0, 'Empty request #GetTag', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
         return
     }
     let tweets = null
@@ -179,11 +179,11 @@ const ApiLegacyTag = async (req, res) => {
             type: QueryTypes.SELECT
         })
     } catch (e) {
-        res.status(500).json(apiTemplate(0, 'Unknown error #GetTag', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
+        res.json(apiTemplate(0, 'Unknown error #GetTag', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
         return
     }
     if (tweets === null) {
-        res.status(404).json(apiTemplate(0, 'No records #GetTag', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
+        res.json(apiTemplate(0, 'No records #GetTag', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
         return
     }
     res.json(apiTemplate(0, 'OK', returnData(tweets, 11), 'v1'))
@@ -209,11 +209,11 @@ const ApiLegacySearch = async (req, res) => {
             raw: true
         })
     } catch (e) {
-        res.status(500).json(apiTemplate(0, 'Unknown error #Search', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
+        res.json(apiTemplate(0, 'Unknown error #Search', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
         return
     }
     if (tweets === null) {
-        res.status(404).json(apiTemplate(0, 'No records #Search', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
+        res.json(apiTemplate(0, 'No records #Search', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
         return
     }
     res.json(apiTemplate(0, 'OK', returnData(tweets, 11), 'v1'))
@@ -237,7 +237,7 @@ const ApiLegacyTranslate = async (req, res) => {
                         raw: true
                     })
                 } catch (e) {
-                    res.status(500).json(apiTemplate(1, 'Unknown error #GetTweetTranslate', [], 'v1'))
+                    res.json(apiTemplate(1, 'Unknown error #GetTweetTranslate', [], 'v1'))
                     return
                 }
                 break
@@ -249,13 +249,13 @@ const ApiLegacyTranslate = async (req, res) => {
                         raw: true
                     })
                 } catch (e) {
-                    res.status(500).json(apiTemplate(1, 'Unknown error #GetProfileTranslate', [], 'v1'))
+                    res.json(apiTemplate(1, 'Unknown error #GetProfileTranslate', [], 'v1'))
                     return
                 }
                 break
         }
         if (trInfo === null){
-            res.status(404).json(apiTemplate(1, 'No translate text', {}, 'v1'))
+            res.json(apiTemplate(1, 'No translate text', {}, 'v1'))
             return
         } else if (!trInfo.translate || !cacheText) {
             if (translateType === 'profile') {
@@ -271,18 +271,20 @@ const ApiLegacyTranslate = async (req, res) => {
             } catch (e) {
                 console.error(e)
                 //TODO do nothing
+                res.json(apiTemplate(1, 'No translate text', trInfo, 'v1'))
             }
-            if (trInfo.translate && translateType === 'tweets' && cacheText) {
-                try {
-                    await TwitterTweets.update({
-                        translate: trInfo.translate,
-                        translate_source: 'Google Translate',
-                    }, {where: {tweet_id: tweetId}})
-                } catch (e) {
-                    console.log(e)
-                    //TODO do nothing
-                }
-            }
+            //if (trInfo.translate && translateType === 'tweets' && cacheText) {
+            //    try {
+            //        await TwitterTweets.update({
+            //            translate: trInfo.translate,
+            //            translate_source: 'Google Translate',
+            //        }, {where: {tweet_id: tweetId}})
+            //    } catch (e) {
+            //        console.log(e)
+            //        //TODO do nothing
+            //        res.json(apiTemplate(1, 'No translate text', trInfo, 'v1'))
+            //    }
+            //}
             trInfo.translate_raw = trInfo.translate
             trInfo.translate = trInfo.translate.replaceAll("\n", '<br>')
             res.json(apiTemplate(0, 'OK', trInfo, 'v1'))
@@ -294,16 +296,16 @@ const ApiLegacyTranslate = async (req, res) => {
             trInfo.translate = trInfo.translate.replaceAll("\n", "<br />\n")
             res.json(apiTemplate(0, 'OK', trInfo, 'v1'))
         } else {
-            res.status(404).json(apiTemplate(1, 'No translate text', {}, 'v1'))
+            res.json(apiTemplate(1, 'No translate text', {}, 'v1'))
         }
     } else {
-        res.status(404).json(apiTemplate(1, 'No translate text', {}, 'v1'))
+        res.json(apiTemplate(1, 'No translate text', {}, 'v1'))
     }
 }
 const getUid = query => {
     let name = VerifyQueryString(query.name, '').toLocaleLowerCase()
     let uid = String(VerifyQueryString(query.uid, 0))
-    const data_origin = JSON.parse(readFileSync(basePath + '/assets/tmv1/account_info_n.json'))
+    const data_origin = JSON.parse(readFileSync(basePath + '/../assets/tmv1/account_info_n.json'))
     if (name === '' && uid === '0') {
         return {name: '', uid: '0'}
     }

@@ -11,13 +11,15 @@
     "update_query_id": "node ./apps/scripts/updateQueryIdList.mjs",
     "update_api_path": "node ./apps/scripts/apiPathGenerator.mjs",
     "api": "node ./apps/backend/app.mjs",
+    "devapi": "npx nodemon ./apps/backend/app.mjs",
     "dbapi": "node ./apps/backend/app.mjs dbmode",
-    "model": "sagm -c './src/assets/sagm_config.cjs'",
+    "model": "sagm -c './assets/sagm_config.cjs'",
     "get_account_list": "node ./apps/analytics/getAccountList.mjs",
     "init": "node ./apps/scripts/initTwitterMonitor.mjs"
   },
   "devDependencies": {
     "https-proxy-agent": "^5.0.1",
+    "nodemon": "^2.0.20",
     "sequelize-automate-gm": "^1.0.2"
   },
   "dependencies": {
@@ -28,6 +30,7 @@
     "mysql2": "^2.3.3",
     "sequelize": "^6.21.4",
     "sharp": "^0.30.7",
-    "twemoji-parser": "^14.0.0"
+    "twemoji-parser": "^14.0.0",
+    "twitter-text": "^3.1.0"
   }
 }

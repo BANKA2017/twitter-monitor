@@ -1,4 +1,4 @@
-import { CONFIG_ID, SQL_CONFIG, TRANSLATE_TARGET } from '../../../../src/assets/setting.mjs'
+import { CONFIG_ID, SQL_CONFIG } from '../../../../assets/setting.mjs'
 import { apiTemplate } from '../../../../src/share/Constant.mjs'
 
 //settings
@@ -25,20 +25,19 @@ import { Rss } from '../../../../src/core/Core.Rss.mjs'
 import dbHandle from '../../../../src/core/Core.db.mjs'
 import TmpTwitterData from '../../../../src/model/twitter_monitor/tmp_twitter_data.js'
 import V2ServerInfo from '../../../../src/model/twitter_monitor/v2_server_info.js'
-import { GoogleTranslate } from '../../../../src/core/Core.translate.mjs'
 
 const ApiLocalAccount = async (req, res) => {
     const {data_output} = await getConfigData()
     if (!data_output) {
-        res.status(404).json(apiTemplate(404, 'No Record Found', {}, 'v3'))
+        res.json(apiTemplate(404, 'No Record Found', {}, 'v3'))
     }
     res.json(apiTemplate(200, 'OK', data_output, 'v3'))
 }
 
 const ApiLocalUserInfo = async (req, res) => {
-    const {uid} = await getUid(req.query)
+    const {uid} = await GetUid(req.query)
     if (uid === '0' || !uid) {
-        res.status(404).json(apiTemplate(404, 'No such account', {}, 'v3'))
+        res.json(apiTemplate(404, 'No such account', {}, 'v3'))
         return
     }
     let baseInfo = null
@@ -50,11 +49,11 @@ const ApiLocalUserInfo = async (req, res) => {
             }
         })
     } catch (e) {
-        res.status(500).json(apiTemplate(500, 'Unknown error #GetAccount', {}, 'v3'))
+        res.json(apiTemplate(500, 'Unknown error #GetAccount', {}, 'v3'))
         return
     }
     if (baseInfo === null) {
-        res.status(404).json(apiTemplate(404, 'No such account', {}, 'v3'))
+        res.json(apiTemplate(404, 'No such account', {}, 'v3'))
     } else {
         let tmpData = baseInfo.dataValues
         tmpData.header = tmpData.header.replaceAll(/http:\/\/|https:\/\//gm, '')
@@ -75,9 +74,9 @@ const ApiLocalTweets = async (req, res) => {
         query = {name: req.params[0]}
         isRssMode = true
     }
-    const {uid} = await getUid(query)
+    const {uid} = await GetUid(query)
     if (!queryForStatus && !queryForConversation && (uid === '0' || !uid)) {
-        res.status(404).json(apiTemplate(404, 'No such account', {}, 'v3'))
+        res.json(apiTemplate(404, 'No such account', {}, 'v3'))
         return
     }
     const tweetId = VerifyQueryString(req.query.tweet_id, 0)
@@ -153,7 +152,7 @@ const ApiLocalTweets = async (req, res) => {
                             }
                         })
                     } catch (e) {
-                        res.status(500).json(apiTemplate(500, 'Unknown error #GetTop', {}, 'v3'))
+                        res.json(apiTemplate(500, 'Unknown error #GetTop', {}, 'v3'))
                         return
                     }
                     let topTweet = null
@@ -168,7 +167,7 @@ const ApiLocalTweets = async (req, res) => {
                                 raw: true,
                             })
                         } catch (e) {
-                            res.status(500).json(apiTemplate(500, 'Unknown error #GetTopStatus', {}, 'v3'))
+                            res.json(apiTemplate(500, 'Unknown error #GetTopStatus', {}, 'v3'))
                             return
                         }
                         if (topTweet !== null) {
@@ -190,7 +189,7 @@ const ApiLocalTweets = async (req, res) => {
                 })
             } catch (e) {
                 console.error(e)
-                res.status(500).json(apiTemplate(500, 'Unknown error #GetTweets', {}, 'v3'))
+                res.json(apiTemplate(500, 'Unknown error #GetTweets', {}, 'v3'))
                 return
             }
             
@@ -199,7 +198,7 @@ const ApiLocalTweets = async (req, res) => {
             }
         } else {
             if (tweetId === 0) {
-                res.status(404).json(apiTemplate(404, 'No such conversation', {}, 'v3'))
+                res.json(apiTemplate(404, 'No such conversation', {}, 'v3'))
                 return
             }
             let conversationList = null
@@ -214,7 +213,7 @@ const ApiLocalTweets = async (req, res) => {
                     raw: true,
                 })
             } catch (e) {
-                res.status(500).json(apiTemplate(500, 'Unknown error #GetConversationList', {}, 'v3'))
+                res.json(apiTemplate(500, 'Unknown error #GetConversationList', {}, 'v3'))
                 return
             }
             if (conversationList !== null) {
@@ -233,7 +232,7 @@ const ApiLocalTweets = async (req, res) => {
         }
         
     } else {
-        res.status(404).json(apiTemplate(404, 'No such account', {}, 'v3'))
+        res.json(apiTemplate(404, 'No such account', {}, 'v3'))
     }
 }
 
@@ -281,7 +280,7 @@ const ApiLocalSearch = async (req, res) => {
 
         if (user.length > 0) {
             for (const userItem of user) {
-                const {uid} = await getUid({name: userItem})
+                const {uid} = await GetUid({name: userItem})
                 if (uid !== '0') {
                     if (userAndMode && !userNotMode) {
                         queryArray.push({uid})
@@ -293,7 +292,7 @@ const ApiLocalSearch = async (req, res) => {
                         queryOrArray.push({uid: {[Op.ne]: uid}})
                     }
                 } else if (userAndMode){
-                    res.status(404).json(apiTemplate(404, 'No record found', {}, 'v3'))
+                    res.json(apiTemplate(404, 'No record found', {}, 'v3'))
                     return
                 }
             }
@@ -352,7 +351,7 @@ const ApiLocalSearch = async (req, res) => {
                 raw: true
             })
         } catch (e) {
-            res.status(500).json(apiTemplate(500, 'Unknown error #GetAdvancedSearchTweets', {}, 'v3'))
+            res.json(apiTemplate(500, 'Unknown error #GetAdvancedSearchTweets', {}, 'v3'))
             return
         }
         const tmpTweetData = await getDataFromTweets(tweets || [], count, '0', true, isRssMode)
@@ -373,7 +372,7 @@ const ApiLocalSearch = async (req, res) => {
                 andMode = false
             }
             if (word[0] === '@') {
-                const {uid} = await getUid({name: word.slice(1)})
+                const {uid} = await GetUid({name: word.slice(1)})
                 if (uid !== '0') {
                     if (andMode) {
                         queryArray.push({uid})
@@ -409,7 +408,7 @@ const ApiLocalSearch = async (req, res) => {
                     raw: true
                 })
             } catch (e) {
-                res.status(500).json(apiTemplate(500, 'Unknown error #GetSearchTweets', {}, 'v3'))
+                res.json(apiTemplate(500, 'Unknown error #GetSearchTweets', {}, 'v3'))
                 return
             }
             const tmpTweetData = await getDataFromTweets(tweets || [], count, '0', true, isRssMode)
@@ -426,9 +425,9 @@ const ApiLocalSearch = async (req, res) => {
 }
 
 const ApiLocalChart = async (req, res) => {
-    const {uid} = await getUid(req.query)
+    const {uid} = await GetUid(req.query)
     if (uid === '0' || !uid) {
-        res.status(404).json(apiTemplate(404, 'No such account', {}, 'v3'))
+        res.json(apiTemplate(404, 'No such account', {}, 'v3'))
         return
     }
     //dataset mode
@@ -454,11 +453,11 @@ const ApiLocalChart = async (req, res) => {
             raw: true
         })
     } catch (e) {
-        res.status(500).json(apiTemplate(500, 'Unknown error #GetChartData', [], 'v3'))
+        res.json(apiTemplate(500, 'Unknown error #GetChartData', [], 'v3'))
         return
     }
     if (tmpChartData === null) {
-        res.status(404).json(apiTemplate(404, 'No Record Found', [], 'v3'))
+        res.json(apiTemplate(404, 'No Record Found', [], 'v3'))
         return
     }
     if (datasetMode) {
@@ -471,7 +470,7 @@ const ApiLocalChart = async (req, res) => {
 const ApiLocalStats = async (req, res) => {
     const {data_origin} = await getConfigData()
     if (!data_origin.users || !(Array.isArray(data_origin.users))) {
-        res.status(404).json(apiTemplate(404, 'No config', [], 'v3'))
+        res.json(apiTemplate(404, 'No config', [], 'v3'))
         return
     }
     let tmpStats = null
@@ -482,11 +481,11 @@ const ApiLocalStats = async (req, res) => {
             raw: true
         })
     } catch (e) {
-        res.status(500).json(apiTemplate(500, 'Unknown error #GetStats', [], 'v3'))
+        res.json(apiTemplate(500, 'Unknown error #GetStats', [], 'v3'))
         return
     }
     if (tmpStats === null) {
-        res.status(404).json(apiTemplate(404, 'No stats', [], 'v3'))
+        res.json(apiTemplate(404, 'No stats', [], 'v3'))
         return
     }
     const returnStats = tmpStats.map(tmpPersonStats => {
@@ -509,11 +508,11 @@ const ApiLocalStatus = async (req, res) => {
             raw: true
         })
     } catch (e) {
-        res.status(500).json(apiTemplate(500, 'Unknown error #GetStatus', [], 'v3'))
+        res.json(apiTemplate(500, 'Unknown error #GetStatus', [], 'v3'))
         return
     }
     if (tmpStatus === null) {
-        res.status(404).json(apiTemplate(404, 'No status', [], 'v3'))
+        res.json(apiTemplate(404, 'No status', [], 'v3'))
         return
     }
     if (datasetMode) {
@@ -530,7 +529,7 @@ const ApiLocalTag = async (req, res) => {
     const hash = VerifyQueryString(req.query.hash, '')
 
     if (hash === '') {
-        res.status(404).json(apiTemplate(404, 'No tag', {}, 'v3'))
+        res.json(apiTemplate(404, 'No tag', {}, 'v3'))
         return
     }
 
@@ -553,11 +552,11 @@ const ApiLocalTag = async (req, res) => {
             type: QueryTypes.SELECT
         })
     } catch (e) {
-        res.status(500).json(apiTemplate(500, 'Unknown error #GetTag', [], 'v3'))
+        res.json(apiTemplate(500, 'Unknown error #GetTag', [], 'v3'))
         return
     }
     if (tweets === null) {
-        res.status(404).json(apiTemplate(404, 'No tag', [], 'v3'))
+        res.json(apiTemplate(404, 'No tag', [], 'v3'))
         return
     }
     const tmpTweetData = await getDataFromTweets(tweets, count, '0', true, isRssMode)
@@ -593,7 +592,7 @@ const ApiLocalHashtagRank = async (req, res) => {
             raw: true
         })
     } catch (e) {
-        res.status(500).json(apiTemplate(500, 'Unknown error #GetHashtagRank', {
+        res.json(apiTemplate(500, 'Unknown error #GetHashtagRank', {
             list: [],
             start: startTime,
             end: toTime
@@ -601,7 +600,7 @@ const ApiLocalHashtagRank = async (req, res) => {
         return
     }
     if (hashtagRank === null) {
-        res.status(404).json(apiTemplate(404, 'No hashtag rank list', {
+        res.json(apiTemplate(404, 'No hashtag rank list', {
             list: [],
             start: startTime,
             end: toTime
@@ -771,82 +770,7 @@ const ApiLocalTrends = async (req, res) => {
     }
 }
 
-const ApiLocalTranslate = async (req, res) => {
-    const target = VerifyQueryString(req.query.to, TRANSLATE_TARGET)
-    const cacheText = target.toLowerCase() === TRANSLATE_TARGET.toLowerCase()
-    const tweetId = VerifyQueryString(req.query.tweet_id, 0)
-    const {uid} = await getUid(req.query)
-    const translateType = VerifyQueryString(req.query.tr_type, 'tweets') === 'profile' ? 'profile' : 'tweets'
-    if ((tweetId !== 0 && translateType === 'tweets') || (uid !== '0' && translateType === 'profile')) {
-        let trInfo = null
-        switch (translateType) {
-            case 'tweets':
-                try {
-                    trInfo = await V2TwitterTweets.findOne({
-                        attributes: ["translate", "full_text_origin", "translate_source"],
-                        where: {tweet_id: tweetId},
-                        raw: true
-                    })
-                } catch (e) {
-                    res.status(500).json(apiTemplate(500, 'Unknown error #GetTweetTranslate', [], 'v3'))
-                    return
-                }
-                break
-            case 'profile':
-                try {
-                    trInfo = await V2AccountInfo.findOne({
-                        attributes: [["description", 'full_text_origin']],
-                        where: {uid},
-                        raw: true
-                    })
-                } catch (e) {
-                    res.status(500).json(apiTemplate(500, 'Unknown error #GetProfileTranslate', [], 'v3'))
-                    return
-                }
-                break
-        }
-        if (trInfo === null){
-            res.status(404).json(apiTemplate(404, 'No translate text', {}, 'v3'))
-            return
-        } else if (!trInfo.translate || !cacheText) {
-            trInfo.cache = false
-            trInfo.target = target
-            trInfo.translate_source = 'Google Translate'
-            trInfo.translate = ''
-            if (translateType === 'profile') {
-                trInfo.full_text_origin = trInfo.full_text_origin.replaceAll(/<a[^>]+>([^<]+)<\/a>/gm, "$1")
-            }
-            try {
-                trInfo.translate = await GoogleTranslate(trInfo.full_text_origin.replaceAll(/https:\/\/t.co\/[\w]+/gm, ''), target)
-            } catch (e) {
-                console.error(e)
-                //TODO do nothing
-            }
-            if (trInfo.translate && translateType === 'tweets' && cacheText) {
-                try {
-                    await V2TwitterTweets.update({
-                        translate: trInfo.translate,
-                        translate_source: 'Google Translate',
-                    }, {where: {tweet_id: tweetId}})
-                } catch (e) {
-                    //TODO do nothing
-                }
-            }
-            res.json(apiTemplate(200, 'OK', trInfo, 'v3'))
-        } else if (trInfo.translate && translateType === 'tweets') {
-            trInfo.cache = true
-            trInfo.target = target
-            trInfo.full_text_origin = trInfo.full_text_origin.replaceAll(/https:\/\/t.co\/[\w]+/gm, '')
-            res.json(apiTemplate(200, 'OK', trInfo, 'v3'))
-        } else {
-            res.status(404).json(apiTemplate(404, 'No translate text', {}, 'v3'))
-        }
-    } else {
-        res.status(404).json(apiTemplate(404, 'No translate text', {}, 'v3'))
-    }
-}
-
-const getUid = async (query) => {
+const GetUid = async (query) => {
     let name = VerifyQueryString(query.name, '')
     let uid = String(VerifyQueryString(query.uid, 0))
     const {data_origin} = await getConfigData()
@@ -1101,4 +1025,4 @@ const getDataFromTweets = async (tweets = [], count = 0, top = '0', historyMode 
     }
 }
 
-export {ApiLocalAccount, ApiLocalUserInfo, ApiLocalTweets, ApiLocalSearch, ApiLocalChart, ApiLocalStats, ApiLocalStatus, ApiLocalTag, ApiLocalHashtagRank, ApiLocalTrends, ApiLocalTranslate}
+export {ApiLocalAccount, ApiLocalUserInfo, ApiLocalTweets, ApiLocalSearch, ApiLocalChart, ApiLocalStats, ApiLocalStatus, ApiLocalTag, ApiLocalHashtagRank, ApiLocalTrends, GetUid}

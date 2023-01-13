@@ -1,16 +1,21 @@
 import express from 'express'
-import { ACTIVE_SERVICE, EXPRESS_ALLOW_ORIGIN, EXPRESS_PORT, STATIC_PATH } from '../../src/assets/setting.mjs'
+import { ACTIVE_SERVICE, EXPRESS_ALLOW_ORIGIN, EXPRESS_PORT, STATIC_PATH } from '../../assets/setting.mjs'
 import { GuestToken } from '../../src/core/Core.function.mjs'
 import { apiTemplate, basePath } from '../../src/share/Constant.mjs'
+import { LanguageIdentification } from '../../packages/fasttext/language.mjs'
 //Online api
 import { MediaProxy } from './CoreFunctions/media/MediaProxy.mjs'
 import online from './service/online.mjs'
 import album from './service/album.mjs'
+import translate from './service/translate.mjs'
 //import bot from './service/bot.mjs'
 
 const app = express()
 const media = express()
 const port = EXPRESS_PORT
+
+app.use(express.urlencoded({extended: false}))
+app.use(express.json())
 
 global.dbmode = (process.argv[2] || '') === 'dbmode'
 
@@ -34,6 +39,9 @@ if (ACTIVE_SERVICE.includes('twitter_monitor')) {
     app.use('/api/v3', local)
 }
 
+//translate api
+app.use('/translate', translate)
+
 //proxy api
 app.use('/online/api/v3', online)
 app.use('/album', album)
@@ -55,6 +63,10 @@ if (!global.dbmode) {
     await global.guest_token.updateGuestToken(0)
     await global.guest_token2.updateGuestToken(1)
 }
+
+//LanguageIdentification
+global.LanguageIdentification = new LanguageIdentification
+console.log('tmv3: Enabled language identification service')
 
 //media proxy
 media.use('/cache', express.static(basePath + '/../apps/backend/cache', {

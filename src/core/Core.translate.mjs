@@ -1,43 +1,147 @@
-import axios from "axios"
-import HttpsProxyAgent from "https-proxy-agent"
-import { PROXY_CONFIG, TRANSLATE_TARGET } from "../assets/setting.mjs"
+//Translator
 
+import { GoogleTranslate } from "../../packages/translator/src/google.mjs"
+import { MicrosoftTranslator } from "../../packages/translator/src/microsoft.mjs"
+import { SogouTranslator } from "../../packages/translator/src/sogou.mjs"
+import { YandexTranslator } from "../../packages/translator/src/yandex.mjs"
+import { TRANSLATE_TARGET, TRANSLATOR_PLATFORM } from "../../assets/setting.mjs"
+import { GetEntitiesFromText } from "./Core.function.mjs"
+import { BaiduTranslator } from "../../packages/translator/src/baidu.mjs"
 
-let axoisConfig = {
-    proxy: false,
-    headers: {
-        'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
-    }
+const translatorPlatform = {
+    google: 'Google Translate',
+    microsoft: 'Microsoft Translator',
+    yandex: 'Yandex Translate',
+    sogou: '搜狗翻译',
+    baidu: '百度翻译',
 }
 
-if (PROXY_CONFIG) {
-    axoisConfig.httpsAgent = new HttpsProxyAgent(PROXY_CONFIG)
+const notSupportedEntities = ['baidu']
+
+const isChs = (lang = 'zh') => /^zh(?:_|\-)(?:cn|sg|my|chs)|zh|chs$/.test(target.toLowerCase())
+const isCht = (lang = 'zh_tw') => /^zh(?:_|\-)(?:tw|hk|mo|cht)|cht$/.test(target.toLowerCase())
+
+const targetLanguagePrefix = (target = 'en', platform = 'google') => {
+    switch (platform) {
+        //google is not necessary
+        //case 'google':
+        //    break
+        case 'microsoft':
+            if (isChs) {
+                target = 'zh-Hans'
+            } else if (isCht) {
+                target = 'zh-Hant'
+            }
+            break
+        case 'yandex':
+            //for Chinese
+            if (/^zh(_|\-|$)/.test(target.toLowerCase())) {
+                target = 'zh'
+            }
+            break
+        case 'sogou':
+            //for Chinese //NOT SUPPORTED CHT 
+            if (/^zh(_|\-|$)/.test(target.toLowerCase())) {
+                target = 'zh-CHS'
+            }
+            break
+        case 'baidu':
+            if (isChs) {
+                target = 'zh'
+            } else if (isCht) {
+                target = 'cht'
+            } else if (target.toLowerCase() === 'ja') {
+                target = 'jp'
+            } else if (target.toLowerCase() === 'ko') {
+                target === 'kor'
+            }
+            break
+
+    }
+    return target
 }
 
-const axiosFetch = axios.create(axoisConfig)
-
-//TODO other source
-
-const GoogleTranslate = async (text = '', target = TRANSLATE_TARGET) => {
-    if(text === '') {
-        return ''
+const Translate = async (trInfo = null, target = TRANSLATE_TARGET, platform = TRANSLATOR_PLATFORM) => {
+    if (!trInfo) {
+        trInfo = { full_text: "", cache: false, target, translate_source: "Twitter Monitor Translator", translate: "", entities: []}
     }
-    const query = new URLSearchParams({"client": "webapp", "sl": "auto", "tl": target, "hl": target, "dt": "t", "clearbtn": 1, "otf": 1, "pc": 1, "ssel": 0, "tsel": 0, "kc": 2, "tk": "", "q": text})
-    return await new Promise((resolve, reject) => {
-        axiosFetch.get('https://translate.google.com/translate_a/single?' + query, {
-            headers: {
-                referer: 'https://translate.google.com/',
-                authority: 'translate.google.com'
-            }
-        }).then(response => {
-            if (response.data && Array.isArray(response.data[0])) {
-                resolve(response.data[0].filter(translate => translate).map(translate => translate[0]).join(''))
-            }
-            reject(response.data)
-        }).catch(e => {
-            reject(e)
+    platform = platform.toLowerCase()
+    if (!translatorPlatform[platform]) {
+        return {message: 'Not supported Platform', content: trInfo}
+    }
+
+
+    let entitiesList = GetEntitiesFromText(trInfo.full_text, 'tweets')
+    let text = entitiesList.originText
+    if (!notSupportedEntities.includes(platform)) {
+        entitiesList.entities.forEach((entity, index) => {
+            text = text.replace(RegExp(`(^|\\s|\\p{P}|\\p{S})${['hashtag', 'symbol'].includes(entity.type) ? (entity.type === 'hashtag' ? '#' : '$') + entity.text : entity.text}($|\\s|\\p{P}|\\p{S})`, 'gmu'), ((platform, index) => {
+                switch (platform) {
+                    case 'yandex':
+                        //same as google//<a><i><span>
+                    case 'google':
+                        return `$1<a id=${index}><></a>$2`
+                    case 'microsoft':
+                        return `$1<b${index}></b${index}>$2`
+                    case 'sogou':
+                        return `$1#${index}#$2`
+                }
+            })(platform, index) )
         })
-    })
+    }
+    
+    trInfo.cache = false
+    trInfo.target = target
+    trInfo.translate_source = translatorPlatform[platform]
+    trInfo.translate = ''
+    try {
+        let tmpTranslate = ''
+        switch (platform) {
+            case 'google':
+                tmpTranslate = (await GoogleTranslate(text.split("\n"), targetLanguagePrefix(target, platform), 1)).map(x => x[0]).join("\n")
+                break
+            case 'microsoft':
+                tmpTranslate = (await MicrosoftTranslator(text.split("\n"), targetLanguagePrefix(target, platform), 1)).map(x => x.translations[0].text).join("\n")
+                break
+            case 'sogou':
+                tmpTranslate = (await SogouTranslator(text.split("\n"), targetLanguagePrefix(target, platform), 1)).data.trans_result.map(x => x.trans_text).join("\n") || ''
+                break
+            case 'yandex':
+                tmpTranslate = (await YandexTranslator(text.split("\n"), targetLanguagePrefix(target, platform), 1)).text.join("\n")
+                break
+            case 'baidu':
+                tmpTranslate = (await BaiduTranslator(text, targetLanguagePrefix(target, platform), 1)).trans_result.data.map(x => x.dst).join("\n")
+        }
+        
+        //TODO fix link
+        if (!notSupportedEntities.includes(platform)) {
+            for (const index in entitiesList.entities) {
+                tmpTranslate = tmpTranslate.replace(RegExp(((platform, index) => {
+                    switch (platform) {
+                        case 'google':
+                            return `<a id=${index}>(?:&lt;&gt;|<>)<\/a>`
+                        case 'microsoft':
+                            return `<b${index}><\/b${index}>`
+                        case 'sogou':
+                            return `#(?:\s|)${index}(?:\s|)#`
+                        case 'yandex':
+                            return `<a id="${index}">(?:&lt;&gt;|<>)<\/a>`
+                    }
+                })(platform, index), 'gmu'), `<a href="${entitiesList.entities[index].expanded_url ? entitiesList.entities[index].expanded_url : '.'}" id="url">${['hashtag', 'symbol'].includes(entitiesList.entities[index].type) ? (entitiesList.entities[index].type === 'hashtag' ? '#' : '$') + entitiesList.entities[index].text : entitiesList.entities[index].text}</a>`)
+            }
+            entitiesList = GetEntitiesFromText(tmpTranslate, 'tweets')
+            trInfo.translate = entitiesList.originText
+            trInfo.entities = entitiesList.entities
+        } else {
+            trInfo.translate = tmpTranslate
+            trInfo.entities = []
+        }
+        
+        return {message: null, content: trInfo}
+    } catch (e) {
+        console.error(e)
+        return {message: 'Unable to get translate content', content: trInfo}
+    }
 }
 
-export {GoogleTranslate}
+export { Translate }

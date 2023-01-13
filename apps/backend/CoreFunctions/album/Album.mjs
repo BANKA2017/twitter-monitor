@@ -40,7 +40,7 @@ const AlbumSearch = async (req, res) => {
     }
     let {tweetsInfo, tweetsContent} = GenerateData(tweets, isPhotos)
     if (tweetsInfo.errors.code !== 0) {
-        res.status(404).json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message, {}, 'album'))
+        res.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message, {}, 'album'))
         return
     }
     tweetsContent = tweetsContent.map(content => ({

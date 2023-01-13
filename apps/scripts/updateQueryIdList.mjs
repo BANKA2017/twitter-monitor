@@ -1,5 +1,5 @@
 import axios from "axios"
-import { PROXY_CONFIG } from '../../src/assets/setting.mjs'
+import { PROXY_CONFIG } from '../../assets/setting.mjs'
 import HttpsProxyAgent from "https-proxy-agent"
 import { writeFileSync } from "fs"
 import { basePath } from "../../src/share/Constant.mjs"
@@ -32,7 +32,7 @@ axiosFetch.get("https://twitter.com/").then(response => {
                         tmpFeature = tmpData.metadata.featureSwitches[0]
                     }
                 }
-                writeFileSync(basePath + '/assets/graphqlQueryIdList.json', JSON.stringify(queryIdList, null, 4))
+                writeFileSync(basePath + '/../assets/graphqlQueryIdList.json', JSON.stringify(queryIdList, null, 4))
                 console.log(`tmv3: graphqlQueryIdList success`)
 
                 const patternForFeatures = /=Object\.freeze\(([\w:!,"{}]+)\)/gm
@@ -41,7 +41,7 @@ axiosFetch.get("https://twitter.com/").then(response => {
                         patternForFeatures.lastIndex++;
                     }
                     if (RegExp(tmpFeature).test(match[1])) {
-                        writeFileSync(basePath + '/assets/featuresValueList.json', JSON.stringify(Function(`return ${match[1]}`)(), null, 4))
+                        writeFileSync(basePath + '/../assets/featuresValueList.json', JSON.stringify(Function(`return ${match[1]}`)(), null, 4))
                         console.log(`tmv3: featuresValueList success`)
                         break
                     }

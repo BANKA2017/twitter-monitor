@@ -1,5 +1,5 @@
 import { writeFileSync } from 'node:fs'
-import { CONFIG_ID } from '../assets/setting.mjs'
+import { CONFIG_ID } from '../../assets/setting.mjs'
 import V2Config from '../model/twitter_monitor/v2_config.js'
 import {createHash} from 'crypto'
 import { basePath } from './Constant.mjs'
@@ -7,7 +7,7 @@ import { basePath } from './Constant.mjs'
 const ConfigFile = async (config, accountList, force = false) => {
     const stringConfig = JSON.stringify(config)
     //save config.json to local path
-    writeFileSync(basePath + '/assets/config.json', stringConfig)
+    writeFileSync(basePath + '/../assets/config.json', stringConfig)
 
     // get config from database
     let dbMD5 = await V2Config.findOne({

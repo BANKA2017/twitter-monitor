@@ -46,7 +46,7 @@ const ApiTweets = async (req, res) => {
     //} 
     else {
         if (name === '') {
-            res.status(404).json(apiTemplate(404, 'No such account'))
+            res.json(apiTemplate(404, 'No such account'))
             return
         }
         queryArray.push('-filter:replies')
@@ -91,7 +91,7 @@ const ApiTweets = async (req, res) => {
 
     const {tweetsInfo, tweetsContent} = GenerateData(tweets, isConversation, (loadConversation ? '' : name))
     if (tweetsInfo.errors.code !== 0) {
-        res.status(404).json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
+        res.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
         return
     }
     res.json(apiTemplate(200, 'OK', {
@@ -117,13 +117,13 @@ const ApiSearch = async (req, res) => {
     const queryArray = []
     if (type === 'hashtag') {
         if (!VerifyQueryString(req.query.hash, false)) {
-            res.status(403).json(apiTemplate())
+            res.json(apiTemplate())
             return
         }
         queryArray.push(`#${req.query.hash}`)
     } else if (type === 'cashtag') {
         if (!VerifyQueryString(req.query.hash, false)) {
-            res.status(403).json(apiTemplate())
+            res.json(apiTemplate())
             return
         }
         queryArray.push(`$${req.query.hash}`)
@@ -184,7 +184,7 @@ const ApiSearch = async (req, res) => {
     
     const {tweetsInfo, tweetsContent} = GenerateData(tweets)
     if (tweetsInfo.errors.code !== 0) {
-        res.status(404).json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
+        res.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
         return
     }
     res.json(apiTemplate(200, 'OK', {
@@ -300,10 +300,10 @@ const ApiMedia = async (req, res) => {
         global.guest_token2.updateRateLimit('TweetDetail')
         const tweetsInfo = TweetsInfo(response.data, true)
         if (tweetsInfo.errors.code !== 0) {
-            res.status(404).json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
+            res.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
             return
         } else if (!tweetsInfo.contents.some(tweet => path2array('tweet_id', tweet) === tweet_id)) {
-            res.status(404).json(apiTemplate(404, 'No such tweet'))
+            res.json(apiTemplate(404, 'No such tweet'))
             return
         } else {
             const tweetData = Tweet(tweetsInfo.contents.filter(tweet => path2array('tweet_id', tweet) === tweet_id)[0], {}, [], {}, true, false, true)
@@ -326,11 +326,13 @@ const ApiMedia = async (req, res) => {
     })
 }
 
-const TweetsData = (content = {}, users = {}, contents = [], precheckName = '', graphqlMode = true) => {
+const TweetsData = (content = {}, users = {}, contents = [], precheckName = '', graphqlMode = true, isConversation = false) => {
     let exportTweet = Tweet(content, users, contents, {}, graphqlMode, false, true)
     exportTweet.GeneralTweetData.favorite_count = exportTweet.interactiveData.favorite_count
     exportTweet.GeneralTweetData.retweet_count = exportTweet.interactiveData.retweet_count
     exportTweet.GeneralTweetData.quote_count = exportTweet.interactiveData.quote_count
+    exportTweet.GeneralTweetData.reply_count = exportTweet.interactiveData.reply_count
+    exportTweet.GeneralTweetData.view_count = exportTweet.interactiveData.view_count//TODO only supported graphql now
     //rtl
     exportTweet.GeneralTweetData.rtl = exportTweet.isRtl
     // display text range
@@ -340,7 +342,7 @@ const TweetsData = (content = {}, users = {}, contents = [], precheckName = '', 
         exportTweet.GeneralTweetData.vibe = exportTweet.vibe
     }
     //check poster
-    if (precheckName === '' || precheckName.toLocaleLowerCase() === exportTweet.GeneralTweetData.name.toLocaleLowerCase()) {
+    if (isConversation || precheckName === '' || precheckName.toLocaleLowerCase() === exportTweet.GeneralTweetData.name.toLocaleLowerCase()) {
         return {
             code: 200,
             userInfo: exportTweet.userInfo,
@@ -435,15 +437,28 @@ const GenerateData = (tweets, isConversation = false, filterName = '') => {
         return {tweetsInfo: tweetsInfo, tweetsContent: []}
     }
     const tweetsContent = tweetsInfo.contents.map(content => {
-        let tmpData = TweetsData(content, tweetsInfo.users, tweetsInfo.contents, filterName, isConversation)
+        if (isConversation && content?.content?.displayType === 'VerticalConversation') {
+            return content.content.items.map(item => {
+                let tmpData = TweetsData(item, tweetsInfo.users, tweetsInfo.contents, filterName, isConversation, isConversation)
         
-        if (tmpData.code === 200 && Object.keys(tmpData.data).length) {
-            tmpData.data.user_info = tmpData.userInfo
-            tmpData.data.retweet_user_info = tmpData.retweetUserInfo
-            return tmpData.data
-        }
+                if (tmpData.code === 200 && Object.keys(tmpData.data).length) {
+                    tmpData.data.user_info = tmpData.userInfo
+                    tmpData.data.retweet_user_info = tmpData.retweetUserInfo
+                    return tmpData.data
+                }
+                return false
+            })
+        } else {
+            let tmpData = TweetsData(content, tweetsInfo.users, tweetsInfo.contents, filterName, isConversation, isConversation)
+        
+            if (tmpData.code === 200 && Object.keys(tmpData.data).length) {
+                tmpData.data.user_info = tmpData.userInfo
+                tmpData.data.retweet_user_info = tmpData.retweetUserInfo
+                return tmpData.data
+            }
+        }   
         return false
-    }).filter(tweet => tweet).sort((a, b) => b.tweet_id - a.tweet_id)
+    }).flat().filter(tweet => tweet?.tweet_id).sort((a, b) => b.tweet_id - a.tweet_id)
 
     return {tweetsInfo, tweetsContent}
 }

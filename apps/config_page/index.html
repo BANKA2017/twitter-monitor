@@ -9,27 +9,33 @@
         <title>Twitter Monitor Config</title>
         <!-- CSS only -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
-        <!-- JS -->
-        <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/js/bootstrap.min.js" integrity="sha384-oesi62hOLfzrys4LxRF63OJCXdXDipiYWBnvTl9Y9/TRlw5xlKIEHpNyvvDShgf/" crossorigin="anonymous"></script>
     </head>
     <body>
         <div id="app">
-            <nav class="navbar navbar-expand-lg navbar-light text-center bg-light">
+            <nav class="navbar navbar-expand-lg navbar-light text-center bg-light " style="display: flex; justify-content: space-between;">
                 <span class="navbar-brand mb-0 h1">Twitter Monitor</span>
+                <div class="btn-group" role="group">
+                    <button :class="{btn: true, 'btn-sm': true, 'btn-primary': lang === 'zh', 'btn-outline-primary': lang !== 'zh'}" type="button" @click="lang='zh'">
+                      中
+                    </button>
+                    <button :class="{btn: true, 'btn-sm': true, 'btn-primary': lang === 'en', 'btn-outline-primary': lang !== 'en'}" type="button" @click="lang='en'">
+                      En
+                    </button>
+                  </div>
             </nav>
             <div class="my-4"></div>
             <div class="container">
                 <div class="row">
                     <div class="col-md-8">
-                        <h4>创建配置文件 Config.json</h4>
+                        <h4>{{getI18n('createConfigFile')}}</h4>
                         <nav>
                             <div class="nav nav-tabs" id="nav-tab" role="tablist">
-                                <a class="nav-item nav-link active" id="config-user-tab" data-toggle="tab" href="#config-user" role="tab" aria-controls="config-user" aria-selected="true">帐号 <span class="badge badge-light">{{ realUserListLength + '/' + config.users.length }}</span></a>
-                                <a class="nav-item nav-link" id="config-url-tab" data-toggle="tab" href="#config-url" role="tab" aria-controls="config-url" aria-selected="false">链接 <span class="badge badge-light">{{ config.links.length }}</span></a>
+                                <span :class="{'nav-item': true, 'nav-link': true, active: activeTab === 'user'}" style="cursor: pointer;" @click="activeTab = 'user'" id="config-user-tab" data-toggle="tab" role="tab" aria-controls="config-user" aria-selected="true">{{getI18n('account')}} <span class="badge badge-light">{{ realUserListLength + '/' + config.users.length }}</span></span>
+                                <span :class="{'nav-item': true, 'nav-link': true, active: activeTab === 'url'}" style="cursor: pointer;" @click="activeTab = 'url'" id="config-url-tab" data-toggle="tab" role="tab" aria-controls="config-url" aria-selected="false">{{getI18n('link')}} <span class="badge badge-light">{{ config.links.length }}</span></span>
                             </div>
                         </nav>
                         <div class="tab-content" id="nav-tabContent">
-                            <div class="tab-pane fade show active" id="config-user" role="tabpanel" aria-labelledby="config-user-tab">
+                            <div :class="{'tab-pane': true, fade: true, show: activeTab === 'user', active: activeTab === 'user'}" id="config-user" role="tabpanel" aria-labelledby="config-user-tab">
                                 <template id="nameList">
                                     <div class="my-4"></div>
                                     <template v-for="(info, index) in userList">
@@ -39,59 +45,62 @@
                                     <div class="my-4"></div>
                                 </template>
                                 <div v-for="(user, s) in config.users" :id="`item` + s">
-                                    <div class="form-group">
-                                        <label :for="`user`+s+`name`" :style="user.name ? '' : 'color: orange'">id</label>
-                                        <input type="text" class="form-control" aria-describedby="idHelp" v-model="config.users[s].name" :value="user.name" :id="`user`+s+`name`">
-                                        <small id="idHelp" class="form-text text-muted">Twitter帐号id</small>
+                                    <div style="position: sticky; top: 0; background-color: white; padding: 1em 0; z-index: 9999; display: flex; justify-content: space-between;">
+                                        <span style="font-size: large; font-weight: 700;">{{user.display_name}}</span>
+                                        <sapn style="font-size: small; font-weight: 500;">{{user.name ? '@' + user.name : ''}}</span>
                                     </div>
                                     <div class="form-group">
-                                        <label :for="`user`+s+`display_name`" :style="(!user.display_name && !user.name) ? 'color: red' : ''">备注</label>
+                                        <label :for="`user`+s+`name`" :style="user.name ? '' : 'color: orange'">{{getI18n('id')}}</label>
+                                        <input type="text" class="form-control" aria-describedby="idHelp" v-model="config.users[s].name" :value="user.name" :id="`user`+s+`name`">
+                                        <small id="idHelp" class="form-text text-muted">{{getI18n('twitterScreenName')}}</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label :for="`user`+s+`display_name`" :style="(!user.display_name && !user.name) ? 'color: red' : ''">{{getI18n('displayName')}}</label>
                                         <input type="text" class="form-control" aria-describedby="display_nameHelp" v-model="config.users[s].display_name" :value="user.display_name" :id="`user`+s+`display_name`">
-                                        <small id="display_nameHelp" class="form-text text-muted">留空则使用帐号名称</small>
+                                        <small id="display_nameHelp" class="form-text text-muted">{{getI18n('keepEmptyToUseAccountName')}}</small>
                                     </div>
                                     <div class="form-group" v-if="user.uid">
-                                        <label :for="`user`+s+`uid`">UID</label>
+                                        <label :for="`user`+s+`uid`">{{getI18n('uid')}}</label>
                                         <input type="text" class="form-control" aria-describedby="uidHelp" v-model="config.users[s].uid" :value="user.uid" :id="`user`+s+`uid`">
-                                        <small id="uidHelp" class="form-text text-muted">Twitter帐号uid，无需理会</small>
+                                        <small id="uidHelp" class="form-text text-muted">{{getI18n('twitterUid')}}</small>
                                     </div>
                                     <div v-if="user.projects.length">
                                         <template v-for="(project, ss) in config.users[s].projects">
                                             <div class="input-group">
-                                                <input type="text" class="form-control" v-model="config.users[s].projects[ss][0]" value="project[0]" placeholder="一级目录">
+                                                <input type="text" class="form-control" v-model="config.users[s].projects[ss][0]" value="project[0]" :placeholder="getI18n('firstPath')">
                                                 <div class="input-group-append" :id="`project`+ss">
                                                     <span class="input-group-text">-></span>
                                                 </div>
-                                                <input type="text" class="form-control input-group-append" v-model="config.users[s].projects[ss][1]" value="project[1]" placeholder="二级目录">
+                                                <input type="text" class="form-control input-group-append" v-model="config.users[s].projects[ss][1]" value="project[1]" :placeholder="getI18n('secondPath')">
                                                 <div class="input-group-append" :id="`project`+ss">
-                                                    <button class="btn btn-outline-danger" @click="action('del', 'project', s, ss)" type="button">删除</button>
+                                                    <button class="btn btn-outline-danger" @click="action('del', 'project', s, ss)" type="button">{{getI18n('delete')}}</button>
                                                 </div>
                                             </div>
                                             <div class="my-4"></div>
                                         </template>
-                                        
-                                        <small id="projectHelp" class="form-text text-muted">两格从左到右分别是 <code>一级目录 -> 二级目录</code></small>
                                     </div>
-                                    <template v-for="(checkInfo, checkType) in {hidden: '隐藏此帐号', deleted: '帐号已删除', locked: '推文已被保护', organization: '机构帐号', not_analytics: '不统计数据', nsfw: 'NSFW'}">
-                                        <div class="form-group form-check">
+                                    
+                                    <template v-for="(checkInfo, checkType) in {hidden: getI18n('hideAccount'), deleted: getI18n('deletedAccount'), locked: getI18n('protectedAccount'), organization: getI18n('organizationAccount'), not_analytics: getI18n('notForAnalytic'), nsfw: getI18n('nsfw')}">
+                                        <div class="form-check mb-2">
                                             <input type="checkbox" class="form-check-input" :id="`user`+s+checkType" v-model="config.users[s][checkType]">
                                             <label class="form-check-label" :for="`user`+s+checkType">{{ checkInfo }}</label>
                                         </div>
                                     </template>
-                                    <button class="btn btn-primary mx-1" @click="action('add', 'project', s)">添加目录</button>
-                                    <button :class="`btn btn-primary mx-1`+((!user.display_name && !user.name) ? ' disabled' : '')" @click="(!user.display_name && !user.name) ? '' : action('add', 'users', s)">新增帐号</button>
-                                    <button class="btn btn-outline-danger mx-1" @click="action('del', 'users', s)" v-if="config.users.length > 1">删除帐号</button>
+                                    <button class="btn btn-primary mx-1" @click="action('add', 'project', s)">{{getI18n('addPath')}}</button>
+                                    <button :class="`btn btn-primary mx-1`+((!user.display_name && !user.name) ? ' disabled' : '')" @click="(!user.display_name && !user.name) ? '' : action('add', 'users', s)">{{getI18n('addAccount')}}</button>
+                                    <button class="btn btn-outline-danger mx-1" @click="action('del', 'users', s)" v-if="config.users.length > 1">{{getI18n('deleteAccount')}}</button>
                                     
                                     <hr class="my-4">
                                 </div>
                             </div>
-                            <div class="tab-pane fade" id="config-url" role="tabpanel" aria-labelledby="config-url-tab">
+                            <div :class="{'tab-pane': true, fade: true, show: activeTab === 'url', active: activeTab === 'url'}" id="config-url" role="tabpanel" aria-labelledby="config-url-tab">
                                 <div v-for="(url, s) in config.links">
                                     <div class="form-group">
-                                        <label :for="`url`+s+`url`">url <small class="text-muted" v-if="!(/(http|https|ftp):\/\/[^\.]+\..*/gm.test(url.url))">若没有协议，则会使用 <code>&lt;router-link&gt;</code> 处理</small></label>
+                                        <label :for="`url`+s+`url`">url <small class="text-muted" v-if="!(/(http|https|ftp):\/\/[^\.]+\..*/gm.test(url.url))"><span v-html="getI18n('useRouterLink')"></span></small></label>
                                         <input type="text" class="form-control" v-model="config.links[s].url" :value="url.url" :id="`url`+s+`url`">
                                     </div>
                                     <div class="form-group">
-                                        <label :for="`url`+s+`display`">别名</label>
+                                        <label :for="`url`+s+`display`">{{getI18n('alias')}}</label>
                                         <input type="text" class="form-control" v-model="config.links[s].display" :value="url.display" :id="`url`+s+`display`">
                                     </div>
                                     <!--<div class="form-group">-->
@@ -100,12 +109,12 @@
                                             <!--<option :value="badgeClass[0]" v-for="badgeClass in [['primary', 'Primary'], ['secondary', 'Secondary'], ['success', 'Success'], ['danger', 'Danger'], ['warning', 'Warning'],  ['info', 'Info'], ['light', 'Light'], ['dark', 'Dark']]">{{ badgeClass[1] }}</option>-->
                                         <!--</select>-->
                                     <!--</div>-->
-                                    <button :class="`btn btn-primary`+(/(http|https|ftp):\/\/[^\.]+\..*/gm.test(url.url) ? '' : ' disabled')" @click="/(http|https|ftp):\/\/[^\.]+\..*/gm.test(url.url) ? action('add', 'links', config.links.length) : ''" v-if="s+1==config.links.length">增加</button> <button class="btn btn-outline-danger" @click="action('del', 'links', s)">删除</button>
+                                    <button :class="`btn btn-primary`+(/(http|https|ftp):\/\/[^\.]+\..*/gm.test(url.url) ? '' : ' disabled')" @click="/(http|https|ftp):\/\/[^\.]+\..*/gm.test(url.url) ? action('add', 'links', config.links.length) : ''" v-if="s+1==config.links.length">{{getI18n('add')}}</button> <button class="btn btn-outline-danger" @click="action('del', 'links', s)">{{getI18n('delete')}}</button>
                                     <hr class="my-4">
                                 </div>
                                 <template v-if="config.links.length===0">
                                     <div class="my-4"></div>
-                                    <button class="btn btn-primary" @click="action('add', 'links')">增加</button>
+                                    <button class="btn btn-primary" @click="action('add', 'links')">{{getI18n('add')}}</button>
                                 </template>
                             </div>
                         </div>
@@ -113,13 +122,13 @@
                     <div class="col-md-4" >
                         <div style="position: sticky; top: 1.5rem;">
                             <!--生成的数据-->
-                            <label for="uploadFile">导入配置文件</label>
+                            <label for="uploadFile">{{getI18n('importFromFile')}}</label>
                             <div class="custom-file">
                                 <input type="file" class="custom-file-input" id="uploadFile" lang="zh" @change="jsonFileChange" accept="application/json">
                                 <label class="custom-file-label" for="uploadFile">config.json</label>
                             </div>
                             <div class="my-4"></div>
-                            <button class="btn btn-primary btn-block" @click="download('config.json', JSON.stringify(config))">下载配置</button>
+                            <button class="btn btn-primary btn-block" @click="download('config.json', JSON.stringify(config))">{{getI18n('downloadConfig')}}</button>
                             <div class="my-4"></div>
                             <div class="input-group">
                                 <textarea class="form-control" :value="textareaData" rows="10" v-model="textareaData"></textarea>
@@ -145,6 +154,8 @@
             new Vue({
                 el: "#app",
                 data: {
+                    activeTab: 'user',//user url
+                    lang: window.navigator.language.startsWith('zh') ? 'zh' : 'en',
                     config: {
                         users: [
                             {
@@ -195,6 +206,66 @@
                         style: false,
                     },
                     projects: [],
+                    i18n: {
+                        zh: {
+                            createConfigFile: "创建配置文件 Config.json",
+                            account: "帐号",
+                            link: "链接",
+                            id: "id",
+                            twitterScreenName: "Twitter帐号id",
+                            displayName: "显示名称",
+                            keepEmptyToUseAccountName: "留空则使用帐号名称",
+                            uid: "UID",
+                            twitterUid: "Twitter帐号uid，无需理会",
+                            firstPath: "一级目录",
+                            secondPath: "二级目录",
+                            add: "增加",
+                            delete: "删除",
+                            hideAccount: "隐藏帐号",
+                            deletedAccount: "帐号已删除",
+                            protectedAccount: "推文已被保护",
+                            organizationAccount: "机构帐号",
+                            notForAnalytic: "不统计数据",
+                            nsfw: "NSFW",
+                            addPath: "添加目录",
+                            addAccount: "新增帐号",
+                            deleteAccount: "删除帐号",
+                            alias: "别名",
+                            importFromFile: "导入配置文件",
+                            downloadConfig: "下载配置",
+                            type: "类型",
+                            useRouterLink: "使用 <code>&lt;router-link&gt;</code>"
+                        },
+                        en: {
+                            createConfigFile: "create Config.json",
+                            account: "Account",
+                            link: "Link",
+                            id: "id",
+                            twitterScreenName: "Twitter screen name",
+                            displayName: "Display name",
+                            keepEmptyToUseAccountName: "Keep empty to use account name",
+                            uid: "UID",
+                            twitterUid: "Twitter uid, added by crawler",
+                            firstPath: "First path",
+                            secondPath: "Second path",
+                            add: "Add",
+                            delete: "Delete",
+                            hideAccount: "Hidden account",
+                            deletedAccount: "Deleted account",
+                            protectedAccount: "Protected Account",
+                            organizationAccount: "Organization account",
+                            notForAnalytic: "Not for analytic",
+                            nsfw: "NSFW",
+                            addPath: "Add path",
+                            addAccount: "Add account",
+                            deleteAccount: "Delete account",
+                            alias: "Alias",
+                            importFromFile: "Import config from file",
+                            downloadConfig: "Download",
+                            type: "Type",
+                            useRouterLink: "Use <code>&lt;router-link&gt;</code>"
+                        }
+                    }
                 },
                 computed: {
                     userList: function () {
@@ -293,6 +364,13 @@
                         localStorage.setItem('twitter_monitor_config', JSON.stringify(this.config));
                         setTimeout(() => {this.autoSave()}, 30000);//每30秒保存
                     },
+                    getI18n: function (key = '') {
+                        if (this.i18n[this.lang][key]) {
+                            return this.i18n[this.lang][key]
+                        } else {
+                            return ''
+                        }
+                    }
                 }
             })
         </script>
