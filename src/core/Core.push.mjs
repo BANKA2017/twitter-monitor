@@ -3,6 +3,7 @@ import {ALERT_TOKEN, ALERT_PUSH_TO} from '../../assets/setting.mjs'
 import { PROXY_CONFIG } from '../../assets/setting.mjs'
 import HttpsProxyAgent from "https-proxy-agent"
 let axoisConfig = {
+    timeout: 30000,//TODO check timeout
     proxy: false,
 }
 

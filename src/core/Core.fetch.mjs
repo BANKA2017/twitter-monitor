@@ -18,6 +18,7 @@ const Authorization = [TW_AUTHORIZATION, TW_AUTHORIZATION2]
 const ct0 = generateCsrfToken()
 
 let axoisConfig = {
+  timeout: 30000,//TODO check timeout
   proxy: false,
   headers: {
     authorization: TW_AUTHORIZATION,
@@ -328,7 +329,7 @@ const getTweets = async (queryString = '', cursor = '', guest_token = {}, count 
       tmpQueryObject['cursor'] = cursor
     }
     return await new Promise((resolve, reject) => {
-      coreFetch("https://twitter.com/i/api/2/search/adaptive.json?" + (new URLSearchParams(tmpQueryObject)), guest_token).then(response => {
+      coreFetch("https://twitter.com/i/api/2/search/adaptive.json?" + (new URLSearchParams(tmpQueryObject)).toString(), guest_token).then(response => {
         resolve(response)
       }).catch(e => {
         reject(e)
@@ -486,6 +487,29 @@ const getTypeahead = async (text = '', guest_token = {}) => {
   })
 }
 
+const getArticle = async (id = '', guest_token = {}) => {
+  if (!guest_token.success) {
+    guest_token = await getToken()
+  }
+
+  const graphqlVariables = {
+    twitterArticleId: id,
+    withSuperFollowsUserFields: true,
+    withDownvotePerspective: false,
+    withReactionsMetadata: false,
+    withReactionsPerspective: false,
+    withSuperFollowsTweetFields: true
+  }
+
+  return await new Promise((resolve, reject) => {
+    coreFetch("https://twitter.com/i/api/graphql/" + graphqlQueryIdList.TwitterArticleByRestId.queryId + "/TwitterArticleByRestId?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures('TwitterArticleByRestId'))})).toString(), guest_token, [], 1).then(response => {
+      resolve(response)
+    }).catch(e => {
+      reject(e)
+    })
+  })
+}
+
 //const getMmoment = async () => {
 //  
 //}
@@ -493,7 +517,7 @@ const getTypeahead = async (text = '', guest_token = {}) => {
 // ANONYMOUS AND COOKIE REQUIRED
 const getTrends = async (initial_tab_id = 'trending', count = 20, guest_token = {}, cookie = []) => {
   if (!guest_token.success) {
-    guest_token = await getToken()
+    guest_token = await getToken(1)
   }
   return await new Promise((resolve, reject) => {
     coreFetch(initial_tab_id === 'trends' ? `https://twitter.com/i/api/2/guide.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=false&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_collab_control=true&include_ext_views=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&count=${count}&candidate_source=trends&include_page_configuration=false&entity_tokens=false&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl%2Ccollab_control%2Cvibe` : `https://twitter.com/i/api/2/guide.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=false&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_collab_control=true&include_ext_views=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&count=${count}&include_page_configuration=true&initial_tab_id=${initial_tab_id}&entity_tokens=false&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl%2Ccollab_control%2Cvibe${cookie.length ? '%2CbirdwatchPivot' : ''}`, guest_token, cookie, 1).then(response => {
@@ -508,7 +532,7 @@ const getTrends = async (initial_tab_id = 'trending', count = 20, guest_token = 
 // COOKIE REQUIRED
 const getFollowingOrFollowers = async (uid = '0', guest_token = {}, count = false, type = 'Followers', cookie) => {
   if (!guest_token.success) {
-    guest_token = await getToken()
+    guest_token = await getToken(1)
   }
   count = count || 20
   const graphqlVariables = {
@@ -573,4 +597,4 @@ const getImage = async (path = '', headers = {}) => {
   })
 }
 
-export {getToken, coreFetch, getUserInfo, getVerifiedAvatars, getRecommendations, getMediaTimeline, getTweets, getConversation, getEditHistory, getPollResult, getAudioSpace, getBroadcast, getLiveVideoStream, getTypeahead, getTrends, getFollowingOrFollowers, getImage, Authorization}
+export {getToken, coreFetch, getUserInfo, getVerifiedAvatars, getRecommendations, getMediaTimeline, getTweets, getConversation, getEditHistory, getPollResult, getAudioSpace, getBroadcast, getLiveVideoStream, getTypeahead, getArticle, getTrends, getFollowingOrFollowers, getImage, Authorization}

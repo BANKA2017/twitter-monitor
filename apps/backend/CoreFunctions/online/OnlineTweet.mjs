@@ -220,7 +220,7 @@ const ApiAudioSpace = async (req, res) => {
     await global.guest_token.updateGuestToken()
     const tmpAudioSpaceData = await getAudioSpace(id, global.guest_token.token)
     global.guest_token.updateRateLimit('AudioSpaceById')
-    if (!tmpAudioSpaceData.data?.errors && (tmpAudioSpaceData.data?.data?.audioSpace || false)) {
+    if (tmpAudioSpaceData.data?.data?.audioSpace || false) {
         let tmpAudioSpace = AudioSpace(tmpAudioSpaceData.data)
         //get link
         if (tmpAudioSpace.is_available_for_replay || (Number(tmpAudioSpace.start) <= Number(new Date()) && tmpAudioSpace.end === '0')) {

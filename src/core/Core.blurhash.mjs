@@ -4,6 +4,7 @@ import { PROXY_CONFIG } from '../../assets/setting.mjs'
 import HttpsProxyAgent from "https-proxy-agent"
 import sharp from 'sharp'
 let axoisConfig = {
+    timeout: 30000,//TODO check timeout
     proxy: false,
 }
 

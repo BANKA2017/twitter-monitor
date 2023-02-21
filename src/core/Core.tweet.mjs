@@ -387,7 +387,7 @@ const GetMedia = (content = {}, uid = '0', tweetId = '0', hidden = false, online
     let tmpMedia = []
     const tmpMediaContent = path2array('tweet_media_path', content) || []
     for (const index in tmpMediaContent) {
-        tmpMedia = tmpMedia.concat(Media(tmpMediaContent[index], uid, tweetId, hidden, source, cardType))
+        tmpMedia = tmpMedia.concat(Media(tmpMediaContent[index], uid, tweetId, hidden, source, cardType, online))
     }
     return tmpMedia
 }
@@ -552,7 +552,7 @@ const Entity = (type, entity = {}, uid = 0, tweetId = 0, hidden = false) => {
 //处理媒体(media)//包括entities中的
 //https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/entities-object
 //https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/extended-entities-object
-const Media = (media = {}, uid = '0', tweetId = '0', hidden = false, source = 'tweets', cardType = '') => {
+const Media = (media = {}, uid = '0', tweetId = '0', hidden = false, source = 'tweets', cardType = '', online = false) => {
     let pathInfo
     const mediaInfoToReturn = []
     let singleMedia = {
@@ -576,6 +576,9 @@ const Media = (media = {}, uid = '0', tweetId = '0', hidden = false, source = 't
     }
     if (singleMedia.description !== '' && singleMedia.title === '' && media?.ext_alt_text) {
         singleMedia.title = 'ALT'
+    }
+    if (online && media?.sensitive_media_warning) {
+        singleMedia.sensitive_media_warning = media.sensitive_media_warning
     }
     switch (media.type) {
         case 'video':
@@ -1037,7 +1040,7 @@ const AudioSpace = (audioSpaceObject = {}) => {
     tmpAudioSpaceData.start = String(audioSpaceObject.data.audioSpace.metadata?.started_at??audioSpaceObject.data.audioSpace.metadata?.scheduled_start??0)
     tmpAudioSpaceData.end = String(audioSpaceObject.data.audioSpace.metadata?.ended_at??0)
     tmpAudioSpaceData.media_key = audioSpaceObject.data.audioSpace.metadata.media_key??''
-    tmpAudioSpaceData.is_available_for_replay = audioSpaceObject.data.audioSpace.metadata.is_available_for_replay??false
+    tmpAudioSpaceData.is_available_for_replay = audioSpaceObject.data.audioSpace.metadata.is_available_for_replay??audioSpaceObject.data.audioSpace.metadata.is_space_available_for_replay??false
     tmpAudioSpaceData.title = audioSpaceObject.data.audioSpace.metadata?.title??''
     tmpAudioSpaceData.total = (audioSpaceObject.data.audioSpace.metadata?.total_live_listeners??0) + (audioSpaceObject.data.audioSpace.metadata?.total_replay_watched??0)
 

@@ -38,7 +38,7 @@ const GRAPHQL_MODE = true
 
 const CYCLE_SECONDS = 60//seconds
 
-const TRANSLATE_TARGET = 'zh-CN'//zh-CN, zh-TW, en-US, etc.//注: 使用微软翻译时简中应填写 zh-Hans, 不必担心我们有防呆机制 //注2: 此处用于无目标语言时翻译使用的默认目标语言
+const TRANSLATE_TARGET = 'zh-CN'//zh-CN, zh-TW, en-US, etc.//注: 使用微软翻译时简中应填写 zh-Hans/zh-Hant //注2: 此处用于无目标语言时翻译使用的默认目标语言
 const TRANSLATOR_PLATFORM = 'google'//google, microsoft
 
 const PROXY_CONFIG = '' //http://127.0.0.1:1081

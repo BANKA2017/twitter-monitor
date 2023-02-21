@@ -129,22 +129,26 @@ while (true) {
         //TODO accountInfo.code === 336 means feature issue
         console.log(refreshableList[index][0].display_name, `(${refreshableList[index][0].name})`, refreshableList[index][1], index)
         server_info.updateValue('total_req_times')
-        if (accountInfo.status !== 'fulfilled' || (accountInfo?.value?.data?.errors && !accountInfo?.value?.data?.data?.user) || path2array("user_info_legacy", accountInfo.value?.data || false)?.protected) {
+        if (accountInfo.status !== 'fulfilled' || (accountInfo?.value?.data?.errors && !accountInfo?.value?.data?.data?.user) || accountInfo?.value?.data?.data?.user?.result?.__typename === 'UserUnavailable' || path2array("user_info_legacy", accountInfo.value?.data || false)?.protected || accountInfo.value?.data?.user?.result?.has_graduated_access) {
             if (accountInfo.status !== 'fulfilled') {
                 console.log('tmv3: #Autobreak' +  refreshableList[index][0].display_name + ' -' + accountInfo.status)
             } else {
-                console.log('tmv3: #Autobreak' +  refreshableList[index][0].display_name + ' -' + accountInfo.value?.data?.errors[0].message)
+                console.log('tmv3: #Autobreak' +  refreshableList[index][0].display_name + ' -' + (accountInfo.value?.data?.errors?.[0]?.message || accountInfo?.value?.data?.user?.result?.reason || 'Unknown error'))
                 updateNameList = true
-                if (path2array("user_info_legacy", accountInfo.value?.data)?.protected ?? false) {
+                if (path2array("user_info_legacy", accountInfo.value?.data)?.protected ?? accountInfo.value?.data?.user?.result?.has_graduated_access ?? false) {
                   config.users[refreshableList[index][1]].locked = true
                   await V2AccountInfo.update({locked: 1}, {where: {name: refreshableList[index][0].name}})
                   TGPush(`tmv3: #Locked Account ${refreshableList[index][0].name} was protected`)
-                } else if  ([50, 63].includes(accountInfo.value?.data?.errors?.[0]?.code)) {
+                } else if ([50, 63].includes(accountInfo.value?.data?.errors?.[0]?.code)) {
                     //deleted 用于在twitter删除帐户的用户 #50
                     //suspended 用于被封禁帐户的用户 #63
                     config.users[refreshableList[index][1]].deleted = true
                     await V2AccountInfo.update({deleted: 1}, {where: {name: refreshableList[index][0].name}})
                     TGPush(`tmv3: #Deleted Account ${refreshableList[index][0].name} was deleted`)
+                } else if (accountInfo?.value?.data?.data?.user?.result?.__typename === 'UserUnavailable') {
+                    config.users[refreshableList[index][1]].deleted = true
+                    await V2AccountInfo.update({deleted: 1}, {where: {name: refreshableList[index][0].name}})
+                    TGPush(`tmv3: #Deleted Account ${refreshableList[index][0].name} was deleted (${accountInfo?.value?.data?.data?.user?.result?.reason})`)
                 } else {
                     // TODO configErrorCount
                     server_info.updateValue("total_errors_count")
@@ -222,9 +226,10 @@ while (true) {
                 cursor: "",
                 uid: GeneralAccountData.uid,
                 pinned: GeneralAccountData.top,
-                hidden: GeneralAccountData.hidden
+                hidden: GeneralAccountData.hidden,
             })
             GeneralAccountData.last_cursor = 0
+            GeneralAccountData.new = 1
             await V2AccountInfo.create(GeneralAccountData)
         } else {
             console.log("tmv3: update account information")

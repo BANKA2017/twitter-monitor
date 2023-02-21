@@ -18,8 +18,8 @@ const translatorPlatform = {
 
 const notSupportedEntities = ['baidu']
 
-const isChs = (lang = 'zh') => /^zh(?:_|\-)(?:cn|sg|my|chs)|zh|chs$/.test(target.toLowerCase())
-const isCht = (lang = 'zh_tw') => /^zh(?:_|\-)(?:tw|hk|mo|cht)|cht$/.test(target.toLowerCase())
+const isChs = (lang = 'zh') => /^zh(?:_|\-)(?:cn|sg|my|chs)|zh|chs|zho$/.test(lang.toLowerCase())
+const isCht = (lang = 'zh_tw') => /^zh(?:_|\-)(?:tw|hk|mo|cht)|cht$/.test(lang.toLowerCase())
 
 const targetLanguagePrefix = (target = 'en', platform = 'google') => {
     switch (platform) {
@@ -27,9 +27,9 @@ const targetLanguagePrefix = (target = 'en', platform = 'google') => {
         //case 'google':
         //    break
         case 'microsoft':
-            if (isChs) {
+            if (isChs(target)) {
                 target = 'zh-Hans'
-            } else if (isCht) {
+            } else if (isCht(target)) {
                 target = 'zh-Hant'
             }
             break
@@ -46,9 +46,9 @@ const targetLanguagePrefix = (target = 'en', platform = 'google') => {
             }
             break
         case 'baidu':
-            if (isChs) {
+            if (isChs(target)) {
                 target = 'zh'
-            } else if (isCht) {
+            } else if (isCht(target)) {
                 target = 'cht'
             } else if (target.toLowerCase() === 'ja') {
                 target = 'jp'

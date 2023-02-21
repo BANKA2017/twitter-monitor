@@ -8,7 +8,7 @@
         <meta name="description" content="Twitter Monitor Config">
         <title>Twitter Monitor Config</title>
         <!-- CSS only -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" crossorigin="anonymous">
     </head>
     <body>
         <div id="app">
@@ -147,8 +147,7 @@
             </button>
         </div>
         <!--load css and js-->
-        <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
-        <script src="https://cdn.jsdelivr.net/npm/axios@0.19.2/dist/axios.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14"></script>
         <script>
             'use strict';
             new Vue({
@@ -303,15 +302,10 @@
                     }
                 },
                 mounted: function() {
-                    axios.get("./config.json").then(response => {
-                        this.config = response.data
+                    if (localStorage.getItem('twitter_monitor_config')) {
+                        this.config = JSON.parse(localStorage.getItem('twitter_monitor_config'));
                         this.autoSave();
-                    }).catch(() => {
-                        if (localStorage.getItem('twitter_monitor_config')) {
-                            this.config = JSON.parse(localStorage.getItem('twitter_monitor_config'));
-                            this.autoSave();
-                        }
-                    })
+                    }
                     this.textareaData = JSON.stringify(this.config, null, 4);
                 },
                 methods: {

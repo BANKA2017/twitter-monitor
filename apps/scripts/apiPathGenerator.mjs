@@ -69,10 +69,12 @@ const apiPathList = {
         "legacy.source"
     ],
     tweet_full_text: [
+        "note_tweet.note_tweet_results.result.text",
         "full_text",
         "legacy.full_text"
     ],
     tweet_entities: [
+        "note_tweet.note_tweet_results.result.entity_set",
         "entities",
         "legacy.entities"
     ],

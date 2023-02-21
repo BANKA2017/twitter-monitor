@@ -11,11 +11,14 @@ import path2array from '../../src/core/Core.apiPath.mjs'
 import { Tweet, TweetsInfo } from '../../src/core/Core.tweet.mjs'
 import { TGPush } from '../../src/core/Core.push.mjs'
 
-//save date
-let now = Number(new Date())
-writeFileSync(basePath + '/range.json', JSON.stringify({start: now, end: 0}))
+const basePath = './twitter_archiver'// ./twitter_archiver
 
-const basePath = './twitter_archiver'// /tmp/twitter_archiver
+//TODO remove because this is sample
+const name = 'twitter'//CHANGE IT!!!
+
+let cursor = ''
+
+//check base path
 if (!existsSync(basePath)) {
     console.error(`archiver: path -->${basePath}<-- is NOT EXIST!`)
     process.exit()
@@ -23,10 +26,9 @@ if (!existsSync(basePath)) {
     
 }
 
-//TODO remove because this is sample
-const name = 'twitter'//CHANGE IT!!!
-
-let cursor = ''
+//save date
+let now = Number(new Date())
+writeFileSync(basePath + '/range.json', JSON.stringify({start: now, end: 0}))
 
 
 //get data from disk
@@ -99,7 +101,7 @@ if (cursor !== 'complete') {
             }
         }
         if (tweets === null) {
-            console.error(`archiver: empty reaponse`)
+            console.error(`archiver: empty response`)
             process.exit()
         }
 
