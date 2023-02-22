@@ -3,16 +3,16 @@ import axios from "axios"
 import { PROXY_CONFIG } from '../../assets/setting.mjs'
 import HttpsProxyAgent from "https-proxy-agent"
 import sharp from 'sharp'
-let axoisConfig = {
+let axiosConfig = {
     timeout: 30000,//TODO check timeout
     proxy: false,
 }
 
 if (PROXY_CONFIG) {
-    axoisConfig.httpsAgent = new HttpsProxyAgent(PROXY_CONFIG)
+    axiosConfig.httpsAgent = new HttpsProxyAgent(PROXY_CONFIG)
 }
 
-const axiosFetch = axios.create(axoisConfig)
+const axiosFetch = axios.create(axiosConfig)
 
 //https://github.com/woltapp/blurhash/issues/43#issuecomment-597674435
 const encodeImageToBlurhash = path => {

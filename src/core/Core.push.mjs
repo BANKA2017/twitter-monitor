@@ -2,16 +2,16 @@ import axios from "axios"
 import {ALERT_TOKEN, ALERT_PUSH_TO} from '../../assets/setting.mjs'
 import { PROXY_CONFIG } from '../../assets/setting.mjs'
 import HttpsProxyAgent from "https-proxy-agent"
-let axoisConfig = {
+let axiosConfig = {
     timeout: 30000,//TODO check timeout
     proxy: false,
 }
 
 if (PROXY_CONFIG) {
-    axoisConfig.httpsAgent = new HttpsProxyAgent(PROXY_CONFIG)
+    axiosConfig.httpsAgent = new HttpsProxyAgent(PROXY_CONFIG)
 }
 
-const axiosFetch = axios.create(axoisConfig)
+const axiosFetch = axios.create(axiosConfig)
 
 const TGPush = async (text = '') => {
     if (ALERT_TOKEN.length) {

@@ -5,16 +5,16 @@ import { writeFileSync } from "fs"
 import { basePath } from "../../src/share/Constant.mjs"
 
 
-let axoisConfig = {
+let axiosConfig = {
     timeout: 30000,//TODO check timeout
     proxy: false,
 }
 
 if (PROXY_CONFIG) {
-    axoisConfig.httpsAgent = new HttpsProxyAgent(PROXY_CONFIG)
+    axiosConfig.httpsAgent = new HttpsProxyAgent(PROXY_CONFIG)
 }
 
-const axiosFetch = axios.create(axoisConfig)
+const axiosFetch = axios.create(axiosConfig)
 let match
 axiosFetch.get("https://twitter.com/", {headers: {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}}).then(response => {
     if (response.data) {
