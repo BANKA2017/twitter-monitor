@@ -121,6 +121,7 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
         * mixed_media_multi_dest_carousel_website
         * mixed_media_single_dest_carousel_website
         * mixed_media_single_dest_carousel_app
+        * image_collection_website
         * twitter_list_details
         * media_with_details_horizontal (for topic ?)
         * twitter_article
@@ -253,6 +254,7 @@ Those are Chinese articles
         * mixed_media_multi_dest_carousel_website
         * mixed_media_single_dest_carousel_website
         * mixed_media_single_dest_carousel_app
+        * image_collection_website
         * twitter_list_details
         * media_with_details_horizontal (for topic ?)
         * twitter_article

@@ -782,12 +782,18 @@ const Card = (cardInfo = {}, uid = '0', tweetId = '0', hidden = false, url = '',
             case "image_multi_dest_carousel_website":
             case "video_multi_dest_carousel_website":
             case "mixed_media_multi_dest_carousel_website":
+                //https://twitter.com/tomori_kusunoki/status/1459102612502953989
+            case "image_collection_website":
+                //case "video_collection_website":
+                //https://twitter.com/BSA_animeA/status/1617356578260140039
                 //TODO dest were not same, but i have to join them in the same string
                 let index = 0
                 for(const slide of childCardInfo.layout.data.slides) {
-                    tmpCardInfo.data.description += (index ? "\t" : '') + childCardInfo.component_objects[slide[1]].data.title.content
-                    tmpCardInfo.data.vanity_url += (index ? "\t" : '') + childCardInfo.component_objects[slide[1]].data.subtitle.content
-                    tmpCardInfo.data.url += (index ? "\t" : '') + (childCardInfo.destination_objects[childCardInfo.component_objects[slide[1]].data.destination].data?.title?.content??childCardInfo.destination_objects[childCardInfo.component_objects[slide[1]].data.destination].data?.url_data?.url)
+                    const tmpSlideItem = slide.filter(x => x.startsWith('details_'))[0] || ''
+                    if (!tmpSlideItem) {continue}
+                    tmpCardInfo.data.description += (index ? "\t" : '') + childCardInfo.component_objects[tmpSlideItem].data.title.content
+                    tmpCardInfo.data.vanity_url += (index ? "\t" : '') + childCardInfo.component_objects[tmpSlideItem].data.subtitle.content
+                    tmpCardInfo.data.url += (index ? "\t" : '') + (childCardInfo.destination_objects[childCardInfo.component_objects[tmpSlideItem].data.destination].data?.title?.content??childCardInfo.destination_objects[childCardInfo.component_objects[tmpSlideItem].data.destination].data?.url_data?.url)
                     index++
                 }
                 break
@@ -847,7 +853,12 @@ const Card = (cardInfo = {}, uid = '0', tweetId = '0', hidden = false, url = '',
                 tmpCardInfo.media[0].content_type = GetMime(pathInfo.extension)
             } else {
                 if (childCardInfo?.layout?.data?.slides) {
-                    tmpChildMediaList = childCardInfo.layout.data.slides.map(slide => childCardInfo.component_objects[slide[0]].data)
+                    
+                    tmpChildMediaList = childCardInfo.layout.data.slides.map(slide => {
+                        const tmpSlideItem = slide.filter(x => x.startsWith('media_'))[0] || ''
+                        if (!tmpSlideItem) {return null}
+                        return childCardInfo.component_objects[tmpSlideItem].data
+                    }).filter(x => x)
                 } else {
                     tmpChildMediaList = childCardInfo?.component_objects?.swipeable_media_1?.data?.media_list??[childCardInfo?.component_objects?.media_1?.data??{id: 'media_1'}]
                 }

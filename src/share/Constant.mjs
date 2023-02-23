@@ -47,6 +47,7 @@ const SupportedUnifiedCardNameList = [
     "mixed_media_multi_dest_carousel_website",
     "mixed_media_single_dest_carousel_website",
     "mixed_media_single_dest_carousel_app",
+    "image_collection_website",
     "twitter_list_details",
     "media_with_details_horizontal",
     "twitter_article",
