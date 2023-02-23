@@ -28,7 +28,7 @@
     "express": "^4.18.1",
     "mariadb": "^3.0.1",
     "mysql2": "^2.3.3",
-    "sequelize": "^6.21.4",
+    "sequelize": "^6.28.2",
     "sharp": "^0.30.7",
     "twemoji-parser": "^14.0.0",
     "twitter-text": "^3.1.0"
