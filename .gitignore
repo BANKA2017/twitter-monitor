@@ -22,6 +22,7 @@ assets/analytics/account.json
 
 .DS_Store
 node_modules
+.yarn
 /dist
 public/test/
 
