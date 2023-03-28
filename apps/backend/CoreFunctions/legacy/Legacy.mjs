@@ -1,14 +1,15 @@
 import { readFileSync } from 'node:fs'
 import { Op } from 'sequelize'
 import { QueryTypes } from 'sequelize'
-import { GoogleTranslate } from '../../../../packages/translator/src/google.mjs'
-import { TRANSLATE_TARGET } from '../../../../assets/setting.mjs'
-import dbHandle from '../../../../src/core/Core.db.mjs'
-import { VerifyQueryString } from '../../../../src/core/Core.function.mjs'
-import AccountInfo from '../../../../src/model/tmv1/account_info.js'
-import TwitterData from '../../../../src/model/tmv1/twitter_data.js'
-import TwitterTweets from '../../../../src/model/tmv1/twitter_tweets.js'
-import { apiTemplate, basePath } from '../../../../src/share/Constant.mjs'
+import { GoogleBrowserTranslate } from '@kdwnil/translator-utils'
+import { TRANSLATE_TARGET } from '../../../../libs/assets/setting.mjs'
+import dbHandle from '../../../../libs/core/Core.db.mjs'
+import { VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
+import AccountInfo from '../../../../libs/model/tmv1/account_info.js'
+import TwitterData from '../../../../libs/model/tmv1/twitter_data.js'
+import TwitterTweets from '../../../../libs/model/tmv1/twitter_tweets.js'
+import { apiTemplate } from '../../../../libs/share/Constant.mjs'
+import { basePath } from "../../../../libs/share/NodeConstant.mjs"
 
 const ApiLegacyInfo = async (req, res) => {
     const {uid} = getUid(req.query)
@@ -267,7 +268,7 @@ const ApiLegacyTranslate = async (req, res) => {
             trInfo.translate_source = 'Google Translate'
             trInfo.translate = ''
             try {
-                trInfo.translate = await GoogleTranslate(trInfo.full_text_origin.replaceAll(/https:\/\/t.co\/[\w]+/gm, ''), target)
+                trInfo.translate = await GoogleBrowserTranslate(trInfo.full_text_origin.replaceAll(/https:\/\/t.co\/[\w]+/gm, ''), target, false)
             } catch (e) {
                 console.error(e)
                 //TODO do nothing
@@ -305,7 +306,7 @@ const ApiLegacyTranslate = async (req, res) => {
 const getUid = query => {
     let name = VerifyQueryString(query.name, '').toLocaleLowerCase()
     let uid = String(VerifyQueryString(query.uid, 0))
-    const data_origin = JSON.parse(readFileSync(basePath + '/../assets/tmv1/account_info_n.json'))
+    const data_origin = JSON.parse(readFileSync(basePath + '/../libs/assets/tmv1/account_info_n.json'))
     if (name === '' && uid === '0') {
         return {name: '', uid: '0'}
     }

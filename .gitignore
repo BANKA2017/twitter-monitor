@@ -1,28 +1,24 @@
-savetweets/*
+apps/crawler/savetweets/*
 
 apps/scripts/t.mjs
 apps/backend/cache/*
-apps/scripts/trends/
 !apps/backend/cache/.gitkeep
 
-apps/archiver/twitter_archiver/rawdata/*
-apps/archiver/twitter_archiver/savedata/*
-apps/archiver/twitter_archiver/savemedia/*
-!apps/archiver/twitter_archiver/rawdata/.gitkeep
-!apps/archiver/twitter_archiver/savedata/.gitkeep
-!apps/archiver/twitter_archiver/savemedia/.gitkeep
+apps/archiver/twitter_archiver/
 
-assets/trends/
-assets/setting.mjs
-assets/config.json
-assets/sagm_config.cjs
-assets/analytics/account.json
+libs/assets/setting.mjs
+libs/assets/config.json
+libs/assets/sagm_config.cjs
+libs/assets/analytics/account.json
 
-!savetweets/.gitkeep
+apps/cfworkers/dist/
+
+!apps/crawler/savetweets/.gitkeep
 
 .DS_Store
 node_modules
 .yarn
+yarn.lock
 /dist
 public/test/
 

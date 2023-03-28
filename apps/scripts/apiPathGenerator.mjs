@@ -1,5 +1,5 @@
 import { writeFileSync } from 'node:fs'
-import { basePath } from '../../src/share/Constant.mjs'
+import { basePath } from '../../libs/share/NodeConstant.mjs'
 
 const apiPathList = {
     rest_id: [

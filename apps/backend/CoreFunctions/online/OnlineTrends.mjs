@@ -1,5 +1,5 @@
-import { getTrends } from "../../../../src/core/Core.fetch.mjs"
-import { apiTemplate } from "../../../../src/share/Constant.mjs"
+import { getTrends } from "../../../../libs/core/Core.fetch.mjs"
+import { apiTemplate } from "../../../../libs/share/Constant.mjs"
 
 
 const ApiTrends = async (req, res) => {

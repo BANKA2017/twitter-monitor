@@ -1,0 +1,7 @@
+UPDATE `v2_twitter_cards` SET `hidden` = '1' WHERE `v2_twitter_cards`.`uid` = '749104915285286912' OR `v2_twitter_cards`.`uid` = '25073877' OR `v2_twitter_cards`.`uid` = '44196397' OR `v2_twitter_cards`.`uid` = '1533668131822260225';
+UPDATE `v2_twitter_entities` SET `hidden` = '1' WHERE `v2_twitter_entities`.`uid` = '749104915285286912' OR `v2_twitter_entities`.`uid` = '25073877' OR `v2_twitter_entities`.`uid` = '44196397' OR `v2_twitter_entities`.`uid` = '1533668131822260225';
+UPDATE `v2_twitter_media` SET `hidden` = '1' WHERE `v2_twitter_media`.`uid` = '749104915285286912' OR `v2_twitter_media`.`uid` = '25073877' OR `v2_twitter_media`.`uid` = '44196397' OR `v2_twitter_media`.`uid` = '1533668131822260225';
+UPDATE `v2_twitter_polls` SET `hidden` = '1' WHERE `v2_twitter_polls`.`uid` = '749104915285286912' OR `v2_twitter_polls`.`uid` = '25073877' OR `v2_twitter_polls`.`uid` = '44196397' OR `v2_twitter_polls`.`uid` = '1533668131822260225';
+UPDATE `v2_twitter_tweets` SET `hidden` = '1' WHERE `v2_twitter_tweets`.`uid` = '749104915285286912' OR `v2_twitter_tweets`.`uid` = '25073877' OR `v2_twitter_tweets`.`uid` = '44196397' OR `v2_twitter_tweets`.`uid` = '1533668131822260225';
+
+/* `uid` = '749104915285286912' OR `uid` = '25073877' OR `uid` = '44196397' OR `uid` = '1533668131822260225' */

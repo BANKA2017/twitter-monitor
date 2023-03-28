@@ -1,6 +1,6 @@
-import { getConversation, getTweets } from "../../../../src/core/Core.fetch.mjs"
-import { VerifyQueryString } from "../../../../src/core/Core.function.mjs"
-import { apiTemplate } from "../../../../src/share/Constant.mjs"
+import { getConversation, getTweets } from "../../../../libs/core/Core.fetch.mjs"
+import { VerifyQueryString } from "../../../../libs/core/Core.function.mjs"
+import { apiTemplate } from "../../../../libs/share/Constant.mjs"
 import { GenerateData } from "../online/OnlineTweet.mjs"
 
 const AlbumSearch = async (req, res) => {

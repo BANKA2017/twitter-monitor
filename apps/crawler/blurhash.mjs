@@ -1,7 +1,7 @@
 import { Op } from 'sequelize'
-import dbHandle from '../../src/core/Core.db.mjs'
-import V2TwitterMedia from '../../src/model/twitter_monitor/v2_twitter_media.js'
-import { GetBlurHash } from '../../src/core/Core.blurhash.mjs'
+import dbHandle from '../../libs/core/Core.db.mjs'
+import V2TwitterMedia from '../../libs/model/twitter_monitor/v2_twitter_media.js'
+import { GetBlurHash } from '../../libs/core/Core.blurhash.mjs'
 
 let t = await dbHandle.twitter_monitor.transaction()
 let MediaCover = []
@@ -32,7 +32,7 @@ do {
         })
     }
     await t.commit()
-    console.log(`blurhash: cost ${Number(new Date()) - startTime} ms, ${blurhashList.length}`)
+    console.log(`blurhash: cost ${Date.now() - startTime} ms, ${blurhashList.length}`)
 } while (MediaCover.length > 0)
 
 process.exit()

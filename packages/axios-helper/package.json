@@ -1,0 +1,17 @@
+{
+    "name": "axios-helper",
+    "private": true,
+    "main": "index.js",
+    "exports": {
+        ".": {
+            "browser": {
+                "default": "./index.js"
+            },
+            "default": {
+                "default": "./index.node.js"
+            }
+        },
+        "./package.json": "./package.json"
+    },
+    "type": "module"
+}

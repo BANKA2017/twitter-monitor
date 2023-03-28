@@ -4,12 +4,12 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
-import { getImage, getPollResult, getTweets } from '../../src/core/Core.fetch.mjs'
+import { getImage, getPollResult, getTweets } from '../../libs/core/Core.fetch.mjs'
 
-import { GuestToken, PathInfo, Sleep } from '../../src/core/Core.function.mjs'
-import path2array from '../../src/core/Core.apiPath.mjs'
-import { Tweet, TweetsInfo } from '../../src/core/Core.tweet.mjs'
-import { TGPush } from '../../src/core/Core.push.mjs'
+import { GuestToken, PathInfo, Sleep } from '../../libs/core/Core.function.mjs'
+import path2array from '../../libs/core/Core.apiPath.mjs'
+import { Tweet, TweetsInfo } from '../../libs/core/Core.tweet.mjs'
+import { TGPush } from '../../libs/core/Core.push.mjs'
 
 const basePath = './twitter_archiver'// ./twitter_archiver
 
@@ -27,7 +27,7 @@ if (!existsSync(basePath)) {
 }
 
 //save date
-let now = Number(new Date())
+let now = Date.now()
 writeFileSync(basePath + '/range.json', JSON.stringify({start: now, end: 0}))
 
 
@@ -65,7 +65,7 @@ await global.guest_token.updateGuestToken()
 if (global.guest_token.token.nextActiveTime) {
     await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
     console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
-    await Sleep(global.guest_token.token.nextActiveTime - Number(new Date()))
+    await Sleep(global.guest_token.token.nextActiveTime - Date.now())
     await global.guest_token.updateGuestToken()
     if (!global.guest_token.token.success) {
         process.exit()
@@ -350,7 +350,7 @@ for (; mediaIndex < mediaList.length; ) {
     writeFileSync(basePath + '/twitter_monitor_media_index', String(mediaIndex))
 }
 
-writeFileSync(basePath + '/range.json', JSON.stringify({start: now, end: Number(new Date())}))
+writeFileSync(basePath + '/range.json', JSON.stringify({start: now, end: Date.now()}))
 console.log(`archiver: online tasks complete`)
 
 //TODO split and generate offline data

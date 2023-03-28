@@ -1,4 +1,4 @@
-Twitter Monitor v3 (DEV)
+Twitter Monitor v3 monorepo (DEV)
 ---
 
 ## ⚠ WARNING / 警告
@@ -19,7 +19,6 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 * NodeJS 16+
 * Nginx
 * MySQL 8.0 / MariaDB (some function is not supported MariaDB, like function `ANY_VALUE()`, parser `ngram`)
-* *PHP8.0 and component, although we rewrited all scripts by NodeJS, some PHP scripts is better than Node version
 
 ## How to
 
@@ -31,7 +30,7 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 ### Core
 
 * **NO TYPESCRIPT**, core code are not yet supported typescript
-* copy and rename the setting file from `assets/settings_sample.mjs` to `assets/settings.mjs`, and edit it
+* copy and rename the setting file from `libs/assets/settings_sample.mjs` to `libs/assets/settings.mjs`, and edit it
 * enjoy it!
 
 ### Graphql
@@ -44,7 +43,7 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 
 * edit `SQL_CONFIG` to enable service **twitter_monitor**
 * execute `yarn run init` or `npm run init`
-* open `config.html` by browser to edit and save config file `config.json` as `assets/config.json`
+* open `config.html` by browser to edit and save config file `config.json` as `libs/assets/config.json`
 
   [Online editor](https://banka2017.github.io/twitter-monitor/apps/config_page/)
 
@@ -81,6 +80,11 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 * TODO: spaces, boradcast, mix media (like image and video in the same tweet)
 * **PLEASE PRECHECK THE ACCOUNT HAVEN BEEN SEARCHBAN**
 * **DO NOT EXECUTE `init.sh` UNTIL YOU BACKUP ALL ARCHIVED DATA IN FOLDER './twitter_archiver/'**, it will clean all archived data
+
+### CloudFlare Workers
+
+* supported album api, online api and media proxy
+* ootb, just execute `npx wrangler build && npx wrangler publish`
 
 ## Supported Cards
 
@@ -129,7 +133,7 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 ## Sub packages
 
 - `FastText` for language identity, [Read more](./tree/master/packages/fasttext)
-- `Translator` is a translator toolkit in development, [Read more](./tree/master/packages/translator)
+- `AxiosHelper` used to fix the issue that CloudFlare Workers unable to use axios, [阅读更多](./tree/master/packages/axios-helper)
 
 ## Thanks
 
@@ -151,7 +155,6 @@ Those are Chinese articles
 * NodeJS 16+
 * Nginx
 * MySQL 8.0 (使用MariaDB等基于 MySQL 5.x 的发行版可能不能支持函数 `ANY_VALUE()`, 解析器 `ngram`，会导致部分api不可用，若不使用api可忽略此处)
-* *PHP8.0 以及 component (尽管已经用NodeJS重写，但生成blurhash的效率还是不如PHP，不需要生成的blurhash可忽略此行)
 
 ## 使用方法
 
@@ -163,7 +166,7 @@ Those are Chinese articles
 ### Core
 
 * **没有 Typescript**，其实是不知怎么入手
-* 拷贝编辑 `assets/settings_sample.mjs` 并另存为 `assets/settings.mjs`
+* 拷贝编辑 `libs/assets/settings_sample.mjs` 并另存为 `libs/assets/settings.mjs`
 * 开始使用吧！
 
 ### Graphql
@@ -175,7 +178,7 @@ Those are Chinese articles
 ### 爬虫
 
 * 编辑 `SQL_CONFIG` 以启用本服务
-* 运行 `yarn run init` 或 `npm run init` 以导入数据表以及在路径 `assets/config.json` 创建配置文件
+* 运行 `yarn run init` 或 `npm run init` 以导入数据表以及在路径 `libs/assets/config.json` 创建配置文件
 
   [在线编辑器](https://banka2017.github.io/twitter-monitor/apps/config_page/)
 
@@ -212,6 +215,12 @@ Those are Chinese articles
 * TODO: 备份最近30天的空间、播客（暂不清楚怎么搞）、混合媒体（差不多就是同一条推文上有两个或以上的视频或者图片和视频放一起）
 * **使用前请检查待备份帐号是否被搜索封禁**
 * **在备份好'./twitter_archiver/' 文件夹的内容前请不要运行 `init.sh`**，它将会清除掉相应文件夹的内容
+
+### CloudFlare Workers
+
+* 支持 album api, online api 以及 media proxy
+* 开箱即用, 只需要 `npx wrangler build && npx wrangler publish`
+
 
 ## 支持的卡片类型
 
@@ -262,7 +271,7 @@ Those are Chinese articles
 ## 子包
 
 - `FastText` 用于识别语言, [阅读更多](./tree/master/packages/fasttext)
-- `Translator` 是一个开发中的翻译工具包, [阅读更多](./tree/master/packages/translator)
+- `AxiosHelper` 用于处理解决 Workers 无法使用 axios 的问题, [阅读更多](./tree/master/packages/axios-helper)
 
 ## 出处 & 感谢
 

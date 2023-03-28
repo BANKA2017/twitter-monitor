@@ -3,7 +3,7 @@
 // retryMedia()
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { getImage } from '../../src/core/Core.fetch.mjs'
+import { getImage } from '../../libs/core/Core.fetch.mjs'
 
 const basePath = './twitter_archiver'// ./twitter_archiver
 

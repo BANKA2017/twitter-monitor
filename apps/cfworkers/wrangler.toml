@@ -1,0 +1,4 @@
+name = "twitter-monitor-workers"
+compatibility_date = "2023-03-25"
+node_compat = true
+main = "workers.mjs"

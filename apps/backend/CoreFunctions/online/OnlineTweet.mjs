@@ -1,8 +1,8 @@
-import path2array from "../../../../src/core/Core.apiPath.mjs"
-import { getAudioSpace, getLiveVideoStream, getConversation, getPollResult, getTweets, getBroadcast } from "../../../../src/core/Core.fetch.mjs"
-import { GetEntitiesFromText, VerifyQueryString } from "../../../../src/core/Core.function.mjs"
-import { AudioSpace, Broadcast, Time2SnowFlake, Tweet, TweetsInfo } from "../../../../src/core/Core.tweet.mjs"
-import { apiTemplate } from "../../../../src/share/Constant.mjs"
+import path2array from "../../../../libs/core/Core.apiPath.mjs"
+import { getAudioSpace, getLiveVideoStream, getConversation, getPollResult, getTweets, getBroadcast } from "../../../../libs/core/Core.fetch.mjs"
+import { GetEntitiesFromText, VerifyQueryString } from "../../../../libs/core/Core.function.mjs"
+import { AudioSpace, Broadcast, Time2SnowFlake, Tweet, TweetsInfo } from "../../../../libs/core/Core.tweet.mjs"
+import { apiTemplate } from "../../../../libs/share/Constant.mjs"
 
 const ApiTweets = async (req, res) => {
     const isRssMode = req.query.format === 'rss'
@@ -223,7 +223,7 @@ const ApiAudioSpace = async (req, res) => {
     if (tmpAudioSpaceData.data?.data?.audioSpace || false) {
         let tmpAudioSpace = AudioSpace(tmpAudioSpaceData.data)
         //get link
-        if (tmpAudioSpace.is_available_for_replay || (Number(tmpAudioSpace.start) <= Number(new Date()) && tmpAudioSpace.end === '0')) {
+        if (tmpAudioSpace.is_available_for_replay || (Number(tmpAudioSpace.start) <= Date.now() && tmpAudioSpace.end === '0')) {
             try {
                 const tmpAudioSpaceLink = await getLiveVideoStream(tmpAudioSpace.media_key)
                 if (tmpAudioSpaceLink.data?.source?.noRedirectPlaybackUrl) {
@@ -261,7 +261,7 @@ const ApiBroadcast = async (req, res) => {
         const tmpBroadcastData = response
         let tmpBroadcast = Broadcast(tmpBroadcastData.data)
         //get link
-        if (tmpBroadcast.is_available_for_replay || (Number(tmpBroadcast.start) <= Number(new Date()) && tmpBroadcast.end === '0')) {
+        if (tmpBroadcast.is_available_for_replay || (Number(tmpBroadcast.start) <= Date.now() && tmpBroadcast.end === '0')) {
             try {
                 const tmpBroadcastLink = await getLiveVideoStream(tmpBroadcast.media_key)
                 if (tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl) {
@@ -340,6 +340,10 @@ const TweetsData = (content = {}, users = {}, contents = [], precheckName = '', 
     //vibe
     if (exportTweet.vibe?.text || exportTweet.vibe?.imgDescription) {
         exportTweet.GeneralTweetData.vibe = exportTweet.vibe
+    }
+    //place
+    if (exportTweet.place?.id) {
+        exportTweet.GeneralTweetData.place = exportTweet.place
     }
     //check poster
     if (isConversation || precheckName === '' || precheckName.toLocaleLowerCase() === exportTweet.GeneralTweetData.name.toLocaleLowerCase()) {

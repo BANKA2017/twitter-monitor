@@ -4,37 +4,37 @@
 
 import { readFileSync, writeFileSync } from 'node:fs'
 
-import { getTweets, getUserInfo } from '../../src/core/Core.fetch.mjs'
-import { GenerateAccountInfo } from '../../src/core/Core.account.mjs'
+import { getTweets, getUserInfo } from '../../libs/core/Core.fetch.mjs'
+import { GenerateAccountInfo } from '../../libs/core/Core.account.mjs'
 
 //server info
-import V2ServerInfo from '../../src/model/twitter_monitor/v2_server_info.js'
-import V2ErrorLog from '../../src/model/twitter_monitor/v2_error_log.js'
+import V2ServerInfo from '../../libs/model/twitter_monitor/v2_server_info.js'
+import V2ErrorLog from '../../libs/model/twitter_monitor/v2_error_log.js'
 
 //account info 
-import V2AccountInfo from '../../src/model/twitter_monitor/v2_account_info.js'
-import TwitterData from '../../src/model/twitter_monitor/twitter_data.js'
-import TmpTwitterData from '../../src/model/twitter_monitor/tmp_twitter_data.js'
+import V2AccountInfo from '../../libs/model/twitter_monitor/v2_account_info.js'
+import TwitterData from '../../libs/model/twitter_monitor/twitter_data.js'
+import TmpTwitterData from '../../libs/model/twitter_monitor/tmp_twitter_data.js'
 
 //tweets info
-import V2TwitterMedia from '../../src/model/twitter_monitor/v2_twitter_media.js'
-import V2TwitterEntities from '../../src/model/twitter_monitor/v2_twitter_entities.js'
-import V2TwitterPolls from '../../src/model/twitter_monitor/v2_twitter_polls.js'
-import V2TwitterCards from '../../src/model/twitter_monitor/v2_twitter_cards.js'
-import V2TwitterCardApp from '../../src/model/twitter_monitor/v2_twitter_card_app.js'
-import V2TwitterQuote from '../../src/model/twitter_monitor/v2_twitter_quote.js'
-import V2TwitterTweets from '../../src/model/twitter_monitor/v2_twitter_tweets.js'
+import V2TwitterMedia from '../../libs/model/twitter_monitor/v2_twitter_media.js'
+import V2TwitterEntities from '../../libs/model/twitter_monitor/v2_twitter_entities.js'
+import V2TwitterPolls from '../../libs/model/twitter_monitor/v2_twitter_polls.js'
+import V2TwitterCards from '../../libs/model/twitter_monitor/v2_twitter_cards.js'
+import V2TwitterCardApp from '../../libs/model/twitter_monitor/v2_twitter_card_app.js'
+import V2TwitterQuote from '../../libs/model/twitter_monitor/v2_twitter_quote.js'
+import V2TwitterTweets from '../../libs/model/twitter_monitor/v2_twitter_tweets.js'
 
-import { GuestToken, setGlobalServerInfo, Sleep } from '../../src/core/Core.function.mjs'
-import path2array from '../../src/core/Core.apiPath.mjs'
-import { Tweet, TweetsInfo } from '../../src/core/Core.tweet.mjs'
-import { GRAPHQL_MODE } from '../../assets/setting.mjs'
-import dbHandle from '../../src/core/Core.db.mjs'
-import { TGPush } from '../../src/core/Core.push.mjs'
-import { TWEETS_SAVE_PATH } from '../../assets/setting.mjs'
-import { ConfigFile } from '../../src/share/UpdateConfig.mjs'
-import { basePath } from '../../src/share/Constant.mjs'
-import { CYCLE_SECONDS } from '../../assets/setting_sample.mjs'
+import { GuestToken, setGlobalServerInfo, Sleep } from '../../libs/core/Core.function.mjs'
+import path2array from '../../libs/core/Core.apiPath.mjs'
+import { Tweet, TweetsInfo } from '../../libs/core/Core.tweet.mjs'
+import { GRAPHQL_MODE } from '../../libs/assets/setting.mjs'
+import dbHandle from '../../libs/core/Core.db.mjs'
+import { TGPush } from '../../libs/core/Core.push.mjs'
+import { TWEETS_SAVE_PATH } from '../../libs/assets/setting.mjs'
+import { ConfigFile } from '../../libs/share/UpdateConfig.mjs'
+import { basePath } from '../../libs/share/NodeConstant.mjs'
+import { CYCLE_SECONDS } from '../../libs/assets/setting_sample.mjs'
 
 
 const once = (process.argv[2] || '') === 'once'
@@ -48,19 +48,19 @@ const cycleMilliseconds = CYCLE_SECONDS * 1000
 
 while (true) {
     if (!once) {
-        let now = Number(new Date())
+        let now = Date.now()
         console.log(`tmv3: Wait for ${cycleMilliseconds - (now % cycleMilliseconds)} ms`)
         await Sleep(cycleMilliseconds - (now % cycleMilliseconds))
     }
 
     // get config from file system
-    let config = JSON.parse(readFileSync(basePath + '/../assets/config.json').toString())
+    let config = JSON.parse(readFileSync(basePath + '/../libs/assets/config.json').toString())
 
     const server_info = new setGlobalServerInfo()
     if (global.guest_token.token.nextActiveTime) {
         await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
         console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
-        await Sleep(global.guest_token.token.nextActiveTime - Number(new Date()))
+        await Sleep(global.guest_token.token.nextActiveTime - Date.now())
         await global.guest_token.updateGuestToken()
         server_info.updateValue('total_req_times')//for init guest token
         if (!global.guest_token.token.success) {

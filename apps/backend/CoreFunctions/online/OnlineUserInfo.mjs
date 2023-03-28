@@ -1,7 +1,7 @@
-import { GenerateAccountInfo } from "../../../../src/core/Core.account.mjs"
-import { getUserInfo } from "../../../../src/core/Core.fetch.mjs"
-import { GetEntitiesFromText, VerifyQueryString } from "../../../../src/core/Core.function.mjs"
-import { apiTemplate } from "../../../../src/share/Constant.mjs"
+import { GenerateAccountInfo } from "../../../../libs/core/Core.account.mjs"
+import { getUserInfo } from "../../../../libs/core/Core.fetch.mjs"
+import { GetEntitiesFromText, VerifyQueryString } from "../../../../libs/core/Core.function.mjs"
+import { apiTemplate } from "../../../../libs/share/Constant.mjs"
 
 const ApiUserInfo = async (req, res) => {
     const name = VerifyQueryString(req.query.name, '')

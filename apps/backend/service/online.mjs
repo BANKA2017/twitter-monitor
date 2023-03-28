@@ -1,7 +1,7 @@
 import express from 'express'
 import {ApiUserInfo} from '../CoreFunctions/online/OnlineUserInfo.mjs'
 import {ApiTweets, ApiSearch, ApiPoll, ApiAudioSpace, ApiMedia, ApiBroadcast} from '../CoreFunctions/online/OnlineTweet.mjs'
-import { apiTemplate } from '../../../src/share/Constant.mjs'
+import { apiTemplate } from '../../../libs/share/Constant.mjs'
 import { ApiTrends } from '../CoreFunctions/online/OnlineTrends.mjs'
 
 const online = express()

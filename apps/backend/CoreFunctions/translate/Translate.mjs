@@ -1,10 +1,10 @@
-import { TRANSLATE_TARGET, TRANSLATOR_PLATFORM } from "../../../../assets/setting.mjs"
-import { VerifyQueryString } from "../../../../src/core/Core.function.mjs"
-import { Translate } from "../../../../src/core/Core.translate.mjs"
-import V2AccountInfo from "../../../../src/model/twitter_monitor/v2_account_info.js"
-import V2TwitterQuote from "../../../../src/model/twitter_monitor/v2_twitter_quote.js"
-import V2TwitterTweets from "../../../../src/model/twitter_monitor/v2_twitter_tweets.js"
-import { apiTemplate } from "../../../../src/share/Constant.mjs"
+import { TRANSLATE_TARGET, TRANSLATOR_PLATFORM } from "../../../../libs/assets/setting.mjs"
+import { VerifyQueryString } from "../../../../libs/core/Core.function.mjs"
+import { Translate } from "../../../../libs/core/Core.translate.mjs"
+import V2AccountInfo from "../../../../libs/model/twitter_monitor/v2_account_info.js"
+import V2TwitterQuote from "../../../../libs/model/twitter_monitor/v2_twitter_quote.js"
+import V2TwitterTweets from "../../../../libs/model/twitter_monitor/v2_twitter_tweets.js"
+import { apiTemplate } from "../../../../libs/share/Constant.mjs"
 import { GetUid } from "../local/Local.mjs"
 
 

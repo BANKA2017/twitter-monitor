@@ -1,12 +1,12 @@
-import V2TwitterPolls from '../../src/model/twitter_monitor/v2_twitter_polls.js'
-import V2TwitterCards from '../../src/model/twitter_monitor/v2_twitter_cards.js'
+import V2TwitterPolls from '../../libs/model/twitter_monitor/v2_twitter_polls.js'
+import V2TwitterCards from '../../libs/model/twitter_monitor/v2_twitter_cards.js'
 import { Op } from 'sequelize'
-import { Time2SnowFlake } from '../../src/core/Core.tweet.mjs'
-import dbHandle from '../../src/core/Core.db.mjs'
-import { getAudioSpace, getPollResult, getToken } from '../../src/core/Core.fetch.mjs'
-//import { TGPush } from '../../src/core/Core.push.mjs'
+import { Time2SnowFlake } from '../../libs/core/Core.tweet.mjs'
+import dbHandle from '../../libs/core/Core.db.mjs'
+import { getAudioSpace, getPollResult, getToken } from '../../libs/core/Core.fetch.mjs'
+//import { TGPush } from '../../libs/core/Core.push.mjs'
 
-const now = Math.floor(Number(new Date())/1000) - 300
+const now = Math.floor(Date.now()/1000) - 300
 
 // POLLS
 const polls = await V2TwitterPolls.findAll({

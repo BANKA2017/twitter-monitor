@@ -1,30 +1,30 @@
-import { CONFIG_ID, SQL_CONFIG } from '../../../../assets/setting.mjs'
-import { apiTemplate } from '../../../../src/share/Constant.mjs'
+import { CONFIG_ID, SQL_CONFIG } from '../../../../libs/assets/setting.mjs'
+import { apiTemplate } from '../../../../libs/share/Constant.mjs'
 
 //settings
-import V2Config from '../../../../src/model/twitter_monitor/v2_config.js'
+import V2Config from '../../../../libs/model/twitter_monitor/v2_config.js'
 
 //account
-import V2AccountInfo from '../../../../src/model/twitter_monitor/v2_account_info.js'
+import V2AccountInfo from '../../../../libs/model/twitter_monitor/v2_account_info.js'
 
 //tweets info
-import V2TwitterMedia from '../../../../src/model/twitter_monitor/v2_twitter_media.js'
-import V2TwitterEntities from '../../../../src/model/twitter_monitor/v2_twitter_entities.js'
-import V2TwitterPolls from '../../../../src/model/twitter_monitor/v2_twitter_polls.js'
-import V2TwitterCards from '../../../../src/model/twitter_monitor/v2_twitter_cards.js'
-import V2TwitterCardApp from '../../../../src/model/twitter_monitor/v2_twitter_card_app.js'
-import V2TwitterQuote from '../../../../src/model/twitter_monitor/v2_twitter_quote.js'
-import V2TwitterTweets from '../../../../src/model/twitter_monitor/v2_twitter_tweets.js'
+import V2TwitterMedia from '../../../../libs/model/twitter_monitor/v2_twitter_media.js'
+import V2TwitterEntities from '../../../../libs/model/twitter_monitor/v2_twitter_entities.js'
+import V2TwitterPolls from '../../../../libs/model/twitter_monitor/v2_twitter_polls.js'
+import V2TwitterCards from '../../../../libs/model/twitter_monitor/v2_twitter_cards.js'
+import V2TwitterCardApp from '../../../../libs/model/twitter_monitor/v2_twitter_card_app.js'
+import V2TwitterQuote from '../../../../libs/model/twitter_monitor/v2_twitter_quote.js'
+import V2TwitterTweets from '../../../../libs/model/twitter_monitor/v2_twitter_tweets.js'
 
 //twitter data
-import TwitterData from '../../../../src/model/twitter_monitor/twitter_data.js'
+import TwitterData from '../../../../libs/model/twitter_monitor/twitter_data.js'
 
-import { GetEntitiesFromText, VerifyQueryString } from '../../../../src/core/Core.function.mjs'
+import { GetEntitiesFromText, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
 import { Op, QueryTypes, where } from 'sequelize'
-import { Rss } from '../../../../src/core/Core.Rss.mjs'
-import dbHandle from '../../../../src/core/Core.db.mjs'
-import TmpTwitterData from '../../../../src/model/twitter_monitor/tmp_twitter_data.js'
-import V2ServerInfo from '../../../../src/model/twitter_monitor/v2_server_info.js'
+import { Rss } from '../../../../libs/core/Core.Rss.mjs'
+import dbHandle from '../../../../libs/core/Core.db.mjs'
+import TmpTwitterData from '../../../../libs/model/twitter_monitor/tmp_twitter_data.js'
+import V2ServerInfo from '../../../../libs/model/twitter_monitor/v2_server_info.js'
 
 const ApiLocalAccount = async (req, res) => {
     const {data_output} = await getConfigData()
@@ -433,7 +433,7 @@ const ApiLocalChart = async (req, res) => {
     //dataset mode
     const datasetMode = VerifyQueryString(req.query.dataset, '0') !== '0'
     const refresh = VerifyQueryString(req.query.refresh, '0') !== '0'
-    const endTimestamp = Number(VerifyQueryString(req.query.end, Math.floor(Number(new Date()) / 1000)))
+    const endTimestamp = Number(VerifyQueryString(req.query.end, Math.floor(Date.now() / 1000)))
     const tmpLength = Number(VerifyQueryString(req.query.length, 720))
     const length = tmpLength > 2880 ? 2880 : (tmpLength < 1 ? 1 : tmpLength)
     
@@ -572,7 +572,7 @@ const ApiLocalHashtagRank = async (req, res) => {
     const reqCount = Number(VerifyQueryString(req.query.count, 20))
     const count = reqCount > 200 ? 200 : (reqCount < 1 ? 1 : reqCount)
 
-    const toTime = Math.floor(Number(new Date()) / 1000)
+    const toTime = Math.floor(Date.now() / 1000)
     const startTime = toTime - 86400
     let hashtagRank = null
     try {
@@ -615,7 +615,7 @@ const ApiLocalHashtagRank = async (req, res) => {
 }
 
 const ApiLocalTrends = async (req, res) => {
-    const now = Math.floor(Number(new Date()) / 1000)
+    const now = Math.floor(Date.now() / 1000)
     const length = 24
     const count = 50
     //hashtag list

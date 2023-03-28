@@ -1,7 +1,7 @@
 //This file is used for check graphql features after update QueryID
 
-import { getAudioSpace, getConversation, getEditHistory, getTweets, getUserInfo, getVerifiedAvatars } from "../../src/core/Core.fetch.mjs";
-import { GuestToken } from "../../src/core/Core.function.mjs";
+import { getAudioSpace, getConversation, getEditHistory, getTweets, getUserInfo, getVerifiedAvatars } from "../../libs/core/Core.fetch.mjs";
+import { GuestToken } from "../../libs/core/Core.function.mjs";
 
 
 //getUserInfo, getVerifiedAvatars, getTweets, getConversation, getAudioSpace

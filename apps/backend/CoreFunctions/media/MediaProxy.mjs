@@ -1,7 +1,7 @@
-import { getImage } from '../../../../src/core/Core.fetch.mjs'
+import { getImage } from '../../../../libs/core/Core.fetch.mjs'
 import { existsSync, writeFile } from 'node:fs'
-import { PathInfo, VerifyQueryString } from '../../../../src/core/Core.function.mjs'
-import { basePath } from '../../../../src/share/Constant.mjs'
+import { PathInfo, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
+import { basePath } from '../../../../libs/share/NodeConstant.mjs'
 
 const MediaProxy = async (req, res) => {
     //const resSvg = '<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" focusable="false" role="img" aria-label="Placeholder: Deleted"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>'
@@ -26,7 +26,7 @@ const MediaProxy = async (req, res) => {
         res.status(403).end()
         return
     } else if (mediaLinkArray.basename === 'banner.jpg') {
-        getImage(`https://${mediaLinkArray.dirname}`).then(response => {
+        getImage(`https://${mediaLinkArray.dirname.slice(0, -1)}`).then(response => {
             res.setHeader('Content-Type', response.headers['content-type'])
             //res.setHeader('Content-Disposition', 'attachment;filename=banner.jpg')
             //response.data.pipe(res)

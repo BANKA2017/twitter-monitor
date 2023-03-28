@@ -1,5 +1,5 @@
-import { TGPush } from '../../src/core/Core.push.mjs'
-import TwitterData from '../../src/model/twitter_monitor/twitter_data.js'
+import { TGPush } from '../../libs/core/Core.push.mjs'
+import TwitterData from '../../libs/model/twitter_monitor/twitter_data.js'
 
 const latestData = await TwitterData.findOne({
     attributes: ["id", 'timestamp'],

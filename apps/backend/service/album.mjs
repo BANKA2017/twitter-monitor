@@ -3,7 +3,7 @@ import express from 'express'
 import {ApiUserInfo} from '../CoreFunctions/online/OnlineUserInfo.mjs'
 import {ApiTweets} from '../CoreFunctions/online/OnlineTweet.mjs'
 import {AlbumSearch} from '../CoreFunctions/album/Album.mjs'
-import { apiTemplate } from '../../../src/share/Constant.mjs'
+import { apiTemplate } from '../../../libs/share/Constant.mjs'
 
 const album = express()
 
