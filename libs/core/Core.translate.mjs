@@ -1,6 +1,5 @@
 //Translator
 import Translator, { IsChs, IsCht } from "@kdwnil/translator-utils"
-import { TRANSLATE_TARGET, TRANSLATOR_PLATFORM } from "../../libs/assets/setting.mjs"
 import { GetEntitiesFromText } from "./Core.function.mjs"
 
 const translatorPlatform = {
@@ -59,7 +58,7 @@ const targetLanguagePreprocessing = (target = 'en', platform = 'google') => {
     return target
 }
 
-const Translate = async (trInfo = null, target = TRANSLATE_TARGET, platform = TRANSLATOR_PLATFORM) => {
+const Translate = async (trInfo = null, target = 'en', platform = 'google') => {
     if (!trInfo) {
         trInfo = { full_text: "", cache: false, target, translate_source: "Twitter Monitor Translator", translate: "", entities: []}
     }

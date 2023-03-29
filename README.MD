@@ -83,7 +83,7 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 
 ### CloudFlare Workers
 
-* supported album api, online api and media proxy
+* supported album api, online api, media proxy and translator api
 * ootb, just execute `npx wrangler build && npx wrangler publish`
 
 ## Supported Cards
@@ -218,7 +218,7 @@ Those are Chinese articles
 
 ### CloudFlare Workers
 
-* 支持 album api, online api 以及 media proxy
+* 支持 album api, online api, media proxy 以及 翻译 api
 * 开箱即用, 只需要 `npx wrangler build && npx wrangler publish`
 
 
