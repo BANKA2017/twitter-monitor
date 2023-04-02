@@ -84,7 +84,11 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 ### CloudFlare Workers
 
 * supported album api, online api, media proxy and translator api
-* ootb, just execute `npx wrangler build && npx wrangler publish`
+* to deploy it is easy
+  - *read https://developers.cloudflare.com/workers/wrangler/workers-kv/#create-a-kv-namespace-with-wrangler 
+  - create kv space named 'twitter-monitor-workers-kv' in <https://dash.cloudflare.com/> or executed `npx wrangler kv:namespace create kv`
+  - copy the value of 'id' into 'kv_namespaces[0].id'
+  - execute `npx wrangler build && npx wrangler publish`
 
 ## Supported Cards
 
@@ -133,7 +137,7 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 ## Sub packages
 
 - `FastText` for language identity, [Read more](./tree/master/packages/fasttext)
-- `AxiosHelper` used to fix the issue that CloudFlare Workers unable to use axios, [阅读更多](./tree/master/packages/axios-helper)
+- `AxiosHelper` used to fix the issue that CloudFlare Workers unable to use axios, [Read more](./tree/master/packages/axios-helper)
 
 ## Thanks
 
@@ -219,7 +223,11 @@ Those are Chinese articles
 ### CloudFlare Workers
 
 * 支持 album api, online api, media proxy 以及 翻译 api
-* 开箱即用, 只需要 `npx wrangler build && npx wrangler publish`
+* 部署只需要简单的几步
+  - *（可跳过）阅读 https://developers.cloudflare.com/workers/wrangler/workers-kv/#create-a-kv-namespace-with-wrangler 
+  - 在 <https://dash.cloudflare.com/> 创建一个叫 'twitter-monitor-workers-kv' 的 kv 命名空间，或者直接执行 `npx wrangler kv:namespace create kv`
+  - 将返回的 'id' 的值拷贝到 'kv_namespaces[0].id'
+  - 执行 `npx wrangler build && npx wrangler publish`
 
 
 ## 支持的卡片类型

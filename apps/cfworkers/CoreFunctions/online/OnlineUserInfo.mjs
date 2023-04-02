@@ -2,7 +2,7 @@ import { GenerateAccountInfo } from "../../../../libs/core/Core.account.mjs"
 import { getUserInfo } from "../../../../libs/core/Core.fetch.mjs"
 import { GetEntitiesFromText, VerifyQueryString } from "../../../../libs/core/Core.function.mjs"
 import { apiTemplate } from "../../../../libs/share/Constant.mjs"
-import { json } from "../../share.mjs"
+import { json, updateGuestToken } from "../../share.mjs"
 
 const ApiUserInfo = async (req, env) => {
     const name = VerifyQueryString(req.query.name, '')
@@ -13,12 +13,10 @@ const ApiUserInfo = async (req, env) => {
     }
     let userInfo = {}
     try {
-        userInfo = await getUserInfo(name || uid, req.guest_token.token)
-        //if (!name) {
-        //    global.guest_token.updateRateLimit('UserByRestId')
-        //} else {
-        //    global.guest_token.updateRateLimit('UserByScreenName')
-        //}
+        userInfo = await getUserInfo(name || uid, req.guest_token)
+        
+        //updateGuestToken
+        await updateGuestToken(env, 'guest_token', 0, userInfo.headers.get('x-rate-limit-remaining') < 20)
     } catch (e) {
         console.error(`[${new Date()}]: #OnlineUserInfo #${name || uid} #${e.code} ${e.message}`)
         return json(apiTemplate(e.code, e.message))

@@ -87,7 +87,7 @@ for (const member of member_list.users) {
         //followers
         //dayRange
         const tmpNow = (new Date(sqlFollowersDataP.timestamp * 1000))
-        const dayRange = '' + tmpNow.getFullYear() + (tmpNow.getMonth() + 1) + tmpNow.getDate()
+        const dayRange = '' + tmpNow.getFullYear() + String(tmpNow.getMonth() + 1).padStart(2, '0') + String(tmpNow.getDate()).padStart(2, '0')
         if (!userData.followers[dayRange]) {
             userData.followers[dayRange] = {}
         }
@@ -115,7 +115,7 @@ for (const member of member_list.users) {
     })
     for (const sqlTweetsDataP of sqlTweetsData) {
         const tmpNow = (new Date(sqlTweetsDataP.time * 1000))
-        const dayRange = '' + tmpNow.getFullYear() + (tmpNow.getMonth() + 1) + tmpNow.getDate()
+        const dayRange = '' + tmpNow.getFullYear() + String(tmpNow.getMonth() + 1).padStart(2, '0') + String(tmpNow.getDate()).padStart(2, '0')
 
         if (!userData.tweets_daily[dayRange]) {
             userData.tweets_daily[dayRange] = tweetsDataTemplate()

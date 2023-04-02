@@ -1,12 +1,17 @@
 import { getTrends } from "../../../../libs/core/Core.fetch.mjs"
 import { apiTemplate } from "../../../../libs/share/Constant.mjs"
-import { json } from "../../share.mjs"
+import { json, updateGuestToken } from "../../share.mjs"
 
 
 const ApiTrends = async (req, env) => {
     let tmpTrends = []
     try {
-        tmpTrends = (await getTrends('trends', 20, req.guest_token2.token)).data.timeline.instructions[1].addEntries.entries.filter(entity => entity.entryId === 'trends')[0].content.timelineModule.items.map(item => ({
+        const tmpTrendsRequest = await getTrends('trends', 20, global.guest_token2.token)
+
+        //updateGuestToken
+        await updateGuestToken(env, 'guest_token2', 1, tmpTrendsRequest.headers.get('x-rate-limit-remaining') < 20)
+
+        tmpTrends = tmpTrendsRequest.data.timeline.instructions[1].addEntries.entries.filter(entity => entity.entryId === 'trends')[0].content.timelineModule.items.map(item => ({
             name: item?.item?.content?.trend?.name ?? '',
             domainContext: item?.item?.content?.trend?.trendMetadata?.domainContext ?? '',
             metaDescription: item?.item?.content?.trend?.trendMetadata?.metaDescription ?? undefined,

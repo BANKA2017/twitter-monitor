@@ -3,7 +3,7 @@ import { getAudioSpace, getLiveVideoStream, getConversation, getPollResult, getT
 import { GetEntitiesFromText, VerifyQueryString } from "../../../../libs/core/Core.function.mjs"
 import { AudioSpace, Broadcast, Time2SnowFlake, Tweet, TweetsInfo } from "../../../../libs/core/Core.tweet.mjs"
 import { apiTemplate } from "../../../../libs/share/Constant.mjs"
-import { json } from "../../share.mjs"
+import { json, updateGuestToken } from "../../share.mjs"
 
 const ApiTweets = async (req, env) => {
     const isRssMode = req.query.format === 'rss'
@@ -26,8 +26,9 @@ const ApiTweets = async (req, env) => {
     let tweets = {}
     if (isConversation) {
         try {
-            tweets = await getConversation(cursor, req.guest_token.token)
-            //global.guest_token.updateRateLimit('TweetDetail')
+            tweets = await getConversation(cursor, req.guest_token)
+            //updateGuestToken
+            await updateGuestToken(env, 'guest_token', 0, tweets.headers.get('x-rate-limit-remaining') < 20)
         } catch (e) {
             console.error(`[${new Date()}]: #OnlineTweetsConversation #${cursor} #${e.code} ${e.message}`)
             return json(apiTemplate(e.code, e.message))
@@ -36,7 +37,7 @@ const ApiTweets = async (req, env) => {
     } 
     //else if (name !== '' && displayType === 'all') {
     //    try {
-    //        tweets = await getTweets(name, cursor, req.guest_token.token, 40, true, true, false)
+    //        tweets = await getTweets(name, cursor, req.guest_token, 40, true, true, false)
     //        //global.guest_token.updateRateLimit('UserTweets')
     //    } catch (e) {
     //        console.error(`[${new Date()}]: #OnlineTweetsConversation #${cursor} #${e.code} ${e.message}`)
@@ -77,8 +78,10 @@ const ApiTweets = async (req, env) => {
         }
 
         try {
-            tweets = await getTweets(queryArray.join(' '), '', req.guest_token.token, count, true, false, true)
-            //global.guest_token.updateRateLimit('Search')
+            tweets = await getTweets(queryArray.join(' '), '', req.guest_token, count, true, false, true)
+            
+            //updateGuestToken
+            await updateGuestToken(env, 'guest_token', 0, tweets.headers.get('x-rate-limit-remaining') < 20)
         } catch (e) {
             console.error(`[${new Date()}]: #OnlineTweetsTimeline #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
             return json(apiTemplate(e.code, e.message))
@@ -98,7 +101,7 @@ const ApiTweets = async (req, env) => {
     }))
 }
 
-const ApiSearch = async (req, res) => {
+const ApiSearch = async (req, env) => {
     const isRssMode = req.query.format === 'rss'
     const type = req.type//req.params[0]
     const advancedSearchMode = (req.query.advanced || '0') === '1'
@@ -168,8 +171,9 @@ const ApiSearch = async (req, res) => {
         queryArray.push('max_id:' + String(Time2SnowFlake(end * 1000)))
     }
     try {
-        tweets = await getTweets(queryArray.join(' '), '', req.guest_token.token, queryCount, true, false, true)
-        //global.guest_token.updateRateLimit('Search')
+        tweets = await getTweets(queryArray.join(' '), '', req.guest_token, queryCount, true, false, true)
+        //updateGuestToken
+        await updateGuestToken(env, 'guest_token', 0, tweets.headers.get('x-rate-limit-remaining') < 20)
     } catch (e) {
         console.error(`[${new Date()}]: #OnlineTweetsSearch #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
         return json(apiTemplate(e.code, e.message))
@@ -187,13 +191,15 @@ const ApiSearch = async (req, res) => {
     }))
 }
 
-const ApiPoll = async (req, res) => {
+const ApiPoll = async (req, env) => {
     const tweet_id = VerifyQueryString(req.query.tweet_id, 0)
     if (!tweet_id) {
         return json(apiTemplate())
     }
-    const tmpPollData = await getPollResult(tweet_id, req.guest_token.token)
-    //global.guest_token.updateRateLimit('TweetDetail')
+    const tmpPollData = await getPollResult(tweet_id, req.guest_token)
+    
+    //updateGuestToken
+    await updateGuestToken(env, 'guest_token', 0, tmpPollData.headers.get('x-rate-limit-remaining') < 20)
     if (tmpPollData.code === 200) {
         return json(apiTemplate(200, 'OK', tmpPollData.data.map(poll => Number(poll))))
     } else {
@@ -202,14 +208,16 @@ const ApiPoll = async (req, res) => {
     }
 }
 
-const ApiAudioSpace = async (req, res) => {
+const ApiAudioSpace = async (req, env) => {
     const id = VerifyQueryString(req.query.id, '')
     if (!id) {
         return json(apiTemplate())
     }
     //await req.guest_token.updateGuestToken()
-    const tmpAudioSpaceData = await getAudioSpace(id, req.guest_token.token)
-    //global.guest_token.updateRateLimit('AudioSpaceById')
+    const tmpAudioSpaceData = await getAudioSpace(id, req.guest_token)
+    
+    //updateGuestToken
+    await updateGuestToken(env, 'guest_token', 0, tmpAudioSpaceData.headers.get('x-rate-limit-remaining') < 20)
     if (tmpAudioSpaceData.data?.data?.audioSpace || false) {
         let tmpAudioSpace = AudioSpace(tmpAudioSpaceData.data)
         //get link
@@ -237,7 +245,7 @@ const ApiAudioSpace = async (req, res) => {
     }
 }
 
-const ApiBroadcast = async (req, res) => {
+const ApiBroadcast = async (req, env) => {
     const id = VerifyQueryString(req.query.id, '')
     if (!id) {
         return json(apiTemplate())
@@ -246,8 +254,10 @@ const ApiBroadcast = async (req, res) => {
     //TODO check Broadcast api rate limit
     //await req.guest_token.updateGuestToken()
     try {
-        const tmpBroadcastData = await getBroadcast(id, req.guest_token.token)
-        //global.guest_token.updateRateLimit('BroadCast')
+        const tmpBroadcastData = await getBroadcast(id, req.guest_token)
+        
+        //updateGuestToken
+        await updateGuestToken(env, 'guest_token', 0, tmpBroadcastData.headers.get('x-rate-limit-remaining') < 20)
         let tmpBroadcast = Broadcast(tmpBroadcastData.data)
         //get link
         if (tmpBroadcast.is_available_for_replay || (Number(tmpBroadcast.start) <= Date.now() && tmpBroadcast.end === '0')) {
@@ -276,16 +286,19 @@ const ApiBroadcast = async (req, res) => {
     }
 }
 
-const ApiMedia = async (req, res) => {
+const ApiMedia = async (req, env) => {
     const tweet_id = VerifyQueryString(req.query.tweet_id, 0)
     const authorizationMode = VerifyQueryString(req.query.mode, 1)
     if (!tweet_id) {
         return json(apiTemplate())
     }
 
-    getConversation(tweet_id, req.guest_token2.token, true, authorizationMode).then(response => {
-        //global.guest_token2.updateRateLimit('TweetDetail')
-        const tweetsInfo = TweetsInfo(response.data, true)
+    try {
+        const tmpConversation = await getConversation(tweet_id, req.guest_token2, true, authorizationMode)
+        
+        //updateGuestToken
+        await updateGuestToken(env, 'guest_token2', 1, tmpConversation.headers.get('x-rate-limit-remaining') < 20)
+        const tweetsInfo = TweetsInfo(tmpConversation.data, true)
         if (tweetsInfo.errors.code !== 0) {
             return json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
         } else if (!tweetsInfo.contents.some(tweet => path2array('tweet_id', tweet) === tweet_id)) {
@@ -302,13 +315,12 @@ const ApiMedia = async (req, res) => {
                 })
             }))
         }
-        
-    }).catch(e => {
+    } catch (e) {
         console.log(e)
         console.error(`[${new Date()}]: #OnlineTweetMedia #${tweet_id} #${e.code} ${e.message}`)
         //global.guest_token2.updateRateLimit('TweetDetail')
         return json(apiTemplate(e.code, e.message))
-    })
+    }
 }
 
 const TweetsData = (content = {}, users = {}, contents = [], precheckName = '', graphqlMode = true, isConversation = false) => {
@@ -359,7 +371,7 @@ const returnDataForTweets = (tweet = {}, historyMode = false, tweetEntities = []
         tweet.pollObject = tweetPolls.filter(poll => poll.tweet_id === tweet.tweet_id).map(poll => {
             delete poll.tweet_id
             poll.checked = !!poll.checked
-            poll.count = 0
+            //poll.count = 0
             return poll
         })
     }

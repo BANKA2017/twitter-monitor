@@ -1,5 +1,5 @@
 import express from 'express'
-import { ApiLocalTranslate, ApiPredict, ApiTranslate } from '../CoreFunctions/translate/Translate.mjs'
+import { ApiLocalTranslate, ApiOfficialTranslate, ApiPredict, ApiTranslate } from '../CoreFunctions/translate/Translate.mjs'
 
 const translate = express()
 
@@ -7,4 +7,5 @@ const translate = express()
 translate.get('/local/', ApiLocalTranslate)
 translate.post('/online/', ApiTranslate)
 translate.get('/predict/', ApiPredict)
+translate.get('/', ApiOfficialTranslate)
 export default translate

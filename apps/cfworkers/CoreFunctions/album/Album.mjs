@@ -1,7 +1,7 @@
 import { getConversation, getTweets } from "../../../../libs/core/Core.fetch.mjs"
 import { VerifyQueryString } from "../../../../libs/core/Core.function.mjs"
 import { apiTemplate } from "../../../../libs/share/Constant.mjs"
-import { json } from "../../share.mjs"
+import { json, updateGuestToken } from "../../share.mjs"
 import { GenerateData } from "../online/OnlineTweet.mjs"
 
 const AlbumSearch = async (req, env) => {
@@ -29,16 +29,19 @@ const AlbumSearch = async (req, env) => {
     try {
         if (isPhotos) {
             //TODO fix tokens
-            tweets = await getConversation(tweetId, req.guest_token.token, true)
+            tweets = await getConversation(tweetId, req.guest_token, true)
             //global.guest_token.updateRateLimit('TweetDetail')
         } else {
-            tweets = await getTweets(queryArray.join(' '), '', req.guest_token.token, 20, true, false, true)
+            tweets = await getTweets(queryArray.join(' '), '', req.guest_token, 20, true, false, true)
             //global.guest_token.updateRateLimit('Search')
         }
     } catch (e) {
         console.error(`[${new Date()}]: #Album #${e.code} ${e.message}`)
         return json(apiTemplate(e.code, e.message, {}, 'album'))
     }
+    //updateGuestToken
+    await updateGuestToken(env, 'guest_token', 0, tweets.headers.get('x-rate-limit-remaining') < 20)
+
     let {tweetsInfo, tweetsContent} = GenerateData(tweets, isPhotos)
     if (tweetsInfo.errors.code !== 0) {
         return json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message, {}, 'album'))

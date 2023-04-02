@@ -375,6 +375,7 @@ while (true) {
                         if (inSql.poll) {
                             insert.v2_twitter_polls = insert.v2_twitter_polls.concat(generatedTweetData.polls.map(poll => {
                                 poll.origin_tweet_id = inSql.origin_tweet_id
+                                poll.count = 0
                                 return poll
                             }))
                         }

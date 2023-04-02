@@ -5,6 +5,9 @@
     "main": "index.js",
     "exports": {
         ".": {
+            "workerd": {
+                "default": "./index.js"
+            },
             "browser": {
                 "default": "./index.js"
             },

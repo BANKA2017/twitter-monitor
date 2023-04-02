@@ -52,7 +52,7 @@ const generateUrl = (user = '', isGraphql = false) => {
   }
 }
 
-const coreFetch = async (url = '', guest_token = {}, cookie = [], authorization = 0) => {
+const coreFetch = async (url = '', guest_token = {}, cookie = [], authorization = 0, headers = {}) => {
   if (!url) {
     throw "tmv3: Invalid url"
   }
@@ -63,6 +63,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = [], authorization 
   return await new Promise((resolve, reject) => {
     axios.get(url, {
       headers: {
+        ...headers,
         authorization: Authorization[authorization],
         'x-guest-token': guest_token.token,
         'x-csrf-token': ct0,
@@ -96,15 +97,17 @@ const getToken = async (authorizationMode = 0) => {
     cookies: {},
     rate_limit: {
       UserByRestId: 470,//500
-      UserByScreenName: 970,//1000
-      UserTweets: 970,//1000
-      TweetDetail: 970,//1000//poll also use this
+      UserByScreenName: 470,//500
+      UserTweets: 470,//500
+      TweetDetail: 470,//500//poll also use this
       AudioSpaceById: 470,//500
       BroadCast: 185,//187
-      Search: 345,//350
-      Recommendation: 55,//60
+      Search: 245,//250
+      Recommendation: 55,//60,
+      Translation: 185,//187
+      Trending: 19990,//20000
     },
-    expire: (Date.now() + 10500000)//10800
+    expire: (Date.now() + 870000)//15 min
   }
   return await (new Promise((resolve, reject) => {
     //2000 per 30 min i guess
@@ -508,6 +511,22 @@ const getArticle = async (id = '', guest_token = {}) => {
   })
 }
 
+//https://github.com/FixTweet/FixTweet/blob/main/src/helpers/translate.ts
+const getTranslate = async (id = '0', type = 'tweets', target = 'en', guest_token = {}) => {
+  if (!guest_token.success) {
+    guest_token = await getToken()
+  }
+  return await new Promise((resolve, reject) => {
+    const url = (type === 'profile') ? `https://twitter.com/i/api/1.1/strato/column/None/profileUserId=${id},destinationLanguage=None,translationSource=Some(Google)/translation/service/translateProfile` : `https://twitter.com/i/api/1.1/strato/column/None/tweetId=${id},destinationLanguage=None,translationSource=Some(Google),feature=None,timeout=None,onlyCached=None/translation/service/translateTweet`
+
+    coreFetch(url, guest_token, [], 0, {'x-twitter-client-language': target}).then(response => {
+      resolve(response)
+    }).catch(e => {
+      reject(e)
+    })
+  })
+}
+
 //const getMmoment = async () => {
 //  
 //}
@@ -595,4 +614,4 @@ const getImage = async (path = '', headers = {}) => {
   })
 }
 
-export {getToken, coreFetch, getUserInfo, getVerifiedAvatars, getRecommendations, getMediaTimeline, getTweets, getConversation, getEditHistory, getPollResult, getAudioSpace, getBroadcast, getLiveVideoStream, getTypeahead, getArticle, getTrends, getFollowingOrFollowers, getImage, Authorization}
+export {getToken, coreFetch, getUserInfo, getVerifiedAvatars, getRecommendations, getMediaTimeline, getTweets, getConversation, getEditHistory, getPollResult, getAudioSpace, getBroadcast, getLiveVideoStream, getTypeahead, getArticle, getTranslate, getTrends, getFollowingOrFollowers, getImage, Authorization}

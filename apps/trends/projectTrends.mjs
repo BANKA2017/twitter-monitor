@@ -212,7 +212,7 @@ for (const config of trendsConfig) {
 
         generateData.data.push(userData)
 
-        writeFileSync(`${to}/${globalStart.getFullYear()}-${globalStart.getMonth() + 1}-${globalStart.getDate()}.json`, JSON.stringify(generateData))
+        writeFileSync(`${to}/${globalStart.getFullYear()}-${String(globalStart.getMonth() + 1).padStart(2, '0')}-${String(globalStart.getDate()).padStart(2, '0')}.json`, JSON.stringify(generateData))
         pushText += `${config.prefix}: ${member.name_cn} cost: ${(new Date() - startTime) / 1000}\n`
 
         console.log(`cost: ` + ((new Date() - startTime) / 1000))
@@ -222,8 +222,8 @@ for (const config of trendsConfig) {
     if (existsSync(`${to}/date.json`)) {
         dateInfo = JSON.parse(readFileSync(`${to}/date.json`).toString())
     }
-    if (!dateInfo.includes(`${globalStart.getFullYear()}-${globalStart.getMonth() + 1}-${globalStart.getDate()}`)) {
-        dateInfo.push(`${globalStart.getFullYear()}-${globalStart.getMonth() + 1}-${globalStart.getDate()}`)
+    if (!dateInfo.includes(`${globalStart.getFullYear()}-${String(globalStart.getMonth() + 1).padStart(2, '0')}-${String(globalStart.getDate()).padStart(2, '0')}`)) {
+        dateInfo.unshift(`${globalStart.getFullYear()}-${String(globalStart.getMonth() + 1).padStart(2, '0')}-${String(globalStart.getDate()).padStart(2, '0')}`)
     }
     writeFileSync(`${to}/date.json`, JSON.stringify(dateInfo))
 

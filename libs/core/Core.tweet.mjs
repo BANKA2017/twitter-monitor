@@ -702,6 +702,7 @@ const Card = (cardInfo = {}, uid = '0', tweetId = '0', hidden = false, url = '',
                 tweet_id: tweetId,
                 hidden,
                 choice_label: cardInfo.binding_values[`choice${pollCount}_label`].string_value,
+                count: Number(cardInfo.binding_values[`choice${pollCount}_count`].string_value),
                 poll_order: pollCount,
                 end_datetime: card_end_time
             })

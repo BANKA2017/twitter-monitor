@@ -2,29 +2,28 @@ import { Router } from 'itty-router'
 import { ApiUserInfo } from './CoreFunctions/online/OnlineUserInfo.mjs'
 import { ApiAudioSpace, ApiBroadcast, ApiMedia, ApiPoll, ApiSearch, ApiTweets } from './CoreFunctions/online/OnlineTweet.mjs'
 import { AlbumSearch } from './CoreFunctions/album/Album.mjs'
-import { json } from './share.mjs'
+import { json, updateGuestToken } from './share.mjs'
 import { ApiTrends } from './CoreFunctions/online/OnlineTrends.mjs'
 import { apiTemplate } from '../../libs/share/Constant.mjs'
 import { MediaProxy } from './CoreFunctions/media/MediaProxy.mjs'
-import { ApiTranslate } from './CoreFunctions/translate/Translate.mjs'
+import { ApiOfficialTranslate, ApiTranslate } from './CoreFunctions/translate/Translate.mjs'
 
 const workersApi = Router()
-//TODO just use one type
-//const guest_token = new GuestToken
-//const guest_token2 = new GuestToken
-//
-//guest_token.updateGuestToken(0)
-//guest_token2.updateGuestToken(1)
 
-//TODO middleware
-const getToken = (req) => {
-    req.guest_token = { token: {} }//new GuestToken
-    req.guest_token2 = { token: {} }//new GuestToken
-    //req.guest_token.updateGuestToken(0)
-    //req.guest_token2.updateGuestToken(1)
+// middleware
+const updateToken = async (req, env) => {
+    if ((new URL(req.url)).pathname === '/favicon.ico') {return}
+    req.guest_token = JSON.parse((await env.kv.get('guest_token'))??'{}')// { token: {} }//new GuestToken
+    req.guest_token2 = JSON.parse((await env.kv.get('guest_token2'))??'{}')//new GuestToken
+    if (!req.guest_token?.token || req.guest_token.expire < Date.now) {
+        req.guest_token = await updateGuestToken(env, 'guest_token', 0, true)
+    }
+    if (!req.guest_token2?.token || req.guest_token2.expire < Date.now) {
+        req.guest_token2 = await updateGuestToken(env, 'guest_token2', 1, true)
+    }
 }
 
-workersApi.all('*', getToken)
+workersApi.all('*', updateToken)
 
 //favicon
 workersApi.all('/favicon.ico', () => new Response(null, { status: 200 }))
@@ -78,6 +77,7 @@ workersApi.post('/translate/online/', async (req) => {
         req.postBody = new Map([['text', '']])
     }
 }, ApiTranslate)
+workersApi.get('/translate/', ApiOfficialTranslate)
 
 //media
 //media proxy

@@ -154,7 +154,7 @@ const ApiLegacyData = async (req, res) => {
         res.json(apiTemplate(0, 'OK', chartData.map(data => {
             const tmpDate = new Date(data.timestamp*1000)
             return {
-                timestamp: `${tmpDate.getFullYear()}-${tmpDate.getMonth()+1}-${tmpDate.getDate()} ${tmpDate.getHours()}:${tmpDate.getMinutes()}`,
+                timestamp: `${tmpDate.getFullYear()}-${String(tmpDate.getMonth()+1).padStart(2, '0')}-${String(tmpDate.getDate()).padStart(2, '0')} ${String(tmpDate.getHours()).padStart(2, '0')}:${String(tmpDate.getMinutes()).padStart(2, '0')}`,
                 followers: String(data.followers),
                 following: String(data.following),
                 statuses_count: String(data.statuses_count),
