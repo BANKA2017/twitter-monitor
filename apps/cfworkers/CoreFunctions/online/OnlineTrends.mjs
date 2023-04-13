@@ -6,7 +6,7 @@ import { json, updateGuestToken } from "../../share.mjs"
 const ApiTrends = async (req, env) => {
     let tmpTrends = []
     try {
-        const tmpTrendsRequest = await getTrends('trends', 20, global.guest_token2.token)
+        const tmpTrendsRequest = await getTrends('trends', 20, req.guest_token2.token)
 
         //updateGuestToken
         await updateGuestToken(env, 'guest_token2', 1, tmpTrendsRequest.headers.get('x-rate-limit-remaining') < 20)

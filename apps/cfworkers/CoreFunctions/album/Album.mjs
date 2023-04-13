@@ -5,12 +5,15 @@ import { json, updateGuestToken } from "../../share.mjs"
 import { GenerateData } from "../online/OnlineTweet.mjs"
 
 const AlbumSearch = async (req, env) => {
-    const platformList = {ns: 'nintendo_switch_share', ps: 'PlayStation®Network'}
-    const platform = ['ns', 'ps'].includes(req.query.platform) ? platformList[req.query.platform] : platformList['ns']
+    const platformList = {ns: 'nintendo_switch_share', ps: 'PlayStation®Network', xbox: 'xbox_one_social', xbox_game_bar: "xbox_game_bar"}
+    const platform = ['ns', 'ps', 'xbox'].includes(req.query.platform) ? platformList[req.query.platform] : platformList['ns']
     const name = VerifyQueryString(req.query.name, '')
     const tweetId = VerifyQueryString(req.query.tweet_id, '')
     const gameName = VerifyQueryString(req.query.game, '')
     const queryArray = ['filter:twimg OR filter:consumer_video OR filter:pro_video', `source:${platform}`]
+    if (platform === 'xbox') {
+        queryArray.push(`OR source:xbox_game_bar`)//for game bar
+    }
 
     const isPhotos = !!(req.query.photos)
     if (!isPhotos) {
@@ -48,7 +51,7 @@ const AlbumSearch = async (req, env) => {
     }
     tweetsContent = tweetsContent.map(content => ({
         media: content.mediaObject,
-        entities: content.entities.filter(entity => entity.type === 'hashtag' && !['ps6share', 'ps5share', 'ps4share', 'ps3share', 'ps2share', 'psshare', 'nintendoswitch'].includes(entity.text.toLowerCase())).map(entity => entity.text) ,
+        entities: content.entities.filter(entity => entity.type === 'hashtag' && !['ps6share', 'ps5share', 'ps4share', 'ps3share', 'ps2share', 'psshare', 'nintendoswitch', 'xbox', 'pcgaming', 'xboxshare', 'xboxseriesx', 'xboxseriess', 'xboxone'].includes(entity.text.toLowerCase())).map(entity => entity.text) ,
         source: content.source,
         time: content.time,
         tweet_id: content.tweet_id,
