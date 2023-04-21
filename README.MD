@@ -88,7 +88,7 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
   - *read https://developers.cloudflare.com/workers/wrangler/workers-kv/#create-a-kv-namespace-with-wrangler 
   - create kv space named 'twitter-monitor-workers-kv' in <https://dash.cloudflare.com/> or executed `npx wrangler kv:namespace create kv`
   - copy the value of 'id' into 'kv_namespaces[0].id'
-  - execute `npx wrangler build && npx wrangler publish`
+  - execute `npx wrangler publish`
 
 ## Supported Cards
 
@@ -227,7 +227,7 @@ Those are Chinese articles
   - *（可跳过）阅读 https://developers.cloudflare.com/workers/wrangler/workers-kv/#create-a-kv-namespace-with-wrangler 
   - 在 <https://dash.cloudflare.com/> 创建一个叫 'twitter-monitor-workers-kv' 的 kv 命名空间，或者直接执行 `npx wrangler kv:namespace create kv`
   - 将返回的 'id' 的值拷贝到 'kv_namespaces[0].id'
-  - 执行 `npx wrangler build && npx wrangler publish`
+  - 执行 `npx wrangler publish`
 
 
 ## 支持的卡片类型

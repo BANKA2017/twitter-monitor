@@ -11,8 +11,8 @@ const AlbumSearch = async (req, env) => {
     const tweetId = VerifyQueryString(req.query.tweet_id, '')
     const gameName = VerifyQueryString(req.query.game, '')
     const queryArray = ['filter:twimg OR filter:consumer_video OR filter:pro_video', `source:${platform}`]
-    if (platform === 'xbox') {
-        queryArray.push(`OR source:xbox_game_bar`)//for game bar
+    if (platform === 'xbox_one_social') {
+        queryArray.push(`OR source:xbox_game_bar OR #XboxShare`)//for game bar and android/iOS app
     }
 
     const isPhotos = !!(req.query.photos)

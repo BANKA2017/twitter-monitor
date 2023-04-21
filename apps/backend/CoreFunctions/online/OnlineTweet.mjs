@@ -8,15 +8,17 @@ const ApiTweets = async (req, res) => {
     const isRssMode = req.query.format === 'rss'
     const queryCount = VerifyQueryString(req.query.count, 0)
     const count = queryCount ? (queryCount > 100 ? 100 : (queryCount < 1 ? 1 : queryCount)) : (isRssMode ? 20 : 10)
-    const cursor = String(VerifyQueryString(req.query.tweet_id, 0))
+    const cursor = String(req.query.cursor??req.query.tweet_id??'0')//TODO Notice, VerifyQueryString()
+
     const name = VerifyQueryString(req.query.name, '')
+    const uid = VerifyQueryString(req.query.uid, 0)
 
     const queryArray = []
     //use $tweet_id to replace $cursor
     //TODO reuse cursor as name
 
     // display type all, self, retweet, media, album, space
-    const displayType = ["all", "self", "retweet", "media", "album", "space"].includes(req.query.display) ? req.query.display : 'all'
+    const displayType = ["all", "include_reply"].includes(req.query.display) ? req.query.display : 'all'
     
     //conversation
     const isConversation = !!(Number(req.query.is_status, 0) && cursor !== '0')
@@ -49,38 +51,42 @@ const ApiTweets = async (req, res) => {
             res.json(apiTemplate(404, 'No such account'))
             return
         }
-        queryArray.push('-filter:replies')
-        if (name) {
-            queryArray.push(`from:${name}`)
-        }
-        switch (displayType) {
-            case 'self':
-                queryArray.push('-filter:nativeretweets', '-filter:retweets', 'include:quote')
-                break
-            case 'retweet':
-                queryArray.push('filter:nativeretweets', 'filter:retweets', 'include:quote')
-                break
-            case 'media':
-                queryArray.push('filter:media')
-                break
-            case 'album':
-                queryArray.push('-filter:nativeretweets', '-filter:retweets', 'include:quote', 'filter:media')
-                break
-            case 'space':
-                queryArray.push('filter:spaces')
-                break
-            default:
-                queryArray.push('include:nativeretweets', 'include:retweets', 'include:quote')
-        }
+        //queryArray.push('-filter:replies')
+        //if (name) {
+        //    queryArray.push(`from:${name}`)
+        //}
+        //switch (displayType) {
+        //    case 'self':
+        //        queryArray.push('-filter:nativeretweets', '-filter:retweets', 'include:quote')
+        //        break
+        //    case 'retweet':
+        //        queryArray.push('filter:nativeretweets', 'filter:retweets', 'include:quote')
+        //        break
+        //    case 'media':
+        //        queryArray.push('filter:media')
+        //        break
+        //    case 'album':
+        //        queryArray.push('-filter:nativeretweets', '-filter:retweets', 'include:quote', 'filter:media')
+        //        break
+        //    case 'space':
+        //        queryArray.push('filter:spaces')
+        //        break
+        //    case 'include_reply':
+        //        queryArray.push('include:reply')
+        //        break;
+        //    default:
+        //        queryArray.push('include:nativeretweets', 'include:retweets', 'include:quote')
+        //}
 
         //$queryString = "from:$name since:2000-01-01 include:nativeretweets include:retweets include:quote";//$name 2000-01-01 include retweets
-        if (cursor !== '0') {
-            queryArray.push((VerifyQueryString(req.query.refresh, '0') !== '0') ? `since_id:${BigInt(cursor) + BigInt(1)}` : `max_id:${BigInt(cursor) - BigInt(1)}`)
-        }
+        //if (cursor !== '0') {
+        //    queryArray.push((VerifyQueryString(req.query.refresh, '0') !== '0') ? `since_id:${BigInt(cursor) + BigInt(1)}` : `max_id:${BigInt(cursor) - BigInt(1)}`)
+        //}
 
         try {
-            tweets = await getTweets(queryArray.join(' '), '', global.guest_token.token, count, true, false, true)
-            global.guest_token.updateRateLimit('Search')
+            tweets = await getTweets(uid, cursor, global.guest_token.token, count, true, true, false, displayType === 'include_reply')
+            //tweets = await getTweets(queryArray.join(' '), '', global.guest_token.token, count, true, false, true)
+            global.guest_token.updateRateLimit('UserTweets')
         } catch (e) {
             console.error(`[${new Date()}]: #OnlineTweetsTimeline #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
             res.json(apiTemplate(e.code, e.message))
@@ -89,7 +95,7 @@ const ApiTweets = async (req, res) => {
         
     }
 
-    const {tweetsInfo, tweetsContent} = GenerateData(tweets, isConversation, (loadConversation ? '' : name))
+    const {tweetsInfo, tweetsContent} = GenerateData(tweets, isConversation, (loadConversation ? '' : name), true)
     if (tweetsInfo.errors.code !== 0) {
         res.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
         return
@@ -97,8 +103,10 @@ const ApiTweets = async (req, res) => {
     res.json(apiTemplate(200, 'OK', {
         tweets: isConversation ? tweetsContent.reverse() : tweetsContent,
         hasmore: !isConversation && !!tweetsContent.length,
-        top_tweet_id: tweetsInfo.tweetRange.max || '0',
-        bottom_tweet_id: tweetsInfo.tweetRange.min || '0'
+        //top_tweet_id: tweetsInfo.tweetRange.max || '0',
+        //bottom_tweet_id: tweetsInfo.tweetRange.min || '0'
+        top_tweet_id: tweetsInfo.cursor.top || '',
+        bottom_tweet_id: tweetsInfo.cursor.bottom || ''
     }))
 }
 
@@ -435,13 +443,25 @@ const returnDataForTweets = (tweet = {}, historyMode = false, tweetEntities = []
     return tweet
 }
 
-const GenerateData = (tweets, isConversation = false, filterName = '') => {
-    const tweetsInfo = TweetsInfo(tweets.data, isConversation)
+const GenerateData = (tweets, isConversation = false, filterName = '', graphqlMode = false) => {
+    const tweetsInfo = TweetsInfo(tweets.data, graphqlMode)
     if (tweetsInfo.errors.code !== 0) {
         return {tweetsInfo: tweetsInfo, tweetsContent: []}
     }
     const tweetsContent = tweetsInfo.contents.map(content => {
-        if (isConversation && content?.content?.displayType === 'VerticalConversation') {
+        if (!isConversation && graphqlMode) {
+            if (!content || content?.content?.entryType !== 'TimelineTimelineItem') {
+                return false
+            }
+            let tmpData = TweetsData(content, {}, [], '', graphqlMode, false)
+        
+            if (tmpData.code === 200 && Object.keys(tmpData.data).length) {
+                tmpData.data.user_info = tmpData.userInfo
+                tmpData.data.retweet_user_info = tmpData.retweetUserInfo
+                return tmpData.data
+            }
+            return false
+        } else if (isConversation && content?.content?.displayType === 'VerticalConversation') {
             return content.content.items.map(item => {
                 let tmpData = TweetsData(item, tweetsInfo.users, tweetsInfo.contents, filterName, isConversation, isConversation)
         
