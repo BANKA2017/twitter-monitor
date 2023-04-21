@@ -87,7 +87,7 @@ const ApiLocalTweets = async (req, res) => {
         const hidden = VerifyQueryString(req.query.hidden, '0') !== '0'
         
         //count
-        const queryCount = VerifyQueryString(req.query.count, isRssMode ? 40 : 20)
+        const queryCount = Number(VerifyQueryString(req.query.count, isRssMode ? 40 : 20))
         let count = queryCount > 200 ? 200 : (queryCount < 1 ? 1 : queryCount)
         let queryForTop = true
         let queryObject = []
@@ -240,7 +240,7 @@ const ApiLocalSearch = async (req, res) => {
     const advancedSearchMode = VerifyQueryString(req.query.advanced, '0') !== '0'
     let isRssMode = VerifyQueryString(req.query.format, 'json') === 'rss'
     //count
-    const queryCount = VerifyQueryString(req.query.count, isRssMode ? 40 : 20)
+    const queryCount = Number(VerifyQueryString(req.query.count, isRssMode ? 40 : 20))
     let count = (queryCount > 200 ? 200 : (queryCount < 1 ? 1 : queryCount)) + 1
 
     //no idea
@@ -537,7 +537,7 @@ const ApiLocalTag = async (req, res) => {
     const refresh = VerifyQueryString(req.query.refresh, '0') !== '0'
     let isRssMode = VerifyQueryString(req.query.format, 'json') === 'rss'
     //count
-    const queryCount = VerifyQueryString(req.query.count, isRssMode ? 40 : 20)
+    const queryCount = Number(VerifyQueryString(req.query.count, isRssMode ? 40 : 20))
     let count = (queryCount > 200 ? 200 : (queryCount < 1 ? 1 : queryCount)) + 1
 
     let tweets = null
