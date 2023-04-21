@@ -326,15 +326,32 @@ const getTweets = async (queryString = '', cursor = '', guest_token = {}, count 
       include_ext_edit_control: true,
       ext: 'mediaStats,highlightedLabel,hasNftAvatar,voiceInfo,birdwatchPivot,enrichments,superFollowMetadata,unmentionInfo,editControl,vibe'
     }
+    let graphqlVariables = {
+      rawQuery: queryString.trim(),
+      count,
+      product: "Latest",
+      withDownvotePerspective: false,
+      withReactionsMetadata: false,
+      withReactionsPerspective: false
+    }
     if (cursor) {
-      tmpQueryObject['cursor'] = cursor
+      graphqlVariables['cursor'] = cursor
     }
     return await new Promise((resolve, reject) => {
-      coreFetch("https://twitter.com/i/api/2/search/adaptive.json?" + (new URLSearchParams(tmpQueryObject)).toString(), guest_token).then(response => {
+      coreFetch("https://api.twitter.com/graphql/" + graphqlQueryIdList.SearchTimeline.queryId + "/SearchTimeline?" + (new URLSearchParams({
+        variables: JSON.stringify(graphqlVariables),
+        features: JSON.stringify(getGraphqlFeatures('SearchTimeline'))
+      }).toString()), guest_token, [], 0).then(response => {
         resolve(response)
       }).catch(e => {
         reject(e)
       })
+
+      //coreFetch("https://twitter.com/i/api/2/search/adaptive.json?" + (new URLSearchParams//(tmpQueryObject)).toString(), guest_token).then(response => {
+      //  resolve(response)
+      //}).catch(e => {
+      //  reject(e)
+      //})
     })
   } else {
     // no use because http 429 loop

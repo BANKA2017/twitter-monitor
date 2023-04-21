@@ -187,7 +187,7 @@ const ApiSearch = async (req, env) => {
         return json(apiTemplate(e.code, e.message))
     }
     
-    const {tweetsInfo, tweetsContent} = GenerateData(tweets)
+    const {tweetsInfo, tweetsContent} = GenerateData(tweets, false, '', true)
     if (tweetsInfo.errors.code !== 0) {
         return json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
     }

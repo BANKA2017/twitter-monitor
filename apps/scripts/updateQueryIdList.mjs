@@ -3,12 +3,12 @@ import { basePath } from "../../libs/share/NodeConstant.mjs"
 import axiosFetch from "axios-helper"
 
 let match
-axiosFetch.get("https://twitter.com/", {headers: {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}}).then(response => {
+axiosFetch().get("https://twitter.com/", {headers: {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}}).then(response => {
     if (response.data) {
         //get main link
         //const mainLink = (/(https:\/\/abs\.twimg\.com\/responsive-web\/client-web(?:[^\/]+|)\/main\.[^.]+\.js)/gm.exec(response.data))[0]
         //api:"8684ec1"
-        const apiLink = `https://abs.twimg.com/responsive-web/client-web/api.${/api:(?:\s+|)"([^"]+)"/gm.exec(response.data)[1]}a.js`
+        const apiLink = `https://abs.twimg.com/responsive-web/client-web-legacy/api.${/api:(?:\s+|)"([^"]+)"/gm.exec(response.data)[1]}a.js`
 
         const __INITIAL_STATE__ = Function(`return ${/window\.__INITIAL_STATE__=([^;]+);/gm.exec(response.data)[1]}`)()
         const tmpConfigKV = {...__INITIAL_STATE__.featureSwitch.defaultConfig, ...__INITIAL_STATE__.featureSwitch.user.config}

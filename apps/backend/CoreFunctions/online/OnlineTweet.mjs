@@ -190,7 +190,7 @@ const ApiSearch = async (req, res) => {
         return
     }
     
-    const {tweetsInfo, tweetsContent} = GenerateData(tweets)
+    const {tweetsInfo, tweetsContent} = GenerateData(tweets, false, '', true)
     if (tweetsInfo.errors.code !== 0) {
         res.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
         return

@@ -21,7 +21,8 @@ const apiPathList = {
         "data.user.result.timeline_v2.timeline.instructions",
         "data.user.result.timeline.timeline.instructions",
         "data.threaded_conversation_with_injections_v2.instructions",
-        "data.threaded_conversation_with_injections.instructions"
+        "data.threaded_conversation_with_injections.instructions",
+        "data.search_by_raw_query.search_timeline.timeline.instructions"
     ],
     tweets_contents: [
         "globalObjects.tweets",
@@ -32,7 +33,10 @@ const apiPathList = {
         "data.threaded_conversation_with_injections_v2.instructions[1].entries",
         "data.threaded_conversation_with_injections_v2.instructions[0].entries",
         "data.threaded_conversation_with_injections.instructions[1].entries",
-        "data.threaded_conversation_with_injections.instructions[0].entries"
+        "data.threaded_conversation_with_injections.instructions[0].entries",
+        "data.threaded_conversation_with_injections.instructions[0].entries",
+        "data.search_by_raw_query.search_timeline.timeline.instructions[1].entries",
+        "data.search_by_raw_query.search_timeline.timeline.instructions[0].entries",
     ],
     tweets_top_content: [
         "data.user.result.timeline_v2.timeline.instructions[2].entry",

@@ -45,7 +45,7 @@ const AlbumSearch = async (req, env) => {
     //updateGuestToken
     await updateGuestToken(env, 'guest_token', 0, tweets.headers.get('x-rate-limit-remaining') < 20)
 
-    let {tweetsInfo, tweetsContent} = GenerateData(tweets, isPhotos)
+    let {tweetsInfo, tweetsContent} = GenerateData(tweets, isPhotos, '', true)
     if (tweetsInfo.errors.code !== 0) {
         return json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message, {}, 'album'))
     }
