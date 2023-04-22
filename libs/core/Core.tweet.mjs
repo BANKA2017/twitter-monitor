@@ -37,12 +37,36 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
                     objectForReturn.contents = objectForReturn.contents.concat(tmpTweet.entries).filter(content => content.entryId.startsWith('tweet-') || content.entryId.startsWith('conversationthread-'))
                     objectForReturn.tweetRange.max = path2array('tweet_id', objectForReturn.contents[0]) || 0
                     objectForReturn.tweetRange.min = path2array('tweet_id', objectForReturn.contents.slice(-1)[0]) || 0
+                    //users
+                    objectForReturn.users = Object.fromEntries(tmpTweet.entries.filter(content => content.entryId.startsWith('tweet-')).map(content => {
+                        const tmpContent = path2array('graphql_user_result', path2array('tweet_content', content))
+                        if (!tmpContent) {return [[null, {id_str: null}]]}
+                        const tmpEntities = [[tmpContent.rest_id, tmpContent]]
+                        const tmpRetweetContent = path2array('graphql_user_result', path2array('retweet_graphql_path', path2array('tweet_content', content)))
+                        const tmpQuoteContent = path2array('graphql_user_result', path2array('quote_graphql_path', path2array('tweet_content', content)))
+
+                        if (tmpRetweetContent) {
+                            tmpEntities.push([tmpRetweetContent.rest_id, tmpRetweetContent])
+                        }
+                        if (tmpQuoteContent) {
+                            tmpEntities.push([tmpQuoteContent.rest_id, tmpQuoteContent])
+                        }
+                        return tmpEntities
+                    }).flat().filter(content => content[0]))
+
                 } else if (tmpTweet.type === 'TimelinePinEntry') {
                     objectForReturn.contents.push(tmpTweet.entry)
+                } else if (tmpTweet.type === 'TimelineReplaceEntry') {
+                    if (tmpTweet.entry_id_to_replace.startsWith('cursor-')) {
+                        cursorList.push(tmpTweet.entry)
+                    }
                 }
             }
             objectForReturn.contentLength = objectForReturn.contents.length
-            for (const tmpCursor of cursorList) {
+            for (let tmpCursor of cursorList) {
+                if (tmpCursor?.entry?.content) {
+                    tmpCursor = tmpCursor.entry
+                }
                 if (tmpCursor.content.entryType !== 'TimelineTimelineCursor') {continue}
                 if (tmpCursor.content.cursorType === 'Top') {
                     objectForReturn.cursor.top = tmpCursor.content.value

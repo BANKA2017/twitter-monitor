@@ -63,11 +63,11 @@ const coreFetch = async (url = '', guest_token = {}, cookie = [], authorization 
   return await new Promise((resolve, reject) => {
     axios.get(url, {
       headers: {
-        ...headers,
         authorization: Authorization[authorization],
         'x-guest-token': guest_token.token,
         'x-csrf-token': ct0,
         cookie: 'ct0=' + ct0 + ';gt=' + guest_token.token + ';' + [...guest_token.cookies, ...cookie].join(';'),
+        ...headers,
       }
     }).then(response => {
       if (!response.data) {
@@ -102,7 +102,7 @@ const getToken = async (authorizationMode = 0) => {
       TweetDetail: 470,//500//poll also use this
       AudioSpaceById: 470,//500
       BroadCast: 185,//187
-      Search: 245,//250
+      Search: 470,//500 graphql && 245,//250 restful
       Recommendation: 55,//60,
       Translation: 185,//187
       Trending: 19990,//20000
@@ -326,10 +326,11 @@ const getTweets = async (queryString = '', cursor = '', guest_token = {}, count 
       include_ext_edit_control: true,
       ext: 'mediaStats,highlightedLabel,hasNftAvatar,voiceInfo,birdwatchPivot,enrichments,superFollowMetadata,unmentionInfo,editControl,vibe'
     }
+    //https://abs.twimg.com/responsive-web/client-web/shared~ondemand.SettingsInternals~bundle.Place~bundle.Search~bundle.QuoteTweetActivity.431ada6a.js
     let graphqlVariables = {
       rawQuery: queryString.trim(),
       count,
-      product: "Latest",
+      product: "Latest",//Top, People, Photos, Videos, Latest
       withDownvotePerspective: false,
       withReactionsMetadata: false,
       withReactionsPerspective: false

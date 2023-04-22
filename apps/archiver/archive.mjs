@@ -105,7 +105,7 @@ if (cursor !== 'complete') {
             process.exit()
         }
 
-        const tmpTweetsInfo = TweetsInfo(tweets.data, false)
+        const tmpTweetsInfo = TweetsInfo(tweets.data, true)
         if (tmpTweetsInfo.errors.code !== 0) {
             console.log(`archiver: error #${tmpTweetsInfo.errors.code} , ${tmpTweetsInfo.errors.message}`)
             TGPush(`archiver: error #${tmpTweetsInfo.errors.code} , ${tmpTweetsInfo.errors.message}`)
@@ -113,12 +113,15 @@ if (cursor !== 'complete') {
         }
         let singleAccountTweetsCount = 0
         console.log(`archiver: cursor -->${tmpTweetsInfo.cursor?.bottom || 'end'}<-- (${tmpTweetsInfo.contentLength})`)
-        writeFileSync(basePath + '/rawdata/' + tweets.data.timeline.id + '.json', JSON.stringify(tweets.data))
+        writeFileSync(basePath + `/rawdata/${tmpTweetsInfo.tweetRange.max}_${tmpTweetsInfo.tweetRange.min}.json`, JSON.stringify(tweets.data))
 
         //get account info
         if (uid === null) {
             try {
-                uid = Object.values(tmpTweetsInfo.users).filter(user => user.screen_name.toLocaleLowerCase() === name.toLocaleLowerCase())[0]?.id_str || null
+                //restful
+                //uid = Object.values(tmpTweetsInfo.users).filter(user => user.screen_name.toLocaleLowerCase() === name.toLocaleLowerCase())[0]?.id_str || null
+                //graphql
+                uid = Object.values(tmpTweetsInfo.users).filter(user => user.legacy.screen_name.toLocaleLowerCase() === name.toLocaleLowerCase())[0]?.rest_id || null
 
                 if (!uid) {
                     console.error(`archiver: no such account!!!`)
@@ -134,8 +137,8 @@ if (cursor !== 'complete') {
             //判断非推文//graphql only
             //writeFileSync('./savetweets/' + path2array('tweet_id', content) + '.json', JSON.stringify(content))
             //判断是否本人发推
-            if (String(path2array('tweet_uid', content)) === String(uid)) {
-                const generatedTweetData = Tweet(content, tmpTweetsInfo.users, tmpTweetsInfo.contents, {}, false, false, true)
+            if (String(path2array('tweet_uid', path2array('tweet_content', content))) === String(uid)) {
+                const generatedTweetData = Tweet(content, {}, [], {}, true, false, true)
                 if (UserData.v2_account_info === null) {
                     UserData.v2_account_info = generatedTweetData.userInfo
                 }
@@ -184,8 +187,9 @@ if (cursor !== 'complete') {
         //insert
         try {
             tmpTweetsInfo.contents.forEach(tweet => {
-                if (!rawTweetData[tweet.id_str]) {
-                    rawTweetData[tweet.id_str] = tweet
+                const tmpTweetId = path2array('tweet_id', tweet)
+                if (!rawTweetData[tmpTweetId]) {
+                    rawTweetData[tmpTweetId] = tweet
                 }
             })
             Object.keys(tmpTweetsInfo.users).forEach(uid => {
@@ -329,13 +333,13 @@ for (; mediaIndex < mediaList.length; ) {
     }))).then(response => {
         response.forEach(imageReaponse => {
             if (imageReaponse.status === 'fulfilled' && imageReaponse.value.imageBuffer) {
-                writeFileSync(basePath + `/savemedia/${imageReaponse.value.meta.basename}`, imageReaponse.value.imageBuffer)
+                writeFileSync(basePath + `/savemedia/${imageReaponse.value.meta.filename}.${imageReaponse.value.meta.extension}`, imageReaponse.value.imageBuffer)
                 statusCount.success++
                 console.log(`${imageReaponse.value.meta.url}\tsuccess: ${statusCount.success}, error: ${statusCount.error}, ${statusCount.success + statusCount.error} / ${mediaList.length}`)
             } else {
                 getMediaFailedList.push({
                     url: imageReaponse.reason.meta.url,
-                    basename: imageReaponse.reason.meta.basename
+                    basename: `${imageReaponse.value.meta.filename}.${imageReaponse.value.meta.extension}`
                 })
                 writeFileSync(basePath + '/twitter_monitor_media_failed_list.json', JSON.stringify(getMediaFailedList))
                 statusCount.error++
