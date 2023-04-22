@@ -66,6 +66,15 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
             for (let tmpCursor of cursorList) {
                 if (tmpCursor?.entry?.content) {
                     tmpCursor = tmpCursor.entry
+                } else if (tmpCursor?.content?.itemContent?.value) {
+                    tmpCursor = {
+                        content: {
+                            entryType: tmpCursor.content.itemContent.itemType,
+                            cursorType: tmpCursor.content.itemContent.cursorType,
+                            value: tmpCursor.content.itemContent.value,
+
+                        }
+                    }
                 }
                 if (tmpCursor.content.entryType !== 'TimelineTimelineCursor') {continue}
                 if (tmpCursor.content.cursorType === 'Top') {

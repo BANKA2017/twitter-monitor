@@ -8,6 +8,7 @@ const ApiTweets = async (req, res) => {
     const isRssMode = req.query.format === 'rss'
     const queryCount = VerifyQueryString(req.query.count, 0)
     const count = queryCount ? (queryCount > 100 ? 100 : (queryCount < 1 ? 1 : queryCount)) : (isRssMode ? 20 : 10)
+    const tweet_id =  VerifyQueryString(req.query.tweet_id, 0)
     const cursor = String(req.query.cursor??req.query.tweet_id??'0')//TODO Notice, VerifyQueryString()
 
     const name = VerifyQueryString(req.query.name, '')
@@ -27,10 +28,10 @@ const ApiTweets = async (req, res) => {
     let tweets = {}
     if (isConversation) {
         try {
-            tweets = await getConversation(cursor, global.guest_token.token)
+            tweets = await getConversation(tweet_id, global.guest_token.token, true, 0, isNaN(cursor) ? cursor : '')
             global.guest_token.updateRateLimit('TweetDetail')
         } catch (e) {
-            console.error(`[${new Date()}]: #OnlineTweetsConversation #${cursor} #${e.code} ${e.message}`)
+            console.error(`[${new Date()}]: #OnlineTweetsConversation #${tweet_id} #${e.code} ${e.message}`)
             res.json(apiTemplate(e.code, e.message))
             return
         }
@@ -102,11 +103,11 @@ const ApiTweets = async (req, res) => {
     }
     res.json(apiTemplate(200, 'OK', {
         tweets: isConversation ? tweetsContent.reverse() : tweetsContent,
-        hasmore: !isConversation && !!tweetsContent.length,
+        hasmore: !!(tweetsContent.length ? (tweetsInfo.cursor.bottom ?? false) : false),
         //top_tweet_id: tweetsInfo.tweetRange.max || '0',
         //bottom_tweet_id: tweetsInfo.tweetRange.min || '0'
         top_tweet_id: tweetsInfo.cursor.top || '',
-        bottom_tweet_id: tweetsInfo.cursor.bottom || ''
+        bottom_tweet_id: tweetsContent.length ? (tweetsInfo.cursor.bottom || '') : ''
     }))
 }
 

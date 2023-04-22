@@ -366,15 +366,15 @@ const getTweets = async (queryString = '', cursor = '', guest_token = {}, count 
   }
 }
 
-const getConversation = async (tweet_id = '', guest_token = {}, graphqlMode = true, authorization = 0) => {
+const getConversation = async (tweet_id = '', guest_token = {}, graphqlMode = true, authorization = 0, cursor = '') => {
   if (!guest_token.success) {
     guest_token = await getToken()
   }
   if (Array.isArray(tweet_id)) {
-    return await Promise.allSettled(tweet_id.map(tweetId => getConversation(tweetId, guest_token, graphqlMode, authorization)))
+    return await Promise.allSettled(tweet_id.map(tweetId => getConversation(tweetId, guest_token, graphqlMode, authorization, cursor)))
   }
   if (graphqlMode) {
-    const graphqlVariables = {
+    let graphqlVariables = {
       focalTweetId: tweet_id,
       with_rux_injections: false,
       includePromotedContent: true,
@@ -388,6 +388,9 @@ const getConversation = async (tweet_id = '', guest_token = {}, graphqlMode = tr
       withSuperFollowsTweetFields: true,
       withVoice: true,
       withV2Timeline: true
+    }
+    if (cursor) {
+      graphqlVariables.cursor = cursor
     }
     
     return await new Promise((resolve, reject) => {
