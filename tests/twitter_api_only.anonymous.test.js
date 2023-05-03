@@ -5,7 +5,7 @@ import { getArticle, getAudioSpace, getBroadcast, getConversation, getEditHistor
 let guest_token1 = new GuestToken
 let guest_token2 = new GuestToken
 
-test.skip('Guest token', async () => {
+test('Guest token', async () => {
     await guest_token1.updateGuestToken(0)
     await guest_token2.updateGuestToken(1)
     
@@ -13,7 +13,7 @@ test.skip('Guest token', async () => {
     expect(guest_token2.token.success).toBeTruthy
 })
 
-describe.skip('UserInfo', () => {
+describe('UserInfo', () => {
     test.concurrent('screen_name (token 1)', async ({ expect }) => {
         expect(await getUserInfo({user: "Twitter", guest_token: guest_token1.token, graphqlMode: true})).toHaveProperty('data')
     })
@@ -28,7 +28,7 @@ describe.skip('UserInfo', () => {
     })
 })
 
-describe.skip('VerifiedAvatars', () => {
+describe('VerifiedAvatars', () => {
     test.concurrent('@coinbase (token 1)', async ({ expect }) => {
         expect(await getVerifiedAvatars({uid: "574032254", guest_token: guest_token1.token})).toHaveProperty('data')
     })
@@ -37,7 +37,7 @@ describe.skip('VerifiedAvatars', () => {
     })
 })
 
-describe.skip('Recommendations', () => {
+describe('Recommendations', () => {
     test.concurrent('@Twitter (token 1)', async ({ expect }) => {
         expect(await getRecommendations({user: "Twitter", guest_token: guest_token1.token})).toHaveProperty('data')
     })
@@ -46,7 +46,7 @@ describe.skip('Recommendations', () => {
     })
 })
 
-describe.skip('Timeline', () => {
+describe('Timeline', () => {
     test.concurrent('Tweets (token 1)', async ({ expect }) => {
         expect(await getTweets({queryString: "783214", guest_token: guest_token1.token, graphqlMode: true, online: true, })).toHaveProperty('data')
     })
@@ -70,7 +70,7 @@ describe.skip('Timeline', () => {
 })
 
 
-describe.skip('MediaTimeline', () => {
+describe('MediaTimeline', () => {
     test.concurrent('@Twitter (token 1)', async ({ expect }) => {
         expect(await getMediaTimeline({uid: "783214", guest_token: guest_token1.token})).toHaveProperty('data')
     })
@@ -79,7 +79,7 @@ describe.skip('MediaTimeline', () => {
     })
 })
 
-describe.skip('Conversation', () => {
+describe('Conversation', () => {
     test.concurrent('#1623411536243965954 (token 1)', async ({ expect }) => {
         expect(await getConversation({tweet_id: "1623411536243965954", guest_token: guest_token1.token, graphqlMode: true})).toHaveProperty('data')
     })
@@ -88,7 +88,7 @@ describe.skip('Conversation', () => {
     })
 })
 
-describe.skip('EditHistory', () => {
+describe('EditHistory', () => {
     test.concurrent('#1623411536243965954 (token 1)', async ({ expect }) => {
         expect(await getEditHistory({tweet_id: "1623411536243965954", guest_token: guest_token1.token, graphqlMode: true})).toHaveProperty('data')
     })
@@ -97,7 +97,7 @@ describe.skip('EditHistory', () => {
     })
 })
 
-describe.skip('AudioSpace', () => {
+describe('AudioSpace', () => {
     test.concurrent('#1nAJErvvVXgxL (token 1)', async ({ expect }) => {
         expect(await getAudioSpace({id: "1nAJErvvVXgxL", guest_token: guest_token1.token, })).toHaveProperty('data')
     })
@@ -106,7 +106,7 @@ describe.skip('AudioSpace', () => {
     })
 })
 
-describe.skip('Broadcast', () => {
+describe('Broadcast', () => {
     test.concurrent('NASA/1592721757294587905 ~ 1jMKgLaeYoAGL (token 1)', async ({ expect }) => {
         expect(await getBroadcast({id: "1jMKgLaeYoAGL", guest_token: guest_token1.token, })).toHaveProperty('data')
     })
@@ -115,11 +115,11 @@ describe.skip('Broadcast', () => {
     })
 })
 
-describe.apply('LiveVideoStream', () => {
+describe('LiveVideoStream', () => {
     it.todo('media_key for AudioSpace')
 })
 
-describe.skip('Typeahead', () => {
+describe('Typeahead', () => {
     test.concurrent('Twitter (token 1)', async ({ expect }) => {
         expect(await getTypeahead({text: "Twitter", guest_token: guest_token1.token, })).toHaveProperty('data')
     })
@@ -128,21 +128,21 @@ describe.skip('Typeahead', () => {
     })
 })
 
-describe.skip('Article', () => {
+describe('Article', () => {
     //NOT SUPPORTED TOKEN 1
     test.concurrent('notes/1585225861250355201 (token 2)', async ({ expect }) => {
         expect(await getArticle({id: "1585225861250355201", guest_token: guest_token2.token, authorization: 1})).toHaveProperty('data')
     })
 })
 
-describe.skip('Trends', () => {
+describe('Trends', () => {
     //NOT SUPPORTED TOKEN 1
     test.concurrent('trends (token 2)', async ({ expect }) => {
         expect(await getTrends({initial_tab_id: "trends", guest_token: guest_token2.token, authorization: 1})).toHaveProperty('data')
     })
 })
 
-describe.skip('Translate', () => {
+describe('Translate', () => {
     test.concurrent('Twitter (token 1)', async ({ expect }) => {
         expect(await getTranslate({id: "1623411536243965954", type: 'tweets', target: 'zh-tw', guest_token: guest_token1.token, })).toHaveProperty('data')
     })
@@ -151,7 +151,7 @@ describe.skip('Translate', () => {
     })
 })
 
-describe.skip('List', () => {
+describe('List', () => {
     //NOT SUPPORTED TOKEN 1
     test.concurrent('@esa/astronauts Info (token 2)', async ({ expect }) => {
         expect(await getListInfo({id: "53645372", guest_token: guest_token2.token, authorization: 1})).toHaveProperty('data')
