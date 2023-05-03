@@ -7,6 +7,7 @@ import { ApiTrends } from './CoreFunctions/online/OnlineTrends.mjs'
 import { apiTemplate } from '../../libs/share/Constant.mjs'
 import { MediaProxy } from './CoreFunctions/media/MediaProxy.mjs'
 import { ApiOfficialTranslate, ApiTranslate } from './CoreFunctions/translate/Translate.mjs'
+import { ApiTypeahead } from './CoreFunctions/online/OnlineMisc.mjs'
 
 const workersApi = Router()
 
@@ -47,6 +48,7 @@ workersApi.get('/online/api/v3/data/audiospace/', ApiAudioSpace)
 workersApi.get('/online/api/v3/data/broadcast/', ApiBroadcast)
 workersApi.get('/online/api/v3/data/media/', ApiMedia)
 workersApi.get('/online/api/v3/data/trends/', ApiTrends)
+workersApi.get('/online/api/v3/data/typeahead/', ApiTypeahead)
 
 //online search
 workersApi.get('/online/api/v3/data/hashtag/', (req) => { req.type = 'hashtag' }, ApiSearch)
