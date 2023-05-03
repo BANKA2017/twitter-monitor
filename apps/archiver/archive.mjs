@@ -86,13 +86,13 @@ if (cursor !== 'complete') {
         }
         let tweets = null
         try {
-            tweets = await getTweets(query, cursor || '', global.guest_token.token, false, true, false, true)
+            tweets = await getTweets({queryString: query, cursor: cursor || '', guest_token: global.guest_token.token, count: false, online: true, graphqlMode: false, searchMode: true})
             global.guest_token.updateRateLimit('Search')
         } catch (e) {
             //try again
             console.log('archiver: first retry...')
             try {
-                tweets = await getTweets(query, cursor || '', global.guest_token.token, false, true, false, true)
+                tweets = await getTweets({queryString: query, cursor: cursor || '', guest_token: global.guest_token.token, count: false, online: true, graphqlMode: false, searchMode: true})
                 global.guest_token.updateRateLimit('Search')
             } catch (e) {
                 console.log('archiver: retry failed...')
@@ -244,7 +244,7 @@ for (; pollsIndex < pollsList.length; pollsIndex++) {
             console.log(`archiver: NO POLLS CONTENT (${pollsList[pollsIndex].tweet_id}) #errorpoll`)
         }
     } else {
-        const pollData = await getPollResult(pollsList[pollsIndex].tweet_id)
+        const pollData = await getPollResult({tweet_id: pollsList[pollsIndex].tweet_id})
         if (pollData.code !== 200) {
             getPollsFailedList.push(pollsList[pollsIndex].tweet_id)
             writeFileSync(basePath + '/twitter_monitor_polls_failed_list.json', JSON.stringify(getPollsFailedList))

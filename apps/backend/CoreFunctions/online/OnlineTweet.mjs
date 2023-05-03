@@ -28,7 +28,7 @@ const ApiTweets = async (req, res) => {
     let tweets = {}
     if (isConversation) {
         try {
-            tweets = await getConversation(tweet_id, global.guest_token.token, true, 0, isNaN(cursor) ? cursor : '')
+            tweets = await getConversation({tweet_id, guest_token: global.guest_token.token, graphqlMode: true, authorization: 0, cursor: isNaN(cursor) ? cursor : ''})
             global.guest_token.updateRateLimit('TweetDetail')
         } catch (e) {
             console.error(`[${new Date()}]: #OnlineTweetsConversation #${tweet_id} #${e.code} ${e.message}`)
@@ -85,7 +85,7 @@ const ApiTweets = async (req, res) => {
         //}
 
         try {
-            tweets = await getTweets(uid, cursor, global.guest_token.token, count, true, true, false, displayType === 'include_reply')
+            tweets = await getTweets({queryString: uid, cursor, guest_token: global.guest_token.token, count, online: true, graphqlMode: true, searchMode: false, withReply: displayType === 'include_reply'})
             //tweets = await getTweets(queryArray.join(' '), '', global.guest_token.token, count, true, false, true)
             global.guest_token.updateRateLimit('UserTweets')
         } catch (e) {
@@ -183,7 +183,7 @@ const ApiSearch = async (req, res) => {
         queryArray.push('max_id:' + String(Time2SnowFlake(end * 1000)))
     }
     try {
-        tweets = await getTweets(queryArray.join(' '), '', global.guest_token.token, queryCount, true, false, true)
+        tweets = await getTweets({queryString: queryArray.join(' '), cursor: '', guest_token: global.guest_token.token, count: queryCount, online: true, graphqlMode: false, searchMode: true})
         global.guest_token.updateRateLimit('Search')
     } catch (e) {
         console.error(`[${new Date()}]: #OnlineTweetsSearch #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
@@ -210,7 +210,7 @@ const ApiPoll = async (req, res) => {
         res.json(apiTemplate())
         return
     }
-    const tmpPollData = await getPollResult(tweet_id, global.guest_token.token)
+    const tmpPollData = await getPollResult({tweet_id, guest_token: global.guest_token.token})
     global.guest_token.updateRateLimit('TweetDetail')
     if (tmpPollData.code === 200) {
         res.json(apiTemplate(200, 'OK', tmpPollData.data.map(poll => Number(poll))))
@@ -227,14 +227,14 @@ const ApiAudioSpace = async (req, res) => {
         return
     }
     await global.guest_token.updateGuestToken()
-    const tmpAudioSpaceData = await getAudioSpace(id, global.guest_token.token)
+    const tmpAudioSpaceData = await getAudioSpace({id, guest_token: global.guest_token.token})
     global.guest_token.updateRateLimit('AudioSpaceById')
     if (tmpAudioSpaceData.data?.data?.audioSpace || false) {
         let tmpAudioSpace = AudioSpace(tmpAudioSpaceData.data)
         //get link
         if (tmpAudioSpace.is_available_for_replay || (Number(tmpAudioSpace.start) <= Date.now() && tmpAudioSpace.end === '0')) {
             try {
-                const tmpAudioSpaceLink = await getLiveVideoStream(tmpAudioSpace.media_key)
+                const tmpAudioSpaceLink = await getLiveVideoStream({media_key: tmpAudioSpace.media_key})
                 if (tmpAudioSpaceLink.data?.source?.noRedirectPlaybackUrl) {
                     tmpAudioSpace.playback = tmpAudioSpaceLink.data?.source?.noRedirectPlaybackUrl.replaceAll('?type=replay', '').replaceAll('?type=live', '')
                 }
@@ -265,14 +265,14 @@ const ApiBroadcast = async (req, res) => {
     
     //TODO check Broadcast api rate limit
     await global.guest_token.updateGuestToken()
-    getBroadcast(id, global.guest_token.token).then(async response => {
+    getBroadcast({id, guest_token: global.guest_token.token}).then(async response => {
         global.guest_token.updateRateLimit('BroadCast')
         const tmpBroadcastData = response
         let tmpBroadcast = Broadcast(tmpBroadcastData.data)
         //get link
         if (tmpBroadcast.is_available_for_replay || (Number(tmpBroadcast.start) <= Date.now() && tmpBroadcast.end === '0')) {
             try {
-                const tmpBroadcastLink = await getLiveVideoStream(tmpBroadcast.media_key)
+                const tmpBroadcastLink = await getLiveVideoStream({media_key: tmpBroadcast.media_key})
                 if (tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl) {
                     tmpBroadcast.playback = tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl.replaceAll('?type=replay', '').replaceAll('?type=live', '')
                 }
@@ -305,7 +305,7 @@ const ApiMedia = async (req, res) => {
         return
     }
 
-    getConversation(tweet_id, global.guest_token2.token, true, authorizationMode).then(response => {
+    getConversation({tweet_id, guest_token: global.guest_token2.token, graphqlMode: true, authorization: authorizationMode}).then(response => {
         global.guest_token2.updateRateLimit('TweetDetail')
         const tweetsInfo = TweetsInfo(response.data, true)
         if (tweetsInfo.errors.code !== 0) {

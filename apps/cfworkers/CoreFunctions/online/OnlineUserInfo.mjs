@@ -13,7 +13,7 @@ const ApiUserInfo = async (req, env) => {
     }
     let userInfo = {}
     try {
-        userInfo = await getUserInfo(name || uid, req.guest_token)
+        userInfo = await getUserInfo({user: name || uid, guest_token: req.guest_token})
         
         //updateGuestToken
         await updateGuestToken(env, 'guest_token', 0, userInfo.headers.get('x-rate-limit-remaining') < 20)

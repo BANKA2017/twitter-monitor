@@ -41,7 +41,7 @@ while (AccountList.size) {
         guestTokenCount++
     }
     console.log(tmpAccount)
-    const tmpList = await getRecommendations(tmpAccount, global.guest_token.token, 999)
+    const tmpList = await getRecommendations({user: tmpAccount, guest_token: global.guest_token.token, count: 999})
     //console.log(tmpList)
     const t = await dbHandle.analytics.transaction()
     for (const listIndex in tmpList) {

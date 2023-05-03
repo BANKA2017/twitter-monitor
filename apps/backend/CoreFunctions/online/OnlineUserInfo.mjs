@@ -12,7 +12,7 @@ const ApiUserInfo = async (req, res) => {
     }
     let userInfo = {}
     try {
-        userInfo = await getUserInfo(name || uid, global.guest_token.token)
+        userInfo = await getUserInfo({user: name || uid, guest_token: global.guest_token.token})
         if (!name) {
             global.guest_token.updateRateLimit('UserByRestId')
         } else {

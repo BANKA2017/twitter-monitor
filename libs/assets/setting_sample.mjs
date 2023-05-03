@@ -48,6 +48,7 @@ const TRANSLATOR_PLATFORM = 'google'//google, microsoft
 
 const ALERT_TOKEN = ''//for telegram bot, keep empty if needn't
 const ALERT_PUSH_TO = ''//for telegram bot, keep empty if needn't
+const BOT_CHAT_ID = ''//for telegram api, keep empty if needn't
 
 const EXPRESS_PORT = 3000
 const EXPRESS_ALLOW_ORIGIN = '*'
@@ -55,4 +56,4 @@ const EXPRESS_ALLOW_ORIGIN = '*'
 const STATIC_PATH = basePath + '/../apps/backend/static'
 const TWEETS_SAVE_PATH = basePath + '/../apps/crawler/savetweets/'
 
-export {SQL_CONFIG, ACTIVE_SERVICE, CONFIG_ID, GRAPHQL_MODE, TRANSLATE_TARGET, TRANSLATOR_PLATFORM, ALERT_TOKEN, ALERT_PUSH_TO, EXPRESS_ALLOW_ORIGIN, TWEETS_SAVE_PATH, EXPRESS_PORT, STATIC_PATH, CYCLE_SECONDS}
+export {SQL_CONFIG, ACTIVE_SERVICE, CONFIG_ID, GRAPHQL_MODE, TRANSLATE_TARGET, TRANSLATOR_PLATFORM, ALERT_TOKEN, ALERT_PUSH_TO, BOT_CHAT_ID, EXPRESS_ALLOW_ORIGIN, TWEETS_SAVE_PATH, EXPRESS_PORT, STATIC_PATH, CYCLE_SECONDS}

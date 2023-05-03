@@ -29,7 +29,7 @@ const ApiTweets = async (req, env) => {
     let tweets = {}
     if (isConversation) {
         try {
-            tweets = await getConversation(tweet_id, req.guest_token, true, 0, isNaN(cursor) ? cursor : '')
+            tweets = await getConversation({tweet_id, guest_token: req.guest_token, graphqlMode: true, authorization: 0, cursor: isNaN(cursor) ? cursor : ''})
             //updateGuestToken
             await updateGuestToken(env, 'guest_token', 0, tweets.headers.get('x-rate-limit-remaining') < 20)
         } catch (e) {
@@ -84,7 +84,7 @@ const ApiTweets = async (req, env) => {
         //}
 
         try {
-            tweets = await getTweets(uid, cursor, req.guest_token, count, true, true, false, displayType === 'include_reply')
+            tweets = await getTweets({queryString: uid, cursor, guest_token: req.guest_token, count, online: true, graphqlMode: true, searchMode: false, withReply: displayType === 'include_reply'})
             //tweets = await getTweets(queryArray.join(' '), '', global.guest_token.token, count, true, false, true)
             
             //updateGuestToken
@@ -180,7 +180,7 @@ const ApiSearch = async (req, env) => {
         queryArray.push('max_id:' + String(Time2SnowFlake(end * 1000)))
     }
     try {
-        tweets = await getTweets(queryArray.join(' '), '', req.guest_token, queryCount, true, false, true)
+        tweets = await getTweets({queryString: queryArray.join(' '), cursor: '', guest_token: req.guest_token, count: queryCount, online: true, graphqlMode: false, searchMode: true})
         //updateGuestToken
         await updateGuestToken(env, 'guest_token', 0, tweets.headers.get('x-rate-limit-remaining') < 20)
     } catch (e) {
@@ -205,7 +205,7 @@ const ApiPoll = async (req, env) => {
     if (!tweet_id) {
         return json(apiTemplate())
     }
-    const tmpPollData = await getPollResult(tweet_id, req.guest_token)
+    const tmpPollData = await getPollResult({tweet_id, guest_token: req.guest_token})
     
     //updateGuestToken
     await updateGuestToken(env, 'guest_token', 0, tmpPollData.headers.get('x-rate-limit-remaining') < 20)
@@ -223,7 +223,7 @@ const ApiAudioSpace = async (req, env) => {
         return json(apiTemplate())
     }
     //await req.guest_token.updateGuestToken()
-    const tmpAudioSpaceData = await getAudioSpace(id, req.guest_token)
+    const tmpAudioSpaceData = await getAudioSpace({id, guest_token: req.guest_token})
     
     //updateGuestToken
     await updateGuestToken(env, 'guest_token', 0, tmpAudioSpaceData.headers.get('x-rate-limit-remaining') < 20)
@@ -232,7 +232,7 @@ const ApiAudioSpace = async (req, env) => {
         //get link
         if (tmpAudioSpace.is_available_for_replay || (Number(tmpAudioSpace.start) <= Date.now() && tmpAudioSpace.end === '0')) {
             try {
-                const tmpAudioSpaceLink = await getLiveVideoStream(tmpAudioSpace.media_key)
+                const tmpAudioSpaceLink = await getLiveVideoStream({media_key: tmpAudioSpace.media_key})
                 if (tmpAudioSpaceLink.data?.source?.noRedirectPlaybackUrl) {
                     tmpAudioSpace.playback = tmpAudioSpaceLink.data?.source?.noRedirectPlaybackUrl.replaceAll('?type=replay', '').replaceAll('?type=live', '')
                 }
@@ -263,7 +263,7 @@ const ApiBroadcast = async (req, env) => {
     //TODO check Broadcast api rate limit
     //await req.guest_token.updateGuestToken()
     try {
-        const tmpBroadcastData = await getBroadcast(id, req.guest_token)
+        const tmpBroadcastData = await getBroadcast({id, guest_token: req.guest_token})
         
         //updateGuestToken
         await updateGuestToken(env, 'guest_token', 0, tmpBroadcastData.headers.get('x-rate-limit-remaining') < 20)
@@ -271,7 +271,7 @@ const ApiBroadcast = async (req, env) => {
         //get link
         if (tmpBroadcast.is_available_for_replay || (Number(tmpBroadcast.start) <= Date.now() && tmpBroadcast.end === '0')) {
             try {
-                const tmpBroadcastLink = await getLiveVideoStream(tmpBroadcast.media_key)
+                const tmpBroadcastLink = await getLiveVideoStream({media_key: tmpBroadcast.media_key})
                 if (tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl) {
                     tmpBroadcast.playback = tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl.replaceAll('?type=replay', '').replaceAll('?type=live', '')
                 }
@@ -303,7 +303,7 @@ const ApiMedia = async (req, env) => {
     }
 
     try {
-        const tmpConversation = await getConversation(tweet_id, req.guest_token2, true, authorizationMode)
+        const tmpConversation = await getConversation({tweet_id, guest_token: req.guest_token2, graphqlMode: true, authorization: authorizationMode})
         
         //updateGuestToken
         await updateGuestToken(env, 'guest_token2', 1, tmpConversation.headers.get('x-rate-limit-remaining') < 20)

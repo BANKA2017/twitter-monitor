@@ -39,7 +39,7 @@ do {
     })
     
     let tmpTweetIdList = list.map(x => String(x.tweet_id))
-    let tweetDataList = await getConversation(tmpTweetIdList)
+    let tweetDataList = await getConversation({tweet_id: tmpTweetIdList})
     //console.log(tweetDataList)
     //generate data
     tweetDataList.forEach((x, index) => {

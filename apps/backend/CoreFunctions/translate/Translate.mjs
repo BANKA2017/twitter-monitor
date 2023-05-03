@@ -122,7 +122,7 @@ const ApiOfficialTranslate = async (req, res) => {
             return json(apiTemplate(429, `Wait until ${global.guest_token.token.nextActiveTime}`), {}, 'translate')
         }
         global.guest_token.updateRateLimit('Translation')
-        const tmpTranslate = await getTranslate(id, type, target, global.guest_token.token)
+        const tmpTranslate = await getTranslate({id, type, target, guest_token: global.guest_token.token})
 
         if (tmpTranslate.data || ((tmpTranslate.data?.translationState??'').toLowerCase() !== 'success')) {
             let tmpReaponse = {

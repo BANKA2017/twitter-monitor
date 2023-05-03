@@ -5,7 +5,7 @@ import { apiTemplate } from "../../../../libs/share/Constant.mjs"
 const ApiTrends = async (req, res) => {
     let tmpTrends = []
     try {
-        const tmpTrendsRequest = await getTrends('trends', 20, global.guest_token2.token)
+        const tmpTrendsRequest = await getTrends({initial_tab_id: 'trends', count: 20, guest_token: global.guest_token2.token})
         tmpTrends = tmpTrendsRequest.data.timeline.instructions[1].addEntries.entries.filter(entity => entity.entryId === 'trends')[0].content.timelineModule.items.map(item => ({
             name: item?.item?.content?.trend?.name ?? '',
             domainContext: item?.item?.content?.trend?.trendMetadata?.domainContext ?? '',

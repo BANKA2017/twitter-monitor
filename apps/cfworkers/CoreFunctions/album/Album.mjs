@@ -32,10 +32,10 @@ const AlbumSearch = async (req, env) => {
     try {
         if (isPhotos) {
             //TODO fix tokens
-            tweets = await getConversation(tweetId, req.guest_token, true)
+            tweets = await getConversation({tweet_id: tweetId, guest_token: req.guest_token, graphqlMode: true})
             //global.guest_token.updateRateLimit('TweetDetail')
         } else {
-            tweets = await getTweets(queryArray.join(' '), '', req.guest_token, 20, true, false, true)
+            tweets = await getTweets({queryString: queryArray.join(' '), cursor: '', guest_token: req.guest_token, count: 20, online: true, graphqlMode: false, searchMode: true})
             //global.guest_token.updateRateLimit('Search')
         }
     } catch (e) {

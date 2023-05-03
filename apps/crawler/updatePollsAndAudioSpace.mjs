@@ -38,7 +38,7 @@ for (const idIndex in tweetIdList) {
         }
     }
     console.log(`-->${tweetIdList[idIndex]}<--`)
-    const pollData = await getPollResult(tweetIdList[idIndex], get_token)
+    const pollData = await getPollResult({tweet_id: tweetIdList[idIndex], guest_token: get_token})
     if (pollData.code !== 200) {
         console.log(`tmv3: ${pollData.message} (${tweetIdList[idIndex]}) #errorpoll`)
         //TGPush(`tmv3: ${pollData.message} (${tweetIdList[idIndex]}) #errorpoll`)
@@ -80,7 +80,7 @@ const audioSpaceList = [...new Set(AudioSpaces.map(AudioSpace => AudioSpace.url)
 
 t = await dbHandle.twitter_monitor.transaction()
 for (const audioSpaceId of audioSpaceList) {
-    const tmpAudioSpaceResult = await getAudioSpace(audioSpaceId, get_token)
+    const tmpAudioSpaceResult = await getAudioSpace({id: audioSpaceId, guest_token: get_token})
     if (tmpAudioSpaceResult.data.data.audioSpace.metadata) {
         await V2TwitterCards.update({
             description: tmpAudioSpaceResult.data.data.audioSpace?.metadata?.title??null,

@@ -101,7 +101,7 @@ while (true) {
         const uidCount = refreshableIdList.filter(id => !isNaN(id)).length
         const nameCount = refreshableIdList.filter(id => isNaN(id)).length
         if (global.guest_token.preCheck('UserByScreenName', nameCount) && global.guest_token.preCheck('UserByRestId', uidCount)) {
-            allInfoForAccount = allInfoForAccount.concat(await getUserInfo(refreshableIdList, global.guest_token.token, GRAPHQL_MODE))
+            allInfoForAccount = allInfoForAccount.concat(await getUserInfo({user: refreshableIdList, guest_token: global.guest_token.token, graphqlMode: GRAPHQL_MODE}))
             global.guest_token.updateRateLimit('UserByScreenName', nameCount)
             global.guest_token.updateRateLimit('UserByRestId', uidCount)
             break
@@ -109,7 +109,7 @@ while (true) {
             const uidLimit = global.guest_token.getRateLimit('UserByRestId')
             const nameLimit = global.guest_token.getRateLimit('UserByScreenName')
             const tmpRefreshableIdList = refreshableIdList.splice(0, uidLimit > nameLimit ? nameLimit : uidLimit)
-            allInfoForAccount = allInfoForAccount.concat(await getUserInfo(tmpRefreshableIdList, global.guest_token.token, GRAPHQL_MODE))
+            allInfoForAccount = allInfoForAccount.concat(await getUserInfo({user: tmpRefreshableIdList, guest_token: global.guest_token.token, graphqlMode: GRAPHQL_MODE}, global.guest_token.token, GRAPHQL_MODE))
             global.guest_token.updateRateLimit('UserByScreenName', tmpRefreshableIdList.filter(id => isNaN(id)).length)
             global.guest_token.updateRateLimit('UserByRestId', tmpRefreshableIdList.filter(id => !isNaN(id)).length)
             await global.guest_token.updateGuestToken()
@@ -304,7 +304,7 @@ while (true) {
             }
 
             console.log(`tmv3: ${accountInfo.display_name} (@${accountInfo.name}) #${String(accountInfo.uid)} ${accountInfo.last_cursor ? '- new' : ''}`)
-            const tweets = await getTweets(accountInfo.uid, accountInfo.cursor, global.guest_token.token, false, false, GRAPHQL_MODE)
+            const tweets = await getTweets({queryString: accountInfo.uid, cursor: accountInfo.cursor, guest_token: global.guest_token.token, count: false, online: false, graphqlMode: GRAPHQL_MODE})
             global.guest_token.updateRateLimit('UserTweets')
             server_info.updateValue('total_req_times')
             const tmpTweetsInfo = TweetsInfo(tweets.data, GRAPHQL_MODE)

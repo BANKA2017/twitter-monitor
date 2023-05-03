@@ -32,7 +32,7 @@ const ApiOfficialTranslate = async (req, env) => {
     const target = VerifyQueryString(req.query.target, 'en')
 
     try {
-        const tmpTranslate = await getTranslate(id, type, target, req.guest_token)
+        const tmpTranslate = await getTranslate({id, type, target, guest_token: req.guest_token})
 
         //updateGuestToken
         await updateGuestToken(env, 'guest_token', 0, tmpTranslate.headers.get('x-rate-limit-remaining') < 20)

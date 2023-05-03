@@ -37,7 +37,7 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
                     objectForReturn.contents = objectForReturn.contents.concat(tmpTweet.entries).filter(content => content.entryId.startsWith('tweet-') || content.entryId.startsWith('conversationthread-'))
                     objectForReturn.tweetRange.max = path2array('tweet_id', objectForReturn.contents[0]) || 0
                     objectForReturn.tweetRange.min = path2array('tweet_id', objectForReturn.contents.slice(-1)[0]) || 0
-                    //users
+                    //users from tweets
                     objectForReturn.users = Object.fromEntries(tmpTweet.entries.filter(content => content.entryId.startsWith('tweet-')).map(content => {
                         const tmpContent = path2array('graphql_user_result', path2array('tweet_content', content))
                         if (!tmpContent) {return [[null, {id_str: null}]]}
@@ -53,6 +53,11 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
                         }
                         return tmpEntities
                     }).flat().filter(content => content[0]))
+                    //userList
+                    for(const tmpUser of tmpTweet.entries.filter(content => content.entryId.startsWith('user-'))) {
+                        objectForReturn.users[tmpUser.content.itemContent.user_results.result.rest_id] = tmpUser.content.itemContent.user_results.result
+                    }
+                    
 
                 } else if (tmpTweet.type === 'TimelinePinEntry') {
                     objectForReturn.contents.push(tmpTweet.entry)
@@ -72,7 +77,7 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
                             entryType: tmpCursor.content.itemContent.itemType,
                             cursorType: tmpCursor.content.itemContent.cursorType,
                             value: tmpCursor.content.itemContent.value,
-
+                            
                         }
                     }
                 }
@@ -153,6 +158,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
     let userInfo = {}
     let retweetUserInfo = {}
     let tags = []
+    let richtext = {}
     let quote = {}
     let media = []
     let quoteMedia = []
@@ -278,6 +284,10 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
     if (Object.keys(tmpEntities).some(key => tmpEntities[key].length > 0)) {
         tags = GenerateEntities(tmpEntities, GeneralTweetData.uid, GeneralTweetData.tweet_id, hidden)
     }
+    //richtext
+    if (content?.note_tweet?.note_tweet_results?.result?.richtext) {
+        richtext = {richtext: content.note_tweet.note_tweet_results.result.richtext, text: GeneralTweetData.full_text_origin, entities: tags}
+    }
     //full text with html tags
     const tmpTextObjects = GenerateFullTextWithHtml(GeneralTweetData.full_text_origin, cardUrl, quoteUrl, tags)
     GeneralTweetData.full_text = tmpTextObjects.text
@@ -360,7 +370,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
         place = content?.legacy?.place || content?.place || {}
     }
 
-    return {GeneralTweetData, userInfo, retweetUserInfo, tags, quote, media, quoteMedia, cardMedia, video, card, cardApp, cardMessage, place, polls, interactiveData, isQuote, isRetweet, isRtl, displayTextRange, vibe}
+    return {GeneralTweetData, userInfo, retweetUserInfo, tags, richtext, quote, media, quoteMedia, cardMedia, video, card, cardApp, cardMessage, place, polls, interactiveData, isQuote, isRetweet, isRtl, displayTextRange, vibe}
 }
 
 const GenerateEntities = (entities = [], uid = '0', tweetId = '0', hidden = false) => {
