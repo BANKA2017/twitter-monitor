@@ -36,7 +36,7 @@ const MediaProxy = async (req, res) => {
             res.status(500).end()
         })
     } else {
-        switch (mediaLinkArray.extension) {
+        switch (mediaLinkArray.extension.toLocaleLowerCase()) {
             case "jpg":
             case "jpeg":
             case "png":

@@ -148,8 +148,8 @@ const preCheckCtx = (ctx = {}, defaultKV = {}) => Object.fromEntries(Object.entr
   return kv
 }))
 
-const getUserInfo = async (ctx = {user: '', guest_token: {}, graphqlMode: true, cookie: {}, authorization: 0, }, env = {}) => {
-  let {user, guest_token, graphqlMode, cookie, authorization} = preCheckCtx(ctx, {user: '', guest_token: {}, graphqlMode: true, cookie: {}, authorization: 0, })
+const getUserInfo = async (ctx = {user: '', guest_token: {}, graphqlMode: true, cookie: {}, authorization: 1, }, env = {}) => {
+  let {user, guest_token, graphqlMode, cookie, authorization} = preCheckCtx(ctx, {user: '', guest_token: {}, graphqlMode: true, cookie: {}, authorization: 1, })
   if (!guest_token.success) {
     guest_token = await getToken(authorization)
   }
@@ -183,8 +183,8 @@ const getUserInfo = async (ctx = {user: '', guest_token: {}, graphqlMode: true, 
 }
 
 //account owned nft avatar or had blue verified
-const getVerifiedAvatars = async (ctx = {uid: [], guest_token: {}, cookie: {}, authorization: 0, }, env = {}) => {
-  let {uid, guest_token, cookie, authorization} = preCheckCtx(ctx, {uid: [], guest_token: {}, cookie: {}, authorization: 0, })
+const getVerifiedAvatars = async (ctx = {uid: [], guest_token: {}, cookie: {}, authorization: 1, }, env = {}) => {
+  let {uid, guest_token, cookie, authorization} = preCheckCtx(ctx, {uid: [], guest_token: {}, cookie: {}, authorization: 1, })
   if (!guest_token.success) {
     guest_token = await getToken(authorization)
   }
@@ -209,8 +209,8 @@ const getVerifiedAvatars = async (ctx = {uid: [], guest_token: {}, cookie: {}, a
 }
 
 //max is 37-38
-const getRecommendations = async (ctx = {user: '', guest_token: {}, count: 40, cookie: {}, authorization: 0, }, env = {}) => {
-  let {user, guest_token, count, cookie, authorization} = preCheckCtx(ctx, {user: '', guest_token: {}, count: 40, cookie: {}, authorization: 0, })
+const getRecommendations = async (ctx = {user: '', guest_token: {}, count: 40, cookie: {}, authorization: 1, }, env = {}) => {
+  let {user, guest_token, count, cookie, authorization} = preCheckCtx(ctx, {user: '', guest_token: {}, count: 40, cookie: {}, authorization: 1, })
   if (!guest_token.success) {
     guest_token = await getToken(authorization)
   }
@@ -229,8 +229,8 @@ const getRecommendations = async (ctx = {user: '', guest_token: {}, count: 40, c
   }
 }
 
-const getMediaTimeline = async (ctx = {uid: [], guest_token: {}, count: 20, graphqlMode: true, cookie: {}, authorization: 0, }, env = {}) => {
-  let {uid, guest_token, count, graphqlMode, cookie, authorization} = preCheckCtx(ctx, {uid: [], guest_token: {}, count: 20, graphqlMode: true, cookie: {}, authorization: 0, })
+const getMediaTimeline = async (ctx = {uid: [], guest_token: {}, count: 20, graphqlMode: true, cookie: {}, authorization: 1, }, env = {}) => {
+  let {uid, guest_token, count, graphqlMode, cookie, authorization} = preCheckCtx(ctx, {uid: [], guest_token: {}, count: 20, graphqlMode: true, cookie: {}, authorization: 1, })
   count = (count || -1) > 0 ? count : 20
   if (!guest_token.success) {
     guest_token = await getToken(authorization)
@@ -274,8 +274,8 @@ const getMediaTimeline = async (ctx = {uid: [], guest_token: {}, count: 20, grap
   //}
 }
 
-const getTweets = async (ctx = {queryString: '', cursor: '', guest_token: {}, count: false, online: false, graphqlMode: true, searchMode: false, withReply: false, cookie: {}, authorization: 0, }, env = {}) => {
-  let {queryString, cursor, guest_token, count, online, graphqlMode, searchMode, withReply, cookie, authorization} = preCheckCtx(ctx, {queryString: '', cursor: '', guest_token: {}, count: false, online: false, graphqlMode: true, searchMode: false, withReply: false, cookie: {}, authorization: 0, })
+const getTweets = async (ctx = {queryString: '', cursor: '', guest_token: {}, count: false, online: false, graphqlMode: true, searchMode: false, withReply: false, cookie: {}, authorization: 1, }, env = {}) => {
+  let {queryString, cursor, guest_token, count, online, graphqlMode, searchMode, withReply, cookie, authorization} = preCheckCtx(ctx, {queryString: '', cursor: '', guest_token: {}, count: false, online: false, graphqlMode: true, searchMode: false, withReply: false, cookie: {}, authorization: 1, })
   count = count ? count : (cursor ? 499 : (online ? 40 : (graphqlMode ? 499 : 999)))
   if (!guest_token.success) {
     guest_token = await getToken(authorization)
@@ -401,8 +401,8 @@ const getTweets = async (ctx = {queryString: '', cursor: '', guest_token: {}, co
   }
 }
 
-const getConversation = async (ctx = {tweet_id: '', guest_token: {}, graphqlMode: true, authorization: 0, cursor: '', cookie: {}, }, env = {}) => {
-  let {tweet_id, guest_token, graphqlMode, authorization, cursor, cookie} = preCheckCtx(ctx, {tweet_id: '', guest_token: {}, graphqlMode: true, authorization: 0, cursor: '', cookie: {}, })
+const getConversation = async (ctx = {tweet_id: '', guest_token: {}, graphqlMode: true, authorization: 1, cursor: '', cookie: {}, }, env = {}) => {
+  let {tweet_id, guest_token, graphqlMode, authorization, cursor, cookie} = preCheckCtx(ctx, {tweet_id: '', guest_token: {}, graphqlMode: true, authorization: 1, cursor: '', cookie: {}, })
   if (!guest_token.success) {
     guest_token = await getToken(authorization)
   }
@@ -447,8 +447,8 @@ const getConversation = async (ctx = {tweet_id: '', guest_token: {}, graphqlMode
   }
 }
 
-const getEditHistory = async (ctx = {tweet_id: '', guest_token: {}, cookie: {}, authorization: 0, }, env = {}) => {
-  let {tweet_id, guest_token, cookie, authorization} = preCheckCtx(ctx, {tweet_id: '', guest_token: {}, cookie: {}, authorization: 0, })
+const getEditHistory = async (ctx = {tweet_id: '', guest_token: {}, cookie: {}, authorization: 1, }, env = {}) => {
+  let {tweet_id, guest_token, cookie, authorization} = preCheckCtx(ctx, {tweet_id: '', guest_token: {}, cookie: {}, authorization: 1, })
   if (!guest_token.success) {
     guest_token = await getToken(authorization)
   }
@@ -474,8 +474,8 @@ const getEditHistory = async (ctx = {tweet_id: '', guest_token: {}, cookie: {}, 
   })
 }
 
-const getAudioSpace = async (ctx = {id: '', guest_token: {}, cookie: {}, authorization: 0, }, env = {}) => {
-  let {id, guest_token, cookie, authorization} = preCheckCtx(ctx, {id: '', guest_token: {}, cookie: {}, authorization: 0, })
+const getAudioSpace = async (ctx = {id: '', guest_token: {}, cookie: {}, authorization: 1, }, env = {}) => {
+  let {id, guest_token, cookie, authorization} = preCheckCtx(ctx, {id: '', guest_token: {}, cookie: {}, authorization: 1, })
   if (!guest_token.success) {
     guest_token = await getToken(authorization)
   }
@@ -502,8 +502,8 @@ const getAudioSpace = async (ctx = {id: '', guest_token: {}, cookie: {}, authori
   })
 }
 
-const getBroadcast = async (ctx = {id: '', guest_token: {}, cookie: {}, authorization: 0, }, env = {}) => {
-  let {id, guest_token, cookie, authorization} = preCheckCtx(ctx, {id: '', guest_token: {}, cookie: {}, authorization: 0, })
+const getBroadcast = async (ctx = {id: '', guest_token: {}, cookie: {}, authorization: 1, }, env = {}) => {
+  let {id, guest_token, cookie, authorization} = preCheckCtx(ctx, {id: '', guest_token: {}, cookie: {}, authorization: 1, })
   if (!guest_token.success) {
     guest_token = await getToken(authorization)
   }
@@ -519,8 +519,8 @@ const getBroadcast = async (ctx = {id: '', guest_token: {}, cookie: {}, authoriz
   })
 }
 
-const getLiveVideoStream = async (ctx = {media_key: '', guest_token: {}, cookie: {}, authorization: 0, }, env = {}) => {
-  let {media_key, guest_token, cookie, authorization} = preCheckCtx(ctx, {media_key: '', guest_token: {}, cookie: {}, authorization: 0, })
+const getLiveVideoStream = async (ctx = {media_key: '', guest_token: {}, cookie: {}, authorization: 1, }, env = {}) => {
+  let {media_key, guest_token, cookie, authorization} = preCheckCtx(ctx, {media_key: '', guest_token: {}, cookie: {}, authorization: 1, })
   if (!guest_token.success) {
     guest_token = await getToken(authorization)
   }
@@ -536,8 +536,8 @@ const getLiveVideoStream = async (ctx = {media_key: '', guest_token: {}, cookie:
   })
 }
 
-const getTypeahead = async (ctx = {text: '', guest_token: {}, cookie: {}, authorization: 0, }, env = {}) => {
-  let {text, guest_token, cookie, authorization} = preCheckCtx(ctx, {text: '', guest_token: {}, cookie: {}, authorization: 0, })
+const getTypeahead = async (ctx = {text: '', guest_token: {}, cookie: {}, authorization: 1, }, env = {}) => {
+  let {text, guest_token, cookie, authorization} = preCheckCtx(ctx, {text: '', guest_token: {}, cookie: {}, authorization: 1, })
   if (!guest_token.success) {
     guest_token = await getToken(authorization)
   }
@@ -574,18 +574,26 @@ const getArticle = async (ctx = {id: '', guest_token: {}, cookie: {}, authorizat
   })
 }
 
-const getListInfo = async (ctx = {id: '', guest_token: {}, cookie: {}, authorization: 1, }, env = {}) => {
-  let {id, guest_token, cookie, authorization} = preCheckCtx(ctx, {id: '', guest_token: {}, cookie: {}, authorization: 1, })
+const getListInfo = async (ctx = {id: '', screenName: '', listSlug: '', guest_token: {}, cookie: {}, authorization: 1, }, env = {}) => {
+  let {id, screenName, listSlug, guest_token, cookie, authorization} = preCheckCtx(ctx, {id: '', screenName: '', listSlug: '', guest_token: {}, cookie: {}, authorization: 1, })
   if (!guest_token.success) {
     guest_token = await getToken(authorization)
   }
-
-  const graphqlVariables = {
-    listId: id
+  
+  const listById = /^[\d]+$/.test(String(id))
+  let graphqlVariables = {}
+  if (!listById) {
+    graphqlVariables.screenName = screenName
+    graphqlVariables.listSlug = listSlug
+  } else {
+    graphqlVariables.listId = id
   }
 
   return await new Promise((resolve, reject) => {
-    coreFetch("https://api.twitter.com/graphql/" + graphqlQueryIdList.ListByRestId.queryId + "/ListByRestId?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures('ListByRestId'))})).toString(), guest_token, cookie, authorization).then(response => {
+    coreFetch("https://api.twitter.com/graphql/" + (!listById ? graphqlQueryIdList.ListBySlug.queryId + "/ListBySlug?" : graphqlQueryIdList.ListByRestId.queryId + "/ListByRestId?") + (new URLSearchParams({
+      variables: JSON.stringify(graphqlVariables), 
+      features: JSON.stringify(getGraphqlFeatures(!listById ? 'ListBySlug' : 'ListByRestId'))
+    })).toString(), guest_token, cookie, authorization).then(response => {
       resolve(response)
     }).catch(e => {
       reject(e)
@@ -641,8 +649,8 @@ const getListTimeLine = async (ctx = {id: '', count: 20, cursor: '', guest_token
 }
 
 //https://github.com/FixTweet/FixTweet/blob/main/src/helpers/translate.ts
-const getTranslate = async (ctx = {id: '0', type: 'tweets', target: 'en', guest_token: {}, cookie: {}, authorization: 0, }, env = {}) => {
-  let {id, type, target, guest_token, cookie, authorization} = preCheckCtx(ctx, {id: '0', type: 'tweets', target: 'en', guest_token: {}, cookie: {}, authorization: 0, })
+const getTranslate = async (ctx = {id: '0', type: 'tweets', target: 'en', guest_token: {}, cookie: {}, authorization: 1, }, env = {}) => {
+  let {id, type, target, guest_token, cookie, authorization} = preCheckCtx(ctx, {id: '0', type: 'tweets', target: 'en', guest_token: {}, cookie: {}, authorization: 1, })
   if (!guest_token.success) {
     guest_token = await getToken(authorization)
   }
@@ -662,8 +670,8 @@ const getTranslate = async (ctx = {id: '0', type: 'tweets', target: 'en', guest_
 //}
 
 // OTHERS (ANONYMOUS)
-const getPollResult = async (ctx = {tweet_id: '', guest_token: {}, cookie: {}, authorization: 0, }, env = {}) => {
-  let {tweet_id, guest_token, cookie, authorization} = preCheckCtx(ctx, {tweet_id: '', guest_token: {}, cookie: {}, authorization: 0, })
+const getPollResult = async (ctx = {tweet_id: '', guest_token: {}, cookie: {}, authorization: 1, }, env = {}) => {
+  let {tweet_id, guest_token, cookie, authorization} = preCheckCtx(ctx, {tweet_id: '', guest_token: {}, cookie: {}, authorization: 1, })
   if (!tweet_id) {
     return {code: 403, message: 'Invalid tweet id', data: []}
   }

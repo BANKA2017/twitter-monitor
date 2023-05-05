@@ -9,6 +9,7 @@ import { MediaProxy } from './CoreFunctions/media/MediaProxy.mjs'
 import online from './service/online.mjs'
 import album from './service/album.mjs'
 import translate from './service/translate.mjs'
+//Bot api
 //import bot from './service/bot.mjs'
 
 const app = express()
@@ -58,10 +59,10 @@ media.use((req, res, next) => {
 })
 
 //get init token
-global.guest_token = new GuestToken
+//global.guest_token = new GuestToken
 global.guest_token2 = new GuestToken
 if (!global.dbmode) {
-    await global.guest_token.updateGuestToken(0)
+    //await global.guest_token.updateGuestToken(0)
     await global.guest_token2.updateGuestToken(1)
 }
 

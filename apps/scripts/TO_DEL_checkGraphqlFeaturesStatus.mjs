@@ -13,7 +13,7 @@ import { GuestToken } from "../../libs/core/Core.function.mjs";
 //getUserInfo, getVerifiedAvatars, getTweets, getConversation, getAudioSpace
 
 const token = new GuestToken
-token.updateGuestToken(0)
+token.updateGuestToken(1)
 try {
     await getUserInfo({user: "twitter", guest_token: token.token, graphqlMode: true})
     console.log(`tmv3_check: getUserInfo checked`)

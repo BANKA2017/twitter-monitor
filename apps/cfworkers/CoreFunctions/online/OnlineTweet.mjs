@@ -1,5 +1,5 @@
 import path2array from "../../../../libs/core/Core.apiPath.mjs"
-import { getAudioSpace, getLiveVideoStream, getConversation, getPollResult, getTweets, getBroadcast } from "../../../../libs/core/Core.fetch.mjs"
+import { getAudioSpace, getLiveVideoStream, getConversation, getPollResult, getTweets, getBroadcast, getListTimeLine } from "../../../../libs/core/Core.fetch.mjs"
 import { GetEntitiesFromText, VerifyQueryString } from "../../../../libs/core/Core.function.mjs"
 import { AudioSpace, Broadcast, Time2SnowFlake, Tweet, TweetsInfo } from "../../../../libs/core/Core.tweet.mjs"
 import { apiTemplate } from "../../../../libs/share/Constant.mjs"
@@ -9,7 +9,7 @@ const ApiTweets = async (req, env) => {
     const isRssMode = req.query.format === 'rss'
     const queryCount = VerifyQueryString(req.query.count, 0)
     const count = queryCount ? (queryCount > 100 ? 100 : (queryCount < 1 ? 1 : queryCount)) : (isRssMode ? 20 : 10)
-    const tweet_id =  VerifyQueryString(req.query.tweet_id, 0)
+    const tweet_id = VerifyQueryString(req.query.tweet_id, 0)
     const cursor = String(req.query.cursor??req.query.tweet_id??'0')//TODO Notice, VerifyQueryString()
 
     const name = VerifyQueryString(req.query.name, '')
@@ -26,12 +26,25 @@ const ApiTweets = async (req, env) => {
     const isConversation = !!(Number(req.query.is_status, 0) && cursor !== '0')
     const loadConversation = VerifyQueryString(req.query.load_conversation, 0) !== 0
 
+    //list
+    const listId = VerifyQueryString(req.query.list_id, 0)
+
     let tweets = {}
-    if (isConversation) {
+    if (listId) {
         try {
-            tweets = await getConversation({tweet_id, guest_token: req.guest_token, graphqlMode: true, authorization: 0, cursor: isNaN(cursor) ? cursor : ''})
+            tweets = await getListTimeLine({id: listId, count, guest_token: req.guest_token2.token, authorization: 1, graphqlMode: true, cursor: isNaN(cursor) ? (cursor ? cursor : '') : ''})
             //updateGuestToken
-            await updateGuestToken(env, 'guest_token', 0, tweets.headers.get('x-rate-limit-remaining') < 20)
+            await updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20)
+        } catch (e) {
+            console.log(e)
+            console.error(`[${new Date()}]: #OnlineListTimeline #${tweet_id} #${e.code} ${e.message}`)
+            return json(apiTemplate(e.code, e.message))
+        }
+    } else if (isConversation) {
+        try {
+            tweets = await getConversation({tweet_id, guest_token: req.guest_token2, graphqlMode: true, cursor: isNaN(cursor) ? cursor : ''})
+            //updateGuestToken
+            await updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20)
         } catch (e) {
             console.error(`[${new Date()}]: #OnlineTweetsConversation #${tweet_id} #${e.code} ${e.message}`)
             return json(apiTemplate(e.code, e.message))
@@ -40,8 +53,8 @@ const ApiTweets = async (req, env) => {
     } 
     //else if (name !== '' && displayType === 'all') {
     //    try {
-    //        tweets = await getTweets(name, cursor, req.guest_token, 40, true, true, false)
-    //        //global.guest_token.updateRateLimit('UserTweets')
+    //        tweets = await getTweets(name, cursor, req.guest_token2, 40, true, true, false)
+    //        //global.guest_token2.updateRateLimit('UserTweets')
     //    } catch (e) {
     //        console.error(`[${new Date()}]: #OnlineTweetsConversation #${cursor} #${e.code} ${e.message}`)
     //        return json(apiTemplate(e.code, e.message))
@@ -84,11 +97,11 @@ const ApiTweets = async (req, env) => {
         //}
 
         try {
-            tweets = await getTweets({queryString: uid, cursor, guest_token: req.guest_token, count, online: true, graphqlMode: true, searchMode: false, withReply: displayType === 'include_reply'})
-            //tweets = await getTweets(queryArray.join(' '), '', global.guest_token.token, count, true, false, true)
+            tweets = await getTweets({queryString: uid, cursor, guest_token: req.guest_token2, count, online: true, graphqlMode: true, searchMode: false, withReply: displayType === 'include_reply'})
+            //tweets = await getTweets(queryArray.join(' '), '', global.guest_token2.token, count, true, false, true)
             
             //updateGuestToken
-            await updateGuestToken(env, 'guest_token', 0, tweets.headers.get('x-rate-limit-remaining') < 20)
+            await updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20)
         } catch (e) {
             console.error(`[${new Date()}]: #OnlineTweetsTimeline #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
             return json(apiTemplate(e.code, e.message))
@@ -96,7 +109,7 @@ const ApiTweets = async (req, env) => {
         
     }
 
-    const {tweetsInfo, tweetsContent} = GenerateData(tweets, isConversation, (loadConversation ? '' : name), true)
+    const {tweetsInfo, tweetsContent} = GenerateData(tweets, isConversation, ((loadConversation || listId) ? '' : name), true)
     if (tweetsInfo.errors.code !== 0) {
         return json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
     }
@@ -180,9 +193,9 @@ const ApiSearch = async (req, env) => {
         queryArray.push('max_id:' + String(Time2SnowFlake(end * 1000)))
     }
     try {
-        tweets = await getTweets({queryString: queryArray.join(' '), cursor: '', guest_token: req.guest_token, count: queryCount, online: true, graphqlMode: false, searchMode: true})
+        tweets = await getTweets({queryString: queryArray.join(' '), cursor: '', guest_token: req.guest_token2, count: queryCount, online: true, graphqlMode: false, searchMode: true})
         //updateGuestToken
-        await updateGuestToken(env, 'guest_token', 0, tweets.headers.get('x-rate-limit-remaining') < 20)
+        await updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20)
     } catch (e) {
         console.error(`[${new Date()}]: #OnlineTweetsSearch #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
         return json(apiTemplate(e.code, e.message))
@@ -205,10 +218,10 @@ const ApiPoll = async (req, env) => {
     if (!tweet_id) {
         return json(apiTemplate())
     }
-    const tmpPollData = await getPollResult({tweet_id, guest_token: req.guest_token})
+    const tmpPollData = await getPollResult({tweet_id, guest_token: req.guest_token2})
     
     //updateGuestToken
-    await updateGuestToken(env, 'guest_token', 0, tmpPollData.headers.get('x-rate-limit-remaining') < 20)
+    await updateGuestToken(env, 'guest_token2', 1, tmpPollData.headers.get('x-rate-limit-remaining') < 20)
     if (tmpPollData.code === 200) {
         return json(apiTemplate(200, 'OK', tmpPollData.data.map(poll => Number(poll))))
     } else {
@@ -222,11 +235,11 @@ const ApiAudioSpace = async (req, env) => {
     if (!id) {
         return json(apiTemplate())
     }
-    //await req.guest_token.updateGuestToken()
-    const tmpAudioSpaceData = await getAudioSpace({id, guest_token: req.guest_token})
+    //await req.guest_token2.updateGuestToken(1)
+    const tmpAudioSpaceData = await getAudioSpace({id, guest_token: req.guest_token2})
     
     //updateGuestToken
-    await updateGuestToken(env, 'guest_token', 0, tmpAudioSpaceData.headers.get('x-rate-limit-remaining') < 20)
+    await updateGuestToken(env, 'guest_token2', 1, tmpAudioSpaceData.headers.get('x-rate-limit-remaining') < 20)
     if (tmpAudioSpaceData.data?.data?.audioSpace || false) {
         let tmpAudioSpace = AudioSpace(tmpAudioSpaceData.data)
         //get link
@@ -261,12 +274,12 @@ const ApiBroadcast = async (req, env) => {
     }
     
     //TODO check Broadcast api rate limit
-    //await req.guest_token.updateGuestToken()
+    //await req.guest_token2.updateGuestToken(1)
     try {
-        const tmpBroadcastData = await getBroadcast({id, guest_token: req.guest_token})
+        const tmpBroadcastData = await getBroadcast({id, guest_token: req.guest_token2})
         
         //updateGuestToken
-        await updateGuestToken(env, 'guest_token', 0, tmpBroadcastData.headers.get('x-rate-limit-remaining') < 20)
+        await updateGuestToken(env, 'guest_token2', 1, tmpBroadcastData.headers.get('x-rate-limit-remaining') < 20)
         let tmpBroadcast = Broadcast(tmpBroadcastData.data)
         //get link
         if (tmpBroadcast.is_available_for_replay || (Number(tmpBroadcast.start) <= Date.now() && tmpBroadcast.end === '0')) {
@@ -281,7 +294,7 @@ const ApiBroadcast = async (req, env) => {
         }
         return json(apiTemplate(200, 'OK', tmpBroadcast))
     } catch (e) {
-        //global.guest_token.updateRateLimit('BroadCast')
+        //global.guest_token2.updateRateLimit('BroadCast')
         if (!(e?.code && e?.message) && e?.errors) {
             e = e.errors[0]
         }
@@ -350,6 +363,10 @@ const TweetsData = (content = {}, users = {}, contents = [], precheckName = '', 
     //place
     if (exportTweet.place?.id) {
         exportTweet.GeneralTweetData.place = exportTweet.place
+    }
+    //rich text
+    if (exportTweet.richtext?.richtext) {
+        exportTweet.GeneralTweetData.richtext = exportTweet.richtext.richtext
     }
     //check poster
     if (isConversation || precheckName === '' || precheckName.toLocaleLowerCase() === exportTweet.GeneralTweetData.name.toLocaleLowerCase()) {

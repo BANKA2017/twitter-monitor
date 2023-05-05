@@ -7,18 +7,18 @@ import { ApiTrends } from './CoreFunctions/online/OnlineTrends.mjs'
 import { apiTemplate } from '../../libs/share/Constant.mjs'
 import { MediaProxy } from './CoreFunctions/media/MediaProxy.mjs'
 import { ApiOfficialTranslate, ApiTranslate } from './CoreFunctions/translate/Translate.mjs'
-import { ApiTypeahead } from './CoreFunctions/online/OnlineMisc.mjs'
+import { ApiListInfo, ApiListMemberList, ApiTypeahead } from './CoreFunctions/online/OnlineMisc.mjs'
 
 const workersApi = Router()
 
 // middleware
 const updateToken = async (req, env) => {
     if ((new URL(req.url)).pathname === '/favicon.ico') {return}
-    req.guest_token = JSON.parse((await env.kv.get('guest_token'))??'{}')// { token: {} }//new GuestToken
+    //req.guest_token = JSON.parse((await env.kv.get('guest_token'))??'{}')// { token: {} }//new GuestToken
     req.guest_token2 = JSON.parse((await env.kv.get('guest_token2'))??'{}')//new GuestToken
-    if (!req.guest_token?.token || req.guest_token.expire < Date.now) {
-        req.guest_token = await updateGuestToken(env, 'guest_token', 0, true)
-    }
+    //if (!req.guest_token?.token || req.guest_token.expire < Date.now) {
+    //    req.guest_token = await updateGuestToken(env, 'guest_token', 0, true)
+    //}
     if (!req.guest_token2?.token || req.guest_token2.expire < Date.now) {
         req.guest_token2 = await updateGuestToken(env, 'guest_token2', 1, true)
     }
@@ -49,6 +49,9 @@ workersApi.get('/online/api/v3/data/broadcast/', ApiBroadcast)
 workersApi.get('/online/api/v3/data/media/', ApiMedia)
 workersApi.get('/online/api/v3/data/trends/', ApiTrends)
 workersApi.get('/online/api/v3/data/typeahead/', ApiTypeahead)
+workersApi.get('/online/api/v3/data/listinfo/', ApiListInfo)
+workersApi.get('/online/api/v3/data/listmember/', ApiListMemberList)
+
 
 //online search
 workersApi.get('/online/api/v3/data/hashtag/', (req) => { req.type = 'hashtag' }, ApiSearch)

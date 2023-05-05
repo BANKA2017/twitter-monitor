@@ -17,7 +17,7 @@ const AlbumSearch = async (req, res) => {
     const isPhotos = !!(req.query.photos)
     if (!isPhotos) {
         if (name !== '') {
-            queryArray.push(`from:${name}`)
+            queryArray.push(name.split(' ').filter(tmpName => tmpName).map(tmpName => `from:${tmpName.startsWith('@') ? tmpName.slice(1) : tmpName}`).join(' OR '))
         }
         if (tweetId !== '') {
             queryArray.push(`max_id:${tweetId}`)
@@ -30,11 +30,11 @@ const AlbumSearch = async (req, res) => {
     let tweets = {}
     try {
         if (isPhotos) {
-            tweets = await getConversation({tweet_id: tweetId, guest_token: global.guest_token.token, graphqlMode: true})
-            global.guest_token.updateRateLimit('TweetDetail')
+            tweets = await getConversation({tweet_id: tweetId, guest_token: global.guest_token2.token, graphqlMode: true})
+            global.guest_token2.updateRateLimit('TweetDetail')
         } else {
-            tweets = await getTweets({queryString: queryArray.join(' '), cursor: '', guest_token: global.guest_token.token, count: 20, online: true, graphqlMode: false, searchMode: true})
-            global.guest_token.updateRateLimit('Search')
+            tweets = await getTweets({queryString: queryArray.join(' '), cursor: '', guest_token: global.guest_token2.token, count: 20, online: true, graphqlMode: false, searchMode: true})
+            global.guest_token2.updateRateLimit('Search')
         }
     } catch (e) {
         console.error(`[${new Date()}]: #Album #${e.code} ${e.message}`)

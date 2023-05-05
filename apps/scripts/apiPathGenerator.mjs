@@ -5,11 +5,13 @@ const apiPathList = {
     rest_id: [
         "id_str",
         "data.user.result.rest_id",
-        "core.user_results.result.rest_id"
+        "core.user_results.result.rest_id",
+        "rest_id"
     ],
     user_is_blue_verified: [
         "data.user.result.is_blue_verified",
-        'ext_is_blue_verified'
+        'ext_is_blue_verified',
+        "is_blue_verified"
     ],
     user_info_legacy: [
         "data.user.result.legacy",

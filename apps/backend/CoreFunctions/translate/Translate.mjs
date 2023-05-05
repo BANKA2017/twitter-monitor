@@ -116,13 +116,13 @@ const ApiOfficialTranslate = async (req, res) => {
     const target = VerifyQueryString(req.query.target, 'en')
 
     try {
-        await global.guest_token.updateGuestToken()
-        if (global.guest_token.token.nextActiveTime) {
-            console.error(`[${new Date()}]: #Translate #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
-            return json(apiTemplate(429, `Wait until ${global.guest_token.token.nextActiveTime}`), {}, 'translate')
+        await global.guest_token2.updateGuestToken(1)
+        if (global.guest_token2.token.nextActiveTime) {
+            console.error(`[${new Date()}]: #Translate #GuestToken #429 Wait until ${global.guest_token2.token.nextActiveTime}`)
+            return json(apiTemplate(429, `Wait until ${global.guest_token2.token.nextActiveTime}`), {}, 'translate')
         }
-        global.guest_token.updateRateLimit('Translation')
-        const tmpTranslate = await getTranslate({id, type, target, guest_token: global.guest_token.token})
+        global.guest_token2.updateRateLimit('Translation')
+        const tmpTranslate = await getTranslate({id, type, target, guest_token: global.guest_token2.token})
 
         if (tmpTranslate.data || ((tmpTranslate.data?.translationState??'').toLowerCase() !== 'success')) {
             let tmpReaponse = {

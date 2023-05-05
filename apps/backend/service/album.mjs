@@ -12,10 +12,10 @@ album.use(async (req, res, next) => {
         res.json(apiTemplate(403, 'DB Mode is not included album api'))
         return
     }
-    await global.guest_token.updateGuestToken()
-    if (global.guest_token.token.nextActiveTime) {
-        console.error(`[${new Date()}]: #Album #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
-        res.json(apiTemplate(429, `Wait until ${global.guest_token.token.nextActiveTime}`), {}, 'album')
+    await global.guest_token2.updateGuestToken(1)
+    if (global.guest_token2.token.nextActiveTime) {
+        console.error(`[${new Date()}]: #Album #GuestToken #429 Wait until ${global.guest_token2.token.nextActiveTime}`)
+        res.json(apiTemplate(429, `Wait until ${global.guest_token2.token.nextActiveTime}`), {}, 'album')
     } else {
         next()
     }

@@ -136,8 +136,8 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 
 ## Sub packages
 
-- `FastText` for language identity, [Read more](./tree/master/packages/fasttext)
-- `AxiosHelper` used to fix the issue that CloudFlare Workers unable to use axios, [Read more](./tree/node/packages/axios-helper)
+- `FastText` for language identity, [Read more](https://github.com/BANKA2017/twitter-monitor/tree/node/packages/fasttext)
+- `AxiosHelper` used to fix the issue that CloudFlare Workers unable to use axios, [Read more](https://github.com/BANKA2017/twitter-monitor/tree/node/packages/axios-helper)
 
 ## Thanks
 
@@ -278,8 +278,8 @@ Those are Chinese articles
 
 ## 子包
 
-- `FastText` 用于识别语言, [阅读更多](./tree/master/packages/fasttext)
-- `AxiosHelper` 用于处理解决 Workers 无法使用 axios 的问题, [阅读更多](./tree/node/packages/axios-helper)
+- `FastText` 用于识别语言, [阅读更多](https://github.com/BANKA2017/twitter-monitor/tree/node/packages/fasttext)
+- `AxiosHelper` 用于处理解决 Workers 无法使用 axios 的问题, [阅读更多](https://github.com/BANKA2017/twitter-monitor/tree/node/packages/axios-helper)
 
 ## 出处 & 感谢
 

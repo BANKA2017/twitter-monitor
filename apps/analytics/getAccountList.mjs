@@ -20,7 +20,7 @@ if (existsSync(basePath + '/../libs/assets/analytics/account.json')) {
 }
 
 global.guest_token = new GuestToken
-await global.guest_token.updateGuestToken(0)
+await global.guest_token.updateGuestToken(1)
 let guestTokenCount = 1
 let count = 0
 let throwCount = 0
@@ -37,7 +37,7 @@ while (AccountList.size) {
         tmpAccount.push(tmpSetIter.next().value)
     }
     if (!global.guest_token.preCheck('Recommendation', onceCount)) {
-        await global.guest_token.updateGuestToken(0)
+        await global.guest_token.updateGuestToken(1)
         guestTokenCount++
     }
     console.log(tmpAccount)

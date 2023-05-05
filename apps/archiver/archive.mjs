@@ -60,13 +60,13 @@ let uid = UserData.v2_account_info?.uid || null
 
 //get init token
 global.guest_token = new GuestToken
-await global.guest_token.updateGuestToken()
+await global.guest_token.updateGuestToken(1)
 
 if (global.guest_token.token.nextActiveTime) {
     await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
     console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
     await Sleep(global.guest_token.token.nextActiveTime - Date.now())
-    await global.guest_token.updateGuestToken()
+    await global.guest_token.updateGuestToken(1)
     if (!global.guest_token.token.success) {
         process.exit()
     }
@@ -78,7 +78,7 @@ if (cursor !== 'complete') {
     const query = [`from:${name}`, 'include:replies', 'include:nativeretweets', 'include:retweets', 'include:quote', 'since_id:0'].join(' ')
     console.log(`archiver: query string -->${query}<--`)
     do {
-        await global.guest_token.updateGuestToken()
+        await global.guest_token.updateGuestToken(1)
         if (global.guest_token.token.nextActiveTime) {
             await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
             console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)

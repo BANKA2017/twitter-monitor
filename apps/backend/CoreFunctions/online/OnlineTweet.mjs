@@ -1,5 +1,5 @@
 import path2array from "../../../../libs/core/Core.apiPath.mjs"
-import { getAudioSpace, getLiveVideoStream, getConversation, getPollResult, getTweets, getBroadcast } from "../../../../libs/core/Core.fetch.mjs"
+import { getAudioSpace, getLiveVideoStream, getConversation, getPollResult, getTweets, getBroadcast, getListTimeLine } from "../../../../libs/core/Core.fetch.mjs"
 import { GetEntitiesFromText, VerifyQueryString } from "../../../../libs/core/Core.function.mjs"
 import { AudioSpace, Broadcast, Time2SnowFlake, Tweet, TweetsInfo } from "../../../../libs/core/Core.tweet.mjs"
 import { apiTemplate } from "../../../../libs/share/Constant.mjs"
@@ -8,7 +8,7 @@ const ApiTweets = async (req, res) => {
     const isRssMode = req.query.format === 'rss'
     const queryCount = VerifyQueryString(req.query.count, 0)
     const count = queryCount ? (queryCount > 100 ? 100 : (queryCount < 1 ? 1 : queryCount)) : (isRssMode ? 20 : 10)
-    const tweet_id =  VerifyQueryString(req.query.tweet_id, 0)
+    const tweet_id = VerifyQueryString(req.query.tweet_id, 0)
     const cursor = String(req.query.cursor??req.query.tweet_id??'0')//TODO Notice, VerifyQueryString()
 
     const name = VerifyQueryString(req.query.name, '')
@@ -25,22 +25,34 @@ const ApiTweets = async (req, res) => {
     const isConversation = !!(Number(req.query.is_status, 0) && cursor !== '0')
     const loadConversation = VerifyQueryString(req.query.load_conversation, 0) !== 0
 
+    //list
+    const listId = VerifyQueryString(req.query.list_id, 0)
+
     let tweets = {}
-    if (isConversation) {
+    if (listId) {
         try {
-            tweets = await getConversation({tweet_id, guest_token: global.guest_token.token, graphqlMode: true, authorization: 0, cursor: isNaN(cursor) ? cursor : ''})
-            global.guest_token.updateRateLimit('TweetDetail')
+            tweets = await getListTimeLine({id: listId, count, guest_token: global.guest_token2.token, authorization: 1, graphqlMode: true, cursor: isNaN(cursor) ? (cursor ? cursor : '') : ''})
+            global.guest_token2.updateRateLimit('ListTimeLime')
+        } catch (e) {
+            console.log(e)
+            console.error(`[${new Date()}]: #OnlineListTimeline #${tweet_id} #${e.code} ${e.message}`)
+            res.json(apiTemplate(e.code, e.message))
+            return
+        }
+    } else if (isConversation) {
+        try {
+            tweets = await getConversation({tweet_id, guest_token: global.guest_token2.token, graphqlMode: true, authorization: 1, cursor: isNaN(cursor) ? cursor : ''})
+            global.guest_token2.updateRateLimit('TweetDetail')
         } catch (e) {
             console.error(`[${new Date()}]: #OnlineTweetsConversation #${tweet_id} #${e.code} ${e.message}`)
             res.json(apiTemplate(e.code, e.message))
             return
         }
-        
-    } 
+    }
     //else if (name !== '' && displayType === 'all') {
     //    try {
-    //        tweets = await getTweets(name, cursor, global.guest_token.token, 40, true, true, false)
-    //        global.guest_token.updateRateLimit('UserTweets')
+    //        tweets = await getTweets(name, cursor, global.guest_token2.token, 40, true, true, false)
+    //        global.guest_token2.updateRateLimit('UserTweets')
     //    } catch (e) {
     //        console.error(`[${new Date()}]: #OnlineTweetsConversation #${cursor} #${e.code} ${e.message}`)
     //        res.json(apiTemplate(e.code, e.message))
@@ -85,9 +97,9 @@ const ApiTweets = async (req, res) => {
         //}
 
         try {
-            tweets = await getTweets({queryString: uid, cursor, guest_token: global.guest_token.token, count, online: true, graphqlMode: true, searchMode: false, withReply: displayType === 'include_reply'})
-            //tweets = await getTweets(queryArray.join(' '), '', global.guest_token.token, count, true, false, true)
-            global.guest_token.updateRateLimit('UserTweets')
+            tweets = await getTweets({queryString: uid, cursor, guest_token: global.guest_token2.token, count, online: true, graphqlMode: true, searchMode: false, withReply: displayType === 'include_reply'})
+            //tweets = await getTweets(queryArray.join(' '), '', global.guest_token2.token, count, true, false, true)
+            global.guest_token2.updateRateLimit('UserTweets')
         } catch (e) {
             console.error(`[${new Date()}]: #OnlineTweetsTimeline #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
             res.json(apiTemplate(e.code, e.message))
@@ -96,7 +108,7 @@ const ApiTweets = async (req, res) => {
         
     }
 
-    const {tweetsInfo, tweetsContent} = GenerateData(tweets, isConversation, (loadConversation ? '' : name), true)
+    const {tweetsInfo, tweetsContent} = GenerateData(tweets, isConversation, ((loadConversation || listId) ? '' : name), true)
     if (tweetsInfo.errors.code !== 0) {
         res.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
         return
@@ -183,8 +195,8 @@ const ApiSearch = async (req, res) => {
         queryArray.push('max_id:' + String(Time2SnowFlake(end * 1000)))
     }
     try {
-        tweets = await getTweets({queryString: queryArray.join(' '), cursor: '', guest_token: global.guest_token.token, count: queryCount, online: true, graphqlMode: false, searchMode: true})
-        global.guest_token.updateRateLimit('Search')
+        tweets = await getTweets({queryString: queryArray.join(' '), cursor: '', guest_token: global.guest_token2.token, count: queryCount, online: true, graphqlMode: false, searchMode: true})
+        global.guest_token2.updateRateLimit('Search')
     } catch (e) {
         console.error(`[${new Date()}]: #OnlineTweetsSearch #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
         res.json(apiTemplate(e.code, e.message))
@@ -210,8 +222,8 @@ const ApiPoll = async (req, res) => {
         res.json(apiTemplate())
         return
     }
-    const tmpPollData = await getPollResult({tweet_id, guest_token: global.guest_token.token})
-    global.guest_token.updateRateLimit('TweetDetail')
+    const tmpPollData = await getPollResult({tweet_id, guest_token: global.guest_token2.token})
+    global.guest_token2.updateRateLimit('TweetDetail')
     if (tmpPollData.code === 200) {
         res.json(apiTemplate(200, 'OK', tmpPollData.data.map(poll => Number(poll))))
     } else {
@@ -226,9 +238,9 @@ const ApiAudioSpace = async (req, res) => {
         res.json(apiTemplate())
         return
     }
-    await global.guest_token.updateGuestToken()
-    const tmpAudioSpaceData = await getAudioSpace({id, guest_token: global.guest_token.token})
-    global.guest_token.updateRateLimit('AudioSpaceById')
+    await global.guest_token2.updateGuestToken(1)
+    const tmpAudioSpaceData = await getAudioSpace({id, guest_token: global.guest_token2.token})
+    global.guest_token2.updateRateLimit('AudioSpaceById')
     if (tmpAudioSpaceData.data?.data?.audioSpace || false) {
         let tmpAudioSpace = AudioSpace(tmpAudioSpaceData.data)
         //get link
@@ -264,9 +276,9 @@ const ApiBroadcast = async (req, res) => {
     }
     
     //TODO check Broadcast api rate limit
-    await global.guest_token.updateGuestToken()
-    getBroadcast({id, guest_token: global.guest_token.token}).then(async response => {
-        global.guest_token.updateRateLimit('BroadCast')
+    await global.guest_token2.updateGuestToken(1)
+    getBroadcast({id, guest_token: global.guest_token2.token}).then(async response => {
+        global.guest_token2.updateRateLimit('BroadCast')
         const tmpBroadcastData = response
         let tmpBroadcast = Broadcast(tmpBroadcastData.data)
         //get link
@@ -282,7 +294,7 @@ const ApiBroadcast = async (req, res) => {
         }
         res.json(apiTemplate(200, 'OK', tmpBroadcast))
     }).catch(e => {
-        global.guest_token.updateRateLimit('BroadCast')
+        global.guest_token2.updateRateLimit('BroadCast')
         if (!(e?.code && e?.message) && e?.errors) {
             e = e.errors[0]
         }
@@ -353,6 +365,10 @@ const TweetsData = (content = {}, users = {}, contents = [], precheckName = '', 
     //place
     if (exportTweet.place?.id) {
         exportTweet.GeneralTweetData.place = exportTweet.place
+    }
+    //rich text
+    if (exportTweet.richtext?.richtext) {
+        exportTweet.GeneralTweetData.richtext = exportTweet.richtext.richtext
     }
     //check poster
     if (isConversation || precheckName === '' || precheckName.toLocaleLowerCase() === exportTweet.GeneralTweetData.name.toLocaleLowerCase()) {

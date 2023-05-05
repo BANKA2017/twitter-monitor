@@ -3,7 +3,7 @@ import {ApiUserInfo} from '../CoreFunctions/online/OnlineUserInfo.mjs'
 import {ApiTweets, ApiSearch, ApiPoll, ApiAudioSpace, ApiMedia, ApiBroadcast} from '../CoreFunctions/online/OnlineTweet.mjs'
 import { apiTemplate } from '../../../libs/share/Constant.mjs'
 import { ApiTrends } from '../CoreFunctions/online/OnlineTrends.mjs'
-import { ApiTypeahead } from '../CoreFunctions/online/OnlineMisc.mjs'
+import { ApiListInfo, ApiListMemberList, ApiTypeahead } from '../CoreFunctions/online/OnlineMisc.mjs'
 
 const online = express()
 online.use(async (req, res, next) => {
@@ -11,12 +11,13 @@ online.use(async (req, res, next) => {
         res.json(apiTemplate(403, 'DB Mode is not included onlone api'))
         return
     }
-    await global.guest_token.updateGuestToken(0)
+    //await global.guest_token2.updateGuestToken(0)
     await global.guest_token2.updateGuestToken(1)
-    if (global.guest_token.token.nextActiveTime) {
-        console.error(`[${new Date()}]: #Online #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
-        res.json(apiTemplate(429, `Wait until ${global.guest_token.token.nextActiveTime}`))
-    } else if (global.guest_token2.token.nextActiveTime) {
+    //if (global.guest_token2.token.nextActiveTime) {
+    //    console.error(`[${new Date()}]: #Online #GuestToken #429 Wait until ${global.guest_token2.token.nextActiveTime}`)
+    //    res.json(apiTemplate(429, `Wait until ${global.guest_token2.token.nextActiveTime}`))
+    //} else 
+    if (global.guest_token2.token.nextActiveTime) {
         console.error(`[${new Date()}]: #Online #GuestToken #429 Wait until ${global.guest_token2.token.nextActiveTime}`)
         res.json(apiTemplate(429, `Wait until ${global.guest_token2.token.nextActiveTime}`))
     } else {
@@ -40,5 +41,7 @@ online.get('/data/broadcast/', ApiBroadcast)
 online.get('/data/media/', ApiMedia)
 online.get('/data/trends/', ApiTrends)
 online.get('/data/typeahead/', ApiTypeahead)
+online.get('/data/listinfo/', ApiListInfo)
+online.get('/data/listmember/', ApiListMemberList)
 
 export default online

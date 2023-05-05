@@ -13,10 +13,10 @@ const ApiUserInfo = async (req, env) => {
     }
     let userInfo = {}
     try {
-        userInfo = await getUserInfo({user: name || uid, guest_token: req.guest_token})
+        userInfo = await getUserInfo({user: name || uid, guest_token: req.guest_token2})
         
         //updateGuestToken
-        await updateGuestToken(env, 'guest_token', 0, userInfo.headers.get('x-rate-limit-remaining') < 20)
+        await updateGuestToken(env, 'guest_token2', 1, userInfo.headers.get('x-rate-limit-remaining') < 20)
     } catch (e) {
         console.error(`[${new Date()}]: #OnlineUserInfo #${name || uid} #${e.code} ${e.message}`)
         return json(apiTemplate(e.code, e.message))

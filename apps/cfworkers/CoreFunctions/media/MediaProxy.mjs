@@ -2,7 +2,7 @@ import { getImage } from '../../../../libs/core/Core.fetch.mjs'
 import { PathInfo, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
 import { GetMime } from '../../../../libs/share/Mime.mjs'
 
-const MediaProxy = async (req, res) => {
+const MediaProxy = async (req, env) => {
     //const resSvg = '<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" focusable="false" role="img" aria-label="Placeholder: Deleted"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>'
     const link = req.params.link
     const format = VerifyQueryString(req.query.format, '')
@@ -40,7 +40,7 @@ const MediaProxy = async (req, res) => {
             return new Response(null, {status: 500, headers: responseHeaders})
         }
     } else {
-        switch (mediaLinkArray.extension) {
+        switch (mediaLinkArray.extension.toLocaleLowerCase()) {
             case "jpg":
             case "jpeg":
             case "png":

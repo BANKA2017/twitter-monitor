@@ -29,7 +29,7 @@ const GenerateAccountInfo = (accountDataOriginal, extAccountData = {}) => {
         //"description: "",
     }
     let update = false
-    const accountDataIdStr = path2array("rest_id", accountDataOriginal)??0
+    const accountDataIdStr = path2array("rest_id", accountDataOriginal)||0
     const accountData = path2array("user_info_legacy", accountDataOriginal)
     //banner
     if (accountData.profile_banner_url) {

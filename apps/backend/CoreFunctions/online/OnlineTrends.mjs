@@ -12,7 +12,7 @@ const ApiTrends = async (req, res) => {
             metaDescription: item?.item?.content?.trend?.trendMetadata?.metaDescription ?? undefined,
             displayedRelatedVariants: item?.item?.clientEventInfo?.details?.guideDetails?.transparentGuideDetails?.trendMetadata?.displayedRelatedVariants ?? undefined
         }))
-        global.guest_token.updateRateLimit('Trending')
+        global.guest_token2.updateRateLimit('Trending')
     } catch (e) {
         res.json(apiTemplate(500, 'Ok', [], 'online'))
         return

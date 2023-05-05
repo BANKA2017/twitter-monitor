@@ -12,11 +12,11 @@ const ApiUserInfo = async (req, res) => {
     }
     let userInfo = {}
     try {
-        userInfo = await getUserInfo({user: name || uid, guest_token: global.guest_token.token})
+        userInfo = await getUserInfo({user: name || uid, guest_token: global.guest_token2.token})
         if (!name) {
-            global.guest_token.updateRateLimit('UserByRestId')
+            global.guest_token2.updateRateLimit('UserByRestId')
         } else {
-            global.guest_token.updateRateLimit('UserByScreenName')
+            global.guest_token2.updateRateLimit('UserByScreenName')
         }
     } catch (e) {
         console.error(`[${new Date()}]: #OnlineUserInfo #${name || uid} #${e.code} ${e.message}`)

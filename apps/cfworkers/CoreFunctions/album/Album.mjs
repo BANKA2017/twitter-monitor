@@ -18,7 +18,7 @@ const AlbumSearch = async (req, env) => {
     const isPhotos = !!(req.query.photos)
     if (!isPhotos) {
         if (name !== '') {
-            queryArray.push(`from:${name}`)
+            queryArray.push(name.split(' ').filter(tmpName => tmpName).map(tmpName => `from:${tmpName.startsWith('@') ? tmpName.slice(1) : tmpName}`).join(' OR '))
         }
         if (tweetId !== '') {
             queryArray.push(`max_id:${tweetId}`)
@@ -32,18 +32,18 @@ const AlbumSearch = async (req, env) => {
     try {
         if (isPhotos) {
             //TODO fix tokens
-            tweets = await getConversation({tweet_id: tweetId, guest_token: req.guest_token, graphqlMode: true})
-            //global.guest_token.updateRateLimit('TweetDetail')
+            tweets = await getConversation({tweet_id: tweetId, guest_token: req.guest_token2, graphqlMode: true})
+            //global.guest_token2.updateRateLimit('TweetDetail')
         } else {
-            tweets = await getTweets({queryString: queryArray.join(' '), cursor: '', guest_token: req.guest_token, count: 20, online: true, graphqlMode: false, searchMode: true})
-            //global.guest_token.updateRateLimit('Search')
+            tweets = await getTweets({queryString: queryArray.join(' '), cursor: '', guest_token: req.guest_token2, count: 20, online: true, graphqlMode: false, searchMode: true})
+            //global.guest_token2.updateRateLimit('Search')
         }
     } catch (e) {
         console.error(`[${new Date()}]: #Album #${e.code} ${e.message}`)
         return json(apiTemplate(e.code, e.message, {}, 'album'))
     }
     //updateGuestToken
-    await updateGuestToken(env, 'guest_token', 0, tweets.headers.get('x-rate-limit-remaining') < 20)
+    await updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20)
 
     let {tweetsInfo, tweetsContent} = GenerateData(tweets, isPhotos, '', true)
     if (tweetsInfo.errors.code !== 0) {
