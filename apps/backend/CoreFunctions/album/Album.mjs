@@ -46,7 +46,7 @@ const AlbumSearch = async (req, res) => {
         res.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message, {}, 'album'))
         return
     }
-    tweetsContent = tweetsContent.map(content => ({
+    tweetsContent = tweetsContent.filter(content => isPhotos ? (content.tweet_id === tweetId) : true).map(content => ({
         media: content.mediaObject,
         entities: content.entities.filter(entity => entity.type === 'hashtag' && !['ps6share', 'ps5share', 'ps4share', 'ps3share', 'ps2share', 'psshare', 'nintendoswitch', 'xbox', 'pcgaming', 'xboxshare', 'xboxseriesx', 'xboxseriess', 'xboxone'].includes(entity.text.toLowerCase())).map(entity => entity.text) ,
         source: content.source,
