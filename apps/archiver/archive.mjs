@@ -4,17 +4,63 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
-import { getImage, getPollResult, getTweets } from '../../libs/core/Core.fetch.mjs'
+import { getFollowingOrFollowers, getImage, getPollResult, getTweets } from '../../libs/core/Core.fetch.mjs'
 
 import { GuestToken, PathInfo, Sleep } from '../../libs/core/Core.function.mjs'
 import path2array from '../../libs/core/Core.apiPath.mjs'
 import { Tweet, TweetsInfo } from '../../libs/core/Core.tweet.mjs'
 import { TGPush } from '../../libs/core/Core.push.mjs'
+import { GenerateAccountInfo } from '../../libs/core/Core.account.mjs'
+import { argv } from 'node:process'
 
-const basePath = './twitter_archiver'// ./twitter_archiver
+// bash init.sh <SCREEN_NAME>   bash/zsh/...
+// .\init.ps1 <SCREEN_NAME>     powershell
+if (!existsSync('./screen_name.txt')) {
+    console.log(`archiver: No active screen name!`)
+    process.exit()
+}
+const name = readFileSync('./screen_name.txt').toString().trim()
+const basePath = `./${name}`// ./twitter_archiver
+let activeFlags = {
+    user_info: true, 
+    tweets: true, 
+    followers: false, 
+    following: false,
+    media: true,//TODO
+}
+const argvList = {
+    "--all": () => {
+        console.log(`archiver: All data (UserInfo, Tweets, Following, Followers)`)
+        activeFlags.following = true
+        activeFlags.followers = true
+    },
+    "--followers": () => {
+        console.log(`archiver: Add Followers`)
+        activeFlags.followers = true
+    },
+    "--following": () => {
+        console.log(`archiver: Add Following`)
+        activeFlags.following = true
+    }, 
+    "--media": () => {
+        console.log(`archiver: Add Media`)
+        activeFlags.media = true
+    }, 
+}
 
-//TODO remove because this is sample
-const name = 'twitter'//CHANGE IT!!!
+// argv
+for (const argvContent of argv.slice(2)) {
+    if (argvList[argvContent]) {
+        argvList[argvContent]()
+    }
+}
+
+//TODO will be used in the future
+//cookie for follower and following
+//const cookie = {
+//    auth_token: '',
+//    ct0: ''
+//}
 
 let cursor = ''
 
@@ -60,7 +106,9 @@ let uid = UserData.v2_account_info?.uid || null
 
 //get init token
 global.guest_token = new GuestToken
+global.legacy_guest_token = new GuestToken
 await global.guest_token.updateGuestToken(1)
+await global.legacy_guest_token.updateGuestToken(0)
 
 if (global.guest_token.token.nextActiveTime) {
     await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
@@ -270,12 +318,12 @@ writeFileSync(basePath + '/savedata/data.json', JSON.stringify(UserData))
 //TODO broadcasts
 
 //save media
-//TODO find mixed media tweets
+//Used token2, solved//TODO find mixed media tweets
 let mediaIndex = 0
 let getMediaFailedList = []
-if (existsSync(basePath + '/twitter_monitor_media_index')) {
-    mediaIndex = Number(readFileSync(basePath + '/twitter_monitor_media_index').toString())
-}
+//if (existsSync(basePath + '/twitter_monitor_media_index')) {
+//    mediaIndex = Number(readFileSync(basePath + '/twitter_monitor_media_index').toString())
+//}
 if (existsSync(basePath + '/twitter_monitor_media_failed_list.json')) {
     getMediaFailedList = JSON.parse(readFileSync(basePath + '/twitter_monitor_media_failed_list.json'))
 }
@@ -323,7 +371,12 @@ let mediaList = Object.values(UserData.v2_twitter_tweets).filter(tweet => tweet.
 let statusCount = {success: 0, error: 0}
 writeFileSync(basePath + '/savedata/media.json', JSON.stringify(mediaList))
 for (; mediaIndex < mediaList.length; ) {
-    const tmpMediaList = mediaList.slice(mediaIndex, mediaIndex + 99)
+    let tmpMediaList = mediaList.slice(mediaIndex, mediaIndex + 99)
+    const tmpLength = tmpMediaList.length
+    //precheck
+    tmpMediaList = tmpMediaList.filter(media => !existsSync(basePath + `/savemedia/${media.filename}.${media.extension}`))
+    console.log(`archiver: ${tmpLength-tmpMediaList.length} media skipped`)
+    statusCount.success += tmpLength-tmpMediaList.length
     await Promise.allSettled(tmpMediaList.map(mediaItem => new Promise((resolve, reject) => {
         getImage(mediaItem.url).then(response => {
             resolve({imageBuffer: response.data, meta: mediaItem})
@@ -357,8 +410,122 @@ for (; mediaIndex < mediaList.length; ) {
 writeFileSync(basePath + '/range.json', JSON.stringify({start: now, end: Date.now()}))
 console.log(`archiver: online tasks complete`)
 
+//TODO broadcasts via ffmpeg
+
+
+
 //TODO split and generate offline data
 //media / account info / analytics
+
+//TODO follower and following with cookie
+//cookie.auth_token && cookie.ct0
+if (true) {
+    console.log(`archiver: Following and Followers...`)
+    const screen_name = UserData.v2_account_info?.name
+    let cookieRequestsRateLimit = 0
+
+    if (activeFlags.following) {
+        let rawFollowingData = {}
+        let FollowingData = {}
+        let following_cursor = ''
+        let following_count = 0
+
+        if (existsSync(basePath + '/rawdata/following.json')) {
+            rawFollowingData = JSON.parse(readFileSync(basePath + '/rawdata/following.json'))
+        }
+        if (existsSync(basePath + '/savedata/following.json')) {
+            FollowingData = JSON.parse(readFileSync(basePath + '/savedata/following.json'))
+        }
+        if (existsSync(basePath + '/twitter_following_cursor')) {
+            following_cursor = readFileSync(basePath + '/twitter_following_cursor').toString().trim()
+        }
+        if (following_cursor !== 'complete') {
+            do {
+                if (cookieRequestsRateLimit > 14) {
+                    //guest token hack
+                    global.legacy_guest_token.updateRateLimit('UserByRestId', 490)
+                    await global.legacy_guest_token.updateGuestToken(0)
+                    cookieRequestsRateLimit = 0
+                }
+                const followingResponse = await getFollowingOrFollowers({id: screen_name, type: 'Following', count: 200, cursor: following_cursor, guest_token: global.legacy_guest_token.token})
+                //next_cursor_str
+                //previous_cursor_str
+                cookieRequestsRateLimit++
+
+                for (const tmpUserInfo of followingResponse.data.users) {
+                    following_count++
+                    rawFollowingData[tmpUserInfo["id_str"]] = tmpUserInfo
+                    FollowingData[tmpUserInfo["id_str"]] = GenerateAccountInfo(tmpUserInfo).GeneralAccountData
+                    console.log(`archiver: Following\t${tmpUserInfo["id_str"]}\t[${FollowingData[tmpUserInfo["id_str"]]["display_name"]}](@${FollowingData[tmpUserInfo["id_str"]]["name"]})\t${following_count}`)
+                }
+
+                //save raw data
+                writeFileSync(basePath + '/rawdata/following.json', JSON.stringify(rawFollowingData))
+                writeFileSync(basePath + '/savedata/following.json', JSON.stringify(FollowingData))
+                following_cursor = (followingResponse.data.users.length ? followingResponse.data.next_cursor_str || '' : '')
+                if (following_cursor === '0') {
+                    following_cursor = ''
+                }
+                writeFileSync(basePath + '/twitter_following_cursor', following_cursor)
+            } while (following_cursor)
+            writeFileSync(basePath + '/twitter_following_cursor', 'complete')
+            console.log(`archiver: Following complete, cost ${new Date() - now} ms`)
+        }
+    }
+
+    if (activeFlags.followers) {
+        let rawFollowersData = {}
+        let FollowersData = {}
+        let follower_cursor = ''
+        let followers_count = 0
+
+        if (existsSync(basePath + '/rawdata/followers.json')) {
+            rawFollowersData = JSON.parse(readFileSync(basePath + '/rawdata/followers.json'))
+        }
+        if (existsSync(basePath + '/savedata/followers.json')) {
+            FollowersData = JSON.parse(readFileSync(basePath + '/savedata/followers.json'))
+        }
+        if (existsSync(basePath + '/twitter_followers_cursor')) {
+            follower_cursor = readFileSync(basePath + '/twitter_followers_cursor').toString().trim()
+        }
+
+        if (follower_cursor !== 'complete') {
+            do {
+                if (cookieRequestsRateLimit > 14) {
+                    //guest token hack
+                    global.legacy_guest_token.updateRateLimit('UserByRestId', 490)
+                    await global.legacy_guest_token.updateGuestToken(0)
+                    cookieRequestsRateLimit = 0
+                }
+                const followersResponse = await getFollowingOrFollowers({id: screen_name, type: 'Followers', count: 200, cursor: follower_cursor, guest_token: global.legacy_guest_token.token})
+                cookieRequestsRateLimit++
+
+                for (const tmpUserInfo of followersResponse.data.users) {
+                    followers_count++
+                    rawFollowersData[tmpUserInfo["id_str"]] = tmpUserInfo
+                    FollowersData[tmpUserInfo["id_str"]] = GenerateAccountInfo(tmpUserInfo).GeneralAccountData
+                    console.log(`archiver: Follower\t${tmpUserInfo["id_str"]}\t[${FollowersData[tmpUserInfo["id_str"]]["display_name"]}](@${FollowersData[tmpUserInfo["id_str"]]["name"]})\t${followers_count}`)
+                }
+        
+                //save raw data
+                writeFileSync(basePath + '/rawdata/followers.json', JSON.stringify(rawFollowersData))
+                writeFileSync(basePath + '/savedata/followers.json', JSON.stringify(FollowersData))
+                follower_cursor = (followersResponse.data.users.length ? followersResponse.data.next_cursor_str || '' : '')
+                if (follower_cursor === '0') {
+                    follower_cursor = ''
+                }
+                writeFileSync(basePath + '/twitter_followers_cursor', follower_cursor)
+            } while (follower_cursor)
+            writeFileSync(basePath + '/twitter_followers_cursor', 'complete')
+            console.log(`archiver: Followers complete, cost ${new Date() - now} ms`)
+        }
+    }
+} else {
+    console.log(`archiver: To archive following and followers, you have to provide 'auth_token' and 'ct0' in variable 'cookie'`)
+}
+
+
+
 
 console.log(`archiver: Time cost ${new Date() - now} ms`)//TODO remove
 

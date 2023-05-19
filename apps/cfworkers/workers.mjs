@@ -6,7 +6,7 @@ import { json, updateGuestToken } from './share.mjs'
 import { ApiTrends } from './CoreFunctions/online/OnlineTrends.mjs'
 import { apiTemplate } from '../../libs/share/Constant.mjs'
 import { MediaProxy } from './CoreFunctions/media/MediaProxy.mjs'
-import { ApiOfficialTranslate, ApiTranslate } from './CoreFunctions/translate/Translate.mjs'
+import { ApiOfficialTranslate, ApiTranslate } from './CoreFunctions/translate/OnlineTranslate.mjs'
 import { ApiListInfo, ApiListMemberList, ApiTypeahead } from './CoreFunctions/online/OnlineMisc.mjs'
 
 const workersApi = Router()

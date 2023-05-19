@@ -1,10 +1,12 @@
 apps/crawler/savetweets/*
 
 apps/scripts/t.mjs
+apps/scripts/save_spaces/
 apps/backend/cache/*
 !apps/backend/cache/.gitkeep
 
-apps/archiver/twitter_archiver/
+apps/archiver/*/
+apps/archiver/screen_name.txt
 
 libs/assets/setting.mjs
 libs/assets/config.json

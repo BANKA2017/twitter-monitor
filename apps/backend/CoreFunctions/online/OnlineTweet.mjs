@@ -277,9 +277,11 @@ const ApiBroadcast = async (req, res) => {
     
     //TODO check Broadcast api rate limit
     await global.guest_token2.updateGuestToken(1)
-    getBroadcast({id, guest_token: global.guest_token2.token}).then(async response => {
+    try {
+        const tmpBroadcastData = await getBroadcast({id, guest_token: req.guest_token2})
+        
+        //updateGuestToken
         global.guest_token2.updateRateLimit('BroadCast')
-        const tmpBroadcastData = response
         let tmpBroadcast = Broadcast(tmpBroadcastData.data)
         //get link
         if (tmpBroadcast.is_available_for_replay || (Number(tmpBroadcast.start) <= Date.now() && tmpBroadcast.end === '0')) {
@@ -293,7 +295,7 @@ const ApiBroadcast = async (req, res) => {
             }
         }
         res.json(apiTemplate(200, 'OK', tmpBroadcast))
-    }).catch(e => {
+    } catch (e) {
         global.guest_token2.updateRateLimit('BroadCast')
         if (!(e?.code && e?.message) && e?.errors) {
             e = e.errors[0]
@@ -305,8 +307,7 @@ const ApiBroadcast = async (req, res) => {
             console.error(`[${new Date()}]: #OnlineBroadcast #${id} #500 Unkonwn Error`)
             res.json(apiTemplate())
         }
-    })
-    
+    }
 }
 
 const ApiMedia = async (req, res) => {
