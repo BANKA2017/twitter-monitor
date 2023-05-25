@@ -81,13 +81,14 @@ while (true) {
 
     // break account
     //TODO not console
-    const breakAccountList = config.users.filter(user => !user.name || user.deleted || user.locked).map(account => account.display_name || account.name || account.uid)
+    // remove locked accounts because locked account will continue return account info
+    const breakAccountList = config.users.filter(user => !user.name || user.deleted).map(account => account.display_name || account.name || account.uid)
     if (breakAccountList.length) {
         console.log(`tmv3: #AutoBreak ` + breakAccountList.join(', '))
     }
 
     // updateable list
-    let refreshableList = config.users.map((user, index) => [user, index]).filter(user => user[0].name && !user[0].deleted && !user[0].locked && (userId => userId[1] || (userId[0] > 0 && userId[0] !== '0' && userId[0] !== 'undefined'))([user[0]?.uid, user[0]?.name]))
+    let refreshableList = config.users.map((user, index) => [user, index]).filter(user => user[0].name && !user[0].deleted && (userId => userId[1] || (userId[0] > 0 && userId[0] !== '0' && userId[0] !== 'undefined'))([user[0]?.uid, user[0]?.name]))
     let refreshableIdList = refreshableList.map(user => {
         if (user[0].uid && Number(user[0].uid) > 0) {
             return user[0]?.uid
@@ -135,33 +136,46 @@ while (true) {
             } else {
                 console.log('tmv3: #Autobreak' +  refreshableList[index][0].display_name + ' -' + (accountInfo.value?.data?.errors?.[0]?.message || accountInfo?.value?.data?.user?.result?.reason || 'Unknown error'))
                 updateNameList = true
-                if (path2array("user_info_legacy", accountInfo.value?.data)?.protected ?? accountInfo.value?.data?.user?.result?.has_graduated_access ?? false) {
-                  config.users[refreshableList[index][1]].locked = true
-                  await V2AccountInfo.update({locked: 1}, {where: {name: refreshableList[index][0].name}})
-                  TGPush(`tmv3: #Locked Account ${refreshableList[index][0].name} was protected`)
+
+                // not continue
+                if (!(path2array("user_info_legacy", accountInfo.value?.data)?.protected ?? accountInfo.value?.data?.user?.result?.has_graduated_access ?? false) && config.users[refreshableList[index][1]].locked) {
+                    config.users[refreshableList[index][1]].locked = false
+                    await V2AccountInfo.update({locked: 0}, {where: {name: refreshableList[index][0].name}})
+                    TGPush(`tmv3: #Unlocked Account ${refreshableList[index][0].name}`)
+                } else if (path2array("user_info_legacy", accountInfo.value?.data)?.protected ?? accountInfo.value?.data?.user?.result?.has_graduated_access ?? false) {
+                    if (!config.users[refreshableList[index][1]].locked) {
+                        config.users[refreshableList[index][1]].locked = true
+                        await V2AccountInfo.update({locked: 1}, {where: {name: refreshableList[index][0].name}})
+                        TGPush(`tmv3: #Locked Account ${refreshableList[index][0].name} was protected`)
+                    }
                 } else if ([50, 63].includes(accountInfo.value?.data?.errors?.[0]?.code)) {
                     //deleted 用于在twitter删除帐户的用户 #50
                     //suspended 用于被封禁帐户的用户 #63
                     config.users[refreshableList[index][1]].deleted = true
                     await V2AccountInfo.update({deleted: 1}, {where: {name: refreshableList[index][0].name}})
                     TGPush(`tmv3: #Deleted Account ${refreshableList[index][0].name} was deleted`)
+                    
+                    continue
                 } else if (accountInfo?.value?.data?.data?.user?.result?.__typename === 'UserUnavailable') {
                     config.users[refreshableList[index][1]].deleted = true
                     await V2AccountInfo.update({deleted: 1}, {where: {name: refreshableList[index][0].name}})
                     TGPush(`tmv3: #Deleted Account ${refreshableList[index][0].name} was deleted (${accountInfo?.value?.data?.data?.user?.result?.reason})`)
+                    
+                    continue
                 } else {
                     // TODO configErrorCount
                     server_info.updateValue("total_errors_count")
                     userInfoErrorsForPush += refreshableList[index][0].name + " wrong data " + accountInfo.value?.data?.errors[0]?.message + " #error" + accountInfo.value?.data?.errors[0]?.code + "\n"
                     await V2ErrorLog.create({uid: refreshableList[index][0].uid ?? 0, name: refreshableList[index][0].name, code: accountInfo.value?.data?.errors[0]?.code, message: accountInfo.value?.data?.errors[0]?.message, timestamp: Math.floor((new Date()) / 1000)})
+                    
+                    continue
                 }
             }
 
-            continue
         }
         let {GeneralAccountData, monitorDataInfo, update} = GenerateAccountInfo(accountInfo.value?.data, {
             hidden: refreshableList[index][0]?.hidden ?? 0,
-            lockes: refreshableList[index][0]?.locked ?? 0,
+            locked: refreshableList[index][0]?.locked ?? 0,
             deleted: refreshableList[index][0]?.deleted ?? 0,
             organization: refreshableList[index][0]?.organization ?? 0,
         })
@@ -201,7 +215,7 @@ while (true) {
             monitorDataList.push(monitorDataInfo)
             //await TwitterData.create(monitorDataInfo)
             // temp table for /i/stats
-            monitorDataInfo.visible = !(refreshableList[index][0].hidden || refreshableList[index][0].locked || refreshableList[index][0].deleted || refreshableList[index][0].organization)
+            monitorDataInfo.visible = !(refreshableList[index][0].hidden || refreshableList[index][0].deleted || refreshableList[index][0].organization)
             await TmpTwitterData.upsert(monitorDataInfo, {transaction: accountTransaction})
         } else if (refreshableList[index][0]?.not_analytics ?? false) {
             console.log(refreshableList[index][0]?.name + ' - not collect')
@@ -227,6 +241,7 @@ while (true) {
                 uid: GeneralAccountData.uid,
                 pinned: GeneralAccountData.top,
                 hidden: GeneralAccountData.hidden,
+                locked: GeneralAccountData.locked
             })
             GeneralAccountData.last_cursor = 0
             GeneralAccountData.new = 1
@@ -244,7 +259,8 @@ while (true) {
                     cursor: verifyInfo.cursor,
                     uid: verifyInfo.uid,
                     pinned: GeneralAccountData.top,
-                    hidden: GeneralAccountData.hidden
+                    hidden: GeneralAccountData.hidden,
+                    locked: GeneralAccountData.locked
                 })
             } else {
                 console.log("tmv3: locked")
@@ -273,6 +289,10 @@ while (true) {
         server_info.updateValue('total_users', nameCount.length)
         //TODO split nameCount if nameCount.length > 1000
         for (const accountInfo of nameCount) {
+            if (accountInfo.locked) {
+                console.log(`tmv3: account ${accountInfo.display_name}(@${accountInfo.name}) is protected`)
+                continue
+            }
             let insert = {
                 v2_twitter_media: [],
                 v2_twitter_entities: [],

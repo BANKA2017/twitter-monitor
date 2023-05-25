@@ -76,10 +76,10 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 
 ### Archiver
 
-* archive userinfo, nearly all tweets(not included **reply**) and nearly **ALL MEDIA**(included avatar and banner) by search api
-* TODO: spaces, boradcast, mix media (like image and video in the same tweet)
+* archive userinfo, most tweets(included **reply**) and nearly **ALL MEDIA**(included avatar and banner) by search api, `Following` and `Followers`
+* TODO: spaces, boradcast (ffmpeg command)
 * **PLEASE PRECHECK THE ACCOUNT HAVEN BEEN SEARCHBAN**
-* **DO NOT EXECUTE `init.sh` UNTIL YOU BACKUP ALL ARCHIVED DATA IN FOLDER './twitter_archiver/'**, it will clean all archived data
+* Read more in [archiver/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/archiver)
 
 ### CloudFlare Workers
 
@@ -215,10 +215,10 @@ Those are Chinese articles
 
 ### Archiver
 
-* 通过**搜索API**备份帐号的用户信息，几乎所有推文（不包括回复）以及几乎所有的媒体文件（包括当前头像和banner）
-* TODO: 备份最近30天的空间、播客（暂不清楚怎么搞）、混合媒体（差不多就是同一条推文上有两个或以上的视频或者图片和视频放一起）
+* 通过**搜索API**备份帐号的用户信息，大多数推文（包括回复）和媒体文件（包括当前头像和banner），`Following` 和 `Followers`
+* TODO: 备份Spaces、播客（生成 ffmpeg 命令）
 * **使用前请检查待备份帐号是否被搜索封禁**
-* **在备份好'./twitter_archiver/' 文件夹的内容前请不要运行 `init.sh`**，它将会清除掉相应文件夹的内容
+* 使用方式请阅读 [archiver/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/archiver)
 
 ### CloudFlare Workers
 

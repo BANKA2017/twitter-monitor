@@ -400,7 +400,7 @@ const returnDataForTweets = (tweet = {}, historyMode = false, tweetEntities = []
         tweet.pollObject = tweetPolls.filter(poll => poll.tweet_id === tweet.tweet_id).map(poll => {
             delete poll.tweet_id
             poll.checked = !!poll.checked
-            poll.count = 0
+            //poll.count = 0
             return poll
         })
     }

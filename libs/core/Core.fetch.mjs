@@ -108,7 +108,7 @@ const getToken = async (authorizationMode = 0) => {
       TweetDetail: 470,//500//poll also use this
       AudioSpaceById: 470,//500
       BroadCast: 185,//187
-      Search: 470,//500 graphql && 245,//250 restful
+      Search: 195,//200 graphql && 245,//250 restful
       Recommendation: 55,//60,
       Translation: 185,//187
       Trending: 19990,//20000
