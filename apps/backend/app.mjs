@@ -84,6 +84,9 @@ if (STATIC_PATH) {
     app.use('/static', express.static(STATIC_PATH))
 }
 
+//robots.txt
+app.all('/robots.txt', (req, res) => {res.send("User-agent: *\nDisallow: /*")})
+
 //error control
 app.all('*', (req, res) => {
     res.status(403).json(apiTemplate(403, 'Invalid Request', {}, 'global_api'))

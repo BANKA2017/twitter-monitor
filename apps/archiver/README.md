@@ -7,7 +7,6 @@ Archiver
 - When archiving someone else's Twitter, please obtain their permission first.
 - The structure of the generated data is still being adjusted, and the current results may not be available in viewer.
 
-
 ## Known issues
 - Unable to crawl most of the retweets.
 - Unable to crawl tweets marked as sensitive content (TODO login can solve).
@@ -68,5 +67,7 @@ node retryMedia.mjs
 Attempt to retrieve the failed images during crawling. (useless)
 
 ## View
+
+Online viewer: <https://twitter-archive-viewer.vercel.app/>
 
 The front-end project is currently under development and if it is ready, it might be available in <https://github.com/BANKA2017/twitter-archive-viewer>.

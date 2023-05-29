@@ -29,6 +29,9 @@ workersApi.all('*', updateToken)
 //favicon
 workersApi.all('/favicon.ico', () => new Response(null, { status: 200 }))
 
+//robots.txt
+workersApi.all('/robots.txt', () => new Response("User-agent: *\nDisallow: /*", { status: 200 }))
+
 //album
 workersApi.get('/album/data/userinfo/', ApiUserInfo)
 workersApi.get('/album/data/tweets/', ApiTweets)
