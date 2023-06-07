@@ -257,10 +257,6 @@ export default {
     "arkose_challenge_transparent_signup_prod": "4CB8C8B0-40FF-439C-9D0D-9A389ADA18CB",
     "Arkose_rweb_hosted_page": true,
     "Arkose_use_invisible_challenge_key": false,
-    "blue_business_affiliate_badge_consumption_ui_enabled": true,
-    "blue_business_affiliates_list_consumption_ui_enabled": true,
-    "blue_business_government_badge_picker_enabled": true,
-    "blue_business_profile_image_shape_enabled": true,
     "blue_business_subscriptions_management_page_updates_enabled": true,
     "blue_business_username_change_prompt_enabled": false,
     "blue_business_verified_admin_cancellation_flow_enabled": true,
@@ -319,6 +315,11 @@ export default {
     "creator_monetization_profile_subscription_tweets_tab_enabled": true,
     "creator_monetization_web_tips_dashboard_enabled": false,
     "creator_monetization_web_tips_onboarding_enabled": false,
+    "creator_subscriptions_subscribe_button_tweet_detail_enabled": true,
+    "creator_subscriptions_subscriber_count_enabled": false,
+    "creator_subscriptions_subscriber_count_min_displayed": 1,
+    "creator_subscriptions_subscription_count_enabled": true,
+    "creator_subscriptions_tweet_preview_api_enabled": true,
     "dash_region_specific_de_and_tr_media_transparency_items_enabled": false,
     "dash_region_specific_de_media_transparency_items_enabled": false,
     "direct_messages_incremental_holdback_2022h1": true,
@@ -349,7 +350,14 @@ export default {
         "😠:angry",
         "😷:mask"
     ],
+    "dm_reactions_emoji_picker_enabled": true,
+    "dm_reactions_rweb_emoji_picker_enabled": false,
+    "dm_replies_long_press_to_reply_enabled": false,
+    "dm_replies_rweb_media_rendering_enabled": false,
+    "dm_replies_ui_rendering_enabled": true,
     "dm_secret_conversations_enabled": false,
+    "dm_secret_conversations_for_blue_verified_enabled": true,
+    "dm_secret_conversations_for_graduated_access_enabled": false,
     "dm_share_sheet_send_individually_max_count": 20,
     "dm_voice_rendering_enabled": true,
     "dont_mention_me_enabled": true,
@@ -409,6 +417,12 @@ export default {
     "hashfetti_enabled": true,
     "hashfetti_particle_count": 30,
     "hashflags_animation_like_button_enabled": true,
+    "hidden_profile_likes_enabled": false,
+    "hidden_profile_likes_settings_enabled": false,
+    "highlights_tweets_action_enabled": true,
+    "highlights_tweets_action_menu_upsell_enabled": true,
+    "highlights_tweets_tab_ui_enabled": true,
+    "highlights_tweets_tab_upsell_enabled": false,
     "home_timeline_like_reactivity_enabled": true,
     "home_timeline_like_reactivity_fatigue": 10,
     "home_timeline_spheres_detail_page_muting_enabled": true,
@@ -436,6 +450,7 @@ export default {
     "longform_ad_free_articles_badging_enabled": true,
     "longform_notetweets_composition_without_claims_enabled": false,
     "longform_notetweets_consumption_enabled": true,
+    "longform_notetweets_drafts_enabled": true,
     "longform_notetweets_inline_media_enabled": false,
     "longform_notetweets_max_tweet_per_thread": 25,
     "longform_notetweets_max_weighted_character_length": 10000,
@@ -524,24 +539,19 @@ export default {
     "responsive_web_auto_logout_multiaccount_enabled": true,
     "responsive_web_auto_logout_restrictedauthtoken_enabled": true,
     "responsive_web_auto_logout_twid_enabled": true,
-    "responsive_web_birdwatch_aliases_enabled": true,
-    "responsive_web_birdwatch_appeals_enabled": true,
     "responsive_web_birdwatch_consumption_enabled": true,
     "responsive_web_birdwatch_contribution_enabled": false,
     "responsive_web_birdwatch_country_allowed": true,
-    "responsive_web_birdwatch_earn_out_enabled": true,
-    "responsive_web_birdwatch_history_enabled": false,
-    "responsive_web_birdwatch_impressions_enabled": false,
-    "responsive_web_birdwatch_media_notes_enabled": false,
+    "responsive_web_birdwatch_media_notes_enabled": true,
+    "responsive_web_birdwatch_note_limit_enabled": true,
     "responsive_web_birdwatch_note_writing_enabled": false,
     "responsive_web_birdwatch_pivots_enabled": true,
     "responsive_web_birdwatch_rating_crowd_enabled": true,
-    "responsive_web_birdwatch_rating_mini_survey_enabled": false,
     "responsive_web_birdwatch_rating_participant_enabled": false,
     "responsive_web_birdwatch_ratings_m2_tags_enabled": true,
     "responsive_web_birdwatch_ratings_v2_enabled": true,
     "responsive_web_birdwatch_site_enabled": true,
-    "responsive_web_birdwatch_traffic_lights_enabled": true,
+    "responsive_web_birdwatch_top_contributor_score_cutoff": 10,
     "responsive_web_branch_cpid_enabled": false,
     "responsive_web_branch_sdk_enabled": true,
     "responsive_web_business_government_verified_new_icons_enabled": true,
@@ -731,7 +741,6 @@ export default {
     "responsive_web_scroller_autopoll_enabled": false,
     "responsive_web_scroller_top_positioning_enabled": false,
     "responsive_web_search_home_page_design_variation": "",
-    "responsive_web_secret_dms": true,
     "responsive_web_send_cookies_metadata_enabled": true,
     "responsive_web_server_user_profile_fetch_enabled": false,
     "responsive_web_settings_timeline_polling_enabled": false,
@@ -779,11 +788,13 @@ export default {
     "responsive_web_use_app_prompt_copy_variant": "prompt_better",
     "responsive_web_use_app_prompt_enabled": true,
     "responsive_web_use_badge_counts_for_ntab": false,
+    "responsive_web_user_badge_education_get_verified_button_enabled": true,
     "responsive_web_user_badge_education_redesign_enabled": true,
+    "responsive_web_verified_organizations_invoice_enabled": false,
+    "responsive_web_verified_organizations_verified_entry_enabled": false,
     "responsive_web_video_pcomplete_enabled": true,
     "responsive_web_video_promoted_logging_enabled": true,
     "responsive_web_video_trimmer_enabled": false,
-    "responsive_web_vo_upfront_payment_enabled": true,
     "responsive_web_vod_muted_captions_enabled": true,
     "responsive_web_vs_config_resize_observer_enabled": true,
     "responsive_web_zipkin_api_requests_enabled": false,
@@ -794,12 +805,15 @@ export default {
     "rito_safety_mode_features_enabled": false,
     "rito_safety_mode_modal_prompt_enabled": false,
     "rito_safety_mode_settings_enabled": false,
+    "rweb_client_transaction_id_enabled": false,
     "rweb_enable_logged_out_search_search_bar_enabled": false,
     "rweb_home_mixer_enable_social_context_filter_social_contexts": true,
     "rweb_home_perf_client_prefetch_bypass_sw": false,
     "rweb_home_perf_client_prefetch_mode": "none",
     "rweb_home_perf_client_prefetch_timeout_ms": 0,
-    "rweb_lists_search_enabled": false,
+    "rweb_lists_search_enabled": true,
+    "rweb_lists_timeline_redesign_enabled": true,
+    "rweb_tweets_boosting_enabled": false,
     "rweb_tweets_reply_context_hidden": true,
     "rweb_tweets_tweet_detail_font_size": "headline2",
     "rweb_update_fatigue_switch_to_app_day_timeout": 7,
@@ -922,11 +936,10 @@ export default {
     "spaces_2022_h2_clipping_consumption": true,
     "spaces_2022_h2_clipping_duration_seconds": 30,
     "spaces_2022_h2_follow_host": true,
-    "spaces_2022_h2_reactions_web_send": false,
+    "spaces_2022_h2_reactions_web_send": true,
     "spaces_2022_h2_spacebar_use_mock_data": false,
-    "spaces_2022_h2_spacebar_web_sidebar": false,
-    "spaces_2022_h2_spacebar_web_topnavbar": "disabled",
-    "spaces_2022_h2_spacebar_web_use_topnavbar": true,
+    "spaces_2022_h2_spacebar_web_sidebar": true,
+    "spaces_2022_h2_spacebar_web_topnavbar": "purple",
     "spaces_2022_h2_spaces_communities": true,
     "standardized_nudges_misinfo": true,
     "standardized_nudges_toxicity": false,
@@ -962,14 +975,15 @@ export default {
     "subscriptions_tab_customization_on_android_enabled": true,
     "subscriptions_top_articles_on_ios_enabled": true,
     "subscriptions_twitter_blue_logo_enabled": true,
+    "subscriptions_verification_info_verified_since_enabled": true,
     "super_follow_android_web_subscription_enabled": true,
     "super_follow_exclusive_tweet_creation_api_enabled": true,
-    "super_follow_onboarding_application_perks_enabled": false,
-    "super_follow_onboarding_application_redesign_enabled": false,
+    "super_follow_onboarding_application_perks_enabled": true,
+    "super_follow_onboarding_application_redesign_enabled": true,
     "super_follow_onboarding_blue_verified_requirement_enabled": true,
     "super_follow_onboarding_granular_pricing_enabled": true,
     "super_follow_subscriptions_home_timeline_tab_enabled": true,
-    "super_follow_subscriptions_home_timeline_tab_sticky_enabled": false,
+    "super_follow_subscriptions_home_timeline_tab_sticky_enabled": true,
     "super_follow_subscriptions_tax_calculation_enabled": true,
     "super_follow_tweet_label_redesign_enabled": true,
     "super_follow_web_application_enabled": true,
@@ -1016,7 +1030,8 @@ export default {
         "share_tweet_via",
         "view_hidden_replies",
         "view_tweet_activity",
-        "vote_on_poll"
+        "vote_on_poll",
+        "highlight"
     ],
     "tweet_limited_actions_config_community_tweet_community_not_found": [
         "add_to_bookmarks",
@@ -1037,7 +1052,8 @@ export default {
         "share_tweet_via",
         "view_hidden_replies",
         "view_tweet_activity",
-        "vote_on_poll"
+        "vote_on_poll",
+        "highlight"
     ],
     "tweet_limited_actions_config_community_tweet_community_suspended": [
         "add_to_bookmarks",
@@ -1058,7 +1074,8 @@ export default {
         "share_tweet_via",
         "view_hidden_replies",
         "view_tweet_activity",
-        "vote_on_poll"
+        "vote_on_poll",
+        "highlight"
     ],
     "tweet_limited_actions_config_community_tweet_hidden": [
         "add_to_bookmarks",
@@ -1078,12 +1095,14 @@ export default {
         "share_tweet_via",
         "view_hidden_replies",
         "view_tweet_activity",
-        "vote_on_poll"
+        "vote_on_poll",
+        "highlight"
     ],
     "tweet_limited_actions_config_community_tweet_member": [
         "embed",
         "pin_to_profile",
-        "retweet"
+        "retweet",
+        "highlight"
     ],
     "tweet_limited_actions_config_community_tweet_member_removed": [
         "add_to_bookmarks",
@@ -1104,7 +1123,8 @@ export default {
         "share_tweet_via",
         "view_hidden_replies",
         "view_tweet_activity",
-        "vote_on_poll"
+        "vote_on_poll",
+        "highlight"
     ],
     "tweet_limited_actions_config_community_tweet_non_member": [
         "embed",
@@ -1115,7 +1135,8 @@ export default {
         "reply_down_vote",
         "retweet",
         "share_tweet_via",
-        "vote_on_poll"
+        "vote_on_poll",
+        "highlight"
     ],
     "tweet_limited_actions_config_disable_state_media_autoplay": [
         "autoplay"
@@ -1142,7 +1163,9 @@ export default {
         "copy_link",
         "send_via_dm",
         "like",
-        "embed"
+        "embed",
+        "highlight",
+        "edit_tweet"
     ],
     "tweet_limited_actions_config_limit_trusted_friends_tweet": [
         "retweet",
@@ -1165,7 +1188,8 @@ export default {
         "pin_to_profile",
         "view_tweet_activity",
         "share_tweet_via",
-        "copy_link"
+        "copy_link",
+        "highlight"
     ],
     "tweet_limited_actions_config_skip_tweet_detail": [
         "reply"
@@ -1174,6 +1198,8 @@ export default {
     "tweet_limited_actions_config_soft_nudge_with_quote_tweet": [
         "show_retweet_action_menu"
     ],
+    "tweet_with_visibility_results_all_gql_limited_actions_enabled": false,
+    "tweet_with_visibility_results_partial_gql_limited_actions_enabled": false,
     "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": false,
     "tweetypie_unmention_optimization_enabled": true,
     "twitter_chat_communities_chat_enabled": false,
@@ -1187,8 +1213,6 @@ export default {
     ],
     "user_display_name_max_limit": 50,
     "verified_phone_label_enabled": false,
-    "vibe_api_enabled": true,
-    "vibe_tweet_context_enabled": true,
     "view_counts_everywhere_api_enabled": true,
     "view_counts_public_visibility_enabled": true,
     "vod_attribution_tweet_detail_pivot_enabled": true,
@@ -1212,9 +1236,9 @@ export default {
     "web_video_hls_mp4_threshold_sec": 0,
     "web_video_hls_variant_version": "1",
     "web_video_hlsjs_version": "",
-    "web_video_playback_rate_enabled": false,
+    "web_video_playback_rate_enabled": true,
     "web_video_player_size_cap_disabled": true,
     "web_video_prefetch_playlist_autoplay_disabled": false,
-    "web_video_safari_hlsjs_enabled": false,
+    "web_video_safari_hlsjs_enabled": true,
     "web_video_transcribed_captions_enabled": false
 }

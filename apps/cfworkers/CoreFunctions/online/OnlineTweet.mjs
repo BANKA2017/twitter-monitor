@@ -97,7 +97,7 @@ const ApiTweets = async (req, env) => {
         //}
 
         try {
-            tweets = await getTweets({queryString: uid, cursor, guest_token: req.guest_token2, count, online: true, graphqlMode: true, searchMode: false, withReply: displayType === 'include_reply'})
+            tweets = await getTweets({queryString: uid, cursor: (cursor === '0' ? '' : cursor), guest_token: req.guest_token2, count, online: true, graphqlMode: true, searchMode: false, withReply: displayType === 'include_reply'})
             //tweets = await getTweets(queryArray.join(' '), '', global.guest_token2.token, count, true, false, true)
             
             //updateGuestToken
@@ -109,7 +109,7 @@ const ApiTweets = async (req, env) => {
         
     }
 
-    const {tweetsInfo, tweetsContent} = GenerateData(tweets, isConversation, ((loadConversation || listId) ? '' : name), true)
+    const {tweetsInfo, tweetsContent} = GenerateData(tweets, isConversation, ((loadConversation || listId || displayType === 'include_reply') ? '' : name), true)
     if (tweetsInfo.errors.code !== 0) {
         return json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
     }
@@ -463,11 +463,10 @@ const GenerateData = (tweets, isConversation = false, filterName = '', graphqlMo
     if (tweetsInfo.errors.code !== 0) {
         return {tweetsInfo: tweetsInfo, tweetsContent: []}
     }
-    const tweetsContent = tweetsInfo.contents.map(content => {
-        if (!isConversation && graphqlMode) {
-            if (!content || content?.content?.entryType !== 'TimelineTimelineItem') {
-                return false
-            }
+    let reverse = true
+    let tweetsContent = tweetsInfo.contents.map(content => {
+        if (!content) {return false}
+        if (['TimelineTimelineItem'].includes(content?.content?.entryType)) {
             let tmpData = TweetsData(content, {}, [], '', graphqlMode, false)
         
             if (tmpData.code === 200 && Object.keys(tmpData.data).length) {
@@ -476,9 +475,12 @@ const GenerateData = (tweets, isConversation = false, filterName = '', graphqlMo
                 return tmpData.data
             }
             return false
-        } else if (isConversation && content?.content?.displayType === 'VerticalConversation') {
+        } else if (['TimelineTimelineModule', 'VerticalConversation'].includes(content?.content?.displayType)) {
+            if (content?.content?.displayType === 'TimelineTimelineModule') {
+                reverse = false
+            }
             return content.content.items.map(item => {
-                let tmpData = TweetsData(item, tweetsInfo.users, tweetsInfo.contents, filterName, isConversation, isConversation)
+                let tmpData = TweetsData(item, tweetsInfo.users, tweetsInfo.contents, filterName, graphqlMode, isConversation)
         
                 if (tmpData.code === 200 && Object.keys(tmpData.data).length) {
                     tmpData.data.user_info = tmpData.userInfo
@@ -488,7 +490,7 @@ const GenerateData = (tweets, isConversation = false, filterName = '', graphqlMo
                 return false
             })
         } else {
-            let tmpData = TweetsData(content, tweetsInfo.users, tweetsInfo.contents, filterName, isConversation, isConversation)
+            let tmpData = TweetsData(content, tweetsInfo.users, tweetsInfo.contents, filterName, graphqlMode, isConversation)
         
             if (tmpData.code === 200 && Object.keys(tmpData.data).length) {
                 tmpData.data.user_info = tmpData.userInfo
@@ -497,7 +499,12 @@ const GenerateData = (tweets, isConversation = false, filterName = '', graphqlMo
             }
         }   
         return false
-    }).flat().filter(tweet => tweet?.tweet_id).sort((a, b) => b.tweet_id - a.tweet_id)
+    }).flat().filter(tweet => tweet?.tweet_id)
+
+
+    if (!reverse || isConversation) {
+        tweetsContent = tweetsContent.reverse()//sort((a, b) => b.tweet_id - a.tweet_id)
+    }
 
     return {tweetsInfo, tweetsContent}
 }

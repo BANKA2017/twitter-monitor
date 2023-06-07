@@ -1,4 +1,4 @@
-Archiver
+Archiver()
 ---
 
 ## ⚠ WARNING
@@ -14,6 +14,7 @@ Archiver
 - Some videos are damaged, which is normal. Downloading the corresponding m3u8 will result in a lower quality version. 
 - Unable to crawl tweets from protected/banned/deleted users. 
 - The rate limit status after logging in will follow the account rather than the guest token (TODO not implemented yet).
+- FFmpeg script couldn't skip contents exist.
 
 ## Features
 
@@ -23,12 +24,13 @@ Archiver
 - Avatar, banner, photos and videos.
 - Following and followers list (optional)
 - Keep raw data for future used.
+- Build ffmpeg command for downloading broadcast or audiospace content
+- Update timeline while cursor value is **complete**
 
 ## TODO
 
-- Space and Broadcast with ffmpeg
+- Download Space and Broadcast with js
 - Login by **COOKIE**
-- Incremental update tweets/followers/following list
 
 ## Init
 
@@ -56,7 +58,23 @@ node archive.mjs [OPTION]
 |--followers|Optional|Get Followers|
 |--following|Optional|Get Following|
 |--media|Optional|Get Media|
-|--skip_\<key of argvList \>|Optional|Key of argvList included `user_info_and_tweets`, `followers`, `following` and `media`. Will skip the corresponding job.|
+|--broadcast|Optional|Generate script to download broadcast video|
+|--space|Optional|Generate script to download space audio|
+|--skip_\<key of argvList \>|Optional|Key of argvList included `tweet`, `followers`, `following`, `media`, `broadcast` and `space`. Will skip the corresponding job.|
+
+- Default values, only crawl timeline without any media:
+  ```javascript
+  activeFlags = {
+      tweet: true,
+      followers: false, 
+      following: false,
+      media: false,
+      broadcast: false,
+      space: false,
+  }
+  ```
+
+- If both activate and skip options exist, it will skip.
 
 ### Retry media
 

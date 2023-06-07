@@ -4,7 +4,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
-import { getFollowingOrFollowers, getImage, getPollResult, getTweets } from '../../libs/core/Core.fetch.mjs'
+import { getAudioSpace, getBroadcast, getFollowingOrFollowers, getImage, getLiveVideoStream, getPollResult, getTweets } from '../../libs/core/Core.fetch.mjs'
 
 import { GuestToken, PathInfo, Sleep } from '../../libs/core/Core.function.mjs'
 import path2array from '../../libs/core/Core.apiPath.mjs'
@@ -12,6 +12,7 @@ import { TGPush } from '../../libs/core/Core.push.mjs'
 import { GenerateAccountInfo } from '../../libs/core/Core.account.mjs'
 import { argv } from 'node:process'
 import { GenerateData } from '../backend/CoreFunctions/online/OnlineTweet.mjs'
+import { AudioSpace, Broadcast } from '../../libs/core/Core.tweet.mjs'
 
 // bash init.sh <SCREEN_NAME>   bash/zsh/...
 // .\init.ps1 <SCREEN_NAME>     powershell
@@ -22,10 +23,12 @@ if (!existsSync('./screen_name.txt')) {
 const name = readFileSync('./screen_name.txt').toString().trim()
 const basePath = `./${name}`// ./twitter_archiver
 let activeFlags = {
-    user_info_and_tweets: true,
+    tweet: true,
     followers: false, 
     following: false,
-    media: true,//TODO
+    media: false,
+    broadcast: false,
+    space: false,
 }
 const argvList = {
     "--all": () => {
@@ -40,11 +43,19 @@ const argvList = {
     "--following": () => {
         console.log(`archiver: Add Following`)
         activeFlags.following = true
-    }, 
+    },
     "--media": () => {
         console.log(`archiver: Add Media`)
         activeFlags.media = true
-    }, 
+    },
+    "--broadcast": () => {
+        console.log(`archiver: Add Broadcasts`)
+        activeFlags.broadcast = true
+    },
+    "--space": () => {
+        console.log(`archiver: Add Spaces`)
+        activeFlags.space = true
+    },
 }
 
 // argv
@@ -63,8 +74,6 @@ for (const argvContent of argv.slice(2)) {
 //    auth_token: '',
 //    ct0: ''
 //}
-
-let cursor = ''
 
 //check base path
 if (!existsSync(basePath)) {
@@ -106,13 +115,7 @@ if (existsSync(basePath + '/rawdata/user.json')) {
 if (existsSync(basePath + '/savedata/data.json')) {
     UserData = JSON.parse(readFileSync(basePath + '/savedata/data.json'))
 }
-if (existsSync(basePath + '/twitter_archive_cursor')) {
-    cursor = readFileSync(basePath + '/twitter_archive_cursor').toString().trim()
-}
 
-if (cursor === '') {
-    console.log(`archiver: new account`)
-}
 let uid = UserData.account_info?.uid || null
 
 //get init token
@@ -131,13 +134,44 @@ if (global.guest_token.token.nextActiveTime) {
     }
 }
 
+// cursor
+let cursor = {
+    tweets: { maxId: '', tmpId: '', cursor: '' },
+    followers: { maxId: '', tmpId: '', cursor: '' },
+    following: { maxId: '', tmpId: '', cursor: '' },
+    media: { maxId: '', tmpId: '', cursor: '' },
+    broadcast:{ maxId: '', tmpId: '', cursor: '' },
+    space: { maxId: '', tmpId: '', cursor: '' },
+}
+
+//broadcast and audiospace
+let broadcastAndAudiospaceScriptMessage = ''
+
+try {
+    if (existsSync(basePath + '/twitter_archive_cursor.json')) {
+        const tmpCursor = JSON.parse(readFileSync(basePath + '/twitter_archive_cursor.json').toString())
+        cursor = tmpCursor
+    }
+} catch (e) {
+    console.log(`archiver: Invalid cursor file`)
+}
+
 //userinfo and tweets
-if (activeFlags.user_info_and_tweets) {
+if (activeFlags.tweet) {
+    if (cursor.tweets.cursor === '') {
+        console.log(`archiver: new account`)
+    } else if (cursor.tweets.cursor === 'complete') {
+        cursor.tweets.cursor = ''
+        if (cursor.tweets.maxId && cursor.tweets.maxId !== 0) {
+            cursor.tweets.tmpId = cursor.tweets.maxId
+            cursor.tweets.maxId = ''
+        }
+    }
     console.log('archiver: tweets...')
-    if (cursor !== 'complete') {
+    if (cursor.tweets.cursor !== 'complete') {
         //TODO query string
         //TODO wait for retweets
-        const query = [`from:${name}`, 'include:replies', 'include:nativeretweets', 'include:retweets', 'include:quote', 'since_id:0'].join(' ')
+        const query = [`from:${name}`, 'include:replies', 'include:nativeretweets', 'include:retweets', 'include:quote', `since_id:${cursor.tweets.tmpId ? cursor.tweets.tmpId : 0}`].join(' ')
         console.log(`archiver: query string -->${query}<--`)
         do {
             await global.guest_token.updateGuestToken(1)
@@ -148,13 +182,13 @@ if (activeFlags.user_info_and_tweets) {
             }
             let tweets = null
             try {
-                tweets = await getTweets({queryString: query, cursor: cursor || '', guest_token: global.guest_token.token, count: false, online: true, graphqlMode: false, searchMode: true})
+                tweets = await getTweets({queryString: query, cursor: cursor.tweets.cursor || '', guest_token: global.guest_token.token, count: false, online: true, graphqlMode: false, searchMode: true})
                 global.guest_token.updateRateLimit('Search')
             } catch (e) {
                 //try again
                 console.log('archiver: first retry...')
                 try {
-                    tweets = await getTweets({queryString: query, cursor: cursor || '', guest_token: global.guest_token.token, count: false, online: true, graphqlMode: false, searchMode: true})
+                    tweets = await getTweets({queryString: query, cursor: cursor.tweets.cursor || '', guest_token: global.guest_token.token, count: false, online: true, graphqlMode: false, searchMode: true})
                     global.guest_token.updateRateLimit('Search')
                 } catch (e1) {
                     console.log('archiver: retry failed...')
@@ -233,22 +267,25 @@ if (activeFlags.user_info_and_tweets) {
 
                 writeFileSync(basePath + '/rawdata/tweet.json', JSON.stringify(rawTweetData))
                 writeFileSync(basePath + '/rawdata/user.json', JSON.stringify(rawUserInfoData))
+                UserData.tweets = Object.fromEntries(Object.entries(UserData.tweets).sort((a, b) => b[1].time > a[1].time))
                 writeFileSync(basePath + '/savedata/data.json', JSON.stringify(UserData))
-                cursor = (tmpTweetsInfo.tweetsInfo.contents.length ? tmpTweetsInfo.tweetsInfo.cursor?.bottom || '' : '')
-                writeFileSync(basePath + '/twitter_archive_cursor', cursor)
-                if (!range.tweet_id.max || range.tweet_id.max === '0') {
+                cursor.tweets.cursor = (tmpTweetsInfo.tweetsInfo.contents.length ? tmpTweetsInfo.tweetsInfo.cursor?.bottom || '' : '')
+                if (!cursor.tweets.maxId || cursor.tweets.maxId === '0') {
+                    cursor.tweets.maxId = tmpTweetsInfo.tweetsInfo.tweetRange.max
                     range.tweet_id.max = tmpTweetsInfo.tweetsInfo.tweetRange.max
                 }
                 range.tweet_id.min = tmpTweetsInfo.tweetsInfo.tweetRange.min
                 range.time.end = Date.now()
+                writeFileSync(basePath + '/twitter_archive_cursor.json', JSON.stringify(cursor))
                 writeFileSync(basePath + '/range.json', JSON.stringify(range))
 
             } catch (e) {
                 console.error(e)
                 process.exit()
             }
-        } while (cursor)
-        writeFileSync(basePath + '/twitter_archive_cursor', 'complete')
+        } while (cursor.tweets.cursor)
+        cursor.tweets.cursor = 'complete'
+        writeFileSync(basePath + '/twitter_archive_cursor.json', JSON.stringify(cursor))
         console.log(`archiver: tweets complete, cost ${new Date() - now} ms`)
     }
     //TODO moment
@@ -305,10 +342,161 @@ if (activeFlags.user_info_and_tweets) {
     })
     writeFileSync(basePath + '/savedata/data.json', JSON.stringify(UserData))
     //console.log(getPollsFailedList)
+}
 
-    //TODO space
-    //TODO broadcasts
 
+// to save broadcasts and spaces, you have to install ffmpeg and place another GPLv2 script named `broadcast.mjs`/`audiospace.mjs` in same path with this script or just place them in savedata/
+
+// broadcasts
+if (activeFlags.broadcast) {
+    let broadcastsCards = Object.values(UserData.tweets).filter(tweet => (tweet.cardObject?.type === 'broadcast' || tweet.cardObject?.type === 'periscope_broadcast') && !tweet.broadcastObject).map(tweet => tweet.cardObject)
+    //errors list
+    let broadcastErrorList = []
+    if (existsSync(basePath + '/twitter_monitor_broadcast_error_list.json')) {
+        try {
+            broadcastErrorList = JSON.parse(readFileSync(basePath + '/twitter_monitor_broadcast_error_list.json').toString())
+        } catch (e) {}
+    }
+    //raw list
+    let broadcastRawList = {}
+    if (existsSync(basePath + '/rawdata/broadcast.json')) {
+        try {
+            broadcastRawList = JSON.parse(readFileSync(basePath + '/rawdata/broadcast.json').toString())
+        } catch (e) {}
+    }
+    if (broadcastsCards.length <= 0) {
+        console.log(`archiver: no broadcast (0)`)
+    } else {
+        while (broadcastsCards.length > 0) {
+            console.log(`archiver: broadcast (${broadcastsCards.length})`)
+
+            const tmpCardsList = broadcastsCards.splice(0, 100)
+            await global.guest_token.updateGuestToken(1)
+            const broadcasts = await getBroadcast({id: tmpCardsList.map(card => card.url.replaceAll(/.*\/([^\/\?#]+)(?:$|\?.*|#.*)/gm, '$1')), guest_token: global.guest_token.token})
+            global.guest_token.updateRateLimit('BroadCast', 100)
+        
+            for (const index in broadcasts) {
+                const broadcastResponse = broadcasts[index]
+                if (broadcastResponse.status === 'fulfilled') {
+                    let tmpBroadcastResponseData = Broadcast(broadcastResponse.value.data)
+                    let tmpBroadcastLink = {data: null}
+                    //get link
+                    if (tmpBroadcastResponseData.is_available_for_replay || (Number(tmpBroadcastResponseData.start) <= Date.now() && tmpBroadcastResponseData.end === '0')) {
+                        try {
+                            tmpBroadcastLink = await getLiveVideoStream({media_key: tmpBroadcastResponseData.media_key})
+                            if (tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl) {
+                                tmpBroadcastResponseData.playback = tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl.replaceAll('?type=replay', '').replaceAll('?type=live', '')
+                            }
+                        } catch (e) {
+                            console.error(e)
+                        }
+                    }
+                    console.log(`archiver: broadcast -->${tmpBroadcastResponseData.id}<--`)
+                    broadcastRawList[tmpBroadcastResponseData.id] = {info: broadcastResponse.value.data, source: tmpBroadcastLink?.data}
+                    UserData.tweets[tmpCardsList[index].tweet_id].broadcastObject = tmpBroadcastResponseData
+                } else {
+                    broadcastErrorList.push(tmpCardsList[index])
+                    console.log(`archiver: broadcast error -->${tmpCardsList[index].tweet_id}<--`)
+                }
+            }
+            writeFileSync(basePath + '/savedata/data.json', JSON.stringify(UserData))
+            writeFileSync(basePath + '/rawdata/broadcast.json', JSON.stringify(broadcastRawList))
+            writeFileSync(basePath + '/twitter_monitor_broadcast_error_list.json', JSON.stringify(broadcastErrorList))
+            
+            
+        }
+    }
+    //create ffmpeg script
+    //not yet support windows...maybe not?
+    //10Mbps for sources with fastly, and others is 1Mbps, change host manually is useless.
+    // https://prod-ec-ap-northeast-1.video.pscp.tv
+    // https://prod-fastly-ap-northeast-1.video.pscp.tv
+    let broadcastScript = ''
+    for (const broadcastItem of Object.entries(broadcastRawList || {})) {
+        broadcastScript += `ffmpeg -threads 4 -y -i "${broadcastItem[1].source.source?.noRedirectPlaybackUrl||broadcastItem[1].source.source?.location}" -c copy -bsf:a aac_adtstoasc ../savemedia/broadcast_${broadcastItem[1].info.broadcasts[broadcastItem[0]].id}.mp4\n`
+    }
+    if (broadcastScript) {
+        broadcastAndAudiospaceScriptMessage += `bash broadcast.sh\n`
+    }
+    writeFileSync(basePath + '/scripts/broadcast.sh', broadcastScript)
+}
+
+
+// audio spaces
+
+if (activeFlags.space) {
+    // spaces
+
+    let audiospacesCards = Object.values(UserData.tweets).filter(tweet => tweet.cardObject?.type === 'audiospace' && !tweet.audiospaceObject).map(tweet => tweet.cardObject)
+    
+    //errors list
+    let audiospaceErrorList = []
+    if (existsSync(basePath + '/twitter_monitor_audiospace_error_list.json')) {
+        try {
+            audiospaceErrorList = JSON.parse(readFileSync(basePath + '/twitter_monitor_audiospace_error_list.json').toString())
+        } catch (e) {}
+    }
+    //raw list
+    let audiospaceRawList = {}
+    if (existsSync(basePath + '/rawdata/audiospace.json')) {
+        try {
+            audiospaceRawList = JSON.parse(readFileSync(basePath + '/rawdata/audiospace.json').toString())
+        } catch (e) {}
+    }
+    if (audiospacesCards.length <= 0) {
+        console.log(`archiver: no audiospace (0)`)
+    } else {
+        while (audiospacesCards.length > 0) {
+            console.log(`archiver: audiospace (${audiospacesCards.length})`)
+            
+            
+        
+            const tmpCardsList = audiospacesCards.splice(0, 100)
+            await global.guest_token.updateGuestToken(1)
+            const audiospaces = await getAudioSpace({id: tmpCardsList.map(card => card.url), guest_token: global.guest_token.token})
+            global.guest_token.updateRateLimit('AudioSpaceById', 100)
+        
+            for (const index in audiospaces) {
+                const audiospaceResponse = audiospaces[index]
+                if (audiospaceResponse.status === 'fulfilled') {
+                    let tmpAudioSpace = AudioSpace(audiospaceResponse.value.data)
+                    let tmpAudioSpaceLink = {data: null}
+
+                    //get link
+                    if (tmpAudioSpace.is_available_for_replay || (Number(tmpAudioSpace.start) <= Date.now() && tmpAudioSpace.end === '0')) {
+                        try {
+                            tmpAudioSpaceLink = await getLiveVideoStream({media_key: tmpAudioSpace.media_key})
+                            if (tmpAudioSpaceLink.data?.source?.noRedirectPlaybackUrl) {
+                                tmpAudioSpace.playback = tmpAudioSpaceLink.data?.source?.noRedirectPlaybackUrl.replaceAll('?type=replay', '').replaceAll('?type=live', '')
+                            }
+                        } catch (e) {
+                            console.error(e)
+                        }
+                    }
+
+                    console.log(`archiver: audiospace -->${tmpAudioSpace.id}<--`)
+                    audiospaceRawList[tmpAudioSpace.id] = {info: audiospaceResponse.value.data, source: tmpAudioSpaceLink?.data}
+                    UserData.tweets[tmpCardsList[index].tweet_id].audiospaceObject = tmpAudioSpace
+                } else {
+                    audiospaceErrorList.push(tmpCardsList[index])
+                    console.log(`archiver: audiospace error -->${tmpCardsList[index].tweet_id}<--`)
+                }
+            }
+            writeFileSync(basePath + '/savedata/data.json', JSON.stringify(UserData))
+            writeFileSync(basePath + '/rawdata/audiospace.json', JSON.stringify(audiospaceRawList))
+            writeFileSync(basePath + '/twitter_monitor_audiospace_error_list.json', JSON.stringify(audiospaceErrorList))
+        }
+    }
+
+    let audioSpaceScript = ''
+    for (const audiospaceItem of Object.entries(audiospaceRawList || {})) {
+        //ffmpeg -i "" -c copy radio.aac
+        audioSpaceScript += `ffmpeg -threads 4 -y -i "${audiospaceItem[1].source.source?.noRedirectPlaybackUrl||audiospaceItem[1].source.source?.location}" -c copy ../savemedia/audiospace_${audiospaceItem[0]}.aac\n`
+    }
+    if (audioSpaceScript) {
+        broadcastAndAudiospaceScriptMessage += `bash audiospace.sh\n`
+    }
+    writeFileSync(basePath + '/scripts/audiospace.sh', audioSpaceScript)
 }
 
 //save media
@@ -431,7 +619,6 @@ if (true) {
     if (activeFlags.following) {
         let rawFollowingData = {}
         let FollowingData = {}
-        let following_cursor = ''
         let following_count = 0
 
         if (existsSync(basePath + '/rawdata/following.json')) {
@@ -440,10 +627,12 @@ if (true) {
         if (existsSync(basePath + '/savedata/following.json')) {
             FollowingData = JSON.parse(readFileSync(basePath + '/savedata/following.json'))
         }
-        if (existsSync(basePath + '/twitter_following_cursor')) {
-            following_cursor = readFileSync(basePath + '/twitter_following_cursor').toString().trim()
-        }
-        if (following_cursor !== 'complete') {
+
+        if (cursor.following.cursor === 'complete') {
+            //reset following cursor
+            //TODO auto break
+            cursor.following.cursor = ''
+        } else if (cursor.following.cursor !== 'complete') {
             do {
                 if (cookieRequestsRateLimit > 14) {
                     //guest token hack
@@ -451,7 +640,7 @@ if (true) {
                     await global.legacy_guest_token.updateGuestToken(0)
                     cookieRequestsRateLimit = 0
                 }
-                const followingResponse = await getFollowingOrFollowers({id: screen_name, type: 'Following', count: 200, cursor: following_cursor, guest_token: global.legacy_guest_token.token})
+                const followingResponse = await getFollowingOrFollowers({id: screen_name, type: 'Following', count: 200, cursor: cursor.following.cursor, guest_token: global.legacy_guest_token.token})
                 //next_cursor_str
                 //previous_cursor_str
                 cookieRequestsRateLimit++
@@ -466,13 +655,14 @@ if (true) {
                 //save raw data
                 writeFileSync(basePath + '/rawdata/following.json', JSON.stringify(rawFollowingData))
                 writeFileSync(basePath + '/savedata/following.json', JSON.stringify(FollowingData))
-                following_cursor = (followingResponse.data.users.length ? followingResponse.data.next_cursor_str || '' : '')
-                if (following_cursor === '0') {
-                    following_cursor = ''
+                cursor.following.cursor = (followingResponse.data.users.length ? followingResponse.data.next_cursor_str || '' : '')
+                if (cursor.following.cursor === '0') {
+                    cursor.following.cursor = ''
                 }
-                writeFileSync(basePath + '/twitter_following_cursor', following_cursor)
-            } while (following_cursor)
-            writeFileSync(basePath + '/twitter_following_cursor', 'complete')
+                writeFileSync(basePath + '/twitter_archive_cursor.json', JSON.stringify(cursor))
+            } while (cursor.following.cursor)
+            cursor.following.cursor = 'complete'
+            writeFileSync(basePath + '/twitter_archive_cursor.json', JSON.stringify(cursor))
             console.log(`archiver: Following complete, cost ${new Date() - now} ms`)
             range.time.end = Date.now()
             writeFileSync(basePath + '/range.json', JSON.stringify(range))
@@ -482,7 +672,6 @@ if (true) {
     if (activeFlags.followers) {
         let rawFollowersData = {}
         let FollowersData = {}
-        let follower_cursor = ''
         let followers_count = 0
 
         if (existsSync(basePath + '/rawdata/followers.json')) {
@@ -491,11 +680,12 @@ if (true) {
         if (existsSync(basePath + '/savedata/followers.json')) {
             FollowersData = JSON.parse(readFileSync(basePath + '/savedata/followers.json'))
         }
-        if (existsSync(basePath + '/twitter_followers_cursor')) {
-            follower_cursor = readFileSync(basePath + '/twitter_followers_cursor').toString().trim()
-        }
 
-        if (follower_cursor !== 'complete') {
+        if (cursor.followers.cursor === 'complete') {
+            //reset followers cursor
+            //TODO auto break
+            cursor.followers.cursor = ''
+        } else if (cursor.followers.cursor !== 'complete') {
             do {
                 if (cookieRequestsRateLimit > 14) {
                     //guest token hack
@@ -503,7 +693,7 @@ if (true) {
                     await global.legacy_guest_token.updateGuestToken(0)
                     cookieRequestsRateLimit = 0
                 }
-                const followersResponse = await getFollowingOrFollowers({id: screen_name, type: 'Followers', count: 200, cursor: follower_cursor, guest_token: global.legacy_guest_token.token})
+                const followersResponse = await getFollowingOrFollowers({id: screen_name, type: 'Followers', count: 200, cursor: cursor.followers.cursor, guest_token: global.legacy_guest_token.token})
                 cookieRequestsRateLimit++
 
                 for (const tmpUserInfo of followersResponse.data.users) {
@@ -516,13 +706,14 @@ if (true) {
                 //save raw data
                 writeFileSync(basePath + '/rawdata/followers.json', JSON.stringify(rawFollowersData))
                 writeFileSync(basePath + '/savedata/followers.json', JSON.stringify(FollowersData))
-                follower_cursor = (followersResponse.data.users.length ? followersResponse.data.next_cursor_str || '' : '')
-                if (follower_cursor === '0') {
-                    follower_cursor = ''
+                cursor.followers.cursor = (followersResponse.data.users.length ? followersResponse.data.next_cursor_str || '' : '')
+                if (cursor.followers.cursor === '0') {
+                    cursor.followers.cursor = ''
                 }
-                writeFileSync(basePath + '/twitter_followers_cursor', follower_cursor)
-            } while (follower_cursor)
-            writeFileSync(basePath + '/twitter_followers_cursor', 'complete')
+                writeFileSync(basePath + '/twitter_archive_cursor.json', JSON.stringify(cursor))
+            } while (cursor.followers.cursor)
+            cursor.followers.cursor = 'complete'
+            writeFileSync(basePath + '/twitter_archive_cursor.json', JSON.stringify(cursor))
             console.log(`archiver: Followers complete, cost ${new Date() - now} ms`)
             range.time.end = Date.now()
             writeFileSync(basePath + '/range.json', JSON.stringify(range))
@@ -533,9 +724,11 @@ if (true) {
 }
 
 
-
-
 console.log(`archiver: Time cost ${new Date() - now} ms`)//TODO remove
+
+if (broadcastAndAudiospaceScriptMessage) {
+    console.log(`archiver: Archiver() have been created some scripts in folder ./${name}/scripts/, so you can exec command below:\n\ncd ${name}/scripts/\n${broadcastAndAudiospaceScriptMessage}\n`)
+}
 
 process.exit()
 

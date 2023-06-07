@@ -16,6 +16,7 @@ if (Test-Path "$pwd_string\$save_path") {
     New-Item -Path "$pwd_string\$save_path" -Name "rawdata" -ItemType "directory"
     New-Item -Path "$pwd_string\$save_path" -Name "savedata" -ItemType "directory"
     New-Item -Path "$pwd_string\$save_path" -Name "savemedia" -ItemType "directory"
+    New-Item -Path "$pwd_string\$save_path" -Name "scripts" -ItemType "directory"
 
     # active directory
     "$save_path" | Out-File -FilePath "$pwd_string\screen_name.txt" -NoNewline

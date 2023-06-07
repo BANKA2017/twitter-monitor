@@ -18,7 +18,7 @@ const updateIdList = (content, type = 'main') => {
 }
 
 let match
-axiosFetch().get("https://twitter.com/", {headers: {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}}).then(async response => {
+axiosFetch().get("https://twitter.com/", {headers: {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36', cookie: 'guest_id=v1:0'}}).then(async response => {
     if (response.data) {
         //get main link
         const mainLink = (/(https:\/\/abs\.twimg\.com\/responsive-web\/client-web(?:[^\/]+|)\/main\.[^.]+\.js)/gm.exec(response.data))[0]

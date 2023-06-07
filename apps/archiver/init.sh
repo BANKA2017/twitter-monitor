@@ -15,6 +15,7 @@ else
     mkdir ${pwd}/${save_path}/rawdata
     mkdir ${pwd}/${save_path}/savedata
     mkdir ${pwd}/${save_path}/savemedia
+    mkdir ${pwd}/${save_path}/scripts
 
     # active directory
     echo $save_path > ${pwd}/screen_name.txt

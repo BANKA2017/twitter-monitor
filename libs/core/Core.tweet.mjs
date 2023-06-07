@@ -34,11 +34,11 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
             for (const tmpTweet of tmpTweets) {
                 if (tmpTweet.type === 'TimelineAddEntries') {
                     cursorList = tmpTweet.entries.filter(content => content.entryId.startsWith('cursor-'))
-                    objectForReturn.contents = objectForReturn.contents.concat(tmpTweet.entries).filter(content => content.entryId.startsWith('tweet-') || content.entryId.startsWith('conversationthread-'))
+                    objectForReturn.contents = objectForReturn.contents.concat(tmpTweet.entries).filter(content => content.entryId.startsWith('tweet-') || content.entryId.startsWith('conversationthread-') || content.entryId.startsWith('profile-conversation'))
                     objectForReturn.tweetRange.max = path2array('tweet_id', objectForReturn.contents[0]) || 0
                     objectForReturn.tweetRange.min = path2array('tweet_id', objectForReturn.contents.slice(-1)[0]) || 0
                     //users from tweets
-                    objectForReturn.users = Object.fromEntries(tmpTweet.entries.filter(content => content.entryId.startsWith('tweet-')).map(content => {
+                    objectForReturn.users = Object.fromEntries(tmpTweet.entries.filter(content => content.entryId.startsWith('tweet-') || content.entryId.startsWith('conversationthread-') || content.entryId.startsWith('profile-conversation')).map(content => {
                         const tmpContent = path2array('graphql_user_result', path2array('tweet_content', content))
                         if (!tmpContent) {return [[null, {id_str: null}]]}
                         const tmpEntities = [[tmpContent.rest_id, tmpContent]]
