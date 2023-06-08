@@ -1160,6 +1160,6 @@ const postLike = async (ctx = {cookie: {}, guest_token: {}, tweet_id: '', like: 
 }
 
 //ANONYMOUS
-export {getToken, coreFetch, getUserInfo, getVerifiedAvatars, getRecommendations, getMediaTimeline, getTweets, getConversation, getEditHistory, getPollResult, getAudioSpace, getBroadcast, getLiveVideoStream, getTypeahead, getArticle, getListInfo, getListMember, getListTimeLine, getTranslate, getTrends, getImage, Authorization}
+export { axios as AxiosFetch, getToken, coreFetch, getUserInfo, getVerifiedAvatars, getRecommendations, getMediaTimeline, getTweets, getConversation, getEditHistory, getPollResult, getAudioSpace, getBroadcast, getLiveVideoStream, getTypeahead, getArticle, getListInfo, getListMember, getListTimeLine, getTranslate, getTrends, getImage, Authorization}
 //COOKIE
 export {getFollowingOrFollowers, postTweet, postConversationControl, postPinTweet, postRetweet, postBookmark, postDeleteTweet, postHomeTimeLine, getBookmark, getLikes, /* getTweetAnalytics, */ postFollow, postLike}

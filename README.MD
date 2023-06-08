@@ -76,8 +76,8 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 
 ### Archiver
 
-* archive userinfo, most tweets(included **reply**) and nearly **ALL MEDIA**(included avatar and banner) by search api, `Following` and `Followers`
-* TODO: spaces, boradcast (ffmpeg command)
+* archive userinfo, most tweets(included **reply**) and nearly **ALL MEDIA**(included avatar and banner) by search api / timeline api, `Following` and `Followers`
+* spaces, boradcast (ffmpeg command)
 * **PLEASE PRECHECK THE ACCOUNT HAVEN BEEN SEARCHBAN**
 * Read more in [archiver/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/archiver)
 
@@ -215,8 +215,8 @@ Those are Chinese articles
 
 ### Archiver
 
-* 通过**搜索API**备份帐号的用户信息，大多数推文（包括回复）和媒体文件（包括当前头像和banner），`Following` 和 `Followers`
-* TODO: 备份Spaces、播客（生成 ffmpeg 命令）
+* 通过**搜索API**或**时间线API**备份帐号的用户信息，大多数推文（包括回复）和媒体文件（包括当前头像和banner），`Following` 和 `Followers`
+* 备份Spaces、播客（生成 ffmpeg 命令）
 * **使用前请检查待备份帐号是否被搜索封禁**
 * 使用方式请阅读 [archiver/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/archiver)
 

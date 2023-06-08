@@ -1,5 +1,6 @@
+import { Parser } from "m3u8-parser"
 import path2array from "../../../../libs/core/Core.apiPath.mjs"
-import { getAudioSpace, getLiveVideoStream, getConversation, getPollResult, getTweets, getBroadcast, getListTimeLine } from "../../../../libs/core/Core.fetch.mjs"
+import { getAudioSpace, getLiveVideoStream, getConversation, getPollResult, getTweets, getBroadcast, getListTimeLine, AxiosFetch } from "../../../../libs/core/Core.fetch.mjs"
 import { GetEntitiesFromText, VerifyQueryString } from "../../../../libs/core/Core.function.mjs"
 import { AudioSpace, Broadcast, Time2SnowFlake, Tweet, TweetsInfo } from "../../../../libs/core/Core.tweet.mjs"
 import { apiTemplate } from "../../../../libs/share/Constant.mjs"
@@ -286,7 +287,23 @@ const ApiBroadcast = async (req, env) => {
             try {
                 const tmpBroadcastLink = await getLiveVideoStream({media_key: tmpBroadcast.media_key})
                 if (tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl) {
-                    tmpBroadcast.playback = tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl.replaceAll('?type=replay', '').replaceAll('?type=live', '')
+                    let m3u8Url = tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl
+                    try {
+                        const tmpParsedM3u8Url = new URL(m3u8Url)
+                        const urlPrefix = tmpParsedM3u8Url.origin
+                        if (tmpParsedM3u8Url.pathname.split("/").pop().includes('master_dynamic_')) {
+                            const m3u8Data = (await AxiosFetch.get(m3u8Url)).data
+                            const m3u8Parser = new Parser()
+                            m3u8Parser.push(m3u8Data)
+                            m3u8Parser.end()
+                            m3u8Url = urlPrefix + m3u8Parser.manifest.playlists.sort((a, b) => b.attributes.BANDWIDTH - a.attributes.BANDWIDTH)[0].uri
+                        }
+                    } catch (e) {
+                        console.error(e)
+                        console.log(`[${new Date()}]: Unable to parse playlists from '${m3u8Url}', fallback. #OnlineBroadcast`)
+                    }
+                    
+                    tmpBroadcast.playback = m3u8Url.replaceAll('?type=replay', '').replaceAll('?type=live', '')
                 }
             } catch (e) {
                 console.error(e)

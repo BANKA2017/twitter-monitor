@@ -4,7 +4,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
-import { getAudioSpace, getBroadcast, getFollowingOrFollowers, getImage, getLiveVideoStream, getPollResult, getTweets } from '../../libs/core/Core.fetch.mjs'
+import { getAudioSpace, getBroadcast, getFollowingOrFollowers, getImage, getLiveVideoStream, getPollResult, getTweets, AxiosFetch } from '../../libs/core/Core.fetch.mjs'
 
 import { GuestToken, PathInfo, Sleep } from '../../libs/core/Core.function.mjs'
 import path2array from '../../libs/core/Core.apiPath.mjs'
@@ -13,6 +13,7 @@ import { GenerateAccountInfo } from '../../libs/core/Core.account.mjs'
 import { argv } from 'node:process'
 import { GenerateData } from '../backend/CoreFunctions/online/OnlineTweet.mjs'
 import { AudioSpace, Broadcast } from '../../libs/core/Core.tweet.mjs'
+import { Parser } from 'm3u8-parser'
 
 // bash init.sh <SCREEN_NAME>   bash/zsh/...
 // .\init.ps1 <SCREEN_NAME>     powershell
@@ -22,6 +23,7 @@ if (!existsSync('./screen_name.txt')) {
 }
 const name = readFileSync('./screen_name.txt').toString().trim()
 const basePath = `./${name}`// ./twitter_archiver
+let forceTimelineForUpdate = false
 let activeFlags = {
     tweet: true,
     followers: false, 
@@ -32,9 +34,8 @@ let activeFlags = {
 }
 const argvList = {
     "--all": () => {
-        console.log(`archiver: All data (UserInfo, Tweets, Following, Followers)`)
-        activeFlags.following = true
-        activeFlags.followers = true
+        console.log(`archiver: All data`)
+        activeFlags = Object.fromEntries(Object.entries(activeFlags).map(flag => [flag[0], true]))
     },
     "--followers": () => {
         console.log(`archiver: Add Followers`)
@@ -65,6 +66,9 @@ for (const argvContent of argv.slice(2)) {
     } else if (argvContent.startsWith('--skip_') && activeFlags[argvContent.replace('--skip_', '')]) {
         //TODO any better idea?
         activeFlags[argvContent.replace('--skip_', '')] = false
+    } else if (argvContent === '--timeline') {
+        console.log(`archiver: force use timeline api to update tweets`)
+        forceTimelineForUpdate = true
     }
 }
 
@@ -168,6 +172,10 @@ if (activeFlags.tweet) {
         }
     }
     console.log('archiver: tweets...')
+    if (!cursor.tweets.tmpId || !uid) {
+        console.log(`archiver: new task is unable to use timeline api`)
+        forceTimelineForUpdate = false
+    }
     if (cursor.tweets.cursor !== 'complete') {
         //TODO query string
         //TODO wait for retweets
@@ -182,13 +190,13 @@ if (activeFlags.tweet) {
             }
             let tweets = null
             try {
-                tweets = await getTweets({queryString: query, cursor: cursor.tweets.cursor || '', guest_token: global.guest_token.token, count: false, online: true, graphqlMode: false, searchMode: true})
+                tweets = await getTweets({queryString: forceTimelineForUpdate ? uid : query, cursor: forceTimelineForUpdate ? '' : cursor.tweets.cursor || '', guest_token: global.guest_token.token, count: 999, online: true, graphqlMode: forceTimelineForUpdate, searchMode: !forceTimelineForUpdate, withReply: true})
                 global.guest_token.updateRateLimit('Search')
             } catch (e) {
                 //try again
                 console.log('archiver: first retry...')
                 try {
-                    tweets = await getTweets({queryString: query, cursor: cursor.tweets.cursor || '', guest_token: global.guest_token.token, count: false, online: true, graphqlMode: false, searchMode: true})
+                    tweets = await getTweets({queryString: forceTimelineForUpdate ? uid : query, cursor: forceTimelineForUpdate ? '' : cursor.tweets.cursor || '', guest_token: global.guest_token.token, count: 999, online: true, graphqlMode: forceTimelineForUpdate, searchMode: !forceTimelineForUpdate, withReply: true})
                     global.guest_token.updateRateLimit('Search')
                 } catch (e1) {
                     console.log('archiver: retry failed...')
@@ -209,7 +217,7 @@ if (activeFlags.tweet) {
                 continue
             }
             console.log(`archiver: cursor -->${tmpTweetsInfo.tweetsInfo.cursor?.bottom || 'end'}<-- (${tmpTweetsInfo.tweetsInfo.contentLength})`)
-            writeFileSync(basePath + `/rawdata/${tmpTweetsInfo.tweetsInfo.tweetRange.max}_${tmpTweetsInfo.tweetsInfo.tweetRange.min}.json`, JSON.stringify(tweets.data))
+            writeFileSync(basePath + `/rawdata/${forceTimelineForUpdate ? 'timeline_' : ''}${tmpTweetsInfo.tweetsInfo.tweetRange.max}_${tmpTweetsInfo.tweetsInfo.tweetRange.min}.json`, JSON.stringify(tweets.data))
 
             //get account info
             if (uid === null) {
@@ -269,12 +277,16 @@ if (activeFlags.tweet) {
                 writeFileSync(basePath + '/rawdata/user.json', JSON.stringify(rawUserInfoData))
                 UserData.tweets = Object.fromEntries(Object.entries(UserData.tweets).sort((a, b) => b[1].time > a[1].time))
                 writeFileSync(basePath + '/savedata/data.json', JSON.stringify(UserData))
-                cursor.tweets.cursor = (tmpTweetsInfo.tweetsInfo.contents.length ? tmpTweetsInfo.tweetsInfo.cursor?.bottom || '' : '')
-                if (!cursor.tweets.maxId || cursor.tweets.maxId === '0') {
-                    cursor.tweets.maxId = tmpTweetsInfo.tweetsInfo.tweetRange.max
-                    range.tweet_id.max = tmpTweetsInfo.tweetsInfo.tweetRange.max
+
+                if (!forceTimelineForUpdate) {
+                    cursor.tweets.cursor = (tmpTweetsInfo.tweetsInfo.contents.length ? tmpTweetsInfo.tweetsInfo.cursor?.bottom || '' : '')
+                    if (!cursor.tweets.maxId || cursor.tweets.maxId === '0') {
+                        cursor.tweets.maxId = tmpTweetsInfo.tweetsInfo.tweetRange.max
+                        range.tweet_id.max = tmpTweetsInfo.tweetsInfo.tweetRange.max
+                    }
+                    range.tweet_id.min = tmpTweetsInfo.tweetsInfo.tweetRange.min
                 }
-                range.tweet_id.min = tmpTweetsInfo.tweetsInfo.tweetRange.min
+                
                 range.time.end = Date.now()
                 writeFileSync(basePath + '/twitter_archive_cursor.json', JSON.stringify(cursor))
                 writeFileSync(basePath + '/range.json', JSON.stringify(range))
@@ -283,7 +295,7 @@ if (activeFlags.tweet) {
                 console.error(e)
                 process.exit()
             }
-        } while (cursor.tweets.cursor)
+        } while (cursor.tweets.cursor && !forceTimelineForUpdate)
         cursor.tweets.cursor = 'complete'
         writeFileSync(basePath + '/twitter_archive_cursor.json', JSON.stringify(cursor))
         console.log(`archiver: tweets complete, cost ${new Date() - now} ms`)
@@ -385,7 +397,23 @@ if (activeFlags.broadcast) {
                         try {
                             tmpBroadcastLink = await getLiveVideoStream({media_key: tmpBroadcastResponseData.media_key})
                             if (tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl) {
-                                tmpBroadcastResponseData.playback = tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl.replaceAll('?type=replay', '').replaceAll('?type=live', '')
+                                let m3u8Url = tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl
+                                try {
+                                    const tmpParsedM3u8Url = new URL(m3u8Url)
+                                    const urlPrefix = tmpParsedM3u8Url.origin
+                                    if (tmpParsedM3u8Url.pathname.split("/").pop().includes('master_dynamic_')) {
+                                        const m3u8Data = (await AxiosFetch.get(m3u8Url)).data
+                                        const m3u8Parser = new Parser()
+                                        m3u8Parser.push(m3u8Data)
+                                        m3u8Parser.end()
+                                        m3u8Url = urlPrefix + m3u8Parser.manifest.playlists.sort((a, b) => b.attributes.BANDWIDTH - a.attributes.BANDWIDTH)[0].uri
+                                    }
+                                } catch (e) {
+                                    console.error(e)
+                                    console.log(`archiver: Unable to parse playlists from '${m3u8Url}', fallback.`)
+                                }
+
+                                tmpBroadcastResponseData.playback = m3u8Url.replaceAll('?type=replay', '').replaceAll('?type=live', '')
                             }
                         } catch (e) {
                             console.error(e)
@@ -412,13 +440,14 @@ if (activeFlags.broadcast) {
     // https://prod-ec-ap-northeast-1.video.pscp.tv
     // https://prod-fastly-ap-northeast-1.video.pscp.tv
     let broadcastScript = ''
-    for (const broadcastItem of Object.entries(broadcastRawList || {})) {
-        broadcastScript += `ffmpeg -threads 4 -y -i "${broadcastItem[1].source.source?.noRedirectPlaybackUrl||broadcastItem[1].source.source?.location}" -c copy -bsf:a aac_adtstoasc ../savemedia/broadcast_${broadcastItem[1].info.broadcasts[broadcastItem[0]].id}.mp4\n`
+    for (const broadcastItem of [...new Set(Object.entries(UserData.tweets || {}).filter(tweet => tweet[1].broadcastObject).map(tweet => tweet[1].broadcastObject))]) {
+        if (!broadcastItem.playback) {console.log(`archiver: Broadcast is not exist`); continue}
+        broadcastScript += `ffmpeg -threads 4 -y -i "${broadcastItem.playback}" -c copy -bsf:a aac_adtstoasc ../savemedia/broadcast_${broadcastItem.id}.mp4\n`
     }
     if (broadcastScript) {
         broadcastAndAudiospaceScriptMessage += `bash broadcast.sh\n`
+        writeFileSync(basePath + '/scripts/broadcast.sh', broadcastScript)
     }
-    writeFileSync(basePath + '/scripts/broadcast.sh', broadcastScript)
 }
 
 
@@ -491,12 +520,13 @@ if (activeFlags.space) {
     let audioSpaceScript = ''
     for (const audiospaceItem of Object.entries(audiospaceRawList || {})) {
         //ffmpeg -i "" -c copy radio.aac
+        if (!audiospaceItem[1]?.source) {console.log(`archiver: Space is not exist`); continue}
         audioSpaceScript += `ffmpeg -threads 4 -y -i "${audiospaceItem[1].source.source?.noRedirectPlaybackUrl||audiospaceItem[1].source.source?.location}" -c copy ../savemedia/audiospace_${audiospaceItem[0]}.aac\n`
     }
     if (audioSpaceScript) {
         broadcastAndAudiospaceScriptMessage += `bash audiospace.sh\n`
+        writeFileSync(basePath + '/scripts/audiospace.sh', audioSpaceScript)
     }
-    writeFileSync(basePath + '/scripts/audiospace.sh', audioSpaceScript)
 }
 
 //save media

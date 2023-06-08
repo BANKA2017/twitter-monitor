@@ -130,7 +130,7 @@ while (true) {
         //TODO accountInfo.code === 336 means feature issue
         console.log(refreshableList[index][0].display_name, `(${refreshableList[index][0].name})`, refreshableList[index][1], index)
         server_info.updateValue('total_req_times')
-        if (accountInfo.status !== 'fulfilled' || (accountInfo?.value?.data?.errors && !accountInfo?.value?.data?.data?.user) || accountInfo?.value?.data?.data?.user?.result?.__typename === 'UserUnavailable' || path2array("user_info_legacy", accountInfo.value?.data || false)?.protected || accountInfo.value?.data?.user?.result?.has_graduated_access) {
+        if (accountInfo.status !== 'fulfilled' || (accountInfo?.value?.data?.errors && !accountInfo?.value?.data?.data?.user) || accountInfo?.value?.data?.data?.user?.result?.__typename === 'UserUnavailable' || !accountInfo?.value?.data?.data?.user?.result || path2array("user_info_legacy", accountInfo.value?.data || false)?.protected || accountInfo.value?.data?.user?.result?.has_graduated_access) {
             if (accountInfo.status !== 'fulfilled') {
                 console.log('tmv3: #Autobreak' +  refreshableList[index][0].display_name + ' -' + accountInfo.status)
             } else {
@@ -156,7 +156,7 @@ while (true) {
                     TGPush(`tmv3: #Deleted Account ${refreshableList[index][0].name} was deleted`)
                     
                     continue
-                } else if (accountInfo?.value?.data?.data?.user?.result?.__typename === 'UserUnavailable') {
+                } else if (accountInfo?.value?.data?.data?.user?.result?.__typename === 'UserUnavailable' || !accountInfo?.value?.data?.data?.user?.result) {
                     config.users[refreshableList[index][1]].deleted = true
                     await V2AccountInfo.update({deleted: 1}, {where: {name: refreshableList[index][0].name}})
                     TGPush(`tmv3: #Deleted Account ${refreshableList[index][0].name} was deleted (${accountInfo?.value?.data?.data?.user?.result?.reason})`)

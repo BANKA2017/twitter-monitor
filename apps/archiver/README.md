@@ -15,6 +15,7 @@ Archiver()
 - Unable to crawl tweets from protected/banned/deleted users. 
 - The rate limit status after logging in will follow the account rather than the guest token (TODO not implemented yet).
 - FFmpeg script couldn't skip contents exist.
+- Some videos exported by ffmpeg cannot be played
 
 ## Features
 
@@ -61,6 +62,7 @@ node archive.mjs [OPTION]
 |--broadcast|Optional|Generate script to download broadcast video|
 |--space|Optional|Generate script to download space audio|
 |--skip_\<key of argvList \>|Optional|Key of argvList included `tweet`, `followers`, `following`, `media`, `broadcast` and `space`. Will skip the corresponding job.|
+|--timeline|Optional|Get tweets and replies via `UserTweetsAndReplies`.|
 
 - Default values, only crawl timeline without any media:
   ```javascript
