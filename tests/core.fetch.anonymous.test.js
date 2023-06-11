@@ -1,6 +1,6 @@
 import { describe, expect, it, test } from 'vitest'
 import { GuestToken } from '../libs/core/Core.function.mjs'
-import { getArticle, getAudioSpace, getBroadcast, getConversation, getEditHistory, getListInfo, getListMember, getListTimeLine, getMediaTimeline, getRecommendations, getTranslate, getTrends, getTweets, getTypeahead, getUserInfo, getVerifiedAvatars } from '../libs/core/Core.fetch.mjs'
+import { getArticle, getAudioSpace, getBroadcast, getConversation, getEditHistory, getListInfo, getListMember, getListTimeLine, getLiveVideoStream, getMediaTimeline, getRecommendations, getTranslate, getTrends, getTweets, getTypeahead, getUserInfo, getVerifiedAvatars } from '../libs/core/Core.fetch.mjs'
 
 let guest_token1 = new GuestToken
 let guest_token2 = new GuestToken
@@ -98,11 +98,11 @@ describe('EditHistory', () => {
 })
 
 describe('AudioSpace', () => {
-    test.concurrent('#1nAJErvvVXgxL (token 1)', async ({ expect }) => {
-        expect(await getAudioSpace({id: "1nAJErvvVXgxL", guest_token: guest_token1.token, authorization: 0})).toHaveProperty('data')
+    test.concurrent('#1djGXldPqNyGZ (token 1)', async ({ expect }) => {
+        expect(await getAudioSpace({id: "1djGXldPqNyGZ", guest_token: guest_token1.token, authorization: 0})).toHaveProperty('data')
     })
-    test.concurrent('#1nAJErvvVXgxL (token 2)', async ({ expect }) => {
-        expect(await getAudioSpace({id: "1nAJErvvVXgxL", guest_token: guest_token2.token, authorization: 1})).toHaveProperty('data')
+    test.concurrent('#1djGXldPqNyGZ (token 2)', async ({ expect }) => {
+        expect(await getAudioSpace({id: "1djGXldPqNyGZ", guest_token: guest_token2.token, authorization: 1})).toHaveProperty('data')
     })
 })
 
@@ -116,7 +116,12 @@ describe('Broadcast', () => {
 })
 
 describe('LiveVideoStream', () => {
-    it.todo('media_key for AudioSpace')
+    test.concurrent('Twitter/1645992677727666176 ~ #1djGXldPqNyGZ (token 1)', async ({ expect }) => {
+        expect(await getLiveVideoStream({media_key: "28_1645992664519655424", guest_token: guest_token1.token, authorization: 0})).toHaveProperty('data')
+    })
+    test.concurrent('Twitter/1645992677727666176 ~ #1djGXldPqNyGZ (token 2)', async ({ expect }) => {
+        expect(await getLiveVideoStream({media_key: "28_1645992664519655424", guest_token: guest_token2.token, authorization: 1})).toHaveProperty('data')
+    })
 })
 
 describe('Typeahead', () => {

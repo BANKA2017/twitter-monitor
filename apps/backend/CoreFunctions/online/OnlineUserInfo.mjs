@@ -3,7 +3,7 @@ import { getUserInfo } from "../../../../libs/core/Core.fetch.mjs"
 import { GetEntitiesFromText, VerifyQueryString } from "../../../../libs/core/Core.function.mjs"
 import { apiTemplate } from "../../../../libs/share/Constant.mjs"
 
-const ApiUserInfo = async (req, res) => {
+const ApiUserInfo = async (req, env) => {
     const name = VerifyQueryString(req.query.name, '')
     const uid = VerifyQueryString(req.query.uid, '0')
     //TODO errors
@@ -12,16 +12,12 @@ const ApiUserInfo = async (req, res) => {
     }
     let userInfo = {}
     try {
-        userInfo = await getUserInfo({user: name || uid, guest_token: global.guest_token2.token})
-        if (!name) {
-            global.guest_token2.updateRateLimit('UserByRestId')
-        } else {
-            global.guest_token2.updateRateLimit('UserByScreenName')
-        }
+        userInfo = await getUserInfo({user: name || uid, guest_token: env.guest_token2})
+        //updateGuestToken
+        await env.updateGuestToken(env, 'guest_token2', 1, userInfo.headers.get('x-rate-limit-remaining') < 20, !name ? 'UserByRestId' : 'UserByScreenName')
     } catch (e) {
         console.error(`[${new Date()}]: #OnlineUserInfo #${name || uid} #${e.code} ${e.message}`)
-        res.json(apiTemplate(e.code, e.message))
-        return
+        return env.json(apiTemplate(e.code, e.message))
     }
     let {GeneralAccountData} = GenerateAccountInfo(userInfo.data, {
         hidden: 0,
@@ -30,8 +26,7 @@ const ApiUserInfo = async (req, res) => {
         organization: 0,
     })
     if (!GeneralAccountData.uid) {
-        res.json(apiTemplate(404, 'No such account'))
-        return
+        return env.json(apiTemplate(404, 'No such account'))
     }
 
     if (GeneralAccountData.description) {
@@ -47,7 +42,7 @@ const ApiUserInfo = async (req, res) => {
     GeneralAccountData.description_origin = originTextAndEntities.originText
     GeneralAccountData.description_entities = originTextAndEntities.entities
 
-    res.json(apiTemplate(200, 'OK', GeneralAccountData))
+    return env.json(apiTemplate(200, 'OK', GeneralAccountData))
 }
 
 export {ApiUserInfo}

@@ -1,14 +1,9 @@
 import md5 from 'js-md5'
 import path2array from "./Core.apiPath.mjs"
-//import { readFileSync } from 'node:fs'
-//import { basePath } from "../share/Constant.mjs"
 
 import graphqlQueryIdList from '../../libs/assets/graphql/graphqlQueryIdList.js'
 import featuresValueList from '../../libs/assets/graphql/featuresValueList.js'
 import axiosFetch from "axios-helper"
-
-//const graphqlQueryIdList = JSON.parse(readFileSync(basePath + "/../libs/assets/graphqlQueryIdList.json").toString())
-//const featuresValueList = JSON.parse(readFileSync(basePath + "/../libs/assets/featuresValueList.json").toString())
 
 const generateCsrfToken = () => md5.hex('' + new Date())
 
@@ -107,10 +102,10 @@ const getToken = async (authorizationMode = 0) => {
       UserTweets: 470,//500
       TweetDetail: 470,//500//poll also use this
       AudioSpaceById: 470,//500
-      BroadCast: 185,//187
+      BroadCast: 180,//187
       Search: 195,//200 graphql && 245,//250 restful
       Recommendation: 55,//60,
-      Translation: 185,//187
+      Translation: 180,//187
       Trending: 19990,//20000
       ListInfo: 470,//500
       ListMember: 470,//500

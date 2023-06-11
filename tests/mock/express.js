@@ -13,6 +13,7 @@ class MockExpress {
     type = ''
     guest_token2 = null
     url = ''
+    env = {}
 
     statusCode = 200
     headers = new Headers
@@ -42,6 +43,9 @@ class MockExpress {
         this.query = Object.fromEntries(parseURL.searchParams.entries())
         
     }
+    setEnv (k, v) {
+        this.env[k] = v
+    }
 
     get req () {
         return {
@@ -51,7 +55,8 @@ class MockExpress {
             postBody: this.body,
             guest_token2: this.guest_token2.token,
             url: this.url,
-            type: this.type
+            type: this.type,
+            env: this.env
         }
     }
 
@@ -104,7 +109,7 @@ class MockExpress {
 
 
 // req
-// express.js req.query, req.params, req.body, // cfworkers req.url, req.postBody, req.guest_token2, req.type
+// express.js req.query, req.params, req.body, // cfworkers req.url, req.postBody, env.guest_token2, req.type
 // res
 // res.set(1, 2), res.append(1, 2), res.json(1, ?2), res.status(number).json(<-), res.send(string), 
 //                                                                     .end()

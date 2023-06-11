@@ -1,40 +1,47 @@
 import { getImage } from '../../../../libs/core/Core.fetch.mjs'
-import { existsSync, writeFile } from 'node:fs'
 import { PathInfo, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
-import { basePath } from '../../../../libs/share/NodeConstant.mjs'
+import { GetMime } from '../../../../libs/share/Mime.mjs'
 
-const MediaProxy = async (req, res) => {
+const MediaProxy = async (req, env) => {
     //const resSvg = '<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" focusable="false" role="img" aria-label="Placeholder: Deleted"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>'
-    const link = req.params[1]
+    const link = req.params.link
     const format = VerifyQueryString(req.query.format, '')
     const name = VerifyQueryString(req.query.name, '')
     const prefix = VerifyQueryString(req.query.prefix, '/media/proxy/')//for some m3u8
 
     //for m3u8
-    const ext = ['ext_tw_video', 'amplify_video'].includes(req.params[0])
+    const ext = ['ext_tw_video', 'amplify_video'].includes(req.type)
 
-    let mediaLinkArray = PathInfo(link)
+    let mediaLinkArray = {}
+    try {
+        mediaLinkArray = PathInfo(link)
+    } catch (e) {
+        console.error(`#MediaProxy ${e}`)
+        return env.ResponseWrapper(null, 403, {})
+    }
     if (format !== '' && name !== '') {
         mediaLinkArray.size = name
         mediaLinkArray.extension = format
         mediaLinkArray.basename += `.${format}`
     }
-
+    let responseHeaders = {}
     //check
     if (!mediaLinkArray.filename || ((!/^(abs|pbs|video)\.twimg\.com\//.test(mediaLinkArray.dirname) && !/^[^\/]+\.pscp\.tv\//.test(mediaLinkArray.dirname)) && !ext)) {
         //res.setHeader('Content-Type', 'image/svg+xml')
-        res.status(403).end()
-        return
+        return env.ResponseWrapper(null, 403, responseHeaders)
     } else if (mediaLinkArray.basename === 'banner.jpg') {
-        getImage(`https://${mediaLinkArray.dirname.slice(0, -1)}`).then(response => {
-            res.setHeader('Content-Type', response.headers['content-type'])
+        try {
+            const banner = await getImage(`https://${mediaLinkArray.dirname.slice(0, -1)}`)
+            responseHeaders['Content-Type'] = banner.headers.get('content-type')
             //res.setHeader('Content-Disposition', 'attachment;filename=banner.jpg')
             //response.data.pipe(res)
-            res.send(response.data)
-        }).catch(e => {
-            //res.setHeader('Content-Type', 'image/svg+xml')
-            res.status(500).end()
-        })
+            return env.ResponseWrapper(banner.data, 200, {
+                ...responseHeaders,
+                'content-type': GetMime(responseHeaders['Content-Type'])
+            })
+        } catch (e) {
+            return env.ResponseWrapper(null, 500, responseHeaders)
+        }
     } else {
         switch (mediaLinkArray.extension.toLocaleLowerCase()) {
             case "jpg":
@@ -45,13 +52,11 @@ const MediaProxy = async (req, res) => {
             case "m4s":
             case "ts":
             case "aac":
-                if (!['mp4', 'm4s', 'm3u8', 'aac'].includes(mediaLinkArray.extension) && (mediaLinkArray.size === 'small' || mediaLinkArray.extension === 'ts') && existsSync(`${basePath}/../apps/backend/cache/${mediaLinkArray.basename}`)) {
-                    //hit
-                    res.setHeader('X-TMCache', 1)
-                    res.redirect(307, `/media/cache/${mediaLinkArray.basename}`)
-                    return
+                if (!['mp4', 'm4s', 'm3u8', 'aac'].includes(mediaLinkArray.extension) && (mediaLinkArray.size === 'small' || mediaLinkArray.extension === 'ts') && env.mediaExistPreCheck(mediaLinkArray.basename)) {
+                    responseHeaders['X-TMCache'] = 1
+                    return env.ResponseWrapper(`/media/cache/${mediaLinkArray.basename}`, 307, responseHeaders)
                 } else {
-                    res.setHeader('X-TMCache', 0)
+                    responseHeaders['X-TMCache'] = 0
                     let realLink = ''
                     switch (mediaLinkArray.pathtype) {
                         case 3:
@@ -62,11 +67,10 @@ const MediaProxy = async (req, res) => {
                             realLink = `https://${link}?format=${mediaLinkArray.extension}&name=${mediaLinkArray.size}`
                             break
                         case 0:
-                            realLink = (ext ? `https://video.twimg.com/${req.params[0]}/` : 'https://') + link
+                            realLink = (ext ? `https://video.twimg.com/${req.params.link}/` : 'https://') + link
                             break
                         default:
-                            res.status(403).end()
-                            return
+                            return env.ResponseWrapper(null, 403, responseHeaders)
                     }
                     try {
                         const tmpBuffer = await getImage(realLink, {referer: 'https://twitter.com/'})
@@ -74,38 +78,40 @@ const MediaProxy = async (req, res) => {
                         //res.setHeader('Accept-Ranges', 'bytes')
                         if (contentLength === 0) {
                             //res.setHeader('Content-Type', 'image/svg+xml')
-                            res.status(404).end()
+                            return env.ResponseWrapper(null, 404, responseHeaders)
                         } else {
                             if ( ((mediaLinkArray.extension !== 'mp4' && mediaLinkArray.size === 'small') || mediaLinkArray.extension === 'ts')) {
-                                writeFile(`${basePath}/../apps/backend/cache/${mediaLinkArray.basename}`, tmpBuffer.data, e => {
-                                    if (e) {console.error(`MediaProxy: #MediaProxy error`, e)}
-                                })
+                                env.mediaCacheSave(tmpBuffer.data, mediaLinkArray.basename)
                             }
                             //res.setHeader('content-disposition', `attachment;filename=${mediaLinkArray.basename}`)
-                            res.setHeader('Content-Length', contentLength)
-                            res.setHeader('Content-Type', tmpBuffer?.headers?.['content-type'])
+                            responseHeaders['Content-Length'] = contentLength
+                            responseHeaders['Content-Type'] = tmpBuffer?.headers?.['content-type'] || (tmpBuffer?.headers ?? new Map()).get('content-type')
                             //response.data.pipe(res)
                             if ((mediaLinkArray.pathtype === 3) && ['m3u8', 'm3u'].includes(mediaLinkArray.extension) && prefix) {
-                                res.send(tmpBuffer.data.toString().replaceAll(/^\//gm, `${prefix}${mediaLinkArray.firstpath}/`))
+                                return env.ResponseWrapper(new TextDecoder("utf-8").decode(tmpBuffer.data).replaceAll(/^\//gm, `${prefix}${mediaLinkArray.firstpath}/`), 200, {
+                                    ...responseHeaders,
+                                    'content-type': GetMime(mediaLinkArray.extension)
+                                })
                             } else {
-                                res.send(tmpBuffer.data)
+                                return env.ResponseWrapper(tmpBuffer.data, 200, {
+                                    ...responseHeaders,
+                                    'content-type': GetMime(mediaLinkArray.extension)
+                                })
                             }
                             //res.send(response.data)
                         }
                     } catch(e) {
                         //TODO solve sometimes 500
                         console.error('Media PROXY', realLink, e)
-                        res.status(500).end()
+                        return env.ResponseWrapper(null, 500, responseHeaders)
                     }
                 }
                 break
             default:
                 //res.setHeader('content-type', 'image/svg+xml')
-                res.status(403).end()
+                return env.ResponseWrapper(null, 403, responseHeaders)
         }
     }
-
-    //res.json([req.query, req.params, mediaLinkArray])
 }
 
 export {MediaProxy}

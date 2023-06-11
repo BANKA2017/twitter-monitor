@@ -1,47 +1,43 @@
-import { TRANSLATE_TARGET, TRANSLATOR_PLATFORM } from "../../../../libs/assets/setting.mjs"
 import { getTranslate } from "../../../../libs/core/Core.fetch.mjs"
 import { VerifyQueryString } from "../../../../libs/core/Core.function.mjs"
 import { Translate } from "../../../../libs/core/Core.translate.mjs"
 import { apiTemplate } from "../../../../libs/share/Constant.mjs"
 
-const ApiTranslate = async (req, res) => {
-    const target = VerifyQueryString(req.query.to, TRANSLATE_TARGET)
+const ApiTranslate = async (req, env) => {
+    const target = VerifyQueryString(req.query.to, 'en')
     //const cacheText = target.toLowerCase() === TRANSLATE_TARGET.toLowerCase()//TODO remove
-    const platform = VerifyQueryString(req.query.platform, TRANSLATOR_PLATFORM).toLowerCase()
-    const text = VerifyQueryString(req?.body?.text, '')
+    const platform = VerifyQueryString(req.query.platform, 'google').toLowerCase()
+    const text = VerifyQueryString(req.postBody.get('text'), '')
     if (text) {
         let trInfo = { full_text: text, cache: false, target, translate_source: "Twitter Monitor Translator", translate: "", entities: []}
 
         const {message, content} = await Translate(trInfo, target, platform)
         if (!message) {
-            res.json(apiTemplate(200, 'OK', content, 'translate'))
+            return env.json(apiTemplate(200, 'OK', content, 'translate'))
         } else {
-            res.json(apiTemplate(500, 'Unable to get translate content', content, 'translate'))
+            return env.json(apiTemplate(500, 'Unable to get translate content', content, 'translate'))
         }
     } else {
-        res.json(apiTemplate(404, 'No translate text', {}, 'translate'))
+        return env.json(apiTemplate(404, 'No translate text', {}, 'translate'))
     }
 }
 
-const ApiOfficialTranslate = async (req, res) => {
+const ApiOfficialTranslate = async (req, env) => {
     const id = VerifyQueryString(req.query.id, '')
     if (!id) {
-        res.json(apiTemplate(403, 'Invalid id(tweet_id/uid)', {}, 'translate'))
-        return
+        return env.json(apiTemplate(403, 'Invalid id(tweet_id/uid)', {}, 'translate'))
     }
     const type = VerifyQueryString(req.query.type, 'tweets')
     const target = VerifyQueryString(req.query.target, 'en')
 
     try {
-        await global.guest_token2.updateGuestToken(1)
-        if (global.guest_token2.token.nextActiveTime) {
-            console.error(`[${new Date()}]: #Translate #GuestToken #429 Wait until ${global.guest_token2.token.nextActiveTime}`)
-            return json(apiTemplate(429, `Wait until ${global.guest_token2.token.nextActiveTime}`), {}, 'translate')
-        }
-        global.guest_token2.updateRateLimit('Translation')
-        const tmpTranslate = await getTranslate({id, type, target, guest_token: global.guest_token2.token})
+        const tmpTranslate = await getTranslate({id, type, target, guest_token: env.guest_token2})
+
+        //updateGuestToken
+        await env.updateGuestToken(env, 'guest_token2', 1, tmpTranslate.headers.get('x-rate-limit-remaining') < 20, 'Translation')
 
         if (tmpTranslate.data || ((tmpTranslate.data?.translationState??'').toLowerCase() !== 'success')) {
+            
             let tmpReaponse = {
                 full_text: tmpTranslate.data.translation,
                 translate: tmpTranslate.data.translation,
@@ -65,13 +61,13 @@ const ApiOfficialTranslate = async (req, res) => {
                 }))).flat().sort((a, b) => a.indices_start - b.indices_start)
             }
 
-            res.json(apiTemplate(200, 'OK', tmpReaponse, 'translate'))
+            return env.json(apiTemplate(200, 'OK', tmpReaponse, 'translate'))
         } else {
-            res.json(apiTemplate(500, 'Unable to get translate content', {}, 'translate'))
+            return env.json(apiTemplate(500, 'Unable to get translate content', {}, 'translate'))
         }
     } catch (e) {
         console.error(e)
-        res.json(apiTemplate(500, 'Unable to get translate content', {}, 'translate'))
+        return env.json(apiTemplate(500, 'Unable to get translate content', {}, 'translate'))
     }
 }
 

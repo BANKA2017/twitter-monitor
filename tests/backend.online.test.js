@@ -13,9 +13,14 @@ import { ApiTrends } from '../apps/backend/CoreFunctions/online/OnlineTrends.mjs
 import { ApiListInfo, ApiListMemberList, ApiTypeahead } from '../apps/backend/CoreFunctions/online/OnlineMisc.mjs'
 import MockExpress from './mock/express'
 import { ApiOfficialTranslate } from '../apps/backend/CoreFunctions/translate/OnlineTranslate.mjs'
+import { json, updateGuestToken } from '../apps/backend/share.mjs'
 
 const mock = new MockExpress
 global.guest_token2 = mock.guest_token2
+mock.setEnv('guest_token2_handle', mock.guest_token2)
+mock.setEnv('guest_token2', mock.guest_token2.token)
+mock.setEnv('json', json)
+mock.setEnv('updateGuestToken', updateGuestToken)
 
 test('Guest token', async () => {
     await global.guest_token2.updateGuestToken(1)
@@ -25,7 +30,7 @@ test('Guest token', async () => {
 describe('UserInfo', async () => {
   test.concurrent('Name', async () => {
     mock.init('https://tmapi.nest.moe/online/api/v3/data/userinfo/?name=twitter', {}, '', '')
-    await ApiUserInfo(mock.req, mock.res)
+    mock.res.json((await ApiUserInfo(mock.req, mock.req.env)).data)
     //value
     expect(mock.globalResponseCtx.body.data).toHaveProperty('uid', '783214')
     expect(mock.globalResponseCtx.body.data).toHaveProperty('uid_str', '783214')
@@ -41,7 +46,7 @@ describe('UserInfo', async () => {
   })
   test.concurrent('Uid', async () => {
    mock.init('https://tmapi.nest.moe/online/api/v3/data/userinfo/?uid=783214', {}, '', '')
-    await ApiUserInfo(mock.req, mock.res)
+   mock.res.json((await ApiUserInfo(mock.req, mock.req.env)).data)
     //value
     expect(mock.globalResponseCtx.body.data).toHaveProperty('uid', '783214')
     expect(mock.globalResponseCtx.body.data).toHaveProperty('uid_str', '783214')
@@ -57,7 +62,7 @@ describe('UserInfo', async () => {
   })
   test.concurrent('Not exists', async () => {
     mock.init('https://tmapi.nest.moe/online/api/v3/data/userinfo/?uid=0', {}, '', '')
-    await ApiUserInfo(mock.req, mock.res)
+    mock.res.json((await ApiUserInfo(mock.req, mock.req.env)).data)
     expect(mock.globalResponseCtx.body.code).toEqual(404)
   })
 })
@@ -84,34 +89,34 @@ const testTweets = (top_cursor, bottom_cursor, checkCursor = true) => {
 describe('Tweets', async () => {
   test.concurrent('Tweet', async () => {
     mock.init('https://tmapi.nest.moe/online/api/v3/data/tweets/?name=twitter&count=20&uid=783214&display=all', {}, '', '')
-    await ApiTweets(mock.req, mock.res)
+    mock.res.json((await ApiTweets(mock.req, mock.req.env)).data)
     const {top_tweet_id, bottom_tweet_id} = testTweets('', '')
     mock.init(`https://tmapi.nest.moe/online/api/v3/data/tweets/?name=twitter&count=20&uid=783214&display=all&refresh=1&tweet_id=${encodeURIComponent(bottom_tweet_id)}`, {}, '', '')
-    await ApiTweets(mock.req, mock.res)
+    mock.res.json((await ApiTweets(mock.req, mock.req.env)).data)
     testTweets(top_tweet_id, bottom_tweet_id)
   })
   test.concurrent('With replies', async () => {
     mock.init('https://tmapi.nest.moe/online/api/v3/data/tweets/?name=twitter&count=20&uid=783214&display=include_reply', {}, '', '')
-    await ApiTweets(mock.req, mock.res)
+    mock.res.json((await ApiTweets(mock.req, mock.req.env)).data)
     const {top_tweet_id, bottom_tweet_id} = testTweets('', '')
     mock.init(`https://tmapi.nest.moe/online/api/v3/data/tweets/?name=twitter&count=20&uid=783214&display=include_reply&refresh=1&tweet_id=${encodeURIComponent(bottom_tweet_id)}`, {}, '', '')
-    await ApiTweets(mock.req, mock.res)
+    mock.res.json((await ApiTweets(mock.req, mock.req.env)).data)
     testTweets(top_tweet_id, bottom_tweet_id)
   })
   test.concurrent('Status', async () => {
     mock.init('https://tmapi.nest.moe/online/api/v3/data/tweets/?is_status=1&load_conversation=0&tweet_id=1652034062788206595', {}, '', '')
-    await ApiTweets(mock.req, mock.res)
+    mock.res.json((await ApiTweets(mock.req, mock.req.env)).data)
     const {top_tweet_id, bottom_tweet_id} = testTweets('', '', false)
     mock.init(`https://tmapi.nest.moe/online/api/v3/data/tweets/?is_status=1&load_conversation=0&tweet_id=1652034062788206595&refresh=0&cursor=${encodeURIComponent(bottom_tweet_id)}`, {}, '', '')
-    await ApiTweets(mock.req, mock.res)
+    mock.res.json((await ApiTweets(mock.req, mock.req.env)).data)
     testTweets(top_tweet_id, bottom_tweet_id, false)
   })
   test.concurrent('List', async () => {
     mock.init('https://tmapi.nest.moe/online/api/v3/data/tweets/?list_id=53645372&count=20', {}, '', '')
-    await ApiTweets(mock.req, mock.res)
+    mock.res.json((await ApiTweets(mock.req, mock.req.env)).data)
     const {top_tweet_id, bottom_tweet_id} = testTweets('', '')
     mock.init(`https://tmapi.nest.moe/online/api/v3/data/tweets/?list_id=53645372&count=20&tweet_id=${encodeURIComponent(bottom_tweet_id)}`, {}, '', '')
-    await ApiTweets(mock.req, mock.res)
+    mock.res.json((await ApiTweets(mock.req, mock.req.env)).data)
     testTweets(top_tweet_id, bottom_tweet_id)
   })
 })
@@ -119,10 +124,10 @@ describe('Tweets', async () => {
 describe('Search', async () => {
   test.concurrent('Legacy mode', async () => {
     mock.init('https://tmapi.nest.moe/online/api/v3/data/search/?q=Twitter', {}, '', '')
-    await ApiSearch(mock.req, mock.res)
+    mock.res.json((await ApiSearch(mock.req, mock.req.env)).data)
     const {top_tweet_id, bottom_tweet_id} = testTweets('', '')
     mock.init(`https://tmapi.nest.moe/online/api/v3/data/search/?q=Twitter&tweet_id=${encodeURIComponent(bottom_tweet_id)}`, {}, '', '')
-    await ApiSearch(mock.req, mock.res)
+    mock.res.json((await ApiSearch(mock.req, mock.req.env)).data)
     testTweets(top_tweet_id, bottom_tweet_id)
   })
   test.todo('Advanced mode')
@@ -130,18 +135,18 @@ describe('Search', async () => {
 describe('Album search', async () => {
   test.concurrent('List', async () => {
     mock.init('https://tmapi.nest.moe/album/data/list/?name=&platform=ns', {}, '', '')
-    await AlbumSearch(mock.req, mock.res)
+    mock.res.json((await AlbumSearch(mock.req, mock.req.env)).data)
     const {top_tweet_id, bottom_tweet_id} = testTweets('', '')
     mock.init(`https://tmapi.nest.moe/album/data/list/?name=&platform=ns&tweet_id=${encodeURIComponent(bottom_tweet_id)}`, {}, '', '')
-    await AlbumSearch(mock.req, mock.res)
+    mock.res.json((await AlbumSearch(mock.req, mock.req.env)).data)
     testTweets(top_tweet_id, bottom_tweet_id)
   })
   test.concurrent('Photo', async () => {
     mock.init('https://tmapi.nest.moe/album/data/list/?name=&platform=ns', {}, '', '')
-    await AlbumSearch(mock.req, mock.res)
+    mock.res.json((await AlbumSearch(mock.req, mock.req.env)).data)
     const {top_tweet_id} = testTweets('', '')
     mock.init(`https://tmapi.nest.moe/album/data/list/?photos=1&tweet_id=${encodeURIComponent(top_tweet_id)}`, {}, '', '')
-    await AlbumSearch(mock.req, mock.res)
+    mock.res.json((await AlbumSearch(mock.req, mock.req.env)).data)
     testTweets('', '')
   })
 })
@@ -149,20 +154,31 @@ describe('Album search', async () => {
 describe('Broadcast', async () => {
   test.concurrent('Info', async () => {
     mock.init('https://tmapi.nest.moe/online/api/v3/data/broadcast/?id=1jMKgLaeYoAGL', {}, '', '')
-    await ApiBroadcast(mock.req, mock.res)
+    mock.res.json((await ApiBroadcast(mock.req, mock.req.env)).data)
     const {data} = mock.globalResponseCtx.body
-    expect(data.id?.length).toBeGreaterThanOrEqual(1)
+    expect(data.id).toEqual('1jMKgLaeYoAGL')
     if (data.state === 'running' || (data.state === 'ended' && data.is_available_for_replay)) {
-      expect(data.playback).toMatch(/^https:\/\/[^\.]+\.video\.pscp\.tv\/[^\.]+\.m3u8/gm)
+      expect(data.playback).toMatch(/^https:\/\/[^\.]+\.video\.pscp\.tv\/.+?\.m3u8$/gm)
     }
   })
 })
-describe.todo('Audiospace', async () => {})
+describe('Audiospace', async () => {
+  test.concurrent('Info', async () => {
+    mock.init('https://tmapi.nest.moe/online/api/v3/data/audiospace/?id=1djGXldPqNyGZ', {}, '', '')
+    mock.res.json((await ApiAudioSpace(mock.req, mock.req.env)).data)
+    const {data} = mock.globalResponseCtx.body
+    expect(data.id).toEqual('1djGXldPqNyGZ')
+    if (data.state === 'running' || (data.state === 'ended' && data.is_available_for_replay)) {
+      console.log(data.playback)
+      expect(data.playback).toMatch(/^https:\/\/[^\.]+\.video\.pscp\.tv\/.+?\.m3u8$/gm)
+    }
+  })
+})
 
 describe('Trends (might not supported in some region)', async () => {
   test.concurrent('Trends', async () => {
     mock.init('https://tmapi.nest.moe/online/api/v3/data/trends', {}, '', '')
-    await ApiTrends(mock.req, mock.res)
+    mock.res.json((await ApiTrends(mock.req, mock.req.env)).data)
     const {data} = mock.globalResponseCtx.body
     for (const tmpTrend of data) {
       expect(tmpTrend.name?.length).toBeGreaterThanOrEqual(1)
@@ -174,7 +190,7 @@ describe('Trends (might not supported in some region)', async () => {
 describe('Typeahead', async () => {
   test.concurrent('Typeahead', async () => {
     mock.init('https://tmapi.nest.moe/online/api/v3/data/typeahead/?text=twitter', {}, '', '')
-    await ApiTypeahead(mock.req, mock.res)
+    mock.res.json((await ApiTypeahead(mock.req, mock.req.env)).data)
     const {data} = mock.globalResponseCtx.body
     //users
     for (const user of data.users) {
@@ -191,7 +207,7 @@ describe('Typeahead', async () => {
 describe('List', async () => {
   test.concurrent('Info', async () => {
     mock.init('https://tmapi.nest.moe/online/api/v3/data/listinfo/?list_id=53645372', {}, '', '')
-    await ApiListInfo(mock.req, mock.res)
+    mock.res.json((await ApiListInfo(mock.req, mock.req.env)).data)
     const {data} = mock.globalResponseCtx.body
     expect(data.user_info.uid_str).toEqual('21436960')
     expect(data.id).toEqual('53645372')
@@ -202,10 +218,10 @@ describe('List', async () => {
   })
   test.concurrent('Member', async () => {
     mock.init('https://tmapi.nest.moe/online/api/v3/data/listmember/?list_id=53645372&count=20', {}, '', '')
-    await ApiListMemberList(mock.req, mock.res)
+    mock.res.json((await ApiListMemberList(mock.req, mock.req.env)).data)
     const {data} = mock.globalResponseCtx.body
     //users
-    expect(data.users.length).toEqual(17)
+    expect(data.users.length).toBeGreaterThanOrEqual(18)
     for (const user of data.users) {
       expect(BigInt(user.uid_str)).toBeGreaterThanOrEqual(BigInt(1))
       expect(user.name.length).toBeGreaterThanOrEqual(1)

@@ -5,48 +5,43 @@ import { TweetsInfo } from "../../../../libs/core/Core.tweet.mjs"
 import { apiTemplate } from "../../../../libs/share/Constant.mjs"
 
 
-const ApiTypeahead = async (req, res) => {
+const ApiTypeahead = async (req, env) => {
     const text = VerifyQueryString(req.query.text, '')
     let tmpTypeahead = {
         users: [],
         topics: []
     }
     try {
-        const tmpTypeaheadResponse = await getTypeahead({text, guest_token: global.guest_token2.token})
+        const tmpTypeaheadResponse = await getTypeahead({text, guest_token: env.guest_token2})
         //no rate limit
-        //global.guest_token2.updateRateLimit('TypeAhead')
-
         tmpTypeahead.topics = tmpTypeaheadResponse.data.topics
         tmpTypeahead.users = tmpTypeaheadResponse.data.users.map(user => GenerateAccountInfo(user).GeneralAccountData)
-
     } catch (e) {
         console.log(e)
         console.error(`[${new Date()}]: #OnlineTypeahead #${text} #${e.code} ${e.message}`)
-        res.json(apiTemplate(500, 'Something wrong', {users: [],topics: []}, 'online'))
-        return
+        return env.json(apiTemplate(500, 'Something wrong', {users: [],topics: []}, 'online'))
     }
 
-    res.json(apiTemplate(200, 'OK', tmpTypeahead, 'online'))
+    return env.json(apiTemplate(200, 'OK', tmpTypeahead, 'online'))
 }
 
-const ApiListInfo = async (req, res) => {
+const ApiListInfo = async (req, env) => {
     const listId = VerifyQueryString(req.query.list_id, 0)
     const screenName = VerifyQueryString(req.query.name, '').toLocaleLowerCase()
     const listSlug = VerifyQueryString(req.query.slug, '').toLocaleLowerCase()
     
     //all empty
     if (!(listId || (screenName && listSlug))) {
-        res.json(apiTemplate(403, 'Invalid Request', {}, 'online'))
-        return
+        return env.json(apiTemplate(403, 'Invalid Request', {}, 'online'))
     }
 
     try {
-        let listInfoResponse = await getListInfo({id: listId ? listId : '', screenName, listSlug, guest_token: global.guest_token2.token, authorization: 1})
-        global.guest_token2.updateRateLimit('ListInfo')
+        let listInfoResponse = await getListInfo({id: listId ? listId : '', screenName, listSlug, guest_token: env.guest_token2, authorization: 1})
+        //updateGuestToken
+        await env.updateGuestToken(env, 'guest_token2', 1, listInfoResponse.headers.get('x-rate-limit-remaining') < 20, 'ListInfo')
 
         if (!listInfoResponse.data) {
-            res.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
-            return
+            return env.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
         }
         if (listId) {
             listInfoResponse = listInfoResponse.data.data.list
@@ -85,37 +80,35 @@ const ApiListInfo = async (req, res) => {
             }
         }
 
-        res.json(apiTemplate(200, 'OK', responseData, 'online'))
+        return env.json(apiTemplate(200, 'OK', responseData, 'online'))
     } catch (e) {
         console.log(e)
         console.error(`[${new Date()}]: #OnlineListInfo ${listId ? '#' + listId : '[@' + screenName + '](' + listSlug + ')'} #${e.code} ${e.message}`)
-        res.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
-        return
+        return env.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
     }
 }
 
-const ApiListMemberList = async (req, res) => {
+const ApiListMemberList = async (req, env) => {
     const listId = VerifyQueryString(req.query.list_id, 0)
     const cursor = VerifyQueryString(req.query.cursor, '')
     const count = VerifyQueryString(req.query.count, 20)
 
     if (!(listId)) {
-        res.json(apiTemplate(403, 'Invalid Request', {}, 'online'))
-        return
+        return env.json(apiTemplate(403, 'Invalid Request', {}, 'online'))
     }
 
     try {
-        let listMemberResponse = await getListMember({id: listId, cursor, count, guest_token: global.guest_token2.token, authorization: 1})
-        global.guest_token2.updateRateLimit('ListMember')
+        let listMemberResponse = await getListMember({id: listId, cursor, count, guest_token: env.guest_token2, authorization: 1})
+        //updateGuestToken
+        await env.updateGuestToken(env, 'guest_token2', 1, listMemberResponse.headers.get('x-rate-limit-remaining') < 20, 'ListMember')
 
         if (!listMemberResponse.data) {
-            res.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
-            return
+            return env.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
         }
 
         const ParseList = TweetsInfo(listMemberResponse.data, true)
 
-        res.json(apiTemplate(200, 'OK', {
+        return env.json(apiTemplate(200, 'OK', {
             users: Object.entries(ParseList.users).map(user => {
                 let {GeneralAccountData} = GenerateAccountInfo(user[1])
                 if (GeneralAccountData.description) {
@@ -137,8 +130,7 @@ const ApiListMemberList = async (req, res) => {
     } catch (e) {
         console.log(e)
         console.error(`[${new Date()}]: #OnlineListMemberList #${listId} #${e.code} ${e.message}`)
-        res.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
-        return
+        return env.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
     }
 }
 

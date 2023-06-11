@@ -440,9 +440,9 @@ if (activeFlags.broadcast) {
     // https://prod-ec-ap-northeast-1.video.pscp.tv
     // https://prod-fastly-ap-northeast-1.video.pscp.tv
     let broadcastScript = ''
-    for (const broadcastItem of [...new Set(Object.entries(UserData.tweets || {}).filter(tweet => tweet[1].broadcastObject).map(tweet => tweet[1].broadcastObject))]) {
-        if (!broadcastItem.playback) {console.log(`archiver: Broadcast is not exist`); continue}
-        broadcastScript += `ffmpeg -threads 4 -y -i "${broadcastItem.playback}" -c copy -bsf:a aac_adtstoasc ../savemedia/broadcast_${broadcastItem.id}.mp4\n`
+    for (const broadcastItem of [...new Set(Object.entries(UserData.tweets || {}).filter(tweet => tweet[1].broadcastObject).map(tweet => [tweet[1].broadcastObject, tweet[1].cardObject]))]) {
+        if (!broadcastItem[0].playback) {console.log(`archiver: Broadcast is not exist`); continue}
+        broadcastScript += `ffmpeg -y -i "${broadcastItem[0].playback}" -c copy -bsf:a aac_adtstoasc ../savemedia/broadcast_${broadcastItem[0].id}.mp4\n`
     }
     if (broadcastScript) {
         broadcastAndAudiospaceScriptMessage += `bash broadcast.sh\n`
@@ -521,7 +521,7 @@ if (activeFlags.space) {
     for (const audiospaceItem of Object.entries(audiospaceRawList || {})) {
         //ffmpeg -i "" -c copy radio.aac
         if (!audiospaceItem[1]?.source) {console.log(`archiver: Space is not exist`); continue}
-        audioSpaceScript += `ffmpeg -threads 4 -y -i "${audiospaceItem[1].source.source?.noRedirectPlaybackUrl||audiospaceItem[1].source.source?.location}" -c copy ../savemedia/audiospace_${audiospaceItem[0]}.aac\n`
+        audioSpaceScript += `ffmpeg -y -i "${audiospaceItem[1].source.source?.noRedirectPlaybackUrl||audiospaceItem[1].source.source?.location}" -c copy ../savemedia/audiospace_${audiospaceItem[0]}.aac\n`
     }
     if (audioSpaceScript) {
         broadcastAndAudiospaceScriptMessage += `bash audiospace.sh\n`
@@ -613,7 +613,7 @@ if (activeFlags.media) {
                 } else {
                     getMediaFailedList.push({
                         url: imageReaponse.reason.meta.url,
-                        basename: `${imageReaponse.value.meta.filename}.${imageReaponse.value.meta.extension}`
+                        basename: `${imageReaponse.reason.meta.filename}.${imageReaponse.reason.meta.extension}`
                     })
                     writeFileSync(basePath + '/twitter_monitor_media_failed_list.json', JSON.stringify(getMediaFailedList))
                     statusCount.error++

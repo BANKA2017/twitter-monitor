@@ -11,6 +11,7 @@ import album from './service/album.mjs'
 import translate from './service/translate.mjs'
 //Bot api
 //import bot from './service/bot.mjs'
+import { json, updateGuestToken, ResponseWrapper, mediaExistPreCheck, mediaCacheSave } from './share.mjs'
 
 const app = express()
 const media = express()
@@ -21,7 +22,25 @@ app.use(express.json())
 
 global.dbmode = (process.argv[2] || '') === 'dbmode'
 
+//get init token
+global.guest_token = new GuestToken
+//if (!global.dbmode) {
+//    //await global.guest_token.updateGuestToken(0)
+//    await global.guest_token2.updateGuestToken(1)
+//}
+
 app.use((req, res, next) => {
+    
+    req.env = {
+        json,
+        updateGuestToken,
+        ResponseWrapper,
+        mediaExistPreCheck,
+        mediaCacheSave,
+        guest_token2_handle: global.guest_token,
+        guest_token2: {}
+    }
+
     res.set('X-Powered-By', 'Twitter Monitor Api')
     if (EXPRESS_ALLOW_ORIGIN) {
         res.append('Access-Control-Allow-Origin', [EXPRESS_ALLOW_ORIGIN])
@@ -48,7 +67,7 @@ app.use('/translate', translate)
 app.use('/online/api/v3', online)
 app.use('/album', album)
 app.use('/media', media)
-//app.use('/bot/', bot)
+//app.use('/bot', bot)
 
 media.use((req, res, next) => {
     if (global.dbmode) {
@@ -57,14 +76,6 @@ media.use((req, res, next) => {
     }
     next()
 })
-
-//get init token
-//global.guest_token = new GuestToken
-global.guest_token2 = new GuestToken
-if (!global.dbmode) {
-    //await global.guest_token.updateGuestToken(0)
-    await global.guest_token2.updateGuestToken(1)
-}
 
 //LanguageIdentification
 global.LanguageIdentification = new LanguageIdentification
@@ -76,8 +87,44 @@ media.use('/cache', express.static(basePath + '/../apps/backend/cache', {
       res.set('X-TMCache', 1)
     }
 }))
-media.get(/(proxy)\/(.*)/, MediaProxy)
-app.get(/^\/(ext_tw_video|amplify_video)\/(.*)/, MediaProxy)//for m3u8
+media.get(/(proxy)\/(.*)/, async (req, res) => {
+    req.params.link = req.params?.[1] || ''
+    const _res = await MediaProxy(req, req.env)
+    for (const header of Object.entries(_res.headers)) {
+        res.setHeader(header[0], header[1])
+    }
+    switch (_res.status) {
+        case 301:
+        case 302:
+        case 307:
+            res.status(_res.status).redirect(_res.data)
+            break
+        case 200:
+            res.send(_res.data)
+            break
+        default:
+            res.status(_res.status).end()
+    }
+})
+app.get(/^\/(ext_tw_video|amplify_video)\/(.*)/, async (req, res) => {
+    req.params.link = req.params?.[1] || ''
+    const _res = await MediaProxy(req, req.env)
+    for (const header of Object.entries(_res.headers)) {
+        res.setHeader(header[0], header[1])
+    }
+    switch (_res.status) {
+        case 301:
+        case 302:
+        case 307:
+            res.status(_res.status).redirect(_res.data)
+            break
+        case 200:
+            res.status(200).send(_res.data)
+            break
+        default:
+            res.status(_res.status).end()
+    }
+})//for m3u8
 
 //global static file
 if (STATIC_PATH) {
@@ -85,7 +132,8 @@ if (STATIC_PATH) {
 }
 
 //robots.txt
-app.all('/robots.txt', (req, res) => {res.send("User-agent: *\nDisallow: /*")})
+app.all('/robots.txt', (req, res) => {res.type('txt').send("User-agent: *\nDisallow: /*")})
+
 
 //error control
 app.all('*', (req, res) => {

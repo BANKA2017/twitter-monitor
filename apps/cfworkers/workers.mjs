@@ -1,13 +1,13 @@
 import { Router } from 'itty-router'
-import { ApiUserInfo } from './CoreFunctions/online/OnlineUserInfo.mjs'
-import { ApiAudioSpace, ApiBroadcast, ApiMedia, ApiPoll, ApiSearch, ApiTweets } from './CoreFunctions/online/OnlineTweet.mjs'
-import { AlbumSearch } from './CoreFunctions/album/Album.mjs'
-import { json, updateGuestToken } from './share.mjs'
-import { ApiTrends } from './CoreFunctions/online/OnlineTrends.mjs'
+import { ResponseWrapper, json, mediaCacheSave, mediaExistPreCheck, updateGuestToken } from './share.mjs'
 import { apiTemplate } from '../../libs/share/Constant.mjs'
-import { MediaProxy } from './CoreFunctions/media/MediaProxy.mjs'
-import { ApiOfficialTranslate, ApiTranslate } from './CoreFunctions/translate/OnlineTranslate.mjs'
-import { ApiListInfo, ApiListMemberList, ApiTypeahead } from './CoreFunctions/online/OnlineMisc.mjs'
+import { AlbumSearch } from '../backend/CoreFunctions/album/Album.mjs'
+import { ApiOfficialTranslate, ApiTranslate } from '../backend/CoreFunctions/translate/OnlineTranslate.mjs'
+import { ApiTrends } from '../backend/CoreFunctions/online/OnlineTrends.mjs'
+import { ApiListInfo, ApiListMemberList, ApiTypeahead } from '../backend/CoreFunctions/online/OnlineMisc.mjs'
+import { ApiUserInfo } from '../backend/CoreFunctions/online/OnlineUserInfo.mjs'
+import { ApiAudioSpace, ApiBroadcast, ApiMedia, ApiPoll, ApiSearch, ApiTweets } from '../backend/CoreFunctions/online/OnlineTweet.mjs'
+import { MediaProxy } from '../backend/CoreFunctions/media/MediaProxy.mjs'
 
 const workersApi = Router()
 
@@ -15,16 +15,23 @@ const workersApi = Router()
 const updateToken = async (req, env) => {
     if ((new URL(req.url)).pathname === '/favicon.ico') {return}
     //req.guest_token = JSON.parse((await env.kv.get('guest_token'))??'{}')// { token: {} }//new GuestToken
-    req.guest_token2 = JSON.parse((await env.kv.get('guest_token2'))??'{}')//new GuestToken
+    env.guest_token2 = JSON.parse((await env.kv.get('guest_token2'))??'{}')//new GuestToken
     //if (!req.guest_token?.token || req.guest_token.expire < Date.now) {
     //    req.guest_token = await updateGuestToken(env, 'guest_token', 0, true)
     //}
-    if (!req.guest_token2?.token || req.guest_token2.expire < Date.now) {
-        req.guest_token2 = await updateGuestToken(env, 'guest_token2', 1, true)
+    if (!env.guest_token2?.token || env.guest_token2.expire < Date.now) {
+        env.guest_token2 = await updateGuestToken(env, 'guest_token2', 1, true)
     }
 }
 
-workersApi.all('*', updateToken)
+workersApi.all('*', (req, env) => {
+    updateToken(req, env)
+    env.json = json
+    env.updateGuestToken = updateGuestToken
+    env.ResponseWrapper = ResponseWrapper
+    env.mediaExistPreCheck = mediaExistPreCheck
+    env.mediaCacheSave = mediaCacheSave
+})
 
 //favicon
 workersApi.all('/favicon.ico', () => new Response(null, { status: 200 }))

@@ -699,7 +699,6 @@ const Card = (cardInfo = {}, uid = '0', tweetId = '0', hidden = false, url = '',
             vanity_url: "",//用于展示的域名
             url,//实际域名
             media: 0,//是否有媒体
-            secondly_type: "",
             unified_card_app: 0,
             poll: 0,//是否有投票
             uid,

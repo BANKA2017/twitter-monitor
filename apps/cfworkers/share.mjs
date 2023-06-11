@@ -7,7 +7,8 @@ const json = (data) => new Response(JSON.stringify(data), {
     }
 })
 
-const updateGuestToken = async (env, k, tokenType = 0, update = true) => {
+//Type is useless in cfworkers api
+const updateGuestToken = async (env, k, tokenType = 0, update = true, type = '') => {
     if (update) {
         const tmpToken = await getToken(tokenType)
         if (tmpToken.success) {
@@ -18,4 +19,13 @@ const updateGuestToken = async (env, k, tokenType = 0, update = true) => {
     return {}
 }
 
-export {json, updateGuestToken}
+const ResponseWrapper = (data, status = 403, headers = {}) => new Response(data, {
+    status,
+    headers
+})
+
+const mediaExistPreCheck = (path = '') => false 
+
+const mediaCacheSave = (buffer, name) => {}
+
+export {json, updateGuestToken, ResponseWrapper, mediaExistPreCheck, mediaCacheSave}

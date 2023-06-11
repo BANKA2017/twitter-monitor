@@ -5,7 +5,7 @@ import { GetEntitiesFromText, VerifyQueryString } from "../../../../libs/core/Co
 import { AudioSpace, Broadcast, Time2SnowFlake, Tweet, TweetsInfo } from "../../../../libs/core/Core.tweet.mjs"
 import { apiTemplate } from "../../../../libs/share/Constant.mjs"
 
-const ApiTweets = async (req, res) => {
+const ApiTweets = async (req, env) => {
     const isRssMode = req.query.format === 'rss'
     const queryCount = VerifyQueryString(req.query.count, 0)
     const count = queryCount ? (queryCount > 100 ? 100 : (queryCount < 1 ? 1 : queryCount)) : (isRssMode ? 20 : 10)
@@ -32,38 +32,37 @@ const ApiTweets = async (req, res) => {
     let tweets = {}
     if (listId) {
         try {
-            tweets = await getListTimeLine({id: listId, count, guest_token: global.guest_token2.token, authorization: 1, graphqlMode: true, cursor: isNaN(cursor) ? (cursor ? cursor : '') : ''})
-            global.guest_token2.updateRateLimit('ListTimeLime')
+            tweets = await getListTimeLine({id: listId, count, guest_token: env.guest_token2, authorization: 1, graphqlMode: true, cursor: isNaN(cursor) ? (cursor ? cursor : '') : ''})
+            //updateGuestToken
+            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20, 'ListTimeLime')
         } catch (e) {
             console.log(e)
             console.error(`[${new Date()}]: #OnlineListTimeline #${tweet_id} #${e.code} ${e.message}`)
-            res.json(apiTemplate(e.code, e.message))
-            return
+            return env.json(apiTemplate(e.code, e.message))
         }
     } else if (isConversation) {
         try {
-            tweets = await getConversation({tweet_id, guest_token: global.guest_token2.token, graphqlMode: true, authorization: 1, cursor: isNaN(cursor) ? cursor : ''})
-            global.guest_token2.updateRateLimit('TweetDetail')
+            tweets = await getConversation({tweet_id, guest_token: env.guest_token2, graphqlMode: true, cursor: isNaN(cursor) ? cursor : ''})
+            //updateGuestToken
+            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20, 'TweetDetail')
         } catch (e) {
             console.error(`[${new Date()}]: #OnlineTweetsConversation #${tweet_id} #${e.code} ${e.message}`)
-            res.json(apiTemplate(e.code, e.message))
-            return
+            return env.json(apiTemplate(e.code, e.message))
         }
-    }
+        
+    } 
     //else if (name !== '' && displayType === 'all') {
     //    try {
-    //        tweets = await getTweets(name, cursor, global.guest_token2.token, 40, true, true, false)
-    //        global.guest_token2.updateRateLimit('UserTweets')
+    //        tweets = await getTweets(name, cursor, env.guest_token2, 40, true, true, false)
+    //        //global.guest_token2.updateRateLimit('UserTweets')
     //    } catch (e) {
     //        console.error(`[${new Date()}]: #OnlineTweetsConversation #${cursor} #${e.code} ${e.message}`)
-    //        res.json(apiTemplate(e.code, e.message))
-    //        return
+    //        return env.json(apiTemplate(e.code, e.message))
     //    }
     //} 
     else {
         if (name === '') {
-            res.json(apiTemplate(404, 'No such account'))
-            return
+            return env.json(apiTemplate(404, 'No such account'))
         }
         //queryArray.push('-filter:replies')
         //if (name) {
@@ -98,23 +97,23 @@ const ApiTweets = async (req, res) => {
         //}
 
         try {
-            tweets = await getTweets({queryString: uid, cursor: (cursor === '0' ? '' : cursor), guest_token: global.guest_token2.token, count, online: true, graphqlMode: true, searchMode: false, withReply: displayType === 'include_reply'})
+            tweets = await getTweets({queryString: uid, cursor: (cursor === '0' ? '' : cursor), guest_token: env.guest_token2, count, online: true, graphqlMode: true, searchMode: false, withReply: displayType === 'include_reply'})
             //tweets = await getTweets(queryArray.join(' '), '', global.guest_token2.token, count, true, false, true)
-            global.guest_token2.updateRateLimit('UserTweets')
+            
+            //updateGuestToken
+            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20, 'UserTweets')
         } catch (e) {
             console.error(`[${new Date()}]: #OnlineTweetsTimeline #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
-            res.json(apiTemplate(e.code, e.message))
-            return
+            return env.json(apiTemplate(e.code, e.message))
         }
         
     }
 
     const {tweetsInfo, tweetsContent} = GenerateData(tweets, isConversation, ((loadConversation || listId || displayType === 'include_reply') ? '' : name), true)
     if (tweetsInfo.errors.code !== 0) {
-        res.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
-        return
+        return env.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
     }
-    res.json(apiTemplate(200, 'OK', {
+    return env.json(apiTemplate(200, 'OK', {
         tweets: isConversation ? tweetsContent.reverse() : tweetsContent,
         hasmore: !!(tweetsContent.length ? (tweetsInfo.cursor.bottom ?? false) : false),
         //top_tweet_id: tweetsInfo.tweetRange.max || '0',
@@ -124,9 +123,9 @@ const ApiTweets = async (req, res) => {
     }))
 }
 
-const ApiSearch = async (req, res) => {
+const ApiSearch = async (req, env) => {
     const isRssMode = req.query.format === 'rss'
-    const type = req.params[0]
+    const type = req.type//req.params[0]
     const advancedSearchMode = (req.query.advanced || '0') === '1'
     const cursor = BigInt(VerifyQueryString(req.query.tweet_id, 0))
     const queryCount = VerifyQueryString(req.query.count, 20)
@@ -139,14 +138,12 @@ const ApiSearch = async (req, res) => {
     const queryArray = []
     if (type === 'hashtag') {
         if (!VerifyQueryString(req.query.hash, false)) {
-            res.json(apiTemplate())
-            return
+            return env.json(apiTemplate())
         }
         queryArray.push(`#${req.query.hash}`)
     } else if (type === 'cashtag') {
         if (!VerifyQueryString(req.query.hash, false)) {
-            res.json(apiTemplate())
-            return
+            return env.json(apiTemplate())
         }
         queryArray.push(`$${req.query.hash}`)
     } else if (advancedSearchMode) {
@@ -196,20 +193,19 @@ const ApiSearch = async (req, res) => {
         queryArray.push('max_id:' + String(Time2SnowFlake(end * 1000)))
     }
     try {
-        tweets = await getTweets({queryString: queryArray.join(' '), cursor: '', guest_token: global.guest_token2.token, count: queryCount, online: true, graphqlMode: false, searchMode: true})
-        global.guest_token2.updateRateLimit('Search')
+        tweets = await getTweets({queryString: queryArray.join(' '), cursor: '', guest_token: env.guest_token2, count: queryCount, online: true, graphqlMode: false, searchMode: true})
+        //updateGuestToken
+        await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20, 'Search')
     } catch (e) {
         console.error(`[${new Date()}]: #OnlineTweetsSearch #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
-        res.json(apiTemplate(e.code, e.message))
-        return
+        return env.json(apiTemplate(e.code, e.message))
     }
     
     const {tweetsInfo, tweetsContent} = GenerateData(tweets, false, '', true)
     if (tweetsInfo.errors.code !== 0) {
-        res.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
-        return
+        return env.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
     }
-    res.json(apiTemplate(200, 'OK', {
+    return env.json(apiTemplate(200, 'OK', {
         tweets: tweetsContent,
         hasmore: !!tweetsContent.length,
         top_tweet_id: tweetsInfo.tweetRange.max || '0',
@@ -217,31 +213,32 @@ const ApiSearch = async (req, res) => {
     }))
 }
 
-const ApiPoll = async (req, res) => {
+const ApiPoll = async (req, env) => {
     const tweet_id = VerifyQueryString(req.query.tweet_id, 0)
     if (!tweet_id) {
-        res.json(apiTemplate())
-        return
+        return env.json(apiTemplate())
     }
-    const tmpPollData = await getPollResult({tweet_id, guest_token: global.guest_token2.token})
-    global.guest_token2.updateRateLimit('TweetDetail')
+    const tmpPollData = await getPollResult({tweet_id, guest_token: env.guest_token2})
+    
+    //updateGuestToken
+    await env.updateGuestToken(env, 'guest_token2', 1, tmpPollData.headers.get('x-rate-limit-remaining') < 20, 'TweetDetail')
     if (tmpPollData.code === 200) {
-        res.json(apiTemplate(200, 'OK', tmpPollData.data.map(poll => Number(poll))))
+        return env.json(apiTemplate(200, 'OK', tmpPollData.data.map(poll => Number(poll))))
     } else {
         console.error(`[${new Date()}]: #OnlinePoll #${tweet_id} #${tmpPollData.code} Something wrong`)
-        res.json(apiTemplate(tmpPollData.code, 'Something wrong', []))
+        return env.json(apiTemplate(tmpPollData.code, 'Something wrong', []))
     }
 }
 
-const ApiAudioSpace = async (req, res) => {
+const ApiAudioSpace = async (req, env) => {
     const id = VerifyQueryString(req.query.id, '')
     if (!id) {
-        res.json(apiTemplate())
-        return
+        return env.json(apiTemplate())
     }
-    await global.guest_token2.updateGuestToken(1)
-    const tmpAudioSpaceData = await getAudioSpace({id, guest_token: global.guest_token2.token})
-    global.guest_token2.updateRateLimit('AudioSpaceById')
+    const tmpAudioSpaceData = await getAudioSpace({id, guest_token: env.guest_token2})
+    
+    //updateGuestToken
+    await env.updateGuestToken(env, 'guest_token2', 1, tmpAudioSpaceData.headers.get('x-rate-limit-remaining') < 20, 'AudioSpaceById')
     if (tmpAudioSpaceData.data?.data?.audioSpace || false) {
         let tmpAudioSpace = AudioSpace(tmpAudioSpaceData.data)
         //get link
@@ -256,33 +253,31 @@ const ApiAudioSpace = async (req, res) => {
             }
         }
 
-        res.json(apiTemplate(200, 'OK', tmpAudioSpace))
+        return env.json(apiTemplate(200, 'OK', tmpAudioSpace))
     } else if (tmpAudioSpaceData.data?.errors || tmpAudioSpaceData.data?.code) {
         console.error(`[${new Date()}]: #OnlineAudioSpace #${id} #500 Something wrong`, tmpAudioSpaceData.data?.code, tmpAudioSpaceData.data?.errors)
-        res.json(apiTemplate(500, 'Something wrong'))
+        return env.json(apiTemplate(500, 'Something wrong'))
     } else if (!tmpAudioSpaceData.data?.data?.audioSpace) {
         console.error(`[${new Date()}]: #OnlineAudioSpace #${id} #404 No such space`)
-        res.json(apiTemplate(404, 'No such space'))
+        return env.json(apiTemplate(404, 'No such space'))
     } else {
         console.error(`[${new Date()}]: #OnlineAudioSpace #${id} #500 Unkonwn Error`)
-        res.json(apiTemplate())
+        return env.json(apiTemplate())
     }
 }
 
-const ApiBroadcast = async (req, res) => {
+const ApiBroadcast = async (req, env) => {
     const id = VerifyQueryString(req.query.id, '')
     if (!id) {
-        res.json(apiTemplate())
-        return
+        return env.json(apiTemplate())
     }
     
     //TODO check Broadcast api rate limit
-    await global.guest_token2.updateGuestToken(1)
     try {
-        const tmpBroadcastData = await getBroadcast({id, guest_token: req.guest_token2})
+        const tmpBroadcastData = await getBroadcast({id, guest_token: env.guest_token2})
         
         //updateGuestToken
-        global.guest_token2.updateRateLimit('BroadCast')
+        await env.updateGuestToken(env, 'guest_token2', 1, tmpBroadcastData.headers.get('x-rate-limit-remaining') < 20, 'BroadCast')
         let tmpBroadcast = Broadcast(tmpBroadcastData.data)
         //get link
         if (tmpBroadcast.is_available_for_replay || (Number(tmpBroadcast.start) <= Date.now() && tmpBroadcast.end === '0')) {
@@ -311,42 +306,42 @@ const ApiBroadcast = async (req, res) => {
                 console.error(e)
             }
         }
-        res.json(apiTemplate(200, 'OK', tmpBroadcast))
+        return env.json(apiTemplate(200, 'OK', tmpBroadcast))
     } catch (e) {
-        global.guest_token2.updateRateLimit('BroadCast')
+        //global.guest_token2.updateRateLimit('BroadCast')
         if (!(e?.code && e?.message) && e?.errors) {
             e = e.errors[0]
         }
         if (e?.code && e?.message) {
             console.error(`[${new Date()}]: #OnlineBroadcast #${id} #500 Something wrong`, e.code, e.message)
-            res.json(apiTemplate(500, `#${e.code} ${e.message}`))
+            return env.json(apiTemplate(500, `#${e.code} ${e.message}`))
         } else {
             console.error(`[${new Date()}]: #OnlineBroadcast #${id} #500 Unkonwn Error`)
-            res.json(apiTemplate())
+            return env.json(apiTemplate())
         }
     }
 }
 
-const ApiMedia = async (req, res) => {
+const ApiMedia = async (req, env) => {
     const tweet_id = VerifyQueryString(req.query.tweet_id, 0)
     const authorizationMode = VerifyQueryString(req.query.mode, 1)
     if (!tweet_id) {
-        res.json(apiTemplate())
-        return
+        return env.json(apiTemplate())
     }
 
-    getConversation({tweet_id, guest_token: global.guest_token2.token, graphqlMode: true, authorization: authorizationMode}).then(response => {
-        global.guest_token2.updateRateLimit('TweetDetail')
-        const tweetsInfo = TweetsInfo(response.data, true)
+    try {
+        const tmpConversation = await getConversation({tweet_id, guest_token: env.guest_token2, graphqlMode: true, authorization: authorizationMode})
+        
+        //updateGuestToken
+        await env.updateGuestToken(env, 'guest_token2', 1, tmpConversation.headers.get('x-rate-limit-remaining') < 20, 'TweetDetail')
+        const tweetsInfo = TweetsInfo(tmpConversation.data, true)
         if (tweetsInfo.errors.code !== 0) {
-            res.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
-            return
+            return env.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
         } else if (!tweetsInfo.contents.some(tweet => path2array('tweet_id', tweet) === tweet_id)) {
-            res.json(apiTemplate(404, 'No such tweet'))
-            return
+            return env.json(apiTemplate(404, 'No such tweet'))
         } else {
             const tweetData = Tweet(tweetsInfo.contents.filter(tweet => path2array('tweet_id', tweet) === tweet_id)[0], {}, [], {}, true, false, true)
-            res.json(apiTemplate(200, 'OK', {
+            return env.json(apiTemplate(200, 'OK', {
                 video: !(Array.isArray(tweetData.video) && (tweetData.video.length === 0)),
                 video_info: tweetData.video,
                 media_info: tweetData.media.filter(media => media.source !== 'cover').map(media => {
@@ -356,13 +351,12 @@ const ApiMedia = async (req, res) => {
                 })
             }))
         }
-        
-    }).catch(e => {
+    } catch (e) {
         console.log(e)
         console.error(`[${new Date()}]: #OnlineTweetMedia #${tweet_id} #${e.code} ${e.message}`)
-        global.guest_token2.updateRateLimit('TweetDetail')
-        res.json(apiTemplate(e.code, e.message))
-    })
+        //global.guest_token2.updateRateLimit('TweetDetail')
+        return env.json(apiTemplate(e.code, e.message))
+    }
 }
 
 const TweetsData = (content = {}, users = {}, contents = [], precheckName = '', graphqlMode = true, isConversation = false) => {

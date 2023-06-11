@@ -3,7 +3,7 @@ import { VerifyQueryString } from "../../../../libs/core/Core.function.mjs"
 import { apiTemplate } from "../../../../libs/share/Constant.mjs"
 import { GenerateData } from "../online/OnlineTweet.mjs"
 
-const AlbumSearch = async (req, res) => {
+const AlbumSearch = async (req, env) => {
     const platformList = {ns: 'nintendo_switch_share', ps: 'PlayStation®Network', xbox: 'xbox_one_social', xbox_game_bar: "xbox_game_bar"}
     const platform = ['ns', 'ps', 'xbox'].includes(req.query.platform) ? platformList[req.query.platform] : platformList['ns']
     const name = VerifyQueryString(req.query.name, '')
@@ -30,21 +30,24 @@ const AlbumSearch = async (req, res) => {
     let tweets = {}
     try {
         if (isPhotos) {
-            tweets = await getConversation({tweet_id: tweetId, guest_token: global.guest_token2.token, graphqlMode: true})
-            global.guest_token2.updateRateLimit('TweetDetail')
+            //TODO fix tokens
+            tweets = await getConversation({tweet_id: tweetId, guest_token: env.guest_token2, graphqlMode: true})
+            //updateGuestToken
+            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20, 'TweetDetail')
         } else {
-            tweets = await getTweets({queryString: queryArray.join(' '), cursor: '', guest_token: global.guest_token2.token, count: 20, online: true, graphqlMode: false, searchMode: true})
-            global.guest_token2.updateRateLimit('Search')
+            tweets = await getTweets({queryString: queryArray.join(' '), cursor: '', guest_token: env.guest_token2, count: 20, online: true, graphqlMode: false, searchMode: true})
+            //updateGuestToken
+            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20, 'Search')
         }
     } catch (e) {
         console.error(`[${new Date()}]: #Album #${e.code} ${e.message}`)
-        res.json(apiTemplate(e.code, e.message, {}, 'album'))
-        return
+        return env.json(apiTemplate(e.code, e.message, {}, 'album'))
     }
+    
+
     let {tweetsInfo, tweetsContent} = GenerateData(tweets, isPhotos, '', true)
     if (tweetsInfo.errors.code !== 0) {
-        res.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message, {}, 'album'))
-        return
+        return env.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message, {}, 'album'))
     }
     tweetsContent = tweetsContent.filter(content => isPhotos ? (content.tweet_id === tweetId) : true).map(content => ({
         media: content.mediaObject,
@@ -56,7 +59,7 @@ const AlbumSearch = async (req, res) => {
         name: content.name,
         display_name: content.display_name
     }))
-    res.json(apiTemplate(200, 'OK', {
+    return env.json(apiTemplate(200, 'OK', {
         tweets: tweetsContent,
         hasmore: !!tweetsContent.length,
         top_tweet_id: tweetsInfo.tweetRange.max || '0',
