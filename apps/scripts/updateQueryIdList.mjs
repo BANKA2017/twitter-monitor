@@ -3,6 +3,7 @@ import { basePath } from "../../libs/share/NodeConstant.mjs"
 import axiosFetch from "axios-helper"
 
 let queryIdList = {}
+let featuresValueList = {}
 const updateIdList = (content, type = 'main') => {
     const pattern = /exports=({.+?})(;|)},/gm//=Object\.freeze\(([\w:!,"{}]+)\)
                 
@@ -12,8 +13,13 @@ const updateIdList = (content, type = 'main') => {
         }
         let tmpData = Function(`return ${match[1]}`)()
         queryIdList[tmpData.operationName] = tmpData
+        //features
+        console.log(queryIdList[tmpData.operationName])
+        if (queryIdList[tmpData.operationName].metadata) {
+            queryIdList[tmpData.operationName].features = Object.fromEntries(queryIdList[tmpData.operationName].metadata.featureSwitches.map(feature => [feature, featuresValueList[feature]]))
+        }
     }
-    writeFileSync(basePath + '/../libs/assets/graphql/graphqlQueryIdList.js', 'export default ' + JSON.stringify(queryIdList, null, 4))
+    writeFileSync(basePath + '/../libs/assets/graphql/graphqlQueryIdList.js', Object.keys(queryIdList).map(key => `const _${key} = ${JSON.stringify(queryIdList[key])}`).join("\n") + `\nconst graphqlQueryIdList = { ${Object.keys(queryIdList).map(key => `"${key}": _${key}`).join(",")} }\nexport default graphqlQueryIdList\nexport {${Object.keys(queryIdList).map(key => `_${key}`)}}\n`)
     console.log(`tmv3: graphqlQueryIdList (${type}) success`)
 }
 
@@ -27,7 +33,8 @@ axiosFetch().get("https://twitter.com/", {headers: {'user-agent': 'Mozilla/5.0 (
 
         const __INITIAL_STATE__ = Function(`return ${/window\.__INITIAL_STATE__=([^;]+);/gm.exec(response.data)[1]}`)()
         const tmpConfigKV = {...__INITIAL_STATE__.featureSwitch.defaultConfig, ...__INITIAL_STATE__.featureSwitch.user.config}
-        writeFileSync(basePath + '/../libs/assets/graphql/featuresValueList.js', 'export default ' + JSON.stringify(Object.fromEntries(Object.keys(tmpConfigKV).map(key => [key, tmpConfigKV[key].value])), null, 4))
+        featuresValueList = Object.fromEntries(Object.keys(tmpConfigKV).map(key => [key, tmpConfigKV[key].value]))
+        writeFileSync(basePath + '/../libs/assets/graphql/featuresValueList.js', Object.keys(featuresValueList).map(key => `const _${key} = ${JSON.stringify(featuresValueList[key])}`).join("\n") + `\nconst featuresValueList = { ${Object.keys(featuresValueList).map(key => `"${key}": _${key}`).join(",")} }\nexport default featuresValueList\nexport {${Object.keys(featuresValueList).map(key => `_${key}`)}}\n`)
         try {
             const mainId = await axiosFetch().get(mainLink)
             if (mainId.data) {

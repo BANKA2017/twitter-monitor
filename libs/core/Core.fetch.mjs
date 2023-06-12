@@ -1,11 +1,22 @@
-import md5 from 'js-md5'
 import path2array from "./Core.apiPath.mjs"
 
-import graphqlQueryIdList from '../../libs/assets/graphql/graphqlQueryIdList.js'
-import featuresValueList from '../../libs/assets/graphql/featuresValueList.js'
+import { _AudioSpaceById, _Bookmarks, _ConversationControlChange, _ConversationControlDelete, _CreateBookmark, _CreateRetweet, _CreateTweet, _DeleteBookmark, _DeleteRetweet, _DeleteTweet, _FavoriteTweet, _Followers, _Following, _HomeLatestTimeline, _HomeTimeline, _Likes, _ListByRestId, _ListBySlug, _ListLatestTweetsTimeline, _ListMembers, _SearchTimeline, _TweetDetail, _TweetEditHistory, _TwitterArticleByRestId, _UnfavoriteTweet, _UserByRestId, _UserByScreenName, _UserMedia, _UserTweets, _UserTweetsAndReplies, _UsersVerifiedAvatars } from '../../libs/assets/graphql/graphqlQueryIdList.js'
 import axiosFetch from "axios-helper"
 
-const generateCsrfToken = () => md5.hex('' + new Date())
+
+const generateCsrfToken = async () => {
+    // @ts-ignore
+    if (typeof process !== 'undefined' && !process?.browser) {
+        //nodejs
+        const {webcrypto} = await import('crypto')
+        return webcrypto.randomUUID().replaceAll('-', '')
+    } else if (typeof window !== 'undefined') {
+        //browser // workers // deno
+        return crypto.randomUUID().replaceAll('-', '')
+    } else {
+        return 0
+    }
+}
 
 const TW_AUTHORIZATION = "Bearer AAAAAAAAAAAAAAAAAAAAAPYXBAAAAAAACLXUNDekMxqa8h%2F40K4moUkGsoc%3DTYfbDKbT3jJPCEVnMYqilB28NHfOPqkca3qaAxGfsyKCs0wRbw"//old token
 
@@ -16,21 +27,13 @@ const TWEETDECK_AUTHORIZATION = "Bearer AAAAAAAAAAAAAAAAAAAAAF7aAAAAAAAASCiRjWvh
 const TWEETDECK_AUTHORIZATION2 = "Bearer AAAAAAAAAAAAAAAAAAAAAFQODgEAAAAAVHTp76lzh3rFzcHbmHVvQxYYpTw%3DckAlMINMjmCwxUcaXbAN4XqJVdgMJaHqNOFgPMK0zN1qLqLQCF"//new tweetdeck
 
 const Authorization = [TW_AUTHORIZATION, TW_AUTHORIZATION2]
-const ct0 = generateCsrfToken()
+const ct0 = await generateCsrfToken()
 
 const axios = axiosFetch({
   headers: {
   authorization: TW_AUTHORIZATION,
   'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
 }})
-
-const getGraphqlFeatures = (queryName) => {
-  if (graphqlQueryIdList[queryName]) {
-    return Object.fromEntries(new Map(graphqlQueryIdList[queryName].metadata.featureSwitches.map(feature => [feature, featuresValueList[feature] || false])))
-  } else {
-    return {}
-  }
-}
 
 const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization = 0, headers = {}, body = undefined) => {
   /* 
@@ -158,10 +161,10 @@ const getUserInfo = async (ctx = {user: '', guest_token: {}, graphqlMode: true, 
         let graphqlVariables = {withSuperFollowsUserFields: true, withSafetyModeUserFields: true}
         if (!isNaN(user)) {
           graphqlVariables["userId"] = user
-          return "https://api.twitter.com/graphql/" + graphqlQueryIdList.UserByRestId.queryId + "/UserByRestId?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures('UserByRestId'))})).toString()
+          return "https://api.twitter.com/graphql/" + _UserByRestId.queryId + "/UserByRestId?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_UserByRestId.features)})).toString()
         } else {
           graphqlVariables["screen_name"] = user
-          return "https://api.twitter.com/graphql/" + graphqlQueryIdList.UserByScreenName.queryId + "/UserByScreenName?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures('UserByScreenName'))})).toString()
+          return "https://api.twitter.com/graphql/" + _UserByScreenName.queryId + "/UserByScreenName?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_UserByScreenName.features)})).toString()
         }
       } else {
         return "https://api.twitter.com/1.1/users/show.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&" + ((!isNaN(user)) ? "user_id=" : "screen_name=") + user
@@ -192,9 +195,9 @@ const getVerifiedAvatars = async (ctx = {uid: [], guest_token: {}, cookie: {}, a
   }
   //https://api.twitter.com/graphql/AkfLpq1RURPtDOcd56qyCg/UsersVerifiedAvatars?variables=%7B%22userIds%22%3A%5B%222392179773%22%2C%22815928932759285760%22%5D%7D&features=%7B%22responsive_web_twitter_blue_verified_badge_is_enabled%22%3Atrue%7D
   return await (new Promise((resolve, reject) => {
-    coreFetch(`https://api.twitter.com/graphql/${graphqlQueryIdList.UsersVerifiedAvatars.queryId}/UsersVerifiedAvatars?` + (new URLSearchParams({
+    coreFetch(`https://api.twitter.com/graphql/${_UsersVerifiedAvatars.queryId}/UsersVerifiedAvatars?` + (new URLSearchParams({
       variables: JSON.stringify(graphqlVariables),
-      features: JSON.stringify(getGraphqlFeatures('UsersVerifiedAvatars'))
+      features: JSON.stringify(_UsersVerifiedAvatars.features)
     }).toString()), guest_token, cookie, authorization).then(response => {
       resolve(response)
     }).catch(e => {
@@ -255,9 +258,9 @@ const getMediaTimeline = async (ctx = {uid: [], guest_token: {}, count: 20, grap
   //}
 
   return await new Promise((resolve, reject) => {
-    coreFetch("https://api.twitter.com/graphql/" + graphqlQueryIdList.UserMedia.queryId + "/UserMedia?" + (new URLSearchParams({
+    coreFetch("https://api.twitter.com/graphql/" + _UserMedia.queryId + "/UserMedia?" + (new URLSearchParams({
       variables: JSON.stringify(graphqlVariables),
-      features: JSON.stringify(getGraphqlFeatures('UserMedia'))
+      features: JSON.stringify(_UserMedia.features)
     }).toString()), guest_token, cookie, authorization).then(response => {
       resolve(response)
     }).catch(e => {
@@ -305,9 +308,9 @@ const getTweets = async (ctx = {queryString: '', cursor: '', guest_token: {}, co
     }
 
     return await new Promise((resolve, reject) => {
-      coreFetch("https://twitter.com/i/api/graphql/" + (withReply ? graphqlQueryIdList.UserTweetsAndReplies.queryId + "/UserTweetsAndReplies?" : graphqlQueryIdList.UserTweets.queryId + "/UserTweets?") + (new URLSearchParams({
+      coreFetch("https://twitter.com/i/api/graphql/" + (withReply ? _UserTweetsAndReplies.queryId + "/UserTweetsAndReplies?" : _UserTweets.queryId + "/UserTweets?") + (new URLSearchParams({
         variables: JSON.stringify(graphqlVariables),
-        features: JSON.stringify(getGraphqlFeatures(withReply ? 'UserTweetsAndReplies' : 'UserTweets'))
+        features: JSON.stringify(withReply ? _UserTweetsAndReplies.features : _UserTweets.features)
       }).toString()), guest_token, cookie, authorization).then(response => {
         resolve(response)
       }).catch(e => {
@@ -369,9 +372,9 @@ const getTweets = async (ctx = {queryString: '', cursor: '', guest_token: {}, co
       graphqlVariables['cursor'] = cursor
     }
     return await new Promise((resolve, reject) => {
-      coreFetch("https://api.twitter.com/graphql/" + graphqlQueryIdList.SearchTimeline.queryId + "/SearchTimeline?" + (new URLSearchParams({
+      coreFetch("https://api.twitter.com/graphql/" + _SearchTimeline.queryId + "/SearchTimeline?" + (new URLSearchParams({
         variables: JSON.stringify(graphqlVariables),
-        features: JSON.stringify(getGraphqlFeatures('SearchTimeline'))
+        features: JSON.stringify(_SearchTimeline.features)
       }).toString()), guest_token, cookie, authorization).then(response => {
         resolve(response)
       }).catch(e => {
@@ -425,7 +428,7 @@ const getConversation = async (ctx = {tweet_id: '', guest_token: {}, graphqlMode
     }
     
     return await new Promise((resolve, reject) => {
-      coreFetch("https://api.twitter.com/graphql/" + graphqlQueryIdList.TweetDetail.queryId + "/TweetDetail?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures('TweetDetail'))})).toString(), guest_token, cookie, authorization).then(response => {
+      coreFetch("https://api.twitter.com/graphql/" + _TweetDetail.queryId + "/TweetDetail?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_TweetDetail.features)})).toString(), guest_token, cookie, authorization).then(response => {
         resolve(response)
       }).catch(e => {
         reject(e)
@@ -461,7 +464,7 @@ const getEditHistory = async (ctx = {tweet_id: '', guest_token: {}, cookie: {}, 
   }
   
   return await new Promise((resolve, reject) => {
-    coreFetch("https://api.twitter.com/graphql/" + graphqlQueryIdList.TweetEditHistory.queryId + "/TweetEditHistory?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures('TweetEditHistory'))})).toString(), guest_token, cookie, authorization).then(response => {
+    coreFetch("https://api.twitter.com/graphql/" + _TweetEditHistory.queryId + "/TweetEditHistory?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_TweetEditHistory.features)})).toString(), guest_token, cookie, authorization).then(response => {
       resolve(response)
     }).catch(e => {
       reject(e)
@@ -489,7 +492,7 @@ const getAudioSpace = async (ctx = {id: '', guest_token: {}, cookie: {}, authori
   }
 
   return await new Promise((resolve, reject) => {
-    coreFetch("https://api.twitter.com/graphql/" + graphqlQueryIdList.AudioSpaceById.queryId + "/AudioSpaceById?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures('AudioSpaceById'))})).toString(), guest_token, cookie, authorization).then(response => {
+    coreFetch("https://api.twitter.com/graphql/" + _AudioSpaceById.queryId + "/AudioSpaceById?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_AudioSpaceById.features)})).toString(), guest_token, cookie, authorization).then(response => {
       resolve(response)
     }).catch(e => {
       reject(e)
@@ -561,7 +564,7 @@ const getArticle = async (ctx = {id: '', guest_token: {}, cookie: {}, authorizat
   }
 
   return await new Promise((resolve, reject) => {
-    coreFetch("https://api.twitter.com/graphql/" + graphqlQueryIdList.TwitterArticleByRestId.queryId + "/TwitterArticleByRestId?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures('TwitterArticleByRestId'))})).toString(), guest_token, cookie, authorization).then(response => {
+    coreFetch("https://api.twitter.com/graphql/" + _TwitterArticleByRestId.queryId + "/TwitterArticleByRestId?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_TwitterArticleByRestId.features)})).toString(), guest_token, cookie, authorization).then(response => {
       resolve(response)
     }).catch(e => {
       reject(e)
@@ -585,9 +588,9 @@ const getListInfo = async (ctx = {id: '', screenName: '', listSlug: '', guest_to
   }
 
   return await new Promise((resolve, reject) => {
-    coreFetch("https://api.twitter.com/graphql/" + (!listById ? graphqlQueryIdList.ListBySlug.queryId + "/ListBySlug?" : graphqlQueryIdList.ListByRestId.queryId + "/ListByRestId?") + (new URLSearchParams({
+    coreFetch("https://api.twitter.com/graphql/" + (!listById ? _ListBySlug.queryId + "/ListBySlug?" : _ListByRestId.queryId + "/ListByRestId?") + (new URLSearchParams({
       variables: JSON.stringify(graphqlVariables), 
-      features: JSON.stringify(getGraphqlFeatures(!listById ? 'ListBySlug' : 'ListByRestId'))
+      features: JSON.stringify(!listById ? _ListBySlug.features : _ListByRestId.features)
     })).toString(), guest_token, cookie, authorization).then(response => {
       resolve(response)
     }).catch(e => {
@@ -612,7 +615,7 @@ const getListMember = async (ctx = {id: '', count: 20, cursor: '', guest_token: 
   }
 
   return await new Promise((resolve, reject) => {
-    coreFetch("https://api.twitter.com/graphql/" + graphqlQueryIdList.ListMembers.queryId + "/ListMembers?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures('ListMembers'))})).toString(), guest_token, cookie, authorization).then(response => {
+    coreFetch("https://api.twitter.com/graphql/" + _ListMembers.queryId + "/ListMembers?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_ListMembers.features)})).toString(), guest_token, cookie, authorization).then(response => {
       resolve(response)
     }).catch(e => {
       reject(e)
@@ -635,7 +638,7 @@ const getListTimeLine = async (ctx = {id: '', count: 20, cursor: '', guest_token
   }
 
   return await new Promise((resolve, reject) => {
-    coreFetch("https://api.twitter.com/graphql/" + graphqlQueryIdList.ListLatestTweetsTimeline.queryId + "/ListLatestTweetsTimeline?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures('ListLatestTweetsTimeline'))})).toString(), guest_token, cookie, authorization).then(response => {
+    coreFetch("https://api.twitter.com/graphql/" + _ListLatestTweetsTimeline.queryId + "/ListLatestTweetsTimeline?" + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_ListLatestTweetsTimeline.features)})).toString(), guest_token, cookie, authorization).then(response => {
       resolve(response)
     }).catch(e => {
       reject(e)
@@ -753,7 +756,7 @@ const getFollowingOrFollowers = async (ctx = {cookie: {}, guest_token: {}, id: '
     }
   
     return await new Promise((resolve, reject) => {
-      coreFetch("https://api.twitter.com/graphql/" + graphqlQueryIdList[type]["queryId"] + `/${type}?` + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(getGraphqlFeatures(type))}).toString()), guest_token, cookie, 1).then(response => {
+      coreFetch("https://api.twitter.com/graphql/" + (type === 'Followers' ? _Followers.queryId : _Following.queryId) + `/${type}?` + (new URLSearchParams({variables: JSON.stringify(graphqlVariables), features: JSON.stringify(type === 'Followers' ? _Followers.features : _Following.features)}).toString()), guest_token, cookie, 1).then(response => {
         resolve(response)
       }).catch(e => {
         reject(e)
@@ -802,9 +805,9 @@ const getLikes = async (ctx = {cookie: {}, guest_token: {}, id: '', count: 20, c
       graphqlVariables.cursor = cursor
     }
     return await new Promise((resolve, reject) => {
-      coreFetch("https://api.twitter.com/graphql/" + graphqlQueryIdList.Likes.queryId + "/Likes?" + (new URLSearchParams({
+      coreFetch("https://api.twitter.com/graphql/" + _Likes.queryId + "/Likes?" + (new URLSearchParams({
         variables: JSON.stringify(graphqlVariables),
-        features: JSON.stringify(getGraphqlFeatures('Likes'))
+        features: JSON.stringify(_Likes.features)
       })).toString(), guest_token, cookie, 1).then(response => {
         resolve(response)
       }).catch(e => {
@@ -870,10 +873,10 @@ const postTweet = async (ctx = {cookie: {}, guest_token: {}, text: '', media: []
   }
 
   return await new Promise((resolve, reject) => {
-    coreFetch("https://api.twitter.com/graphql/" + graphqlQueryIdList.CreateTweet.queryId + "/CreateTweet", guest_token, cookie, 1, {}, JSON.stringify({
+    coreFetch("https://api.twitter.com/graphql/" + _CreateTweet.queryId + "/CreateTweet", guest_token, cookie, 1, {}, JSON.stringify({
       variables: graphqlVariables,
-      features: getGraphqlFeatures('CreateTweet'),
-      queryId: graphqlQueryIdList.CreateTweet.queryId,
+      features: _CreateTweet.features,
+      queryId: _CreateTweet.queryId,
     })).then(response => {
       resolve(response)
     }).catch(e => {
@@ -896,10 +899,10 @@ const postConversationControl = async (ctx = {cookie: {}, guest_token: {}, tweet
     tmpMode = conversation_control
   }
   return await new Promise((resolve, reject) => {
-    coreFetch("https://api.twitter.com/graphql/" + (tmpMode ? graphqlQueryIdList.ConversationControlChange.queryId + "/ConversationControlChange" : graphqlQueryIdList.ConversationControlDelete.queryId + "/ConversationControlDelete"), guest_token, cookie, 1, {}, JSON.stringify({
+    coreFetch("https://api.twitter.com/graphql/" + (tmpMode ? _ConversationControlChange.queryId + "/ConversationControlChange" : _ConversationControlDelete.queryId + "/ConversationControlDelete"), guest_token, cookie, 1, {}, JSON.stringify({
       variables: {tweet_id, mode: tmpMode},
-      features: getGraphqlFeatures(tmpMode ? 'ConversationControlChange' : 'ConversationControlDelete'),
-      queryId: (tmpMode ? graphqlQueryIdList.ConversationControlChange.queryId : graphqlQueryIdList.ConversationControlDelete.queryId),
+      features: tmpMode ? _ConversationControlChange.features : _ConversationControlDelete.features,
+      queryId: (tmpMode ? _ConversationControlChange.queryId : _ConversationControlDelete.queryId),
     })).then(response => {
       resolve(response)
     }).catch(e => {
@@ -951,10 +954,10 @@ const postRetweet = async (ctx = {cookie: {}, guest_token: {}, tweet_id: '', del
   }
 
   return await new Promise((resolve, reject) => {
-    coreFetch("https://api.twitter.com/graphql/" + (deleteRetweet ? graphqlQueryIdList.DeleteRetweet.queryId + "/DeleteRetweet" : graphqlQueryIdList.CreateRetweet.queryId + "/CreateRetweet"), guest_token, cookie, 1, {}, JSON.stringify({
+    coreFetch("https://api.twitter.com/graphql/" + (deleteRetweet ? _DeleteRetweet.queryId + "/DeleteRetweet" : _CreateRetweet.queryId + "/CreateRetweet"), guest_token, cookie, 1, {}, JSON.stringify({
       variables: graphqlVariables,
-      features: getGraphqlFeatures(deleteRetweet ? 'DeleteRetweet' : 'CreateRetweet'),
-      queryId: (deleteRetweet ? graphqlQueryIdList.DeleteRetweet.queryId : graphqlQueryIdList.CreateRetweet.queryId),
+      features: deleteRetweet ? _DeleteRetweet.features : _CreateRetweet.features,
+      queryId: (deleteRetweet ? _DeleteRetweet.queryId : _CreateRetweet.queryId),
     })).then(response => {
       resolve(response)
     }).catch(e => {
@@ -975,10 +978,10 @@ const postBookmark = async (ctx = {cookie: {}, guest_token: {}, tweet_id: '', de
   }
 
   return await new Promise((resolve, reject) => {
-    coreFetch("https://api.twitter.com/graphql/" + (deleteBookmark ? graphqlQueryIdList.DeleteBookmark.queryId + "/DeleteBookmark" : graphqlQueryIdList.CreateBookmark.queryId + "/CreateBookmark"), guest_token, cookie, 1, {}, JSON.stringify({
+    coreFetch("https://api.twitter.com/graphql/" + (deleteBookmark ? _DeleteBookmark.queryId + "/DeleteBookmark" : _CreateBookmark.queryId + "/CreateBookmark"), guest_token, cookie, 1, {}, JSON.stringify({
       variables: {tweet_id},
-      features: getGraphqlFeatures(deleteBookmark ? 'DeleteBookmark' : 'CreateBookmark'),
-      queryId: (deleteBookmark ? graphqlQueryIdList.DeleteBookmark.queryId : graphqlQueryIdList.CreateBookmark.queryId),
+      features: deleteBookmark ? _DeleteBookmark.features : _CreateBookmark.features,
+      queryId: (deleteBookmark ? _DeleteBookmark.queryId : _CreateBookmark.queryId),
     })).then(response => {
       resolve(response)
     }).catch(e => {
@@ -998,10 +1001,10 @@ const postDeleteTweet = async (ctx = {cookie: {}, guest_token: {}, tweet_id: ''}
     guest_token = await getToken(1)
   }
   return await new Promise((resolve, reject) => {
-    coreFetch("https://twitter.com/i/api/graphql/" + graphqlQueryIdList.DeleteTweet.queryId + "/DeleteTweet", guest_token, cookie, 1, {}, JSON.stringify({
+    coreFetch("https://twitter.com/i/api/graphql/" + _DeleteTweet.queryId + "/DeleteTweet", guest_token, cookie, 1, {}, JSON.stringify({
       variables: {tweet_id, dark_request: false},
-      features: getGraphqlFeatures('DeleteTweet'),
-      queryId: graphqlQueryIdList.DeleteTweet.queryId,
+      features: _DeleteTweet.features,
+      queryId: _DeleteTweet.queryId,
     })).then(response => {
       resolve(response)
     }).catch(e => {
@@ -1032,10 +1035,10 @@ const postHomeTimeLine = async (ctx = {cookie: {}, guest_token: {}, count: 20, c
     graphqlVariables.withCommunity = true
   }
   return await new Promise((resolve, reject) => {
-    coreFetch("https://api.twitter.com/graphql/" + (isForYou ? graphqlQueryIdList.HomeTimeline.queryId + "/HomeTimeline" : graphqlQueryIdList.HomeLatestTimeline.queryId + "/HomeLatestTimeline"), guest_token, cookie, 1, {}, JSON.stringify({
+    coreFetch("https://api.twitter.com/graphql/" + (isForYou ? _HomeTimeline.queryId + "/HomeTimeline" : _HomeLatestTimeline.queryId + "/HomeLatestTimeline"), guest_token, cookie, 1, {}, JSON.stringify({
       variables: graphqlVariables,
-      features: getGraphqlFeatures(isForYou ? 'HomeTimeline' : 'HomeLatestTimeline'),
-      queryId: isForYou ? graphqlQueryIdList.HomeTimeline.queryId : graphqlQueryIdList.HomeLatestTimeline.queryId,
+      features: isForYou ? _HomeTimeline.features : _HomeLatestTimeline.features,
+      queryId: isForYou ? _HomeTimeline.queryId : _HomeLatestTimeline.queryId,
     })).then(response => {
       resolve(response)
     }).catch(e => {
@@ -1058,9 +1061,9 @@ const getBookmark = async (ctx = {cookie: {}, guest_token: {}, count: 20, cursor
     graphqlVariables.cursor = cursor
   }
   return await new Promise((resolve, reject) => {
-    coreFetch("https://api.twitter.com/graphql/" + graphqlQueryIdList.Bookmarks.queryId + "/Bookmarks?" + (new URLSearchParams({
+    coreFetch("https://api.twitter.com/graphql/" + _Bookmarks.queryId + "/Bookmarks?" + (new URLSearchParams({
       variables: JSON.stringify(graphqlVariables),
-      features: JSON.stringify(getGraphqlFeatures('Bookmarks'))
+      features: JSON.stringify(_Bookmarks.features)
     })).toString(), guest_token, cookie, 1).then(response => {
       resolve(response)
     }).catch(e => {
@@ -1088,9 +1091,9 @@ const getBookmark = async (ctx = {cookie: {}, guest_token: {}, count: 20, cursor
 //    requested_promoted_metrics: ["DetailExpands", "Engagements", "Follows", "Impressions", "LinkClicks", "ProfileVisits", "CostPerFollower"]
 //  }
 //  return await new Promise((resolve, reject) => {
-//    coreFetch("https://api.twitter.com/graphql/" + graphqlQueryIdList.TweetActivityQuery.queryId + "/TweetActivityQuery?" + (new URLSearchParams({
+//    coreFetch("https://api.twitter.com/graphql/" + _TweetActivityQuery.queryId + "/TweetActivityQuery?" + (new URLSearchParams({
 //      variables: JSON.stringify(graphqlVariables),
-//      features: JSON.stringify(getGraphqlFeatures('TweetActivityQuery'))
+//      features: JSON.stringify(_TweetActivityQuery.features)
 //    })).toString(), guest_token, cookie, 1).then(response => {
 //      resolve(response)
 //    }).catch(e => {
@@ -1142,10 +1145,10 @@ const postLike = async (ctx = {cookie: {}, guest_token: {}, tweet_id: '', like: 
     guest_token = await getToken(1)
   }
   return await new Promise((resolve, reject) => {
-    coreFetch("https://api.twitter.com/graphql/" + (like ? graphqlQueryIdList.FavoriteTweet.queryId + "/FavoriteTweet" : graphqlQueryIdList.UnfavoriteTweet.queryId + "/UnfavoriteTweet"), guest_token, cookie, 1, {}, JSON.stringify({
+    coreFetch("https://api.twitter.com/graphql/" + (like ? _FavoriteTweet.queryId + "/FavoriteTweet" : _UnfavoriteTweet.queryId + "/UnfavoriteTweet"), guest_token, cookie, 1, {}, JSON.stringify({
       variables: {tweet_id},
-      features: getGraphqlFeatures(like ? 'FavoriteTweet' : 'UnfavoriteTweet'),
-      queryId: like ? graphqlQueryIdList.FavoriteTweet.queryId : graphqlQueryIdList.UnfavoriteTweet.queryId,
+      features: like ? _FavoriteTweet.features : _UnfavoriteTweet.features,
+      queryId: like ? _FavoriteTweet.queryId : _UnfavoriteTweet.queryId,
     })).then(response => {
       resolve(response)
     }).catch(e => {

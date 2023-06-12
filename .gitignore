@@ -7,6 +7,7 @@ apps/backend/cache/*
 
 apps/archiver/*
 !apps/archiver/archive.mjs
+!apps/archiver/archive_lite.mjs
 !apps/archiver/init.ps1
 !apps/archiver/init.sh
 !apps/archiver/README.md

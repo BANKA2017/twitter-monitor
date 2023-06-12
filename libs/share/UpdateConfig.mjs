@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs'
 import { CONFIG_ID } from '../../libs/assets/setting.mjs'
 import V2Config from '../model/twitter_monitor/v2_config.js'
-import md5 from 'js-md5'
+import {createHash} from 'crypto'
 import { basePath } from './NodeConstant.mjs'
 
 const ConfigFile = async (config, accountList, force = false) => {
@@ -17,7 +17,7 @@ const ConfigFile = async (config, accountList, force = false) => {
         }
     })
     //generate 
-    const configMD5 = md5.hex(stringConfig)
+    const configMD5 = createHash('md5').update(stringConfig).digest('hex')//md5.hex(stringConfig)
     if (force || dbMD5 === null || dbMD5.md5 !== configMD5) {
         let newAccountInfo = {
             account_info: {},

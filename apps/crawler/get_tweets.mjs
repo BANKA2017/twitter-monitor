@@ -34,7 +34,7 @@ import { TGPush } from '../../libs/core/Core.push.mjs'
 import { TWEETS_SAVE_PATH } from '../../libs/assets/setting.mjs'
 import { ConfigFile } from '../../libs/share/UpdateConfig.mjs'
 import { basePath } from '../../libs/share/NodeConstant.mjs'
-import { CYCLE_SECONDS } from '../../libs/assets/setting_sample.mjs'
+import { CYCLE_SECONDS } from '../../libs/assets/setting.mjs'
 
 
 const once = (process.argv[2] || '') === 'once'

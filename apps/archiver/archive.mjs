@@ -107,6 +107,7 @@ let UserData = {
     account_info: null,
     account_list: {},
     tweets: {},
+    type: 'full',
 }
 
 
