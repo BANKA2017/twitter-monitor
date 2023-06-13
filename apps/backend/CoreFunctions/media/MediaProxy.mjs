@@ -52,6 +52,7 @@ const MediaProxy = async (req, env) => {
             case "m4s":
             case "ts":
             case "aac":
+            case "gif":
                 if (!['mp4', 'm4s', 'm3u8', 'aac'].includes(mediaLinkArray.extension) && (mediaLinkArray.size === 'small' || mediaLinkArray.extension === 'ts') && env.mediaExistPreCheck(mediaLinkArray.basename)) {
                     responseHeaders['X-TMCache'] = 1
                     return env.ResponseWrapper(`/media/cache/${mediaLinkArray.basename}`, 307, responseHeaders)

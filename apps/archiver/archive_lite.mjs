@@ -87,7 +87,7 @@ if (cursor.tweets.cursor !== 'complete') {
         }
         let tweets = null
         try {
-            tweets = await getTweets({ queryString: forceTimelineForUpdate ? uid : query, cursor: forceTimelineForUpdate ? '' : cursor.tweets.cursor || '', guest_token: window.guest_token.token, count: 999, online: true, graphqlMode: forceTimelineForUpdate, searchMode: !forceTimelineForUpdate, withReply: true })
+            tweets = await getTweets({ queryString: forceTimelineForUpdate ? uid : query, cursor: forceTimelineForUpdate ? '' : cursor.tweets.cursor || '', guest_token: window.guest_token.token, count: 999, online: true, graphqlMode: forceTimelineForUpdate, searchMode: !forceTimelineForUpdate, withReply: true, cookie: Object.fromEntries(document.cookie.split('; ').map(cookie => cookie.split('=')).filter(cookie => cookie.length >= 2)) })
             window.guest_token.updateRateLimit('Search')
         } catch (e) {
             //try again
