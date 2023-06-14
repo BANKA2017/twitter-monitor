@@ -34,12 +34,14 @@ const ACTIVE_SERVICE = SQL_CONFIG.filter(x => x.password && ["twitter_monitor", 
 
 const CONFIG_ID = 1//just for multiple config
 
-const GRAPHQL_MODE = true
+//we have to use GrqpHQL api
+//const GRAPHQL_MODE = true
 
 const CYCLE_SECONDS = 60//seconds
 
-const TRANSLATE_TARGET = 'zh-CN'//zh-CN, zh-TW, en-US, etc.//注: 使用微软翻译时简中应填写 zh-Hans/zh-Hant //注2: 此处用于无目标语言时翻译使用的默认目标语言
-const TRANSLATOR_PLATFORM = 'google'//google, microsoft
+//default language is 'en', platform is 'google'
+//const TRANSLATE_TARGET = 'zh-CN'//zh-CN, zh-TW, en-US, etc.//注: 使用微软翻译时简中应填写 zh-Hans/zh-Hant //注2: 此处用于无目标语言时翻译使用的默认目标语言
+//const TRANSLATOR_PLATFORM = 'google'//google, microsoft
 
 //to set proxy with environment variable 'http_proxy' and 'https_proxy'
 //const PROXY_CONFIG = '' //http://127.0.0.1:1081
@@ -56,4 +58,4 @@ const EXPRESS_ALLOW_ORIGIN = '*'
 const STATIC_PATH = basePath + '/../apps/backend/static'
 const TWEETS_SAVE_PATH = basePath + '/../apps/crawler/savetweets/'
 
-export {SQL_CONFIG, ACTIVE_SERVICE, CONFIG_ID, GRAPHQL_MODE, TRANSLATE_TARGET, TRANSLATOR_PLATFORM, ALERT_TOKEN, ALERT_PUSH_TO, BOT_CHAT_ID, EXPRESS_ALLOW_ORIGIN, TWEETS_SAVE_PATH, EXPRESS_PORT, STATIC_PATH, CYCLE_SECONDS}
+export {SQL_CONFIG, ACTIVE_SERVICE, CONFIG_ID, ALERT_TOKEN, ALERT_PUSH_TO, BOT_CHAT_ID, EXPRESS_ALLOW_ORIGIN, TWEETS_SAVE_PATH, EXPRESS_PORT, STATIC_PATH, CYCLE_SECONDS}

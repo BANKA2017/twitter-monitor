@@ -28,23 +28,14 @@ Archiver()
 - Build ffmpeg command for downloading broadcast or audiospace content
 - Update timeline while cursor value is **complete**
 
+## Download
+
+We use GitHub Actions to build scripts, you can find them in [BANKA2017/twitter-monitor/-/Actions/build_rollup](https://github.com/BANKA2017/twitter-monitor/actions/workflows/build_rollup.yml) **(Login required)**
+
 ## TODO
 
 - Download Space and Broadcast with js
 - Login by **COOKIE**
-
-## Init
-
-- Execute command:
-
-  ```shell
-  #bash
-  bash init.sh <screen_name> # like 'twitter'
-  #or powershell
-  .\init.ps1 <screen_name>
-  ```
-
-  A folder named `screen_name` will be created. If the folder `screen_name` already exists, you will be prompted to delete or rename the folder.
 
 ## Run
 
@@ -53,16 +44,21 @@ Archiver()
 ```shell
 node archive.mjs [OPTION]
 ```
-|Parameter|Required|Description|
-|:--|:--|:--|
-|--all|Optional|All data (UserInfo, Tweets, Following, Followers)|
+
+>Notice: A folder named `${screen_name}` will be created. If the folder `${screen_name}` already exists, you will be prompted to delete or rename the folder, or add an option `--update` to fetch new tweets.
+
+|Parameter  |Required|Description|
+|:----------|:-------|:----------|
+|--name=<screen_name>|Required|Account's screen name|
+|--update   |Optional|Fetch new tweets since last crawl|
+|--all      |Optional|All data (UserInfo, Tweets, Following, Followers)|
 |--followers|Optional|Get Followers|
 |--following|Optional|Get Following|
-|--media|Optional|Get Media|
+|--media    |Optional|Get Media|
 |--broadcast|Optional|Generate script to download broadcast video|
-|--space|Optional|Generate script to download space audio|
+|--space    |Optional|Generate script to download space audio|
 |--skip_\<key of argvList \>|Optional|Key of argvList included `tweet`, `followers`, `following`, `media`, `broadcast` and `space`. Will skip the corresponding job.|
-|--timeline|Optional|Get tweets and replies via `UserTweetsAndReplies`.|
+|--timeline |Optional|Get tweets and replies via `UserTweetsAndReplies`.|
 
 - Default values, only crawl timeline without any media:
   ```javascript

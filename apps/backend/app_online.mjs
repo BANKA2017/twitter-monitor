@@ -7,25 +7,21 @@ import { basePath } from "../../libs/share/NodeConstant.mjs"
 import { MediaProxy } from './CoreFunctions/media/MediaProxy.mjs'
 import online from './service/online.mjs'
 import album from './service/album.mjs'
-import translate from './service/translate.mjs'
 //Bot api
 //import bot from './service/bot.mjs'
 import { json, updateGuestToken, ResponseWrapper, mediaExistPreCheck, mediaCacheSave } from './share.mjs'
 import { existsSync } from 'fs'
+import { ApiTranslate } from './CoreFunctions/translate/OnlineTranslate.mjs'
 
 //settings
-global.dbmode = false
 let settingsFile = basePath + '/assets/setting.mjs'
 
 let EXPRESS_PORT = 3000
 let EXPRESS_ALLOW_ORIGIN = '*'
-let STATIC_PATH = ''
 let ACTIVE_SERVICE = []
 
 for (const argvContent of process.argv.slice(2)) {
-    if (argvContent === 'dbmode') {
-        global.dbmode = true
-    } else if (argvContent.startsWith('--config=')) {
+    if (argvContent.startsWith('--config=')) {
         settingsFile = argvContent.replace('--config=', '')
     } else if (argvContent === '--noSettings') {
         settingsFile = ''
@@ -36,7 +32,6 @@ if (settingsFile && existsSync(settingsFile)) {
     const settings = await import(settingsFile)
     EXPRESS_PORT = settings.EXPRESS_PORT
     EXPRESS_ALLOW_ORIGIN = settings.EXPRESS_ALLOW_ORIGIN
-    STATIC_PATH = settings.STATIC_PATH
     ACTIVE_SERVICE = settings.ACTIVE_SERVICE
 }
 
@@ -49,10 +44,6 @@ app.use(express.json())
 
 //get init token
 global.guest_token = new GuestToken
-//if (!global.dbmode) {
-//    //await global.guest_token.updateGuestToken(0)
-//    await global.guest_token2.updateGuestToken(1)
-//}
 
 app.use((req, res, next) => {
     
@@ -75,15 +66,12 @@ app.use((req, res, next) => {
     next()
 })
 
-//local api
-if (ACTIVE_SERVICE.includes('tmv1')) {
-    const {default: legacy} = await import('./service/legacy.mjs')
-    app.use('/api/v1', legacy)
-}
-if (ACTIVE_SERVICE.includes('twitter_monitor')) {
-    const {default: local} = await import('./service/local.mjs')
-    app.use('/api/v3', local)
-}
+const translate = express()
+translate.post('/online/', async (req, res) => {
+    req.postBody = new Map(Object.entries(req.body))
+    const _res = await ApiTranslate(req, req.env)
+    res.json(_res.data)
+})
 
 //translate api
 app.use('/translate', translate)
@@ -93,14 +81,6 @@ app.use('/online/api/v3', online)
 app.use('/album', album)
 app.use('/media', media)
 //app.use('/bot', bot)
-
-media.use((req, res, next) => {
-    if (global.dbmode) {
-        res.json(apiTemplate(403, 'DB Mode is not included media proxy api'))
-        return
-    }
-    next()
-})
 
 //LanguageIdentification
 //global.LanguageIdentification = new LanguageIdentification
@@ -150,11 +130,6 @@ app.get(/^\/(ext_tw_video|amplify_video)\/(.*)/, async (req, res) => {
             res.status(_res.status).end()
     }
 })//for m3u8
-
-//global static file
-if (STATIC_PATH) {
-    app.use('/static', express.static(STATIC_PATH))
-}
 
 //robots.txt
 app.all('/robots.txt', (req, res) => {res.type('txt').send("User-agent: *\nDisallow: /*")})

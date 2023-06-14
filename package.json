@@ -17,9 +17,12 @@
     "get_account_list": "node ./apps/analytics/getAccountList.mjs",
     "init": "node ./apps/scripts/initTwitterMonitor.mjs",
     "test": "npx vitest",
-    "build": "npx rollup -c rollup.config.js",
+    "build:cfworkers": "npx wrangler publish --dry-run --outdir=../../dist/cfworkers -c apps/cfworkers/wrangler.toml",
+    "build:rollup": "npx rollup -c rollup.config.js",
+    "build": "npm run build:rollup && npm run build:cfworkers",
     "rebuild": "npm run clean && npm run build",
-    "clean": "rm -rf dist/*"
+    "clean": "rm -rf dist/*",
+    "clean:win": "del dist/*"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.1",
@@ -27,6 +30,7 @@
     "@rollup/plugin-terser": "^0.4.3",
     "@types/node": "^18.15.0",
     "nodemon": "^2.0.20",
+    "pg-hstore": "^2.3.4",
     "rollup": "^3.25.0",
     "rollup-plugin-bundle-size": "^1.0.3",
     "rollup-plugin-cleanup": "^3.2.1",
@@ -35,6 +39,7 @@
   },
   "dependencies": {
     "@kdwnil/translator-utils": "github:BANKA2017/translator-utils#master",
+    "@rollup/plugin-json": "^6.0.0",
     "axios": "^1.3.4",
     "blurhash": "^2.0.5",
     "express": "^4.18.1",

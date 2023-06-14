@@ -5,7 +5,6 @@ import { apiTemplate } from "../../../../libs/share/Constant.mjs"
 
 const ApiTranslate = async (req, env) => {
     const target = VerifyQueryString(req.query.to, 'en')
-    //const cacheText = target.toLowerCase() === TRANSLATE_TARGET.toLowerCase()//TODO remove
     const platform = VerifyQueryString(req.query.platform, 'google').toLowerCase()
     const text = VerifyQueryString(req.postBody.get('text'), '')
     if (text) {

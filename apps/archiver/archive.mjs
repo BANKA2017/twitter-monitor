@@ -2,28 +2,19 @@
 // @BANKA2017 && NEST.MOE
 // Archive()
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 
 import { getAudioSpace, getBroadcast, getFollowingOrFollowers, getImage, getLiveVideoStream, getPollResult, getTweets, AxiosFetch } from '../../libs/core/Core.fetch.mjs'
 
 import { GuestToken, PathInfo, Sleep } from '../../libs/core/Core.function.mjs'
 import path2array from '../../libs/core/Core.apiPath.mjs'
-import { TGPush } from '../../libs/core/Core.push.mjs'
+//import { TGPush } from '../../libs/core/Core.push.mjs'
 import { GenerateAccountInfo } from '../../libs/core/Core.account.mjs'
 import { argv } from 'node:process'
 import { GenerateData } from '../backend/CoreFunctions/online/OnlineTweet.mjs'
 import { AudioSpace, Broadcast } from '../../libs/core/Core.tweet.mjs'
 import { Parser } from 'm3u8-parser'
 
-// bash init.sh <SCREEN_NAME>   bash/zsh/...
-// .\init.ps1 <SCREEN_NAME>     powershell
-if (!existsSync('./screen_name.txt')) {
-    console.log(`archiver: No active screen name!`)
-    process.exit()
-}
-const name = readFileSync('./screen_name.txt').toString().trim()
-const basePath = `./${name}`// ./twitter_archiver
-let forceTimelineForUpdate = false
 let activeFlags = {
     tweet: true,
     followers: false, 
@@ -59,6 +50,11 @@ const argvList = {
     },
 }
 
+//settings
+let name = ''
+let forceTimelineForUpdate = false
+let update = false
+
 // argv
 for (const argvContent of argv.slice(2)) {
     if (argvList[argvContent]) {
@@ -69,6 +65,33 @@ for (const argvContent of argv.slice(2)) {
     } else if (argvContent === '--timeline') {
         console.log(`archiver: force use timeline api to update tweets`)
         forceTimelineForUpdate = true
+    } else if (argvContent.startsWith('--name=')) {
+        name = argvContent.replace('--name=', '')
+    } else if (argvContent === '--update') {
+        update = true
+    }
+}
+
+if (!name) {
+    console.log(`archiver: No active screen name!`)
+    process.exit()
+}
+
+let basePath = `./${name}`// ./twitter_archiver
+
+if (existsSync(basePath) && !update) {
+    console.log(`Path" ${basePath} "already exists, please rename or remove it.`)
+    process.exit()
+} else if (!update) {
+    try {
+        mkdirSync(basePath)
+        mkdirSync(basePath + '/rawdata')
+        mkdirSync(basePath + '/savedata')
+        mkdirSync(basePath + '/savemedia')
+        mkdirSync(basePath + '/scripts')
+    } catch (e) {
+        console.error(`archiver: `, e)
+        process.exit()
     }
 }
 
@@ -130,7 +153,7 @@ await global.guest_token.updateGuestToken(1)
 await global.legacy_guest_token.updateGuestToken(0)
 
 if (global.guest_token.token.nextActiveTime) {
-    await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
+    //await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
     console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
     await Sleep(global.guest_token.token.nextActiveTime - Date.now())
     await global.guest_token.updateGuestToken(1)
@@ -185,7 +208,7 @@ if (activeFlags.tweet) {
         do {
             await global.guest_token.updateGuestToken(1)
             if (global.guest_token.token.nextActiveTime) {
-                await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
+                //await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
                 console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
                 break//只处理现有的
             }
@@ -214,7 +237,7 @@ if (activeFlags.tweet) {
             const tmpTweetsInfo = GenerateData(tweets, false, '', true)
             if (tmpTweetsInfo.tweetsInfo.errors.code !== 0) {
                 console.log(`archiver: error #${tmpTweetsInfo.tweetsInfo.errors.code} , ${tmpTweetsInfo.tweetsInfo.errors.message}`)
-                TGPush(`archiver: error #${tmpTweetsInfo.tweetsInfo.errors.code} , ${tmpTweetsInfo.tweetsInfo.errors.message}`)
+                //TGPush(`archiver: error #${tmpTweetsInfo.tweetsInfo.errors.code} , ${tmpTweetsInfo.tweetsInfo.errors.message}`)
                 continue
             }
             console.log(`archiver: cursor -->${tmpTweetsInfo.tweetsInfo.cursor?.bottom || 'end'}<-- (${tmpTweetsInfo.tweetsInfo.contentLength})`)

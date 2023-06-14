@@ -20,6 +20,10 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 * Nginx
 * MySQL 8.0 / MariaDB (some function is not supported MariaDB, like function `ANY_VALUE()`, parser `ngram`)
 
+## Download
+
+We use GitHub Actions to build some scripts, you can find them in [BANKA2017/twitter-monitor/-/Actions/build_rollup](https://github.com/BANKA2017/twitter-monitor/actions/workflows/build_rollup.yml) **(Login required)**
+
 ## How to
 
 ### Settings

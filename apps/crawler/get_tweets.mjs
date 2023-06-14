@@ -28,7 +28,6 @@ import V2TwitterTweets from '../../libs/model/twitter_monitor/v2_twitter_tweets.
 import { GuestToken, setGlobalServerInfo, Sleep } from '../../libs/core/Core.function.mjs'
 import path2array from '../../libs/core/Core.apiPath.mjs'
 import { Tweet, TweetsInfo } from '../../libs/core/Core.tweet.mjs'
-import { GRAPHQL_MODE } from '../../libs/assets/setting.mjs'
 import dbHandle from '../../libs/core/Core.db.mjs'
 import { TGPush } from '../../libs/core/Core.push.mjs'
 import { TWEETS_SAVE_PATH } from '../../libs/assets/setting.mjs'
@@ -36,6 +35,7 @@ import { ConfigFile } from '../../libs/share/UpdateConfig.mjs'
 import { basePath } from '../../libs/share/NodeConstant.mjs'
 import { CYCLE_SECONDS } from '../../libs/assets/setting.mjs'
 
+const GRAPHQL_MODE = true
 
 const once = (process.argv[2] || '') === 'once'
 let firstRun = true

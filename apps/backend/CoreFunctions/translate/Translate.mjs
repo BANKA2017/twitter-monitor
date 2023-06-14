@@ -1,4 +1,3 @@
-import { TRANSLATE_TARGET, TRANSLATOR_PLATFORM } from "../../../../libs/assets/setting.mjs"
 import { VerifyQueryString } from "../../../../libs/core/Core.function.mjs"
 import { Translate } from "../../../../libs/core/Core.translate.mjs"
 import V2AccountInfo from "../../../../libs/model/twitter_monitor/v2_account_info.js"
@@ -9,9 +8,8 @@ import { GetUid } from "../local/Local.mjs"
 
 
 const ApiLocalTranslate = async (req, res) => {
-    const target = VerifyQueryString(req.query.to, TRANSLATE_TARGET)
-    //const cacheText = target.toLowerCase() === TRANSLATE_TARGET.toLowerCase()//TODO remove
-    const platform = VerifyQueryString(req.query.platform, TRANSLATOR_PLATFORM).toLowerCase()
+    const target = VerifyQueryString(req.query.to, 'en')
+    const platform = VerifyQueryString(req.query.platform, 'google').toLowerCase()
     const tweetId = VerifyQueryString(req.query.tweet_id, 0)
     const {uid} = await GetUid(req.query)
     const translateType = VerifyQueryString(req.query.tr_type, 'tweets') === 'profile' ? 'profile' : 'tweets'
@@ -70,21 +68,22 @@ const ApiLocalTranslate = async (req, res) => {
 
 
 const ApiPredict = async (req, res) => {
-    const text = VerifyQueryString(req.query.text, '')
-    if (!text) {
-        res.json(apiTemplate(200, 'OK', [], 'translate'))
-    } else {
-        if (!global.LanguageIdentification) {
-            const { LanguageIdentification } =await import("../../fasttext/language.mjs")
-            if (!LanguageIdentification) {
-                res.json(apiTemplate(500, 'Not predict module #PredictService', [], 'translate'))
-                return
-            }
-            global.LanguageIdentification = new LanguageIdentification
-        }
-        const tmpLang = global.LanguageIdentification.GetLanguage((text instanceof Array) ? text.join("\n") : text)
-        res.json(apiTemplate(200, 'OK', tmpLang, 'translate'))
-    }
+    res.json(apiTemplate(200, 'OK', [], 'translate'))
+    //const text = VerifyQueryString(req.query.text, '')
+    //if (!text) {
+    //    
+    //} else {
+    //    if (!global.LanguageIdentification) {
+    //        const { LanguageIdentification } =await import("../../fasttext/language.mjs")
+    //        if (!LanguageIdentification) {
+    //            res.json(apiTemplate(500, 'Not predict module #PredictService', [], 'translate'))
+    //            return
+    //        }
+    //        global.LanguageIdentification = new LanguageIdentification
+    //    }
+    //    const tmpLang = global.LanguageIdentification.GetLanguage((text instanceof Array) ? text.join("\n") : text)
+    //    res.json(apiTemplate(200, 'OK', tmpLang, 'translate'))
+    //}
 }
 
 

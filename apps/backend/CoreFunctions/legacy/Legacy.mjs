@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs'
 import { Op } from 'sequelize'
 import { QueryTypes } from 'sequelize'
 import { GoogleBrowserTranslate } from '@kdwnil/translator-utils'
-import { TRANSLATE_TARGET } from '../../../../libs/assets/setting.mjs'
 import dbHandle from '../../../../libs/core/Core.db.mjs'
 import { VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
 import AccountInfo from '../../../../libs/model/tmv1/account_info.js'
@@ -221,8 +220,8 @@ const ApiLegacySearch = async (req, res) => {
 }
 
 const ApiLegacyTranslate = async (req, res) => {
-    const target = VerifyQueryString(req.query.to, TRANSLATE_TARGET)
-    const cacheText = target.toLowerCase() === TRANSLATE_TARGET.toLowerCase()
+    //TODO remove cache
+    const target = VerifyQueryString(req.query.to, 'en')
     const tweetId = String(VerifyQueryString(req.query.tweet_id, 0))
     const userId = String(VerifyQueryString(req.query.user_id, 0))
     const {uid} = getUid({uid: userId})
@@ -258,7 +257,7 @@ const ApiLegacyTranslate = async (req, res) => {
         if (trInfo === null){
             res.json(apiTemplate(1, 'No translate text', {}, 'v1'))
             return
-        } else if (!trInfo.translate || !cacheText) {
+        } else if (!trInfo.translate) {
             if (translateType === 'profile') {
                 trInfo.full_text_origin = trInfo.description.replaceAll(/<a[^>]+>([^<]+)<\/a>/gm, "$1")
                 delete trInfo.description
@@ -274,18 +273,6 @@ const ApiLegacyTranslate = async (req, res) => {
                 //TODO do nothing
                 res.json(apiTemplate(1, 'No translate text', trInfo, 'v1'))
             }
-            //if (trInfo.translate && translateType === 'tweets' && cacheText) {
-            //    try {
-            //        await TwitterTweets.update({
-            //            translate: trInfo.translate,
-            //            translate_source: 'Google Translate',
-            //        }, {where: {tweet_id: tweetId}})
-            //    } catch (e) {
-            //        console.log(e)
-            //        //TODO do nothing
-            //        res.json(apiTemplate(1, 'No translate text', trInfo, 'v1'))
-            //    }
-            //}
             trInfo.translate_raw = trInfo.translate
             trInfo.translate = trInfo.translate.replaceAll("\n", '<br>')
             res.json(apiTemplate(0, 'OK', trInfo, 'v1'))
