@@ -374,4 +374,16 @@ if (audiospacesCards.length <= 0) {
 
 
 console.log(`archiver: Time cost ${new Date() - now} ms`)//TODO remove
-window.open(URL.createObjectURL(new Blob([JSON.stringify(window.UserData, null, 4)], { type : 'application/json' })))
+
+// Download
+const Download = (url, fileName) => {
+    let element = document.createElement('a');
+    element.setAttribute('href', url);
+    element.setAttribute('download', fileName);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+}
+
+Download(URL.createObjectURL(new Blob([JSON.stringify(window.UserData, null, 4)], { type : 'application/json' })), `${name}.json`)
