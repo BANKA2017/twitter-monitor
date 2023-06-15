@@ -11,6 +11,15 @@ const translatorPlatform = {
     deepl: 'DeepL',
 }
 
+const realTranslatePlatform = {
+    google: 'google_browser',
+    microsoft: 'microsoft_browser',
+    yandex: 'yandex_browser',
+    sogou: 'sogou_browser',
+    baidu: 'baidu',
+    deepl: 'deepl',
+}
+
 const notSupportedEntities = ['baidu', 'deepl']
 
 const targetLanguagePreprocessing = (target = 'en', platform = 'google') => {
@@ -92,7 +101,7 @@ const Translate = async (trInfo = null, target = 'en', platform = 'google') => {
     trInfo.translate_source = translatorPlatform[platform]
     trInfo.translate = ''
     try {
-        let {content: tmpTranslate, message} = await Translator(notSupportedEntities.includes(platform) ? text : text.split("\n"), platform, targetLanguagePreprocessing(target, platform), false)
+        let {content: tmpTranslate, message} = await Translator(notSupportedEntities.includes(platform) ? text : text.split("\n"), realTranslatePlatform[platform], 'auto', targetLanguagePreprocessing(target, platform), false)
         if (message) {
             throw message
         }

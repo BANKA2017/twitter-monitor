@@ -267,7 +267,7 @@ const ApiLegacyTranslate = async (req, res) => {
             trInfo.translate_source = 'Google Translate'
             trInfo.translate = ''
             try {
-                trInfo.translate = await GoogleBrowserTranslate(trInfo.full_text_origin.replaceAll(/https:\/\/t.co\/[\w]+/gm, ''), target, false)
+                trInfo.translate = await GoogleBrowserTranslate(trInfo.full_text_origin.replaceAll(/https:\/\/t.co\/[\w]+/gm, ''), 'auto', target, false)
             } catch (e) {
                 console.error(e)
                 //TODO do nothing
