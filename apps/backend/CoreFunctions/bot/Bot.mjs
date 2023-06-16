@@ -1,8 +1,4 @@
-
-
-const getBody = (req) => {
-
-}
+const getBody = (req) => {}
 
 const BotForceUpdate = (req, res) => {
     return ''

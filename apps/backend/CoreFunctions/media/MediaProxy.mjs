@@ -7,7 +7,7 @@ const MediaProxy = async (req, env) => {
     const link = req.params.link
     const format = VerifyQueryString(req.query.format, '')
     const name = VerifyQueryString(req.query.name, '')
-    const prefix = VerifyQueryString(req.query.prefix, '/media/proxy/')//for some m3u8
+    const prefix = VerifyQueryString(req.query.prefix, '/media/proxy/') //for some m3u8
 
     //for m3u8
     const ext = ['ext_tw_video', 'amplify_video'].includes(req.type)
@@ -26,7 +26,7 @@ const MediaProxy = async (req, env) => {
     }
     let responseHeaders = {}
     //check
-    if (!mediaLinkArray.filename || ((!/^(abs|pbs|video)\.twimg\.com\//.test(mediaLinkArray.dirname) && !/^[^\/]+\.pscp\.tv\//.test(mediaLinkArray.dirname)) && !ext)) {
+    if (!mediaLinkArray.filename || (!/^(abs|pbs|video)\.twimg\.com\//.test(mediaLinkArray.dirname) && !/^[^\/]+\.pscp\.tv\//.test(mediaLinkArray.dirname) && !ext)) {
         //res.setHeader('Content-Type', 'image/svg+xml')
         return env.ResponseWrapper(null, 403, responseHeaders)
     } else if (mediaLinkArray.basename === 'banner.jpg') {
@@ -44,15 +44,15 @@ const MediaProxy = async (req, env) => {
         }
     } else {
         switch (mediaLinkArray.extension.toLocaleLowerCase()) {
-            case "jpg":
-            case "jpeg":
-            case "png":
-            case "mp4":
-            case "m3u8":
-            case "m4s":
-            case "ts":
-            case "aac":
-            case "gif":
+            case 'jpg':
+            case 'jpeg':
+            case 'png':
+            case 'mp4':
+            case 'm3u8':
+            case 'm4s':
+            case 'ts':
+            case 'aac':
+            case 'gif':
                 if (!['mp4', 'm4s', 'm3u8', 'aac'].includes(mediaLinkArray.extension) && (mediaLinkArray.size === 'small' || mediaLinkArray.extension === 'ts') && env.mediaExistPreCheck(mediaLinkArray.basename)) {
                     responseHeaders['X-TMCache'] = 1
                     return env.ResponseWrapper(`/media/cache/${mediaLinkArray.basename}`, 307, responseHeaders)
@@ -61,7 +61,7 @@ const MediaProxy = async (req, env) => {
                     let realLink = ''
                     switch (mediaLinkArray.pathtype) {
                         case 3:
-                        case 2: 
+                        case 2:
                             realLink = `https://${link}`
                             break
                         case 1:
@@ -74,22 +74,22 @@ const MediaProxy = async (req, env) => {
                             return env.ResponseWrapper(null, 403, responseHeaders)
                     }
                     try {
-                        const tmpBuffer = await getImage(realLink, {referer: 'https://twitter.com/'})
+                        const tmpBuffer = await getImage(realLink, { referer: 'https://twitter.com/' })
                         const contentLength = (tmpBuffer?.data || new ArrayBuffer(0)).byteLength
                         //res.setHeader('Accept-Ranges', 'bytes')
                         if (contentLength === 0) {
                             //res.setHeader('Content-Type', 'image/svg+xml')
                             return env.ResponseWrapper(null, 404, responseHeaders)
                         } else {
-                            if ( ((mediaLinkArray.extension !== 'mp4' && mediaLinkArray.size === 'small') || mediaLinkArray.extension === 'ts')) {
+                            if ((mediaLinkArray.extension !== 'mp4' && mediaLinkArray.size === 'small') || mediaLinkArray.extension === 'ts') {
                                 env.mediaCacheSave(tmpBuffer.data, mediaLinkArray.basename)
                             }
                             //res.setHeader('content-disposition', `attachment;filename=${mediaLinkArray.basename}`)
                             responseHeaders['Content-Length'] = contentLength
                             responseHeaders['Content-Type'] = tmpBuffer?.headers?.['content-type'] || (tmpBuffer?.headers ?? new Map()).get('content-type')
                             //response.data.pipe(res)
-                            if ((mediaLinkArray.pathtype === 3) && ['m3u8', 'm3u'].includes(mediaLinkArray.extension) && prefix) {
-                                return env.ResponseWrapper(new TextDecoder("utf-8").decode(tmpBuffer.data).replaceAll(/^\//gm, `${prefix}${mediaLinkArray.firstpath}/`), 200, {
+                            if (mediaLinkArray.pathtype === 3 && ['m3u8', 'm3u'].includes(mediaLinkArray.extension) && prefix) {
+                                return env.ResponseWrapper(new TextDecoder('utf-8').decode(tmpBuffer.data).replaceAll(/^\//gm, `${prefix}${mediaLinkArray.firstpath}/`), 200, {
                                     ...responseHeaders,
                                     'content-type': GetMime(mediaLinkArray.extension)
                                 })
@@ -101,7 +101,7 @@ const MediaProxy = async (req, env) => {
                             }
                             //res.send(response.data)
                         }
-                    } catch(e) {
+                    } catch (e) {
                         //TODO solve sometimes 500
                         console.error('Media PROXY', realLink, e)
                         return env.ResponseWrapper(null, 500, responseHeaders)
@@ -115,4 +115,4 @@ const MediaProxy = async (req, env) => {
     }
 }
 
-export {MediaProxy}
+export { MediaProxy }

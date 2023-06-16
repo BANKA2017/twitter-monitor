@@ -10,12 +10,7 @@
             "organization": false,
             "not_analytics": false,
             "nsfw": false,
-            "projects": [
-                [
-                    "project1",
-                    "tag1"
-                ]
-            ]
+            "projects": [["project1", "tag1"]]
         }
     ],
     "links": [

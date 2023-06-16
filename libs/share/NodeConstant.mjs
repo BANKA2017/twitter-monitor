@@ -6,4 +6,4 @@ const __dirname = dirname(__filename)
 
 const basePath = __dirname + '/..'
 
-export {basePath}
+export { basePath }

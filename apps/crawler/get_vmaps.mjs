@@ -6,20 +6,23 @@
 //SELECT * FROM `v2_twitter_media` WHERE `origin_type` REGEXP '^promo_video_website|appplayer|promo_video_convo' AND `source` = 'cards';
 //SELECT * FROM v2_twitter_media WHERE origin_type IN ('promo_video_website_card_photo', 'appplayer_card_photo', 'promo_video_convo_card_photo') AND tweet_id NOT IN (SELECT tweet_id FROM v2_twitter_media WHERE source = 'cards' AND (origin_type = 'promo_video_website_card_video' OR origin_type = 'appplayer_card_video' OR origin_type = 'promo_video_convo_card_video')) AND deleted = 0;
 
-import { Op } from "sequelize"
-import V2TwitterMedia from "../../libs/model/twitter_monitor/v2_twitter_media.js"
-import {PathInfo} from "../../libs/core/Core.function.mjs"
-import { readFileSync } from "fs"
-import dbHandle from "../../libs/core/Core.db.mjs"
-import { TWEETS_SAVE_PATH } from "../../libs/assets/setting.mjs"
-import axiosFetch from "axios-helper"
-
+import { Op } from 'sequelize'
+import V2TwitterMedia from '../../libs/model/twitter_monitor/v2_twitter_media.js'
+import { PathInfo } from '../../libs/core/Core.function.mjs'
+import { readFileSync } from 'fs'
+import dbHandle from '../../libs/core/Core.db.mjs'
+import { TWEETS_SAVE_PATH } from '../../libs/assets/setting.mjs'
+import axiosFetch from 'axios-helper'
 
 let media = await V2TwitterMedia.findAll({
     where: {
-        origin_type: {[Op.in]: ['promo_video_website_card_photo', 'appplayer_card_photo', 'promo_video_convo_card_photo']},
+        origin_type: { [Op.in]: ['promo_video_website_card_photo', 'appplayer_card_photo', 'promo_video_convo_card_photo'] },
         source: 'cards',
-        tweet_id: {[Op.notIn]: dbHandle.twitter_monitor.literal(`(SELECT tweet_id FROM v2_twitter_media WHERE source = 'cards' AND (origin_type = 'promo_video_website_card_video' OR origin_type = 'appplayer_card_video' OR origin_type = 'promo_video_convo_card_video'))`)},
+        tweet_id: {
+            [Op.notIn]: dbHandle.twitter_monitor.literal(
+                `(SELECT tweet_id FROM v2_twitter_media WHERE source = 'cards' AND (origin_type = 'promo_video_website_card_video' OR origin_type = 'appplayer_card_video' OR origin_type = 'promo_video_convo_card_video'))`
+            )
+        },
         deleted: 0
     },
     raw: true
@@ -30,9 +33,9 @@ let errorList = []
 for (const index in media) {
     console.log(`${Number(index) + 1} / ${media.length}`)
     const x = media[index]
-    let tmpMediaInfo = media.filter(mediaObject => x.tweet_id === mediaObject.tweet_id)[0]
+    let tmpMediaInfo = media.filter((mediaObject) => x.tweet_id === mediaObject.tweet_id)[0]
     //fix mediaInfo
-    
+
     tmpMediaInfo.url = ''
     tmpMediaInfo.filename = ''
     tmpMediaInfo.basename = ''
@@ -40,7 +43,10 @@ for (const index in media) {
     tmpMediaInfo.content_type = ''
     tmpMediaInfo.blurhash = ''
     tmpMediaInfo.origin_type = tmpMediaInfo.origin_type.replace(/_photo$/gm, '_video')
-    const tmpLink = readFileSync(TWEETS_SAVE_PATH + x.tweet_id + '.json').toString().replaceAll('\\/', '/').replaceAll(/.*(https:\/\/([\S]+)\.vmap).*/gm, "$1")
+    const tmpLink = readFileSync(TWEETS_SAVE_PATH + x.tweet_id + '.json')
+        .toString()
+        .replaceAll('\\/', '/')
+        .replaceAll(/.*(https:\/\/([\S]+)\.vmap).*/gm, '$1')
     let tmpVmap = ''
     try {
         tmpVmap = await axiosFetch().get(tmpLink)
@@ -52,7 +58,7 @@ for (const index in media) {
         continue
     }
     delete tmpMediaInfo.id
-    tmpMediaInfo.media_key = tmpVmap.data.replaceAll(/(?:\s|\S)+contentId="([\w]+)".*(?:\s|\S)+/gm, "$1")
+    tmpMediaInfo.media_key = tmpVmap.data.replaceAll(/(?:\s|\S)+contentId="([\w]+)".*(?:\s|\S)+/gm, '$1')
     let pattern = /<tw:videoVariant url="([\S]+)" content_type="([\S]+)"(?:| bit_rate="(\d+)")\/>/gmu
     let match
     const tmpList = []
@@ -61,9 +67,9 @@ for (const index in media) {
             pattern.lastIndex++
         }
         tmpList.push({
-          url: decodeURIComponent(match[1]),
-          type: match[2],
-          bitrate: match[3] ? Number(match[3]) : undefined
+            url: decodeURIComponent(match[1]),
+            type: match[2],
+            bitrate: match[3] ? Number(match[3]) : undefined
         })
     }
     const tmpVideoInfo = tmpList.sort((a, b) => b.bitrate - a.bitrate)[0]
@@ -79,19 +85,21 @@ for (const index in media) {
     list.push(tmpMediaInfo)
 }
 
-
 if (list.length + errorList.length !== media.length) {
-    console.log(`Not enough records, ${JSON.stringify({media: media.length, list: list.length, error: errorList.length})}`)
+    console.log(`Not enough records, ${JSON.stringify({ media: media.length, list: list.length, error: errorList.length })}`)
 }
 const t = await dbHandle.twitter_monitor.transaction()
 
 try {
-    await V2TwitterMedia.bulkCreate(list, {transaction: t})
+    await V2TwitterMedia.bulkCreate(list, { transaction: t })
     for (const errorItem of errorList) {
-        await V2TwitterMedia.update({deleted: 1}, {
-            where: {id: errorItem.id},
-            transaction: t
-        })
+        await V2TwitterMedia.update(
+            { deleted: 1 },
+            {
+                where: { id: errorItem.id },
+                transaction: t
+            }
+        )
     }
     await t.commit()
 } catch (e) {

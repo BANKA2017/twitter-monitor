@@ -15,7 +15,7 @@ export class setGlobalServerInfo {
         total_time_cost: 0,
         //avgreqtimecost: 0,
         //savetimecost: 0,
-        total_errors_count: 0,
+        total_errors_count: 0
     }
     #now
     constructor() {
@@ -23,32 +23,34 @@ export class setGlobalServerInfo {
         this.tw_server_info.time = Math.floor(this.#now / 1000)
         this.tw_server_info.microtime = this.#now / 1000
     }
-    get value () {
+    get value() {
         return this.tw_server_info
     }
-    getValue (key = '') {
+    getValue(key = '') {
         if (this.tw_server_info[key]) {
             return this.tw_server_info[key]
         }
         return 0
     }
-    updateValue (key = '', value = 1) {
+    updateValue(key = '', value = 1) {
         if (this.tw_server_info !== undefined) {
             this.tw_server_info[key] += value
         }
         return this
     }
-
 }
 
 export class GuestToken {
     #guest_token = {}
     heartBeat
     errorCount = 10
-    constructor () {}
-    async updateGuestToken (authorizationMode = 0) {
+    constructor() {}
+    async updateGuestToken(authorizationMode = 0) {
         const now = Date.now()
-        if ((!this.#guest_token.nextActiveTime || (this.#guest_token.nextActiveTime && this.#guest_token.nextActiveTime < now) ) && (Object.keys(this.#guest_token).length === 0 || Object.values(this.#guest_token.rate_limit).some(value => value <= 0) || this.#guest_token.expire < now || (now - this.heartBeat) > 1700000)) {
+        if (
+            (!this.#guest_token.nextActiveTime || (this.#guest_token.nextActiveTime && this.#guest_token.nextActiveTime < now)) &&
+            (Object.keys(this.#guest_token).length === 0 || Object.values(this.#guest_token.rate_limit).some((value) => value <= 0) || this.#guest_token.expire < now || now - this.heartBeat > 1700000)
+        ) {
             console.log(`[${new Date()}]: #GuestToken Update guest token #${authorizationMode}`)
             do {
                 this.#guest_token = await getToken(authorizationMode)
@@ -69,21 +71,21 @@ export class GuestToken {
         //console.log({...this.#guest_token.rate_limit, ...{expire: this.#guest_token.expire}})
         return this
     }
-    updateRateLimit (key = '', value = 1) {
+    updateRateLimit(key = '', value = 1) {
         if (this.#guest_token.rate_limit[key] !== undefined) {
             this.#guest_token.rate_limit[key] -= value
             this.heartBeat = Date.now()
         }
         return this
     }
-    getRateLimit (key = '') {
+    getRateLimit(key = '') {
         if (this.#guest_token.rate_limit[key] !== undefined) {
             return this.#guest_token.rate_limit[key]
         }
         return 0
     }
-    preCheck (key = '', value = 1) {
-        if (this.#guest_token.rate_limit[key] !== undefined && (this.#guest_token.rate_limit[key] - value) > 0) {
+    preCheck(key = '', value = 1) {
+        if (this.#guest_token.rate_limit[key] !== undefined && this.#guest_token.rate_limit[key] - value > 0) {
             return true
         }
         return false
@@ -96,8 +98,8 @@ export class GuestToken {
 //https://stackoverflow.com/questions/14249506
 const Sleep = (ms) => {
     return new Promise((resolve) => {
-        setTimeout(resolve, ms);
-    });
+        setTimeout(resolve, ms)
+    })
 }
 
 const PathInfo = (path) => {
@@ -108,18 +110,18 @@ const PathInfo = (path) => {
         pathtype: 0,
         extension: '',
         size: 'normal',
-        firstpath: '',
+        firstpath: ''
     }
     const noProtocol = !/^[\w]+:\/\//g.test(path)
     const parsePath = new URL((noProtocol ? 'http://' : '') + path)
 
     let tmpBase = parsePath.pathname.split('/')
     parsePath.base = tmpBase.pop()
-    parsePath.dir = (noProtocol ? '' : parsePath.protocol + '//') + ((parsePath.username && parsePath.password) ? [parsePath.username, parsePath.password].join(':') + '@' : '') + parsePath.host + tmpBase.join('/') + '/'
+    parsePath.dir = (noProtocol ? '' : parsePath.protocol + '//') + (parsePath.username && parsePath.password ? [parsePath.username, parsePath.password].join(':') + '@' : '') + parsePath.host + tmpBase.join('/') + '/'
     const tmpBaseParse = parsePath.base.split('.')
     parsePath.ext = tmpBaseParse.length > 1 ? tmpBaseParse.pop() : ''
     parsePath.name = tmpBaseParse.join('.')
-    
+
     tmpPathInfo.dirname = parsePath.dir
     if (parsePath.ext === '') {
         try {
@@ -129,7 +131,7 @@ const PathInfo = (path) => {
             tmpPathInfo.filename = parsePath.base
         } catch (e) {}
     } else if (parsePath.ext.includes(':')) {
-        [tmpPathInfo.extension, tmpPathInfo.size] = parsePath.ext.split(':')
+        ;[tmpPathInfo.extension, tmpPathInfo.size] = parsePath.ext.split(':')
         parsePath.base = parsePath.base.replaceAll(`:${tmpPathInfo.size}`, '')
         tmpPathInfo.pathtype = 2
         tmpPathInfo.filename = parsePath.name
@@ -148,15 +150,15 @@ const PathInfo = (path) => {
 const GetEntitiesFromText = (text = '', type = 'description') => {
     let pattern = /<a href="([^"]+)"(?: id="[^"]"+|)(?: target="_blank"|)[^>]+>([^<]+)<\/a>|(?:\s|\p{P}|\p{S}|^)(#|\$)((?:[^\s\p{P}\p{S}]|_)+)|(?:\s|\p{P}|\p{S}|^)@([\w]+)/gmu
 
-    text = text.replaceAll(/(?:|\n)(?:<br>|<br \/>)(?:|\n)/gm, "\n")
-    const originText = text.replaceAll(/<a[^>]+>([^<]+)<\/a>/gm, "$1")
-    let match;
+    text = text.replaceAll(/(?:|\n)(?:<br>|<br \/>)(?:|\n)/gm, '\n')
+    const originText = text.replaceAll(/<a[^>]+>([^<]+)<\/a>/gm, '$1')
+    let match
     const tmpList = []
     let lastEnd = 0
     while ((match = pattern.exec(text)) !== null) {
         // 这对于避免零宽度匹配的无限循环是必要的
         if (match.index === pattern.lastIndex) {
-            pattern.lastIndex++;
+            pattern.lastIndex++
         }
         //hashtag
         if (match[2] === undefined && match[4] !== undefined) {
@@ -165,22 +167,21 @@ const GetEntitiesFromText = (text = '', type = 'description') => {
             //console.log([originText.slice(lastEnd).split(`#${hashtagText}`), originText.slice(lastEnd).split(`#${hashtagText}`).length])
             const beforeLength = [...[...originText].slice(lastEnd).join('').split(`${prefix}${hashtagText}`)[0]].length + lastEnd
             lastEnd = beforeLength + [...match[4]].length + 1
-            tmpList.push({ expanded_url: "", indices_end: lastEnd, indices_start: beforeLength, text: hashtagText, type: prefix === '#' ? "hashtag" : "symbol"})
+            tmpList.push({ expanded_url: '', indices_end: lastEnd, indices_start: beforeLength, text: hashtagText, type: prefix === '#' ? 'hashtag' : 'symbol' })
         } else if (match[2] === undefined && match[5] !== undefined) {
             const userMention = match[5]
             const beforeLength = [...[...originText].slice(lastEnd).join('').split(`@${userMention}`)[0]].length + lastEnd
             lastEnd = beforeLength + [...match[5]].length + 1
-            tmpList.push({ expanded_url: "", indices_end: lastEnd, indices_start: beforeLength, text: `@${userMention}`, type: "user_mention" })
+            tmpList.push({ expanded_url: '', indices_end: lastEnd, indices_start: beforeLength, text: `@${userMention}`, type: 'user_mention' })
         } else {
-            const beforeLength = [...[...originText].slice(lastEnd).join('').split(match[2])[0]].length + lastEnd// + (type === 'description' ? 0 : 1)
+            const beforeLength = [...[...originText].slice(lastEnd).join('').split(match[2])[0]].length + lastEnd // + (type === 'description' ? 0 : 1)
             lastEnd = beforeLength + [...match[2]].length
-            let type = (match[1].replaceAll("//http", "http").startsWith('https://twitter.com/') && match[2].startsWith('@')) ? 'user_mention' : (match[2].startsWith('#') ? 'hashtag' : (match[2].startsWith('$') ? 'symbol' : "url"))
-            tmpList.push({ expanded_url: match[1].replaceAll("//http", "http"), indices_end: lastEnd, indices_start: beforeLength, text: ['hashtag', 'symbol'].includes(type) ? match[2].slice(1) : match[2], type})
+            let type = match[1].replaceAll('//http', 'http').startsWith('https://twitter.com/') && match[2].startsWith('@') ? 'user_mention' : match[2].startsWith('#') ? 'hashtag' : match[2].startsWith('$') ? 'symbol' : 'url'
+            tmpList.push({ expanded_url: match[1].replaceAll('//http', 'http'), indices_end: lastEnd, indices_start: beforeLength, text: ['hashtag', 'symbol'].includes(type) ? match[2].slice(1) : match[2], type })
         }
     }
-    
-    return {originText, entities: tmpList}
 
+    return { originText, entities: tmpList }
 }
 
 const VerifyQueryString = (value, defaultValue) => {
@@ -194,4 +195,4 @@ const VerifyQueryString = (value, defaultValue) => {
     return value
 }
 
-export {Sleep, PathInfo, GetEntitiesFromText, VerifyQueryString}
+export { Sleep, PathInfo, GetEntitiesFromText, VerifyQueryString }

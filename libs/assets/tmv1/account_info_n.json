@@ -1107,16 +1107,16 @@
     },
     "kancolle_staff": {
         "name": "KanColle_STAFF",
-        "display_name": "「艦これ」開発\/運営",
+        "display_name": "「艦これ」開発/運営",
         "uid": "294025417",
-        "team": "开发\/运营",
+        "team": "开发/运营",
         "project": "kancolle"
     },
     "294025417": {
         "name": "KanColle_STAFF",
-        "display_name": "「艦これ」開発\/運営",
+        "display_name": "「艦これ」開発/運営",
         "uid": "294025417",
-        "team": "开发\/运营",
+        "team": "开发/运营",
         "project": "kancolle"
     },
     "c2_staff": {

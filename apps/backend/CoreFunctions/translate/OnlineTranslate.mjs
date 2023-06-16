@@ -1,16 +1,16 @@
-import { getTranslate } from "../../../../libs/core/Core.fetch.mjs"
-import { VerifyQueryString } from "../../../../libs/core/Core.function.mjs"
-import { Translate } from "../../../../libs/core/Core.translate.mjs"
-import { apiTemplate } from "../../../../libs/share/Constant.mjs"
+import { getTranslate } from '../../../../libs/core/Core.fetch.mjs'
+import { VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
+import { Translate } from '../../../../libs/core/Core.translate.mjs'
+import { apiTemplate } from '../../../../libs/share/Constant.mjs'
 
 const ApiTranslate = async (req, env) => {
     const target = VerifyQueryString(req.query.to, 'en')
     const platform = VerifyQueryString(req.query.platform, 'google').toLowerCase()
     const text = VerifyQueryString(req.postBody.get('text'), '')
     if (text) {
-        let trInfo = { full_text: text, cache: false, target, translate_source: "Twitter Monitor Translator", translate: "", entities: []}
+        let trInfo = { full_text: text, cache: false, target, translate_source: 'Twitter Monitor Translator', translate: '', entities: [] }
 
-        const {message, content} = await Translate(trInfo, target, platform)
+        const { message, content } = await Translate(trInfo, target, platform)
         if (!message) {
             return env.json(apiTemplate(200, 'OK', content, 'translate'))
         } else {
@@ -30,34 +30,43 @@ const ApiOfficialTranslate = async (req, env) => {
     const target = VerifyQueryString(req.query.target, 'en')
 
     try {
-        const tmpTranslate = await getTranslate({id, type, target, guest_token: env.guest_token2})
+        const tmpTranslate = await getTranslate({ id, type, target, guest_token: env.guest_token2 })
 
         //updateGuestToken
         await env.updateGuestToken(env, 'guest_token2', 1, tmpTranslate.headers.get('x-rate-limit-remaining') < 20, 'Translation')
 
-        if (tmpTranslate.data || ((tmpTranslate.data?.translationState??'').toLowerCase() !== 'success')) {
-            
+        if (tmpTranslate.data || (tmpTranslate.data?.translationState ?? '').toLowerCase() !== 'success') {
             let tmpReaponse = {
                 full_text: tmpTranslate.data.translation,
                 translate: tmpTranslate.data.translation,
                 cache: false,
                 target: tmpTranslate.data.destinationLanguage,
                 translate_source: tmpTranslate.data.translationSource + ' (for Twitter)',
-                entities: Object.keys(tmpTranslate.data.entities).map(key => tmpTranslate.data.entities[key].map(value => ({
-                    expanded_url: ((key, value) => {
-                        switch (key) {
-                            case 'hashtags': return `#/hashtag/${value.text}`
-                            case 'symbols': return `#/cashtag/${value.text}`
-                            case 'user_mentions': return `https://twitter.com/${value.screen_name}`
-                            case 'urls': return value.expanded_url
-                            default: return ''
-                        }
-                    })(key, value),
-                    indices_end: value.indices[1],
-                    indices_start: value.indices[0],
-                    text: value.text??value.display_url??`@${value.screen_name}`??'',
-                    type: key.slice(0, -1)
-                }))).flat().sort((a, b) => a.indices_start - b.indices_start)
+                entities: Object.keys(tmpTranslate.data.entities)
+                    .map((key) =>
+                        tmpTranslate.data.entities[key].map((value) => ({
+                            expanded_url: ((key, value) => {
+                                switch (key) {
+                                    case 'hashtags':
+                                        return `#/hashtag/${value.text}`
+                                    case 'symbols':
+                                        return `#/cashtag/${value.text}`
+                                    case 'user_mentions':
+                                        return `https://twitter.com/${value.screen_name}`
+                                    case 'urls':
+                                        return value.expanded_url
+                                    default:
+                                        return ''
+                                }
+                            })(key, value),
+                            indices_end: value.indices[1],
+                            indices_start: value.indices[0],
+                            text: value.text ?? value.display_url ?? `@${value.screen_name}` ?? '',
+                            type: key.slice(0, -1)
+                        }))
+                    )
+                    .flat()
+                    .sort((a, b) => a.indices_start - b.indices_start)
             }
 
             return env.json(apiTemplate(200, 'OK', tmpReaponse, 'translate'))
@@ -70,4 +79,4 @@ const ApiOfficialTranslate = async (req, env) => {
     }
 }
 
-export {ApiTranslate, ApiOfficialTranslate}
+export { ApiTranslate, ApiOfficialTranslate }

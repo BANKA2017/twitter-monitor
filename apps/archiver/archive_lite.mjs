@@ -11,7 +11,7 @@ import { GenerateData } from '../backend/CoreFunctions/online/OnlineTweet.mjs'
 import { AudioSpace, Broadcast } from '../../libs/core/Core.tweet.mjs'
 import { Parser } from 'm3u8-parser'
 
-let name = window.name//readFileSync('./screen_name.txt').toString().trim()
+let name = window.name //readFileSync('./screen_name.txt').toString().trim()
 let forceTimelineForUpdate = window.timelineFirst || false
 
 //save date
@@ -30,7 +30,7 @@ if (window.UserData?.account_info?.name !== name) {
         account_info: null,
         account_list: {},
         tweets: {},
-        type: 'lite',
+        type: 'lite'
     }
     resetCursor = true
 }
@@ -38,23 +38,23 @@ let UserData = window.UserData
 let uid = UserData.account_info?.uid || null
 
 //get init token
-window.guest_token = new GuestToken
+window.guest_token = new GuestToken()
 await window.guest_token.updateGuestToken(1)
 
 if (window.guest_token.token.nextActiveTime) {
     await Sleep(window.guest_token.token.nextActiveTime - Date.now())
     await window.guest_token.updateGuestToken(1)
     if (!window.guest_token.token.success) {
-        throw(window.guest_token)
+        throw window.guest_token
     }
 }
 
 // cursor
-if (resetCursor || !Object.values(window.cursor || {}).some(v => v.cursor)) {
+if (resetCursor || !Object.values(window.cursor || {}).some((v) => v.cursor)) {
     window.cursor = {
         tweets: { maxId: '', tmpId: '', cursor: '' },
-        broadcast:{ maxId: '', tmpId: '', cursor: '' },
-        space: { maxId: '', tmpId: '', cursor: '' },
+        broadcast: { maxId: '', tmpId: '', cursor: '' },
+        space: { maxId: '', tmpId: '', cursor: '' }
     }
 }
 let cursor = window.cursor
@@ -83,25 +83,49 @@ if (cursor.tweets.cursor !== 'complete') {
         await window.guest_token.updateGuestToken(1)
         if (window.guest_token.token.nextActiveTime) {
             console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${window.guest_token.token.nextActiveTime}`)
-            break//只处理现有的
+            break //只处理现有的
         }
         let tweets = null
         try {
-            tweets = await getTweets({ queryString: forceTimelineForUpdate ? uid : query, cursor: forceTimelineForUpdate ? '' : cursor.tweets.cursor || '', guest_token: window.guest_token.token, count: 999, online: true, graphqlMode: forceTimelineForUpdate, searchMode: !forceTimelineForUpdate, withReply: true, cookie: Object.fromEntries(document.cookie.split('; ').map(cookie => cookie.split('=')).filter(cookie => cookie.length >= 2)) })
+            tweets = await getTweets({
+                queryString: forceTimelineForUpdate ? uid : query,
+                cursor: forceTimelineForUpdate ? '' : cursor.tweets.cursor || '',
+                guest_token: window.guest_token.token,
+                count: 999,
+                online: true,
+                graphqlMode: forceTimelineForUpdate,
+                searchMode: !forceTimelineForUpdate,
+                withReply: true,
+                cookie: Object.fromEntries(
+                    document.cookie
+                        .split('; ')
+                        .map((cookie) => cookie.split('='))
+                        .filter((cookie) => cookie.length >= 2)
+                )
+            })
             window.guest_token.updateRateLimit('Search')
         } catch (e) {
             //try again
             console.log('archiver: first retry...')
             try {
-                tweets = await getTweets({ queryString: forceTimelineForUpdate ? uid : query, cursor: forceTimelineForUpdate ? '' : cursor.tweets.cursor || '', guest_token: window.guest_token.token, count: 999, online: true, graphqlMode: forceTimelineForUpdate, searchMode: !forceTimelineForUpdate, withReply: true })
+                tweets = await getTweets({
+                    queryString: forceTimelineForUpdate ? uid : query,
+                    cursor: forceTimelineForUpdate ? '' : cursor.tweets.cursor || '',
+                    guest_token: window.guest_token.token,
+                    count: 999,
+                    online: true,
+                    graphqlMode: forceTimelineForUpdate,
+                    searchMode: !forceTimelineForUpdate,
+                    withReply: true
+                })
                 window.guest_token.updateRateLimit('Search')
             } catch (e1) {
                 console.log('archiver: retry failed...')
-                throw(e1)
+                throw e1
             }
         }
         if (tweets === null) {
-            throw(`archiver: empty response`)
+            throw `archiver: empty response`
         }
 
         //let tmpTweetsInfo = TweetsInfo(tweets.data, true)
@@ -119,29 +143,28 @@ if (cursor.tweets.cursor !== 'complete') {
                 //restful
                 //uid = Object.values(tmpTweetsInfo.tweetsInfo.users).filter(user => user.screen_name.toLocaleLowerCase() === name.toLocaleLowerCase())[0]?.id_str || null
                 //graphql
-                uid = Object.values(tmpTweetsInfo.tweetsInfo.users).filter(user => user.legacy.screen_name.toLocaleLowerCase() === name.toLocaleLowerCase())[0]?.rest_id || null
+                uid = Object.values(tmpTweetsInfo.tweetsInfo.users).filter((user) => user.legacy.screen_name.toLocaleLowerCase() === name.toLocaleLowerCase())[0]?.rest_id || null
 
                 if (!uid) {
-                    throw(`archiver: no such account!!!`)
+                    throw `archiver: no such account!!!`
                 }
             } catch (e) {
-                throw(e)
+                throw e
             }
-
         }
 
         let singleAccountTweetsCount = 0
         //insert
         try {
             //raw
-            tmpTweetsInfo.tweetsInfo.contents.forEach(tweet => {
+            tmpTweetsInfo.tweetsInfo.contents.forEach((tweet) => {
                 let tmpTweetId = path2array('tweet_id', tweet)
                 if (!rawTweetData[tmpTweetId]) {
                     rawTweetData[tmpTweetId] = tweet
                 }
             })
             //TODO get all accounts from other ways
-            Object.keys(tmpTweetsInfo.tweetsInfo.users).forEach(uid => {
+            Object.keys(tmpTweetsInfo.tweetsInfo.users).forEach((uid) => {
                 if (!rawUserInfoData[uid]) {
                     rawUserInfoData[uid] = tmpTweetsInfo.tweetsInfo.users[uid]
                 }
@@ -171,7 +194,7 @@ if (cursor.tweets.cursor !== 'complete') {
             //writeFileSync(basePath + '/savedata/data.json', JSON.stringify(UserData))
 
             if (!forceTimelineForUpdate) {
-                cursor.tweets.cursor = (tmpTweetsInfo.tweetsInfo.contents.length ? tmpTweetsInfo.tweetsInfo.cursor?.bottom || '' : '')
+                cursor.tweets.cursor = tmpTweetsInfo.tweetsInfo.contents.length ? tmpTweetsInfo.tweetsInfo.cursor?.bottom || '' : ''
                 if (!cursor.tweets.maxId || cursor.tweets.maxId === '0') {
                     cursor.tweets.maxId = tmpTweetsInfo.tweetsInfo.tweetRange.max
                     range.tweet_id.max = tmpTweetsInfo.tweetsInfo.tweetRange.max
@@ -182,9 +205,8 @@ if (cursor.tweets.cursor !== 'complete') {
             range.time.end = Date.now()
             //writeFileSync(basePath + '/twitter_archive_cursor.json', JSON.stringify(cursor))
             //writeFileSync(basePath + '/range.json', JSON.stringify(range))
-
         } catch (e) {
-            throw(e)
+            throw e
         }
     } while (cursor.tweets.cursor && !forceTimelineForUpdate)
     cursor.tweets.cursor = 'complete'
@@ -202,22 +224,22 @@ let pollsIndex = 0
 //if (existsSync(basePath + '/twitter_monitor_polls_failed_list.json')) {
 //    getPollsFailedList = JSON.parse(readFileSync(basePath + '/twitter_monitor_polls_failed_list.json'))
 //}
-let pollsList = Object.values(UserData.tweets).filter(tweet => tweet.polls && !tweet.polls[0].count)
+let pollsList = Object.values(UserData.tweets).filter((tweet) => tweet.polls && !tweet.polls[0].count)
 
 console.log(`archiver: polls... (${pollsList.length})`)
 
 for (; pollsIndex < pollsList.length; pollsIndex++) {
-    const pollA = (now / 1000) > pollsList[pollsIndex].polls[0].end_datetime
+    const pollA = now / 1000 > pollsList[pollsIndex].polls[0].end_datetime
     const pollB = rawTweetData[pollsList[pollsIndex].tweet_id]
     if (pollA && pollB) {
-        let cardInfo = path2array("tweet_card_path", rawTweetData[pollsList[pollsIndex].tweet_id])
-        if (cardInfo && String(path2array("tweet_card_name", cardInfo)).startsWith('poll')) {
-            let tmpPollKV = Object.fromEntries(Object.keys(cardInfo.binding_values).map(key => [key, cardInfo.binding_values[key]]))
+        let cardInfo = path2array('tweet_card_path', rawTweetData[pollsList[pollsIndex].tweet_id])
+        if (cardInfo && String(path2array('tweet_card_name', cardInfo)).startsWith('poll')) {
+            let tmpPollKV = Object.fromEntries(Object.keys(cardInfo.binding_values).map((key) => [key, cardInfo.binding_values[key]]))
             for (let x = 1; x <= 4; x++) {
-                if (!tmpPollKV["choice" + x + "_count"]) {
+                if (!tmpPollKV['choice' + x + '_count']) {
                     break
                 }
-                pollsList[pollsIndex].polls[x - 1].count = tmpPollKV["choice" + x + "_count"].string_value
+                pollsList[pollsIndex].polls[x - 1].count = tmpPollKV['choice' + x + '_count'].string_value
                 console.log(`${pollsList[pollsIndex].tweet_id}: #${x} > ${pollsList[pollsIndex].polls[x - 1].count}`)
             }
         } else {
@@ -242,12 +264,14 @@ for (; pollsIndex < pollsList.length; pollsIndex++) {
     //writeFileSync(basePath + '/twitter_monitor_polls_index', String(pollsIndex))
 }
 
-pollsList.forEach(pollTweetItem => {
+pollsList.forEach((pollTweetItem) => {
     UserData.tweets[pollTweetItem.tweet_id] = pollTweetItem
 })
 
 // broadcasts
-let broadcastsCards = Object.values(UserData.tweets).filter(tweet => (tweet.cardObject?.type === 'broadcast' || tweet.cardObject?.type === 'periscope_broadcast') && !tweet.broadcastObject).map(tweet => tweet.cardObject)
+let broadcastsCards = Object.values(UserData.tweets)
+    .filter((tweet) => (tweet.cardObject?.type === 'broadcast' || tweet.cardObject?.type === 'periscope_broadcast') && !tweet.broadcastObject)
+    .map((tweet) => tweet.cardObject)
 //errors list
 let broadcastErrorList = []
 //raw list
@@ -264,24 +288,24 @@ if (broadcastsCards.length <= 0) {
         console.log(`archiver: broadcast (${broadcastsCards.length})`)
         let tmpCardsList = broadcastsCards.splice(0, 100)
         await window.guest_token.updateGuestToken(1)
-        let broadcasts = await getBroadcast({id: tmpCardsList.map(card => card.url.replaceAll(/.*\/([^\/\?#]+)(?:$|\?.*|#.*)/gm, '$1')), guest_token: window.guest_token.token})
+        let broadcasts = await getBroadcast({ id: tmpCardsList.map((card) => card.url.replaceAll(/.*\/([^\/\?#]+)(?:$|\?.*|#.*)/gm, '$1')), guest_token: window.guest_token.token })
         window.guest_token.updateRateLimit('BroadCast', 100)
-    
+
         for (let index in broadcasts) {
             let broadcastResponse = broadcasts[index]
             if (broadcastResponse.status === 'fulfilled') {
                 let tmpBroadcastResponseData = Broadcast(broadcastResponse.value.data)
-                let tmpBroadcastLink = {data: null}
+                let tmpBroadcastLink = { data: null }
                 //get link
                 if (tmpBroadcastResponseData.is_available_for_replay || (Number(tmpBroadcastResponseData.start) <= Date.now() && tmpBroadcastResponseData.end === '0')) {
                     try {
-                        tmpBroadcastLink = await getLiveVideoStream({media_key: tmpBroadcastResponseData.media_key})
+                        tmpBroadcastLink = await getLiveVideoStream({ media_key: tmpBroadcastResponseData.media_key })
                         if (tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl) {
                             let m3u8Url = tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl
                             try {
                                 let tmpParsedM3u8Url = new URL(m3u8Url)
                                 let urlPrefix = tmpParsedM3u8Url.origin
-                                if (tmpParsedM3u8Url.pathname.split("/").pop().includes('master_dynamic_')) {
+                                if (tmpParsedM3u8Url.pathname.split('/').pop().includes('master_dynamic_')) {
                                     let m3u8Data = (await AxiosFetch.get(m3u8Url)).data
                                     let m3u8Parser = new Parser()
                                     m3u8Parser.push(m3u8Data)
@@ -299,7 +323,7 @@ if (broadcastsCards.length <= 0) {
                     }
                 }
                 console.log(`archiver: broadcast -->${tmpBroadcastResponseData.id}<--`)
-                broadcastRawList[tmpBroadcastResponseData.id] = {info: broadcastResponse.value.data, source: tmpBroadcastLink?.data}
+                broadcastRawList[tmpBroadcastResponseData.id] = { info: broadcastResponse.value.data, source: tmpBroadcastLink?.data }
                 UserData.tweets[tmpCardsList[index].tweet_id].broadcastObject = tmpBroadcastResponseData
             } else {
                 broadcastErrorList.push(tmpCardsList[index])
@@ -314,7 +338,9 @@ if (broadcastsCards.length <= 0) {
 
 // audio spaces
 
-let audiospacesCards = Object.values(UserData.tweets).filter(tweet => tweet.cardObject?.type === 'audiospace' && !tweet.audiospaceObject).map(tweet => tweet.cardObject)
+let audiospacesCards = Object.values(UserData.tweets)
+    .filter((tweet) => tweet.cardObject?.type === 'audiospace' && !tweet.audiospaceObject)
+    .map((tweet) => tweet.cardObject)
 
 //errors list
 let audiospaceErrorList = []
@@ -327,23 +353,21 @@ if (audiospacesCards.length <= 0) {
 } else {
     while (audiospacesCards.length > 0) {
         console.log(`archiver: audiospace (${audiospacesCards.length})`)
-        
-        
-    
+
         let tmpCardsList = audiospacesCards.splice(0, 100)
         await window.guest_token.updateGuestToken(1)
-        let audiospaces = await getAudioSpace({id: tmpCardsList.map(card => card.url), guest_token: window.guest_token.token})
+        let audiospaces = await getAudioSpace({ id: tmpCardsList.map((card) => card.url), guest_token: window.guest_token.token })
         window.guest_token.updateRateLimit('AudioSpaceById', 100)
-    
+
         for (let index in audiospaces) {
             let audiospaceResponse = audiospaces[index]
             if (audiospaceResponse.status === 'fulfilled') {
                 let tmpAudioSpace = AudioSpace(audiospaceResponse.value.data)
-                let tmpAudioSpaceLink = {data: null}
+                let tmpAudioSpaceLink = { data: null }
                 //get link
                 if (tmpAudioSpace.is_available_for_replay || (Number(tmpAudioSpace.start) <= Date.now() && tmpAudioSpace.end === '0')) {
                     try {
-                        tmpAudioSpaceLink = await getLiveVideoStream({media_key: tmpAudioSpace.media_key})
+                        tmpAudioSpaceLink = await getLiveVideoStream({ media_key: tmpAudioSpace.media_key })
                         if (tmpAudioSpaceLink.data?.source?.noRedirectPlaybackUrl) {
                             tmpAudioSpace.playback = tmpAudioSpaceLink.data?.source?.noRedirectPlaybackUrl.replaceAll('?type=replay', '').replaceAll('?type=live', '')
                         }
@@ -352,7 +376,7 @@ if (audiospacesCards.length <= 0) {
                     }
                 }
                 console.log(`archiver: audiospace -->${tmpAudioSpace.id}<--`)
-                audiospaceRawList[tmpAudioSpace.id] = {info: audiospaceResponse.value.data, source: tmpAudioSpaceLink?.data}
+                audiospaceRawList[tmpAudioSpace.id] = { info: audiospaceResponse.value.data, source: tmpAudioSpaceLink?.data }
                 UserData.tweets[tmpCardsList[index].tweet_id].audiospaceObject = tmpAudioSpace
             } else {
                 audiospaceErrorList.push(tmpCardsList[index])
@@ -372,18 +396,17 @@ if (audiospacesCards.length <= 0) {
 
 //console.log(getPollsFailedList)
 
-
-console.log(`archiver: Time cost ${new Date() - now} ms`)//TODO remove
+console.log(`archiver: Time cost ${new Date() - now} ms`) //TODO remove
 
 // Download
 const Download = (url, fileName) => {
-    let element = document.createElement('a');
-    element.setAttribute('href', url);
-    element.setAttribute('download', fileName);
-    element.style.display = 'none';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    let element = document.createElement('a')
+    element.setAttribute('href', url)
+    element.setAttribute('download', fileName)
+    element.style.display = 'none'
+    document.body.appendChild(element)
+    element.click()
+    document.body.removeChild(element)
 }
 
-Download(URL.createObjectURL(new Blob([JSON.stringify(window.UserData, null, 4)], { type : 'application/json' })), `${name}.json`)
+Download(URL.createObjectURL(new Blob([JSON.stringify(window.UserData, null, 4)], { type: 'application/json' })), `${name}.json`)

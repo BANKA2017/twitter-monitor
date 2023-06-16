@@ -484,10 +484,10 @@
             ]
         },
         "kancolle": {
-            "开发\/运营": [
+            "开发/运营": [
                 {
                     "name": "KanColle_STAFF",
-                    "display_name": "「艦これ」開発\/運営",
+                    "display_name": "「艦これ」開発/運営",
                     "uid": 294025417
                 }
             ],
@@ -526,29 +526,11 @@
             "display_name": "艦これ"
         }
     },
-    "nsfwList": [
-        "nekopara_pr"
-    ],
+    "nsfwList": ["nekopara_pr"],
     "links": [
-        [
-            "https:\/\/twitter.com",
-            "Twitter",
-            "primary"
-        ],
-        [
-            "https:\/\/twi.lovelive.cx",
-            "愿光蓝鸟",
-            "primary"
-        ],
-        [
-            "https:\/\/github.com\/BANKA2017\/twitter-monitor\/issues",
-            "反馈",
-            "info"
-        ],
-        [
-            "https:\/\/nest.moe",
-            "♥BANKA",
-            "primary"
-        ]
+        ["https://twitter.com", "Twitter", "primary"],
+        ["https://twi.lovelive.cx", "愿光蓝鸟", "primary"],
+        ["https://github.com/BANKA2017/twitter-monitor/issues", "反馈", "info"],
+        ["https://nest.moe", "♥BANKA", "primary"]
     ]
 }

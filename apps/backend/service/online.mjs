@@ -1,6 +1,6 @@
 import express from 'express'
-import {ApiUserInfo} from '../CoreFunctions/online/OnlineUserInfo.mjs'
-import {ApiTweets, ApiSearch, ApiPoll, ApiAudioSpace, ApiMedia, ApiBroadcast} from '../CoreFunctions/online/OnlineTweet.mjs'
+import { ApiUserInfo } from '../CoreFunctions/online/OnlineUserInfo.mjs'
+import { ApiTweets, ApiSearch, ApiPoll, ApiAudioSpace, ApiMedia, ApiBroadcast } from '../CoreFunctions/online/OnlineTweet.mjs'
 import { apiTemplate } from '../../../libs/share/Constant.mjs'
 import { ApiTrends } from '../CoreFunctions/online/OnlineTrends.mjs'
 import { ApiListInfo, ApiListMemberList, ApiTypeahead } from '../CoreFunctions/online/OnlineMisc.mjs'
@@ -16,7 +16,7 @@ online.use(async (req, res, next) => {
     //if (global.guest_token2.token.nextActiveTime) {
     //    console.error(`[${new Date()}]: #Online #GuestToken #429 Wait until ${global.guest_token2.token.nextActiveTime}`)
     //    res.json(apiTemplate(429, `Wait until ${global.guest_token2.token.nextActiveTime}`))
-    //} else 
+    //} else
     if (req.env.guest_token2_handle.token.nextActiveTime) {
         console.error(`[${new Date()}]: #Online #GuestToken #429 Wait until ${req.env.guest_token2_handle.token.nextActiveTime}`)
         res.json(apiTemplate(429, `Wait until ${req.env.guest_token2_handle.token.nextActiveTime}`))

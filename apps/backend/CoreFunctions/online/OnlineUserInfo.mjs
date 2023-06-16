@@ -1,7 +1,7 @@
-import { GenerateAccountInfo } from "../../../../libs/core/Core.account.mjs"
-import { getUserInfo } from "../../../../libs/core/Core.fetch.mjs"
-import { GetEntitiesFromText, VerifyQueryString } from "../../../../libs/core/Core.function.mjs"
-import { apiTemplate } from "../../../../libs/share/Constant.mjs"
+import { GenerateAccountInfo } from '../../../../libs/core/Core.account.mjs'
+import { getUserInfo } from '../../../../libs/core/Core.fetch.mjs'
+import { GetEntitiesFromText, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
+import { apiTemplate } from '../../../../libs/share/Constant.mjs'
 
 const ApiUserInfo = async (req, env) => {
     const name = VerifyQueryString(req.query.name, '')
@@ -12,27 +12,27 @@ const ApiUserInfo = async (req, env) => {
     }
     let userInfo = {}
     try {
-        userInfo = await getUserInfo({user: name || uid, guest_token: env.guest_token2})
+        userInfo = await getUserInfo({ user: name || uid, guest_token: env.guest_token2 })
         //updateGuestToken
         await env.updateGuestToken(env, 'guest_token2', 1, userInfo.headers.get('x-rate-limit-remaining') < 20, !name ? 'UserByRestId' : 'UserByScreenName')
     } catch (e) {
         console.error(`[${new Date()}]: #OnlineUserInfo #${name || uid} #${e.code} ${e.message}`)
         return env.json(apiTemplate(e.code, e.message))
     }
-    let {GeneralAccountData} = GenerateAccountInfo(userInfo.data, {
+    let { GeneralAccountData } = GenerateAccountInfo(userInfo.data, {
         hidden: 0,
         lockes: 0,
         deleted: 0,
-        organization: 0,
+        organization: 0
     })
     if (!GeneralAccountData.uid) {
         return env.json(apiTemplate(404, 'No such account'))
     }
 
     if (GeneralAccountData.description) {
-        GeneralAccountData.description = GeneralAccountData.description.replaceAll("\n", "\n<br>")
+        GeneralAccountData.description = GeneralAccountData.description.replaceAll('\n', '\n<br>')
     }
-    
+
     GeneralAccountData.top = String(GeneralAccountData.top)
     GeneralAccountData.header = GeneralAccountData.header.replaceAll(/http(|s):\/\//gm, '')
     GeneralAccountData.uid_str = String(GeneralAccountData.uid)
@@ -45,4 +45,4 @@ const ApiUserInfo = async (req, env) => {
     return env.json(apiTemplate(200, 'OK', GeneralAccountData))
 }
 
-export {ApiUserInfo}
+export { ApiUserInfo }

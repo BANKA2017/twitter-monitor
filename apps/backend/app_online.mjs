@@ -1,7 +1,7 @@
 import express from 'express'
 import { GuestToken } from '../../libs/core/Core.function.mjs'
 import { apiTemplate } from '../../libs/share/Constant.mjs'
-import { basePath } from "../../libs/share/NodeConstant.mjs"
+import { basePath } from '../../libs/share/NodeConstant.mjs'
 //import { LanguageIdentification } from '../../packages/fasttext/language.mjs'
 //Online api
 import { MediaProxy } from './CoreFunctions/media/MediaProxy.mjs'
@@ -39,14 +39,13 @@ const app = express()
 const media = express()
 const port = EXPRESS_PORT
 
-app.use(express.urlencoded({extended: false}))
+app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 
 //get init token
-global.guest_token = new GuestToken
+global.guest_token = new GuestToken()
 
 app.use((req, res, next) => {
-    
     req.env = {
         json,
         updateGuestToken,
@@ -87,11 +86,14 @@ app.use('/media', media)
 //console.log('tmv3: Enabled language identification service')
 
 //media proxy
-media.use('/cache', express.static(basePath + '/../apps/backend/cache', {
-    setHeaders: function (res, path, stat) {
-      res.set('X-TMCache', 1)
-    }
-}))
+media.use(
+    '/cache',
+    express.static(basePath + '/../apps/backend/cache', {
+        setHeaders: function (res, path, stat) {
+            res.set('X-TMCache', 1)
+        }
+    })
+)
 media.get(/(proxy)\/(.*)/, async (req, res) => {
     req.params.link = req.params?.[1] || ''
     const _res = await MediaProxy(req, req.env)
@@ -129,11 +131,12 @@ app.get(/^\/(ext_tw_video|amplify_video)\/(.*)/, async (req, res) => {
         default:
             res.status(_res.status).end()
     }
-})//for m3u8
+}) //for m3u8
 
 //robots.txt
-app.all('/robots.txt', (req, res) => {res.type('txt').send("User-agent: *\nDisallow: /*")})
-
+app.all('/robots.txt', (req, res) => {
+    res.type('txt').send('User-agent: *\nDisallow: /*')
+})
 
 //error control
 app.all('*', (req, res) => {
@@ -144,5 +147,5 @@ app.use((err, req, res, next) => {
     res.status(500).json(apiTemplate(500, 'Unknown error', {}, 'global_api'))
 })
 app.listen(port, () => {
-  console.log(`V3Api listening on port ${port}`)
+    console.log(`V3Api listening on port ${port}`)
 })

@@ -4,7 +4,7 @@
   @BANKA2017 && NEST.MOE
 */
 
-import { GuestToken } from "../../libs/core/Core.function.mjs"
+import { GuestToken } from '../../libs/core/Core.function.mjs'
 
 class MockExpress {
     query = {}
@@ -16,13 +16,13 @@ class MockExpress {
     env = {}
 
     statusCode = 200
-    headers = new Headers
+    headers = new Headers()
     redirect = undefined
 
     globalResponseCtx = {}
 
     constructor() {
-        this.guest_token2 = new GuestToken
+        this.guest_token2 = new GuestToken()
     }
 
     updateGuestToken() {
@@ -30,7 +30,7 @@ class MockExpress {
     }
     init(url = '', params = [], body = '', type = '') {
         this.statusCode = 200
-        this.headers = new Headers
+        this.headers = new Headers()
         this.redirect = undefined
         this.globalResponseCtx = {}
 
@@ -41,13 +41,12 @@ class MockExpress {
         const parseURL = new URL(url)
         this.url = parseURL.href
         this.query = Object.fromEntries(parseURL.searchParams.entries())
-        
     }
-    setEnv (k, v) {
+    setEnv(k, v) {
         this.env[k] = v
     }
 
-    get req () {
+    get req() {
         return {
             query: this.query,
             params: this.params,
@@ -90,9 +89,8 @@ class MockExpress {
         }
         return this.globalResponseCtx
     }
-    
-    
-    get res () {
+
+    get res() {
         return {
             set: this.set,
             append: this.append,
@@ -102,17 +100,16 @@ class MockExpress {
             send: this.send,
             end: this.end,
             redirect: this.redirectPath,
-            json: this.json,
+            json: this.json
         }
     }
 }
 
-
 // req
 // express.js req.query, req.params, req.body, // cfworkers req.url, req.postBody, env.guest_token2, req.type
 // res
-// res.set(1, 2), res.append(1, 2), res.json(1, ?2), res.status(number).json(<-), res.send(string), 
+// res.set(1, 2), res.append(1, 2), res.json(1, ?2), res.status(number).json(<-), res.send(string),
 //                                                                     .end()
-// res.setHeader(1, 2), res.redirect(number, string path), 
+// res.setHeader(1, 2), res.redirect(number, string path),
 
 export default MockExpress

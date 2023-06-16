@@ -1,16 +1,16 @@
-import { Parser } from "m3u8-parser"
-import path2array from "../../../../libs/core/Core.apiPath.mjs"
-import { getAudioSpace, getLiveVideoStream, getConversation, getPollResult, getTweets, getBroadcast, getListTimeLine, AxiosFetch } from "../../../../libs/core/Core.fetch.mjs"
-import { GetEntitiesFromText, VerifyQueryString } from "../../../../libs/core/Core.function.mjs"
-import { AudioSpace, Broadcast, Time2SnowFlake, Tweet, TweetsInfo } from "../../../../libs/core/Core.tweet.mjs"
-import { apiTemplate } from "../../../../libs/share/Constant.mjs"
+import { Parser } from 'm3u8-parser'
+import path2array from '../../../../libs/core/Core.apiPath.mjs'
+import { getAudioSpace, getLiveVideoStream, getConversation, getPollResult, getTweets, getBroadcast, getListTimeLine, AxiosFetch } from '../../../../libs/core/Core.fetch.mjs'
+import { GetEntitiesFromText, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
+import { AudioSpace, Broadcast, Time2SnowFlake, Tweet, TweetsInfo } from '../../../../libs/core/Core.tweet.mjs'
+import { apiTemplate } from '../../../../libs/share/Constant.mjs'
 
 const ApiTweets = async (req, env) => {
     const isRssMode = req.query.format === 'rss'
     const queryCount = VerifyQueryString(req.query.count, 0)
-    const count = queryCount ? (queryCount > 100 ? 100 : (queryCount < 1 ? 1 : queryCount)) : (isRssMode ? 20 : 10)
+    const count = queryCount ? (queryCount > 100 ? 100 : queryCount < 1 ? 1 : queryCount) : isRssMode ? 20 : 10
     const tweet_id = VerifyQueryString(req.query.tweet_id, 0)
-    const cursor = String(req.query.cursor??req.query.tweet_id??'0')//TODO Notice, VerifyQueryString()
+    const cursor = String(req.query.cursor ?? req.query.tweet_id ?? '0') //TODO Notice, VerifyQueryString()
 
     const name = VerifyQueryString(req.query.name, '')
     const uid = VerifyQueryString(req.query.uid, 0)
@@ -20,8 +20,8 @@ const ApiTweets = async (req, env) => {
     //TODO reuse cursor as name
 
     // display type all, self, retweet, media, album, space
-    const displayType = ["all", "include_reply"].includes(req.query.display) ? req.query.display : 'all'
-    
+    const displayType = ['all', 'include_reply'].includes(req.query.display) ? req.query.display : 'all'
+
     //conversation
     const isConversation = !!(Number(req.query.is_status, 0) && cursor !== '0')
     const loadConversation = VerifyQueryString(req.query.load_conversation, 0) !== 0
@@ -32,7 +32,7 @@ const ApiTweets = async (req, env) => {
     let tweets = {}
     if (listId) {
         try {
-            tweets = await getListTimeLine({id: listId, count, guest_token: env.guest_token2, authorization: 1, graphqlMode: true, cursor: isNaN(cursor) ? (cursor ? cursor : '') : ''})
+            tweets = await getListTimeLine({ id: listId, count, guest_token: env.guest_token2, authorization: 1, graphqlMode: true, cursor: isNaN(cursor) ? (cursor ? cursor : '') : '' })
             //updateGuestToken
             await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20, 'ListTimeLime')
         } catch (e) {
@@ -42,15 +42,14 @@ const ApiTweets = async (req, env) => {
         }
     } else if (isConversation) {
         try {
-            tweets = await getConversation({tweet_id, guest_token: env.guest_token2, graphqlMode: true, cursor: isNaN(cursor) ? cursor : ''})
+            tweets = await getConversation({ tweet_id, guest_token: env.guest_token2, graphqlMode: true, cursor: isNaN(cursor) ? cursor : '' })
             //updateGuestToken
             await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20, 'TweetDetail')
         } catch (e) {
             console.error(`[${new Date()}]: #OnlineTweetsConversation #${tweet_id} #${e.code} ${e.message}`)
             return env.json(apiTemplate(e.code, e.message))
         }
-        
-    } 
+    }
     //else if (name !== '' && displayType === 'all') {
     //    try {
     //        tweets = await getTweets(name, cursor, env.guest_token2, 40, true, true, false)
@@ -59,7 +58,7 @@ const ApiTweets = async (req, env) => {
     //        console.error(`[${new Date()}]: #OnlineTweetsConversation #${cursor} #${e.code} ${e.message}`)
     //        return env.json(apiTemplate(e.code, e.message))
     //    }
-    //} 
+    //}
     else {
         if (name === '') {
             return env.json(apiTemplate(404, 'No such account'))
@@ -97,35 +96,36 @@ const ApiTweets = async (req, env) => {
         //}
 
         try {
-            tweets = await getTweets({queryString: uid, cursor: (cursor === '0' ? '' : cursor), guest_token: env.guest_token2, count, online: true, graphqlMode: true, searchMode: false, withReply: displayType === 'include_reply'})
+            tweets = await getTweets({ queryString: uid, cursor: cursor === '0' ? '' : cursor, guest_token: env.guest_token2, count, online: true, graphqlMode: true, searchMode: false, withReply: displayType === 'include_reply' })
             //tweets = await getTweets(queryArray.join(' '), '', global.guest_token2.token, count, true, false, true)
-            
+
             //updateGuestToken
             await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20, 'UserTweets')
         } catch (e) {
             console.error(`[${new Date()}]: #OnlineTweetsTimeline #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
             return env.json(apiTemplate(e.code, e.message))
         }
-        
     }
 
-    const {tweetsInfo, tweetsContent} = GenerateData(tweets, isConversation, ((loadConversation || listId || displayType === 'include_reply') ? '' : name), true)
+    const { tweetsInfo, tweetsContent } = GenerateData(tweets, isConversation, loadConversation || listId || displayType === 'include_reply' ? '' : name, true)
     if (tweetsInfo.errors.code !== 0) {
         return env.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
     }
-    return env.json(apiTemplate(200, 'OK', {
-        tweets: isConversation ? tweetsContent.reverse() : tweetsContent,
-        hasmore: !!(tweetsContent.length ? (tweetsInfo.cursor.bottom ?? false) : false),
-        //top_tweet_id: tweetsInfo.tweetRange.max || '0',
-        //bottom_tweet_id: tweetsInfo.tweetRange.min || '0'
-        top_tweet_id: tweetsInfo.cursor.top || '',
-        bottom_tweet_id: tweetsContent.length ? (tweetsInfo.cursor.bottom || '') : ''
-    }))
+    return env.json(
+        apiTemplate(200, 'OK', {
+            tweets: isConversation ? tweetsContent.reverse() : tweetsContent,
+            hasmore: !!(tweetsContent.length ? tweetsInfo.cursor.bottom ?? false : false),
+            //top_tweet_id: tweetsInfo.tweetRange.max || '0',
+            //bottom_tweet_id: tweetsInfo.tweetRange.min || '0'
+            top_tweet_id: tweetsInfo.cursor.top || '',
+            bottom_tweet_id: tweetsContent.length ? tweetsInfo.cursor.bottom || '' : ''
+        })
+    )
 }
 
 const ApiSearch = async (req, env) => {
     const isRssMode = req.query.format === 'rss'
-    const type = req.type//req.params[0]
+    const type = req.type //req.params[0]
     const advancedSearchMode = (req.query.advanced || '0') === '1'
     const cursor = BigInt(VerifyQueryString(req.query.tweet_id, 0))
     const queryCount = VerifyQueryString(req.query.count, 20)
@@ -155,20 +155,31 @@ const ApiSearch = async (req, env) => {
         const getMedia = !!(req.query.tweet_media || false)
 
         //keywords
-        queryArray.push((VerifyQueryString(req.query.q, '')).split(' ').map((keyword, index) => {
-            if (index > 0 && textOrMode) {
-                return `OR ` + (textNotMode ? '-' : '') + keyword
-            }
-            return (textNotMode ? '-' : '') + keyword
-        }).join(' '))
+        queryArray.push(
+            VerifyQueryString(req.query.q, '')
+                .split(' ')
+                .map((keyword, index) => {
+                    if (index > 0 && textOrMode) {
+                        return `OR ` + (textNotMode ? '-' : '') + keyword
+                    }
+                    return (textNotMode ? '-' : '') + keyword
+                })
+                .join(' ')
+        )
 
         //names
-        queryArray.push(VerifyQueryString(req.query.user, '').replaceAll('@', '').split(' ').map((keyword, index) => {
-            if (index > 0 && userOrMode) {
-                return `OR ` + (userNotMode ? '-' : '') + keyword
-            }
-            return (userNotMode ? '-' : '') + keyword
-        }).join(' '))
+        queryArray.push(
+            VerifyQueryString(req.query.user, '')
+                .replaceAll('@', '')
+                .split(' ')
+                .map((keyword, index) => {
+                    if (index > 0 && userOrMode) {
+                        return `OR ` + (userNotMode ? '-' : '') + keyword
+                    }
+                    return (userNotMode ? '-' : '') + keyword
+                })
+                .join(' ')
+        )
 
         if (getMedia) {
             queryArray.push('filter:media')
@@ -176,7 +187,7 @@ const ApiSearch = async (req, env) => {
     } else if (VerifyQueryString(req.query.q, '')) {
         queryArray.push(VerifyQueryString(req.query.q, ''))
     }
-    
+
     //time
     ///start
     if (cursor !== BigInt(0) && refresh) {
@@ -193,24 +204,26 @@ const ApiSearch = async (req, env) => {
         queryArray.push('max_id:' + String(Time2SnowFlake(end * 1000)))
     }
     try {
-        tweets = await getTweets({queryString: queryArray.join(' '), cursor: '', guest_token: env.guest_token2, count: queryCount, online: true, graphqlMode: false, searchMode: true})
+        tweets = await getTweets({ queryString: queryArray.join(' '), cursor: '', guest_token: env.guest_token2, count: queryCount, online: true, graphqlMode: false, searchMode: true })
         //updateGuestToken
         await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20, 'Search')
     } catch (e) {
         console.error(`[${new Date()}]: #OnlineTweetsSearch #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
         return env.json(apiTemplate(e.code, e.message))
     }
-    
-    const {tweetsInfo, tweetsContent} = GenerateData(tweets, false, '', true)
+
+    const { tweetsInfo, tweetsContent } = GenerateData(tweets, false, '', true)
     if (tweetsInfo.errors.code !== 0) {
         return env.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
     }
-    return env.json(apiTemplate(200, 'OK', {
-        tweets: tweetsContent,
-        hasmore: !!tweetsContent.length,
-        top_tweet_id: tweetsInfo.tweetRange.max || '0',
-        bottom_tweet_id: tweetsInfo.tweetRange.min || '0',
-    }))
+    return env.json(
+        apiTemplate(200, 'OK', {
+            tweets: tweetsContent,
+            hasmore: !!tweetsContent.length,
+            top_tweet_id: tweetsInfo.tweetRange.max || '0',
+            bottom_tweet_id: tweetsInfo.tweetRange.min || '0'
+        })
+    )
 }
 
 const ApiPoll = async (req, env) => {
@@ -218,12 +231,18 @@ const ApiPoll = async (req, env) => {
     if (!tweet_id) {
         return env.json(apiTemplate())
     }
-    const tmpPollData = await getPollResult({tweet_id, guest_token: env.guest_token2})
-    
+    const tmpPollData = await getPollResult({ tweet_id, guest_token: env.guest_token2 })
+
     //updateGuestToken
     await env.updateGuestToken(env, 'guest_token2', 1, tmpPollData.headers.get('x-rate-limit-remaining') < 20, 'TweetDetail')
     if (tmpPollData.code === 200) {
-        return env.json(apiTemplate(200, 'OK', tmpPollData.data.map(poll => Number(poll))))
+        return env.json(
+            apiTemplate(
+                200,
+                'OK',
+                tmpPollData.data.map((poll) => Number(poll))
+            )
+        )
     } else {
         console.error(`[${new Date()}]: #OnlinePoll #${tweet_id} #${tmpPollData.code} Something wrong`)
         return env.json(apiTemplate(tmpPollData.code, 'Something wrong', []))
@@ -235,8 +254,8 @@ const ApiAudioSpace = async (req, env) => {
     if (!id) {
         return env.json(apiTemplate())
     }
-    const tmpAudioSpaceData = await getAudioSpace({id, guest_token: env.guest_token2})
-    
+    const tmpAudioSpaceData = await getAudioSpace({ id, guest_token: env.guest_token2 })
+
     //updateGuestToken
     await env.updateGuestToken(env, 'guest_token2', 1, tmpAudioSpaceData.headers.get('x-rate-limit-remaining') < 20, 'AudioSpaceById')
     if (tmpAudioSpaceData.data?.data?.audioSpace || false) {
@@ -244,7 +263,7 @@ const ApiAudioSpace = async (req, env) => {
         //get link
         if (tmpAudioSpace.is_available_for_replay || (Number(tmpAudioSpace.start) <= Date.now() && tmpAudioSpace.end === '0')) {
             try {
-                const tmpAudioSpaceLink = await getLiveVideoStream({media_key: tmpAudioSpace.media_key})
+                const tmpAudioSpaceLink = await getLiveVideoStream({ media_key: tmpAudioSpace.media_key })
                 if (tmpAudioSpaceLink.data?.source?.noRedirectPlaybackUrl) {
                     tmpAudioSpace.playback = tmpAudioSpaceLink.data?.source?.noRedirectPlaybackUrl.replaceAll('?type=replay', '').replaceAll('?type=live', '')
                 }
@@ -271,24 +290,24 @@ const ApiBroadcast = async (req, env) => {
     if (!id) {
         return env.json(apiTemplate())
     }
-    
+
     //TODO check Broadcast api rate limit
     try {
-        const tmpBroadcastData = await getBroadcast({id, guest_token: env.guest_token2})
-        
+        const tmpBroadcastData = await getBroadcast({ id, guest_token: env.guest_token2 })
+
         //updateGuestToken
         await env.updateGuestToken(env, 'guest_token2', 1, tmpBroadcastData.headers.get('x-rate-limit-remaining') < 20, 'BroadCast')
         let tmpBroadcast = Broadcast(tmpBroadcastData.data)
         //get link
         if (tmpBroadcast.is_available_for_replay || (Number(tmpBroadcast.start) <= Date.now() && tmpBroadcast.end === '0')) {
             try {
-                const tmpBroadcastLink = await getLiveVideoStream({media_key: tmpBroadcast.media_key})
+                const tmpBroadcastLink = await getLiveVideoStream({ media_key: tmpBroadcast.media_key })
                 if (tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl) {
                     let m3u8Url = tmpBroadcastLink.data?.source?.noRedirectPlaybackUrl
                     try {
                         const tmpParsedM3u8Url = new URL(m3u8Url)
                         const urlPrefix = tmpParsedM3u8Url.origin
-                        if (tmpParsedM3u8Url.pathname.split("/").pop().includes('master_dynamic_')) {
+                        if (tmpParsedM3u8Url.pathname.split('/').pop().includes('master_dynamic_')) {
                             const m3u8Data = (await AxiosFetch.get(m3u8Url)).data
                             const m3u8Parser = new Parser()
                             m3u8Parser.push(m3u8Data)
@@ -299,7 +318,7 @@ const ApiBroadcast = async (req, env) => {
                         console.error(e)
                         console.log(`[${new Date()}]: Unable to parse playlists from '${m3u8Url}', fallback. #OnlineBroadcast`)
                     }
-                    
+
                     tmpBroadcast.playback = m3u8Url.replaceAll('?type=replay', '').replaceAll('?type=live', '')
                 }
             } catch (e) {
@@ -330,26 +349,30 @@ const ApiMedia = async (req, env) => {
     }
 
     try {
-        const tmpConversation = await getConversation({tweet_id, guest_token: env.guest_token2, graphqlMode: true, authorization: authorizationMode})
-        
+        const tmpConversation = await getConversation({ tweet_id, guest_token: env.guest_token2, graphqlMode: true, authorization: authorizationMode })
+
         //updateGuestToken
         await env.updateGuestToken(env, 'guest_token2', 1, tmpConversation.headers.get('x-rate-limit-remaining') < 20, 'TweetDetail')
         const tweetsInfo = TweetsInfo(tmpConversation.data, true)
         if (tweetsInfo.errors.code !== 0) {
             return env.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
-        } else if (!tweetsInfo.contents.some(tweet => path2array('tweet_id', tweet) === tweet_id)) {
+        } else if (!tweetsInfo.contents.some((tweet) => path2array('tweet_id', tweet) === tweet_id)) {
             return env.json(apiTemplate(404, 'No such tweet'))
         } else {
-            const tweetData = Tweet(tweetsInfo.contents.filter(tweet => path2array('tweet_id', tweet) === tweet_id)[0], {}, [], {}, true, false, true)
-            return env.json(apiTemplate(200, 'OK', {
-                video: !(Array.isArray(tweetData.video) && (tweetData.video.length === 0)),
-                video_info: tweetData.video,
-                media_info: tweetData.media.filter(media => media.source !== 'cover').map(media => {
-                    media.cover = media.cover.replaceAll(/(https:\/\/|http:\/\/)/gm, '')
-                    media.url = media.url.replaceAll(/(https:\/\/|http:\/\/)/gm, '')
-                    return media
+            const tweetData = Tweet(tweetsInfo.contents.filter((tweet) => path2array('tweet_id', tweet) === tweet_id)[0], {}, [], {}, true, false, true)
+            return env.json(
+                apiTemplate(200, 'OK', {
+                    video: !(Array.isArray(tweetData.video) && tweetData.video.length === 0),
+                    video_info: tweetData.video,
+                    media_info: tweetData.media
+                        .filter((media) => media.source !== 'cover')
+                        .map((media) => {
+                            media.cover = media.cover.replaceAll(/(https:\/\/|http:\/\/)/gm, '')
+                            media.url = media.url.replaceAll(/(https:\/\/|http:\/\/)/gm, '')
+                            return media
+                        })
                 })
-            }))
+            )
         }
     } catch (e) {
         console.log(e)
@@ -365,7 +388,7 @@ const TweetsData = (content = {}, users = {}, contents = [], precheckName = '', 
     exportTweet.GeneralTweetData.retweet_count = exportTweet.interactiveData.retweet_count
     exportTweet.GeneralTweetData.quote_count = exportTweet.interactiveData.quote_count
     exportTweet.GeneralTweetData.reply_count = exportTweet.interactiveData.reply_count
-    exportTweet.GeneralTweetData.view_count = exportTweet.interactiveData.view_count//TODO only supported graphql now
+    exportTweet.GeneralTweetData.view_count = exportTweet.interactiveData.view_count //TODO only supported graphql now
     //rtl
     exportTweet.GeneralTweetData.rtl = exportTweet.isRtl
     // display text range
@@ -392,28 +415,30 @@ const TweetsData = (content = {}, users = {}, contents = [], precheckName = '', 
         }
     }
 
-    return {code: 0, data: {}}
+    return { code: 0, data: {} }
 }
 
 const returnDataForTweets = (tweet = {}, historyMode = false, tweetEntities = [], tweetPolls = [], tweetCard = {}, tweetCardApp = {}, tweetQuote = {}, tweetMedia = []) => {
     tweet.type = 'tweet'
     if (historyMode) {
         //处理history模式
-        tweet["entities"] = tweetEntities
+        tweet['entities'] = tweetEntities
     }
     //$tweet["full_text_origin"] = preg_replace('/ https:\/\/t.co\/[\w]+/', '', $tweet["full_text_origin"]);//TODO for history mode
-    
+
     //处理投票
     tweet.pollObject = {}
     if (tweet.poll && tweetPolls.length) {
         //TODO check tweetID
         //console.log(String(poll.tweet_id), String(tweet.tweet_id), poll.tweet_id, tweet.tweet_id, poll.tweet_id === tweet.tweet_id)
-        tweet.pollObject = tweetPolls.filter(poll => poll.tweet_id === tweet.tweet_id).map(poll => {
-            delete poll.tweet_id
-            poll.checked = !!poll.checked
-            //poll.count = 0
-            return poll
-        })
+        tweet.pollObject = tweetPolls
+            .filter((poll) => poll.tweet_id === tweet.tweet_id)
+            .map((poll) => {
+                delete poll.tweet_id
+                poll.checked = !!poll.checked
+                //poll.count = 0
+                return poll
+            })
     }
 
     //处理卡片
@@ -434,7 +459,7 @@ const returnDataForTweets = (tweet = {}, historyMode = false, tweetEntities = []
         tweet.quoteObject.tweet_id = tweet.quoteObject.tweet_id
         tweet.quote_status_str = tweet.quoteObject.id_str
 
-        const {originText, entities} = GetEntitiesFromText(tweet.quoteObject.full_text, 'quote')
+        const { originText, entities } = GetEntitiesFromText(tweet.quoteObject.full_text, 'quote')
         tweet.quoteObject.full_text = originText
         tweet.quoteObject.entities = entities
     }
@@ -466,7 +491,7 @@ const returnDataForTweets = (tweet = {}, historyMode = false, tweetEntities = []
         tweet.mediaObject = [...new Set(tweet.mediaObject)]
     }
 
-    tweet.tweet_id_str = String(tweet.tweet_id)//Number.MAX_SAFE_INTEGER => 9007199254740991 "9007199254740991".length => 16
+    tweet.tweet_id_str = String(tweet.tweet_id) //Number.MAX_SAFE_INTEGER => 9007199254740991 "9007199254740991".length => 16
     tweet.uid_str = String(tweet.uid)
 
     return tweet
@@ -475,53 +500,56 @@ const returnDataForTweets = (tweet = {}, historyMode = false, tweetEntities = []
 const GenerateData = (tweets, isConversation = false, filterName = '', graphqlMode = false) => {
     const tweetsInfo = TweetsInfo(tweets.data, graphqlMode)
     if (tweetsInfo.errors.code !== 0) {
-        return {tweetsInfo: tweetsInfo, tweetsContent: []}
+        return { tweetsInfo: tweetsInfo, tweetsContent: [] }
     }
     let reverse = true
-    let tweetsContent = tweetsInfo.contents.map(content => {
-        if (!content) {return false}
-        if (['TimelineTimelineItem'].includes(content?.content?.entryType)) {
-            let tmpData = TweetsData(content, {}, [], '', graphqlMode, false)
-        
-            if (tmpData.code === 200 && Object.keys(tmpData.data).length) {
-                tmpData.data.user_info = tmpData.userInfo
-                tmpData.data.retweet_user_info = tmpData.retweetUserInfo
-                return tmpData.data
+    let tweetsContent = tweetsInfo.contents
+        .map((content) => {
+            if (!content) {
+                return false
             }
-            return false
-        } else if (['TimelineTimelineModule', 'VerticalConversation'].includes(content?.content?.displayType)) {
-            if (content?.content?.displayType === 'TimelineTimelineModule') {
-                reverse = false
-            }
-            return content.content.items.map(item => {
-                let tmpData = TweetsData(item, tweetsInfo.users, tweetsInfo.contents, filterName, graphqlMode, isConversation)
-        
+            if (['TimelineTimelineItem'].includes(content?.content?.entryType)) {
+                let tmpData = TweetsData(content, {}, [], '', graphqlMode, false)
+
                 if (tmpData.code === 200 && Object.keys(tmpData.data).length) {
                     tmpData.data.user_info = tmpData.userInfo
                     tmpData.data.retweet_user_info = tmpData.retweetUserInfo
                     return tmpData.data
                 }
                 return false
-            })
-        } else {
-            let tmpData = TweetsData(content, tweetsInfo.users, tweetsInfo.contents, filterName, graphqlMode, isConversation)
-        
-            if (tmpData.code === 200 && Object.keys(tmpData.data).length) {
-                tmpData.data.user_info = tmpData.userInfo
-                tmpData.data.retweet_user_info = tmpData.retweetUserInfo
-                return tmpData.data
-            }
-        }   
-        return false
-    }).flat().filter(tweet => tweet?.tweet_id)
+            } else if (['TimelineTimelineModule', 'VerticalConversation'].includes(content?.content?.displayType)) {
+                if (content?.content?.displayType === 'TimelineTimelineModule') {
+                    reverse = false
+                }
+                return content.content.items.map((item) => {
+                    let tmpData = TweetsData(item, tweetsInfo.users, tweetsInfo.contents, filterName, graphqlMode, isConversation)
 
+                    if (tmpData.code === 200 && Object.keys(tmpData.data).length) {
+                        tmpData.data.user_info = tmpData.userInfo
+                        tmpData.data.retweet_user_info = tmpData.retweetUserInfo
+                        return tmpData.data
+                    }
+                    return false
+                })
+            } else {
+                let tmpData = TweetsData(content, tweetsInfo.users, tweetsInfo.contents, filterName, graphqlMode, isConversation)
+
+                if (tmpData.code === 200 && Object.keys(tmpData.data).length) {
+                    tmpData.data.user_info = tmpData.userInfo
+                    tmpData.data.retweet_user_info = tmpData.retweetUserInfo
+                    return tmpData.data
+                }
+            }
+            return false
+        })
+        .flat()
+        .filter((tweet) => tweet?.tweet_id)
 
     if (!reverse || isConversation) {
-        tweetsContent = tweetsContent.reverse()//sort((a, b) => b.tweet_id - a.tweet_id)
+        tweetsContent = tweetsContent.reverse() //sort((a, b) => b.tweet_id - a.tweet_id)
     }
 
-    return {tweetsInfo, tweetsContent}
+    return { tweetsInfo, tweetsContent }
 }
 
-
-export {ApiTweets, ApiSearch, ApiPoll, ApiAudioSpace, ApiBroadcast, ApiMedia, GenerateData}
+export { ApiTweets, ApiSearch, ApiPoll, ApiAudioSpace, ApiBroadcast, ApiMedia, GenerateData }

@@ -187,4 +187,4 @@ const GetMime = (ext) => {
     return mimeTypes[ext] ?? 'application/octet-stream'
 }
 
-export {GetMime}
+export { GetMime }

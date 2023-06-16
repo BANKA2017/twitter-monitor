@@ -8,28 +8,39 @@ let MediaCover = []
 do {
     const startTime = new Date()
 
-    MediaCover = [...new Set(await V2TwitterMedia.findAll({
-        attributes: [[dbHandle.twitter_monitor.fn('ANY_VALUE', dbHandle.twitter_monitor.col(`cover`)), "cover"], [dbHandle.twitter_monitor.fn('ANY_VALUE', dbHandle.twitter_monitor.col(`tweet_id`)), "tweet_id"], [dbHandle.twitter_monitor.fn('ANY_VALUE', dbHandle.twitter_monitor.col(`source`)), "source"]],
-        where: {
-            //source: {[Op.ne]: 'cards'},
-            blurhash: null,
-            extension: {[Op.ne]: 'mp4'}
-        },
-        group: 'cover',
-        limit: 100
-    }))].map(media => media.cover)
+    MediaCover = [
+        ...new Set(
+            await V2TwitterMedia.findAll({
+                attributes: [
+                    [dbHandle.twitter_monitor.fn('ANY_VALUE', dbHandle.twitter_monitor.col(`cover`)), 'cover'],
+                    [dbHandle.twitter_monitor.fn('ANY_VALUE', dbHandle.twitter_monitor.col(`tweet_id`)), 'tweet_id'],
+                    [dbHandle.twitter_monitor.fn('ANY_VALUE', dbHandle.twitter_monitor.col(`source`)), 'source']
+                ],
+                where: {
+                    //source: {[Op.ne]: 'cards'},
+                    blurhash: null,
+                    extension: { [Op.ne]: 'mp4' }
+                },
+                group: 'cover',
+                limit: 100
+            })
+        )
+    ].map((media) => media.cover)
 
     t = await dbHandle.twitter_monitor.transaction()
-    const blurhashList = await Promise.allSettled(MediaCover.map(cover => GetBlurHash(cover)))
+    const blurhashList = await Promise.allSettled(MediaCover.map((cover) => GetBlurHash(cover)))
     for (const mediaIndex in MediaCover) {
-        await V2TwitterMedia.update({
-            blurhash: blurhashList[mediaIndex].value || blurhashList[mediaIndex].reason
-        }, {
-            where: {
-                cover: MediaCover[mediaIndex]
+        await V2TwitterMedia.update(
+            {
+                blurhash: blurhashList[mediaIndex].value || blurhashList[mediaIndex].reason
             },
-            transaction: t
-        })
+            {
+                where: {
+                    cover: MediaCover[mediaIndex]
+                },
+                transaction: t
+            }
+        )
     }
     await t.commit()
     console.log(`blurhash: cost ${Date.now() - startTime} ms, ${blurhashList.length}`)

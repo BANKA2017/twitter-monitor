@@ -1,5 +1,5 @@
-import { existsSync, writeFileSync } from "fs"
-import { basePath } from "../../libs/share/NodeConstant.mjs"
+import { existsSync, writeFileSync } from 'fs'
+import { basePath } from '../../libs/share/NodeConstant.mjs'
 
 const json = (data, status = 200) => ({
     status,
@@ -29,4 +29,4 @@ const mediaCacheSave = (buffer, name) => {
     }
 }
 
-export {json, updateGuestToken, ResponseWrapper, mediaExistPreCheck, mediaCacheSave}
+export { json, updateGuestToken, ResponseWrapper, mediaExistPreCheck, mediaCacheSave }

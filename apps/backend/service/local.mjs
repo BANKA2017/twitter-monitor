@@ -26,5 +26,4 @@ local.get('/data/hashtag_rank', ApiLocalHashtagRank)
 //search
 local.get('/data/search/', ApiLocalSearch)
 
-
 export default local

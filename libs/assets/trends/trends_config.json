@@ -1,17 +1,20 @@
-[{
-    "project": "lovelive",
-    "path": "/var/www/tmv2/static/lovelive_trends/",
-    "default_project": "LoveLive!",
-    "default_team": "Aqours",
-    "push_hash": "lovelive_trends",
-    "prefix": "LoveLive! Trends",
-    "member_list": "lovelive.json"
-},{
-    "project": "bangdream",
-    "path": "/var/www/tmv2/static/bangdream_trends/",
-    "default_project": "BanGDream!",
-    "default_team": "Poppin' Party",
-    "push_hash": "bangdream_trends",
-    "prefix": "BanGDream! Trends",
-    "member_list": "bangdream.json"
-}]
+[
+    {
+        "project": "lovelive",
+        "path": "/var/www/tmv2/static/lovelive_trends/",
+        "default_project": "LoveLive!",
+        "default_team": "Aqours",
+        "push_hash": "lovelive_trends",
+        "prefix": "LoveLive! Trends",
+        "member_list": "lovelive.json"
+    },
+    {
+        "project": "bangdream",
+        "path": "/var/www/tmv2/static/bangdream_trends/",
+        "default_project": "BanGDream!",
+        "default_team": "Poppin' Party",
+        "push_hash": "bangdream_trends",
+        "prefix": "BanGDream! Trends",
+        "member_list": "bangdream.json"
+    }
+]

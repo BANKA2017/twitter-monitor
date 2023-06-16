@@ -8,10 +8,10 @@ import AccountInfo from '../../../../libs/model/tmv1/account_info.js'
 import TwitterData from '../../../../libs/model/tmv1/twitter_data.js'
 import TwitterTweets from '../../../../libs/model/tmv1/twitter_tweets.js'
 import { apiTemplate } from '../../../../libs/share/Constant.mjs'
-import { basePath } from "../../../../libs/share/NodeConstant.mjs"
+import { basePath } from '../../../../libs/share/NodeConstant.mjs'
 
 const ApiLegacyInfo = async (req, res) => {
-    const {uid} = getUid(req.query)
+    const { uid } = getUid(req.query)
     if (uid === '0' || !uid) {
         res.json(apiTemplate(1, 'No record', {}, 'v1'))
         return
@@ -19,7 +19,7 @@ const ApiLegacyInfo = async (req, res) => {
     let baseInfo = null
     try {
         baseInfo = await AccountInfo.findOne({
-            attributes: ["uid", "name", "display_name", "header", "banner", "following", "followers", "description", "lang", "statuses_count", "top", "locked", "deleted", "verified"],
+            attributes: ['uid', 'name', 'display_name', 'header', 'banner', 'following', 'followers', 'description', 'lang', 'statuses_count', 'top', 'locked', 'deleted', 'verified'],
             where: {
                 uid
             },
@@ -32,7 +32,7 @@ const ApiLegacyInfo = async (req, res) => {
     if (baseInfo === null) {
         res.json(apiTemplate(1, 'No record', {}, 'v1'))
     } else {
-        baseInfo.header = baseInfo.header.replace(/\/([^\.]+)\.(.*)$/, "/$1_400x400.$2")
+        baseInfo.header = baseInfo.header.replace(/\/([^\.]+)\.(.*)$/, '/$1_400x400.$2')
         baseInfo.description = baseInfo.description.replace(/ #([^\s]+)/, ' <a href="#/tag/$1">#$1</a>')
         baseInfo.top = baseInfo.top ? String(baseInfo.top) : 0
         baseInfo.uid = String(baseInfo.uid)
@@ -47,7 +47,7 @@ const ApiLegacyInfo = async (req, res) => {
 }
 
 const ApiLegacyTweets = async (req, res) => {
-    const {uid} = getUid(req.query)
+    const { uid } = getUid(req.query)
     if (uid === '0' || !uid) {
         res.json(apiTemplate(1, 'No record', {}, 'v1'))
         return
@@ -60,19 +60,19 @@ const ApiLegacyTweets = async (req, res) => {
     const date = Number(VerifyQueryString(req.query.date, 0))
     let getTop = true
     let displayAll = false
-    let queryArray = [{uid}, {hidden: 0}]
+    let queryArray = [{ uid }, { hidden: 0 }]
     if (tweetId !== '0') {
         if (display !== 'all') {
             getTop = false
             switch (display) {
                 case 'self':
-                    queryArray.push({tweet_id: {[refresh ? Op.gt : Op.lt]: tweetId}}, {retweet_from: {[Op.or]: {[Op.eq]: null, [Op.eq]: ''}}})
+                    queryArray.push({ tweet_id: { [refresh ? Op.gt : Op.lt]: tweetId } }, { retweet_from: { [Op.or]: { [Op.eq]: null, [Op.eq]: '' } } })
                     break
                 case 'retweet':
-                    queryArray.push({tweet_id: {[refresh ? Op.gt : Op.lt]: tweetId}}, {retweet_from: {[Op.ne]: null, [Op.ne]: ''}})
+                    queryArray.push({ tweet_id: { [refresh ? Op.gt : Op.lt]: tweetId } }, { retweet_from: { [Op.ne]: null, [Op.ne]: '' } })
                     break
                 case 'media':
-                    queryArray.push({tweet_id: {[refresh ? Op.gt : Op.lt]: tweetId}}, {media: {[Op.ne]: '[]'}})
+                    queryArray.push({ tweet_id: { [refresh ? Op.gt : Op.lt]: tweetId } }, { media: { [Op.ne]: '[]' } })
                     break
             }
         } else {
@@ -80,22 +80,22 @@ const ApiLegacyTweets = async (req, res) => {
             if (refresh) {
                 getTop = false
             }
-            queryArray.push({tweet_id: {[refresh ? Op.gt : Op.lt]: tweetId}})
+            queryArray.push({ tweet_id: { [refresh ? Op.gt : Op.lt]: tweetId } })
         }
     } else if (statusId !== '0') {
         getTop = false
-        queryArray.push({tweet_id: statusId})
+        queryArray.push({ tweet_id: statusId })
     } else {
         if (display !== 'all') {
             switch (display) {
                 case 'self':
-                    queryArray.push({retweet_from: {[Op.or]: {[Op.eq]: null, [Op.eq]: ''}}})
+                    queryArray.push({ retweet_from: { [Op.or]: { [Op.eq]: null, [Op.eq]: '' } } })
                     break
                 case 'retweet':
-                    queryArray.push({retweet_from: {[Op.ne]: null, [Op.ne]: ''}})
+                    queryArray.push({ retweet_from: { [Op.ne]: null, [Op.ne]: '' } })
                     break
                 case 'media':
-                    queryArray.push({media: {[Op.ne]: '[]'}})
+                    queryArray.push({ media: { [Op.ne]: '[]' } })
                     break
             }
         }
@@ -104,30 +104,30 @@ const ApiLegacyTweets = async (req, res) => {
     //date
     if (date > 0) {
         getTop = false
-        queryArray.push({time: {[Op.between]: [date, date + 86400]}})
+        queryArray.push({ time: { [Op.between]: [date, date + 86400] } })
     }
     let tweets = null
     try {
         tweets = await TwitterTweets.findAll({
-            attributes: ["tweet_id", "name", "display_name", "media", "full_text", "full_text_origin", "retweet_from", "time", "translate"],
+            attributes: ['tweet_id', 'name', 'display_name', 'media', 'full_text', 'full_text_origin', 'retweet_from', 'time', 'translate'],
             where: queryArray,
             limit: 11,
             order: [['tweet_id', 'DESC']],
             raw: true
         })
     } catch (e) {
-        res.json(apiTemplate(0, 'Unknown error #Tweets', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
+        res.json(apiTemplate(0, 'Unknown error #Tweets', { data: [], tweet_id: 0, new: 0, hasmore: false }, 'v1'))
         return
     }
     if (tweets === null) {
-        res.json(apiTemplate(0, 'No records #Tweets', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
+        res.json(apiTemplate(0, 'No records #Tweets', { data: [], tweet_id: 0, new: 0, hasmore: false }, 'v1'))
         return
     }
     res.json(apiTemplate(0, 'OK', returnData(tweets, 11), 'v1'))
 }
 
 const ApiLegacyData = async (req, res) => {
-    const {uid} = getUid(req.query)
+    const { uid } = getUid(req.query)
     if (uid === '0' || !uid) {
         res.json(apiTemplate(0, 'No record', [], 'v1'))
         return
@@ -135,12 +135,12 @@ const ApiLegacyData = async (req, res) => {
     let chartData = null
     try {
         chartData = await TwitterData.findAll({
-            attributes: ["timestamp", "followers", "following", "statuses_count"],
+            attributes: ['timestamp', 'followers', 'following', 'statuses_count'],
             where: {
                 uid
             },
             limit: 144,
-            order: [["timestamp", "DESC"]],
+            order: [['timestamp', 'DESC']],
             raw: true
         })
     } catch (e) {
@@ -150,15 +150,25 @@ const ApiLegacyData = async (req, res) => {
     if (chartData === null) {
         res.json(apiTemplate(0, 'No record', [], 'v1'))
     } else {
-        res.json(apiTemplate(0, 'OK', chartData.map(data => {
-            const tmpDate = new Date(data.timestamp*1000)
-            return {
-                timestamp: `${tmpDate.getFullYear()}-${String(tmpDate.getMonth()+1).padStart(2, '0')}-${String(tmpDate.getDate()).padStart(2, '0')} ${String(tmpDate.getHours()).padStart(2, '0')}:${String(tmpDate.getMinutes()).padStart(2, '0')}`,
-                followers: String(data.followers),
-                following: String(data.following),
-                statuses_count: String(data.statuses_count),
-            }
-        }), 'v1'))
+        res.json(
+            apiTemplate(
+                0,
+                'OK',
+                chartData.map((data) => {
+                    const tmpDate = new Date(data.timestamp * 1000)
+                    return {
+                        timestamp: `${tmpDate.getFullYear()}-${String(tmpDate.getMonth() + 1).padStart(2, '0')}-${String(tmpDate.getDate()).padStart(2, '0')} ${String(tmpDate.getHours()).padStart(2, '0')}:${String(tmpDate.getMinutes()).padStart(
+                            2,
+                            '0'
+                        )}`,
+                        followers: String(data.followers),
+                        following: String(data.following),
+                        statuses_count: String(data.statuses_count)
+                    }
+                }),
+                'v1'
+            )
+        )
     }
 }
 
@@ -166,24 +176,29 @@ const ApiLegacyTag = async (req, res) => {
     const tweetId = String(VerifyQueryString(req.query.tweet_id, 0))
     const hash = VerifyQueryString(req.query.hash, '')
     if (hash === '') {
-        res.json(apiTemplate(0, 'Empty request #GetTag', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
+        res.json(apiTemplate(0, 'Empty request #GetTag', { data: [], tweet_id: 0, new: 0, hasmore: false }, 'v1'))
         return
     }
     let tweets = null
     try {
-        tweets = await dbHandle.tmv1.query("SELECT `tweet_id`, `name`, `display_name`, `media`, `full_text`, `full_text_origin`, `retweet_from`, `time`, `translate` FROM `twitter_tweets` WHERE `tweet_id` = ANY(SELECT `tweet_id` FROM (SELECT `tweet_id` FROM `twitter_tags` WHERE `tag` = :hash AND `tweet_id` " + (tweetId === '0' ? ">" : "<") + " :tweet_id AND `hidden` = '0' ORDER BY `tweet_id` DESC LIMIT 11) AS t) ORDER BY `tweet_id` DESC", {
-            replacements: {
-                hash,
-                tweet_id: tweetId
-            },
-            type: QueryTypes.SELECT
-        })
+        tweets = await dbHandle.tmv1.query(
+            'SELECT `tweet_id`, `name`, `display_name`, `media`, `full_text`, `full_text_origin`, `retweet_from`, `time`, `translate` FROM `twitter_tweets` WHERE `tweet_id` = ANY(SELECT `tweet_id` FROM (SELECT `tweet_id` FROM `twitter_tags` WHERE `tag` = :hash AND `tweet_id` ' +
+                (tweetId === '0' ? '>' : '<') +
+                " :tweet_id AND `hidden` = '0' ORDER BY `tweet_id` DESC LIMIT 11) AS t) ORDER BY `tweet_id` DESC",
+            {
+                replacements: {
+                    hash,
+                    tweet_id: tweetId
+                },
+                type: QueryTypes.SELECT
+            }
+        )
     } catch (e) {
-        res.json(apiTemplate(0, 'Unknown error #GetTag', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
+        res.json(apiTemplate(0, 'Unknown error #GetTag', { data: [], tweet_id: 0, new: 0, hasmore: false }, 'v1'))
         return
     }
     if (tweets === null) {
-        res.json(apiTemplate(0, 'No records #GetTag', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
+        res.json(apiTemplate(0, 'No records #GetTag', { data: [], tweet_id: 0, new: 0, hasmore: false }, 'v1'))
         return
     }
     res.json(apiTemplate(0, 'OK', returnData(tweets, 11), 'v1'))
@@ -192,28 +207,30 @@ const ApiLegacyTag = async (req, res) => {
 const ApiLegacySearch = async (req, res) => {
     const tweetId = String(VerifyQueryString(req.query.tweet_id, 0))
     const q = VerifyQueryString(req.query.q, '')
-    const keyWords = q.split(' ').map(keyword => ({full_text: { 
-        [Op.like]: `%${keyword}%`
-    }}))
+    const keyWords = q.split(' ').map((keyword) => ({
+        full_text: {
+            [Op.like]: `%${keyword}%`
+        }
+    }))
     let tweets = null
     try {
         tweets = await TwitterTweets.findAll({
-            attributes: ["tweet_id", "name", "display_name", "media", "full_text", "full_text_origin", "retweet_from", "time", "translate"],
+            attributes: ['tweet_id', 'name', 'display_name', 'media', 'full_text', 'full_text_origin', 'retweet_from', 'time', 'translate'],
             where: {
                 [Op.or]: keyWords,
                 hidden: 0,
-                tweet_id: {[tweetId !== '0' ? Op.lt : Op.gt]: tweetId}
+                tweet_id: { [tweetId !== '0' ? Op.lt : Op.gt]: tweetId }
             },
             limit: 11,
             order: [['tweet_id', 'DESC']],
             raw: true
         })
     } catch (e) {
-        res.json(apiTemplate(0, 'Unknown error #Search', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
+        res.json(apiTemplate(0, 'Unknown error #Search', { data: [], tweet_id: 0, new: 0, hasmore: false }, 'v1'))
         return
     }
     if (tweets === null) {
-        res.json(apiTemplate(0, 'No records #Search', {"data": [],"tweet_id": 0,"new": 0,"hasmore": false}, 'v1'))
+        res.json(apiTemplate(0, 'No records #Search', { data: [], tweet_id: 0, new: 0, hasmore: false }, 'v1'))
         return
     }
     res.json(apiTemplate(0, 'OK', returnData(tweets, 11), 'v1'))
@@ -224,7 +241,7 @@ const ApiLegacyTranslate = async (req, res) => {
     const target = VerifyQueryString(req.query.to, 'en')
     const tweetId = String(VerifyQueryString(req.query.tweet_id, 0))
     const userId = String(VerifyQueryString(req.query.user_id, 0))
-    const {uid} = getUid({uid: userId})
+    const { uid } = getUid({ uid: userId })
     const translateType = VerifyQueryString(req.query.type, 'tweets') === 'profile' ? 'profile' : 'tweets'
     if ((tweetId !== 0 && translateType === 'tweets') || (uid !== '0' && translateType === 'profile')) {
         let trInfo = null
@@ -232,8 +249,8 @@ const ApiLegacyTranslate = async (req, res) => {
             case 'tweets':
                 try {
                     trInfo = await TwitterTweets.findOne({
-                        attributes: ["translate", "full_text_origin", "translate_source"],
-                        where: {tweet_id: tweetId},
+                        attributes: ['translate', 'full_text_origin', 'translate_source'],
+                        where: { tweet_id: tweetId },
                         raw: true
                     })
                 } catch (e) {
@@ -244,8 +261,8 @@ const ApiLegacyTranslate = async (req, res) => {
             case 'profile':
                 try {
                     trInfo = await AccountInfo.findOne({
-                        attributes: ["description"],
-                        where: {uid},
+                        attributes: ['description'],
+                        where: { uid },
                         raw: true
                     })
                 } catch (e) {
@@ -254,12 +271,12 @@ const ApiLegacyTranslate = async (req, res) => {
                 }
                 break
         }
-        if (trInfo === null){
+        if (trInfo === null) {
             res.json(apiTemplate(1, 'No translate text', {}, 'v1'))
             return
         } else if (!trInfo.translate) {
             if (translateType === 'profile') {
-                trInfo.full_text_origin = trInfo.description.replaceAll(/<a[^>]+>([^<]+)<\/a>/gm, "$1")
+                trInfo.full_text_origin = trInfo.description.replaceAll(/<a[^>]+>([^<]+)<\/a>/gm, '$1')
                 delete trInfo.description
             }
             trInfo.cache = false
@@ -274,14 +291,14 @@ const ApiLegacyTranslate = async (req, res) => {
                 res.json(apiTemplate(1, 'No translate text', trInfo, 'v1'))
             }
             trInfo.translate_raw = trInfo.translate
-            trInfo.translate = trInfo.translate.replaceAll("\n", '<br>')
+            trInfo.translate = trInfo.translate.replaceAll('\n', '<br>')
             res.json(apiTemplate(0, 'OK', trInfo, 'v1'))
         } else if (trInfo.translate && translateType === 'tweets') {
             trInfo.cache = true
             trInfo.target = target
             trInfo.full_text_origin = trInfo.full_text_origin.replaceAll(/https:\/\/t.co\/[\w]+/gm, '')
             trInfo.translate_raw = trInfo.translate
-            trInfo.translate = trInfo.translate.replaceAll("\n", "<br />\n")
+            trInfo.translate = trInfo.translate.replaceAll('\n', '<br />\n')
             res.json(apiTemplate(0, 'OK', trInfo, 'v1'))
         } else {
             res.json(apiTemplate(1, 'No translate text', {}, 'v1'))
@@ -290,26 +307,25 @@ const ApiLegacyTranslate = async (req, res) => {
         res.json(apiTemplate(1, 'No translate text', {}, 'v1'))
     }
 }
-const getUid = query => {
+const getUid = (query) => {
     let name = VerifyQueryString(query.name, '').toLocaleLowerCase()
     let uid = String(VerifyQueryString(query.uid, 0))
     const data_origin = JSON.parse(readFileSync(basePath + '/../libs/assets/tmv1/account_info_n.json'))
     if (name === '' && uid === '0') {
-        return {name: '', uid: '0'}
+        return { name: '', uid: '0' }
     }
     if (data_origin[uid]) {
-        return {name: data_origin[uid].name, uid}
+        return { name: data_origin[uid].name, uid }
     } else if (data_origin[name]) {
-        return {name, uid: data_origin[name].uid}
+        return { name, uid: data_origin[name].uid }
     } else {
-        return {name: '', uid: '0'}
+        return { name: '', uid: '0' }
     }
-    
 }
 
 const returnData = (tweets = [], count = 0) => {
     if (!(tweets instanceof Array)) {
-        return {data: [], tweet_id: '0', new: '0', hasmore: false}
+        return { data: [], tweet_id: '0', new: '0', hasmore: false }
     }
     let realCount = tweets.length
     let hasMore = realCount === count
@@ -322,7 +338,7 @@ const returnData = (tweets = [], count = 0) => {
     if (realCount) {
         checkNewTweetId = tweets[0].tweet_id
     }
-    tweets.map(tweet => {
+    tweets.map((tweet) => {
         tweet.tweet_id = String(tweet.tweet_id)
         tweet.time = String(tweet.time)
         tweet.translate = ''
@@ -330,8 +346,8 @@ const returnData = (tweets = [], count = 0) => {
         tweet.type = 'tweet'
         tweet.media = JSON.parse(tweet.media)
         //find out video
-        tweet.hasgif = tweet.media.some(media => media.origin.origin_type === 'animated_gif')
-        tweet.hasvideo = tweet.media.some(media => media.origin.origin_type !== 'photo')
+        tweet.hasgif = tweet.media.some((media) => media.origin.origin_type === 'animated_gif')
+        tweet.hasvideo = tweet.media.some((media) => media.origin.origin_type !== 'photo')
         tweet.top = false
         tweetId = tweet.tweet_id
     })
@@ -342,4 +358,4 @@ const returnData = (tweets = [], count = 0) => {
         hasmore: hasMore
     }
 }
-export {ApiLegacyInfo, ApiLegacyTweets, ApiLegacyTag, ApiLegacySearch, ApiLegacyData, ApiLegacyTranslate}
+export { ApiLegacyInfo, ApiLegacyTweets, ApiLegacyTag, ApiLegacySearch, ApiLegacyData, ApiLegacyTranslate }

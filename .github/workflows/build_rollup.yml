@@ -1,45 +1,43 @@
 name: Build scripts
 
 on:
-  push:
-    branches:
-      - master
-      - node
+    push:
+        branches:
+            - master
+            - node
 
 jobs:
-  build:
+    build:
+        runs-on: ubuntu-latest
 
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [ 16.x ]
-    steps:
-    
-    - uses: actions/checkout@v3
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-    - run: yarn
-    - run: yarn run build:rollup
-    - name: Upload dist
-      uses: actions/upload-artifact@v3.1.2
-      with:
-        name: "dist"
-        path: dist
-    - name: Upload browser script
-      uses: actions/upload-artifact@v3.1.2
-      with:
-        name: "archive_browser.js"
-        path: dist/archiver/archive_browser.js
-    - name: Upload node script
-      uses: actions/upload-artifact@v3.1.2
-      with:
-        name: "archive_node.js"
-        path: dist/archiver/archive_node.js
-    - name: Upload online backend
-      uses: actions/upload-artifact@v3.1.2
-      with:
-        name: "app_online.js"
-        path: dist/backend/app_online.js
+        strategy:
+            matrix:
+                node-version: [16.x]
+        steps:
+            - uses: actions/checkout@v3
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v3
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - run: yarn
+            - run: yarn run build:rollup
+            - name: Upload dist
+              uses: actions/upload-artifact@v3.1.2
+              with:
+                  name: 'dist'
+                  path: dist
+            - name: Upload browser script
+              uses: actions/upload-artifact@v3.1.2
+              with:
+                  name: 'archive_browser.js'
+                  path: dist/archiver/archive_browser.js
+            - name: Upload node script
+              uses: actions/upload-artifact@v3.1.2
+              with:
+                  name: 'archive_node.js'
+                  path: dist/archiver/archive_node.js
+            - name: Upload online backend
+              uses: actions/upload-artifact@v3.1.2
+              with:
+                  name: 'app_online.js'
+                  path: dist/backend/app_online.js
