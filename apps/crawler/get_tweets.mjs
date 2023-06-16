@@ -37,6 +37,20 @@ import { CYCLE_SECONDS } from '../../libs/assets/setting.mjs'
 
 const GRAPHQL_MODE = true
 
+/* https://stackoverflow.com/questions/73266169/pm2-is-catching-errors-before-they-reach-uncaught-exception-in-node-js */
+process.on('uncaughtException', async (err, origin) => {
+    console.error(`tmv3: Restarting(Exception)...`, err)
+    process.exit(0)
+})
+
+process.on('unhandledRejection', async (reason, promise) => {
+    if ((typeof reason === 'object') && (reason?.success !== undefined) && (reason?.token !== undefined)) {
+        //guest token error
+        console.error(`tmv3: Restarting(guest_token)...`, reason)
+        process.exit(0)
+    }
+})
+
 const once = (process.argv[2] || '') === 'once'
 let firstRun = true
 

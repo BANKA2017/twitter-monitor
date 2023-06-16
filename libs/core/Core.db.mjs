@@ -1,6 +1,6 @@
 import Sequelize from 'sequelize';
 import { ACTIVE_SERVICE, SQL_CONFIG } from '../../libs/assets/setting.mjs'
-import { TGPush } from './Core.push.mjs';
+//import { TGPush } from './Core.push.mjs';
 
 let dbHandle = {}
 for (const service of SQL_CONFIG) {
@@ -24,7 +24,8 @@ try {
   }
 } catch (error) {
   console.error('tmv3: Unable to connect to the database:', error);
-  TGPush("tmv3: Unable to connect to the database #Database")
+  //await TGPush("tmv3: Unable to connect to the database #Database")
+  process.exit(0)
 }
 
 export default dbHandle

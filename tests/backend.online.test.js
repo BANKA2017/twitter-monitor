@@ -194,7 +194,7 @@ describe('Typeahead', async () => {
     const {data} = mock.globalResponseCtx.body
     //users
     for (const user of data.users) {
-      expect(user.display_name).toMatch(/(?:T|t)witter/gm)
+      expect(user.name).toMatch(/(?:T|t)witter/gm)
       expect(user.name.length).toBeGreaterThanOrEqual(1)
     }
     //topic
