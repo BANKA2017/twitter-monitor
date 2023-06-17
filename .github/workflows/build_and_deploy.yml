@@ -15,10 +15,11 @@ jobs:
               uses: actions/setup-node@v3
               with:
                   node-version: 18.x
-            - name: Yarn install and build
+            - name: Yarn install and build && Replace Workers' id
               run: |
                 yarn
                 yarn run build:rollup
+                sed -i 's/<YOUR_ID>/${{ secrets.CF_KV_ID }}/g' apps/cfworkers/wrangler.toml
             # - name: Upload dist
             #   uses: actions/upload-artifact@v3.1.2
             #   with:
