@@ -15,7 +15,8 @@ const apiPathList = {
         'data.home.home_timeline_urt.instructions',
         'data.bookmark_timeline_v2.timeline.instructions',
         'data.list.tweets_timeline.timeline.instructions',
-        'data.list.members_timeline.timeline.instructions'
+        'data.list.members_timeline.timeline.instructions',
+        'data.communityResults.result.community_timeline.timeline.instructions'
     ],
     tweets_contents: [
         'globalObjects.tweets',
@@ -31,7 +32,10 @@ const apiPathList = {
         'data.search_by_raw_query.search_timeline.timeline.instructions[0].entries',
         'data.home.home_timeline_urt.instructions[0].entries',
         'data.bookmark_timeline_v2.timeline.instructions[0].entries',
-        'data.list.tweets_timeline.timeline.instructions[0].entries'
+        'data.list.tweets_timeline.timeline.instructions[1].entries',
+        'data.list.tweets_timeline.timeline.instructions[0].entries',
+        'data.communityResults.result.community_timeline.timeline.instructions[1].entries',
+        'data.communityResults.result.community_timeline.timeline.instructions[0].entries'
     ],
     tweets_top_content: ['data.user.result.timeline_v2.timeline.instructions[2].entry', 'data.user.result.timeline.timeline.instructions[2].entry'],
     tweet_content: ['content.itemContent.tweet_results.result', 'content.itemContent.tweet', 'item.itemContent.tweet_results.result', 'item.itemContent.tweet'],

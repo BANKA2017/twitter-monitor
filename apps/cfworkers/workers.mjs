@@ -4,7 +4,7 @@ import { apiTemplate } from '../../libs/share/Constant.mjs'
 import { AlbumSearch } from '../backend/CoreFunctions/album/Album.mjs'
 import { ApiOfficialTranslate, ApiTranslate } from '../backend/CoreFunctions/translate/OnlineTranslate.mjs'
 import { ApiTrends } from '../backend/CoreFunctions/online/OnlineTrends.mjs'
-import { ApiListInfo, ApiListMemberList, ApiTypeahead } from '../backend/CoreFunctions/online/OnlineMisc.mjs'
+import { ApiCommunityInfo, ApiListInfo, ApiListMemberList, ApiTypeahead } from '../backend/CoreFunctions/online/OnlineMisc.mjs'
 import { ApiUserInfo } from '../backend/CoreFunctions/online/OnlineUserInfo.mjs'
 import { ApiAudioSpace, ApiBroadcast, ApiMedia, ApiPoll, ApiSearch, ApiTweets } from '../backend/CoreFunctions/online/OnlineTweet.mjs'
 import { MediaProxy } from '../backend/CoreFunctions/media/MediaProxy.mjs'
@@ -63,6 +63,7 @@ workersApi.get('/online/api/v3/data/trends/', ApiTrends)
 workersApi.get('/online/api/v3/data/typeahead/', ApiTypeahead)
 workersApi.get('/online/api/v3/data/listinfo/', ApiListInfo)
 workersApi.get('/online/api/v3/data/listmember/', ApiListMemberList)
+workersApi.get('/online/api/v3/data/communityinfo/', ApiCommunityInfo)
 
 //online search
 workersApi.get(

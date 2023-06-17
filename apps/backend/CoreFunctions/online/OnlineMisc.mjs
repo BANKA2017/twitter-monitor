@@ -1,5 +1,5 @@
 import { GenerateAccountInfo } from '../../../../libs/core/Core.account.mjs'
-import { getListInfo, getListMember, getTypeahead } from '../../../../libs/core/Core.fetch.mjs'
+import { getCommunityInfo, getListInfo, getListMember, getTypeahead } from '../../../../libs/core/Core.fetch.mjs'
 import { GetEntitiesFromText, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
 import { TweetsInfo } from '../../../../libs/core/Core.tweet.mjs'
 import { apiTemplate } from '../../../../libs/share/Constant.mjs'
@@ -139,4 +139,50 @@ const ApiListMemberList = async (req, env) => {
     }
 }
 
-export { ApiTypeahead, ApiListInfo, ApiListMemberList }
+const ApiCommunityInfo = async (req, env) => {
+    const communityId = VerifyQueryString(req.query.community_id, 0)
+
+    //all empty
+    if (!communityId) {
+        return env.json(apiTemplate(403, 'Invalid Request', {}, 'online'))
+    }
+
+    try {
+        let communityInfoResponse = await getCommunityInfo({ id: communityId, guest_token: env.guest_token2, authorization: 1 })
+        //updateGuestToken
+        await env.updateGuestToken(env, 'guest_token2', 1, communityInfoResponse.headers.get('x-rate-limit-remaining') < 20, 'CommunityInfo')
+
+        if (!communityInfoResponse.data) {
+            return env.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
+        }
+        const tmpCommunityInfoResponse = communityInfoResponse.data?.data?.communityResults?.result
+        if (!tmpCommunityInfoResponse) {
+            return env.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
+        }
+        let responseData = {
+            //admin_results: [],
+            name: tmpCommunityInfoResponse.name ?? '',
+            description: tmpCommunityInfoResponse.description ?? '',
+            id: tmpCommunityInfoResponse.id_str ?? '',
+            member_count: tmpCommunityInfoResponse.member_count ?? 0,
+            moderator_count: tmpCommunityInfoResponse.moderator_count ?? 0,
+            default_theme: tmpCommunityInfoResponse.default_theme ?? '_',
+            created_at: Math.ceil((tmpCommunityInfoResponse.created_at ?? 0) / 1000),
+            rules: tmpCommunityInfoResponse.rules ? tmpCommunityInfoResponse.rules.map((rule) => ({ name: rule.name, description: rule.description })) : [],
+            banner: {
+                url: tmpCommunityInfoResponse?.custom_banner_media?.media_info?.original_img_url ?? tmpCommunityInfoResponse?.default_banner_media?.media_info?.original_img_url ?? '',
+                original_height: tmpCommunityInfoResponse?.custom_banner_media?.media_info?.original_img_height ?? tmpCommunityInfoResponse?.default_banner_media?.media_info?.original_img_height ?? 0,
+                original_width: tmpCommunityInfoResponse?.custom_banner_media?.media_info?.original_img_width ?? tmpCommunityInfoResponse?.default_banner_media?.media_info?.original_img_width ?? 0,
+                media_key: tmpCommunityInfoResponse?.custom_banner_media?.id ?? tmpCommunityInfoResponse?.default_banner_media?.id ?? ''
+            }
+        }
+
+        return env.json(apiTemplate(200, 'OK', responseData, 'online'))
+    } catch (e) {
+        console.log(e)
+        console.error(`[${new Date()}]: #OnlineCommunityInfo ${'#' + listId} #${e.code} ${e.message}`)
+        return env.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
+    }
+}
+
+export { ApiTypeahead, ApiListInfo, ApiListMemberList, ApiCommunityInfo }

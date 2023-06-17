@@ -137,6 +137,7 @@ We use GitHub Actions to build some scripts, you can find them in [BANKA2017/twi
         * twitter_list_details
         * media_with_details_horizontal (for topic ?)
         * twitter_article
+        * community_details
 
 ## Sub packages
 
@@ -279,6 +280,7 @@ Those are Chinese articles
         * twitter_list_details
         * media_with_details_horizontal (for topic ?)
         * twitter_article
+        * community_details
 
 ## 子包
 

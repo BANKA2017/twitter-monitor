@@ -147,6 +147,27 @@ const PathInfo = (path) => {
     return tmpPathInfo
 }
 
+const PregMatchAll = (regex = new RegExp('', 'gm'), text = '') => {
+    let handle
+    let match = []
+
+    while ((handle = regex.exec(text)) !== null) {
+        // This is necessary to avoid infinite loops with zero-width matches
+        if (handle.index === regex.lastIndex) {
+            regex.lastIndex++
+        }
+        for (const index in handle) {
+            if (!isNaN(index)) {
+                if (!match[index]) {
+                    match[index] = []
+                }
+                match[index].push(handle[index])
+            }
+        }
+    }
+    return match
+}
+
 const GetEntitiesFromText = (text = '', type = 'description') => {
     let pattern = /<a href="([^"]+)"(?: id="[^"]"+|)(?: target="_blank"|)[^>]+>([^<]+)<\/a>|(?:\s|\p{P}|\p{S}|^)(#|\$)((?:[^\s\p{P}\p{S}]|_)+)|(?:\s|\p{P}|\p{S}|^)@([\w]+)/gmu
 
@@ -167,7 +188,13 @@ const GetEntitiesFromText = (text = '', type = 'description') => {
             //console.log([originText.slice(lastEnd).split(`#${hashtagText}`), originText.slice(lastEnd).split(`#${hashtagText}`).length])
             const beforeLength = [...[...originText].slice(lastEnd).join('').split(`${prefix}${hashtagText}`)[0]].length + lastEnd
             lastEnd = beforeLength + [...match[4]].length + 1
-            tmpList.push({ expanded_url: '', indices_end: lastEnd, indices_start: beforeLength, text: hashtagText, type: prefix === '#' ? 'hashtag' : 'symbol' })
+            tmpList.push({
+                expanded_url: '',
+                indices_end: lastEnd,
+                indices_start: beforeLength,
+                text: hashtagText,
+                type: prefix === '#' ? 'hashtag' : 'symbol'
+            })
         } else if (match[2] === undefined && match[5] !== undefined) {
             const userMention = match[5]
             const beforeLength = [...[...originText].slice(lastEnd).join('').split(`@${userMention}`)[0]].length + lastEnd
@@ -177,7 +204,13 @@ const GetEntitiesFromText = (text = '', type = 'description') => {
             const beforeLength = [...[...originText].slice(lastEnd).join('').split(match[2])[0]].length + lastEnd // + (type === 'description' ? 0 : 1)
             lastEnd = beforeLength + [...match[2]].length
             let type = match[1].replaceAll('//http', 'http').startsWith('https://twitter.com/') && match[2].startsWith('@') ? 'user_mention' : match[2].startsWith('#') ? 'hashtag' : match[2].startsWith('$') ? 'symbol' : 'url'
-            tmpList.push({ expanded_url: match[1].replaceAll('//http', 'http'), indices_end: lastEnd, indices_start: beforeLength, text: ['hashtag', 'symbol'].includes(type) ? match[2].slice(1) : match[2], type })
+            tmpList.push({
+                expanded_url: match[1].replaceAll('//http', 'http'),
+                indices_end: lastEnd,
+                indices_start: beforeLength,
+                text: ['hashtag', 'symbol'].includes(type) ? match[2].slice(1) : match[2],
+                type
+            })
         }
     }
 
@@ -195,4 +228,4 @@ const VerifyQueryString = (value, defaultValue) => {
     return value
 }
 
-export { Sleep, PathInfo, GetEntitiesFromText, VerifyQueryString }
+export { Sleep, PathInfo, GetEntitiesFromText, VerifyQueryString, PregMatchAll }

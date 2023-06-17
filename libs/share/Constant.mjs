@@ -44,7 +44,8 @@ const SupportedUnifiedCardNameList = [
     'image_collection_website',
     'twitter_list_details',
     'media_with_details_horizontal',
-    'twitter_article'
+    'twitter_article',
+    'community_details'
 ]
 
 const verifiedTypeList = ['business', 'government']

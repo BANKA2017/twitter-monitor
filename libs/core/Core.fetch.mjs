@@ -3,6 +3,8 @@ import path2array from './Core.apiPath.mjs'
 import {
     _AudioSpaceById,
     _Bookmarks,
+    _CommunitiesFetchOneQuery,
+    _CommunityTweetsTimeline,
     _ConversationControlChange,
     _ConversationControlDelete,
     _CreateBookmark,
@@ -149,7 +151,9 @@ const getToken = async (authorizationMode = 0) => {
             Trending: 19990, //20000
             ListInfo: 470, //500
             ListMember: 470, //500
-            ListTimeLime: 470 //500
+            ListTimeLime: 470, //500
+            CommunityInfo: 470, //500
+            CommunityTimeLime: 470 //500
         },
         expire: Date.now() + 870000 //15 min
     }
@@ -192,7 +196,13 @@ const preCheckCtx = (ctx = {}, defaultKV = {}) =>
     )
 
 const getUserInfo = async (ctx = { user: '', guest_token: {}, graphqlMode: true, cookie: {}, authorization: 1 }, env = {}) => {
-    let { user, guest_token, graphqlMode, cookie, authorization } = preCheckCtx(ctx, { user: '', guest_token: {}, graphqlMode: true, cookie: {}, authorization: 1 })
+    let { user, guest_token, graphqlMode, cookie, authorization } = preCheckCtx(ctx, {
+        user: '',
+        guest_token: {},
+        graphqlMode: true,
+        cookie: {},
+        authorization: 1
+    })
     if (!guest_token.success) {
         guest_token = await getToken(authorization)
     }
@@ -206,10 +216,26 @@ const getUserInfo = async (ctx = { user: '', guest_token: {}, graphqlMode: true,
                 let graphqlVariables = { withSuperFollowsUserFields: true, withSafetyModeUserFields: true }
                 if (!isNaN(user)) {
                     graphqlVariables['userId'] = user
-                    return 'https://api.twitter.com/graphql/' + _UserByRestId.queryId + '/UserByRestId?' + new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_UserByRestId.features) }).toString()
+                    return (
+                        'https://api.twitter.com/graphql/' +
+                        _UserByRestId.queryId +
+                        '/UserByRestId?' +
+                        new URLSearchParams({
+                            variables: JSON.stringify(graphqlVariables),
+                            features: JSON.stringify(_UserByRestId.features)
+                        }).toString()
+                    )
                 } else {
                     graphqlVariables['screen_name'] = user
-                    return 'https://api.twitter.com/graphql/' + _UserByScreenName.queryId + '/UserByScreenName?' + new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_UserByScreenName.features) }).toString()
+                    return (
+                        'https://api.twitter.com/graphql/' +
+                        _UserByScreenName.queryId +
+                        '/UserByScreenName?' +
+                        new URLSearchParams({
+                            variables: JSON.stringify(graphqlVariables),
+                            features: JSON.stringify(_UserByScreenName.features)
+                        }).toString()
+                    )
                 }
             } else {
                 return (
@@ -296,7 +322,14 @@ const getRecommendations = async (ctx = { user: '', guest_token: {}, count: 40, 
 }
 
 const getMediaTimeline = async (ctx = { uid: [], guest_token: {}, count: 20, graphqlMode: true, cookie: {}, authorization: 1 }, env = {}) => {
-    let { uid, guest_token, count, graphqlMode, cookie, authorization } = preCheckCtx(ctx, { uid: [], guest_token: {}, count: 20, graphqlMode: true, cookie: {}, authorization: 1 })
+    let { uid, guest_token, count, graphqlMode, cookie, authorization } = preCheckCtx(ctx, {
+        uid: [],
+        guest_token: {},
+        count: 20,
+        graphqlMode: true,
+        cookie: {},
+        authorization: 1
+    })
     count = (count || -1) > 0 ? count : 20
     if (!guest_token.success) {
         guest_token = await getToken(authorization)
@@ -350,7 +383,21 @@ const getMediaTimeline = async (ctx = { uid: [], guest_token: {}, count: 20, gra
     //}
 }
 
-const getTweets = async (ctx = { queryString: '', cursor: '', guest_token: {}, count: false, online: false, graphqlMode: true, searchMode: false, withReply: false, cookie: {}, authorization: 1 }, env = {}) => {
+const getTweets = async (
+    ctx = {
+        queryString: '',
+        cursor: '',
+        guest_token: {},
+        count: false,
+        online: false,
+        graphqlMode: true,
+        searchMode: false,
+        withReply: false,
+        cookie: {},
+        authorization: 1
+    },
+    env = {}
+) => {
     let { queryString, cursor, guest_token, count, online, graphqlMode, searchMode, withReply, cookie, authorization } = preCheckCtx(ctx, {
         queryString: '',
         cursor: '',
@@ -516,7 +563,14 @@ const getTweets = async (ctx = { queryString: '', cursor: '', guest_token: {}, c
 }
 
 const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMode: true, authorization: 1, cursor: '', cookie: {} }, env = {}) => {
-    let { tweet_id, guest_token, graphqlMode, authorization, cursor, cookie } = preCheckCtx(ctx, { tweet_id: '', guest_token: {}, graphqlMode: true, authorization: 1, cursor: '', cookie: {} })
+    let { tweet_id, guest_token, graphqlMode, authorization, cursor, cookie } = preCheckCtx(ctx, {
+        tweet_id: '',
+        guest_token: {},
+        graphqlMode: true,
+        authorization: 1,
+        cursor: '',
+        cookie: {}
+    })
     if (!guest_token.success) {
         guest_token = await getToken(authorization)
     }
@@ -720,7 +774,10 @@ const getArticle = async (ctx = { id: '', guest_token: {}, cookie: {}, authoriza
             'https://api.twitter.com/graphql/' +
                 _TwitterArticleByRestId.queryId +
                 '/TwitterArticleByRestId?' +
-                new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_TwitterArticleByRestId.features) }).toString(),
+                new URLSearchParams({
+                    variables: JSON.stringify(graphqlVariables),
+                    features: JSON.stringify(_TwitterArticleByRestId.features)
+                }).toString(),
             guest_token,
             cookie,
             authorization
@@ -735,7 +792,14 @@ const getArticle = async (ctx = { id: '', guest_token: {}, cookie: {}, authoriza
 }
 
 const getListInfo = async (ctx = { id: '', screenName: '', listSlug: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
-    let { id, screenName, listSlug, guest_token, cookie, authorization } = preCheckCtx(ctx, { id: '', screenName: '', listSlug: '', guest_token: {}, cookie: {}, authorization: 1 })
+    let { id, screenName, listSlug, guest_token, cookie, authorization } = preCheckCtx(ctx, {
+        id: '',
+        screenName: '',
+        listSlug: '',
+        guest_token: {},
+        cookie: {},
+        authorization: 1
+    })
     if (!guest_token.success) {
         guest_token = await getToken(authorization)
     }
@@ -771,7 +835,14 @@ const getListInfo = async (ctx = { id: '', screenName: '', listSlug: '', guest_t
 }
 
 const getListMember = async (ctx = { id: '', count: 20, cursor: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
-    let { id, count, cursor, guest_token, cookie, authorization } = preCheckCtx(ctx, { id: '', count: 20, cursor: '', guest_token: {}, cookie: {}, authorization: 1 })
+    let { id, count, cursor, guest_token, cookie, authorization } = preCheckCtx(ctx, {
+        id: '',
+        count: 20,
+        cursor: '',
+        guest_token: {},
+        cookie: {},
+        authorization: 1
+    })
     if (!guest_token.success) {
         guest_token = await getToken(authorization)
     }
@@ -802,7 +873,14 @@ const getListMember = async (ctx = { id: '', count: 20, cursor: '', guest_token:
 }
 
 const getListTimeLine = async (ctx = { id: '', count: 20, cursor: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
-    let { id, count, cursor, guest_token, cookie, authorization } = preCheckCtx(ctx, { id: '', count: 20, cursor: '', guest_token: {}, cookie: {}, authorization: 1 })
+    let { id, count, cursor, guest_token, cookie, authorization } = preCheckCtx(ctx, {
+        id: '',
+        count: 20,
+        cursor: '',
+        guest_token: {},
+        cookie: {},
+        authorization: 1
+    })
     if (!guest_token.success) {
         guest_token = await getToken(authorization)
     }
@@ -820,7 +898,91 @@ const getListTimeLine = async (ctx = { id: '', count: 20, cursor: '', guest_toke
             'https://api.twitter.com/graphql/' +
                 _ListLatestTweetsTimeline.queryId +
                 '/ListLatestTweetsTimeline?' +
-                new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_ListLatestTweetsTimeline.features) }).toString(),
+                new URLSearchParams({
+                    variables: JSON.stringify(graphqlVariables),
+                    features: JSON.stringify(_ListLatestTweetsTimeline.features)
+                }).toString(),
+            guest_token,
+            cookie,
+            authorization
+        )
+            .then((response) => {
+                resolve(response)
+            })
+            .catch((e) => {
+                reject(e)
+            })
+    })
+}
+
+const getCommunityInfo = async (ctx = { id: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
+    let { id, guest_token, cookie, authorization } = preCheckCtx(ctx, {
+        id: '',
+        guest_token: {},
+        cookie: {},
+        authorization: 1
+    })
+    if (!guest_token.success) {
+        guest_token = await getToken(authorization)
+    }
+
+    let graphqlVariables = {
+        communityId: id
+    }
+
+    return await new Promise((resolve, reject) => {
+        coreFetch(
+            'https://api.twitter.com/graphql/' +
+                _CommunitiesFetchOneQuery.queryId +
+                '/CommunitiesFetchOneQuery?' +
+                new URLSearchParams({
+                    variables: JSON.stringify(graphqlVariables),
+                    features: JSON.stringify(_CommunitiesFetchOneQuery.features)
+                }).toString(),
+            guest_token,
+            cookie,
+            authorization
+        )
+            .then((response) => {
+                resolve(response)
+            })
+            .catch((e) => {
+                reject(e)
+            })
+    })
+}
+
+const getCommunityTweetsTimeline = async (ctx = { id: '', count: 20, cursor: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
+    let { id, count, cursor, guest_token, cookie, authorization } = preCheckCtx(ctx, {
+        id: '',
+        count: 20,
+        cursor: '',
+        guest_token: {},
+        cookie: {},
+        authorization: 1
+    })
+    if (!guest_token.success) {
+        guest_token = await getToken(authorization)
+    }
+
+    const graphqlVariables = {
+        communityId: id,
+        count,
+        withCommunity: true
+    }
+    if (cursor) {
+        graphqlVariables.cursor = cursor
+    }
+
+    return await new Promise((resolve, reject) => {
+        coreFetch(
+            'https://api.twitter.com/graphql/' +
+                _CommunityTweetsTimeline.queryId +
+                '/CommunityTweetsTimeline?' +
+                new URLSearchParams({
+                    variables: JSON.stringify(graphqlVariables),
+                    features: JSON.stringify(_CommunityTweetsTimeline.features)
+                }).toString(),
             guest_token,
             cookie,
             authorization
@@ -836,7 +998,14 @@ const getListTimeLine = async (ctx = { id: '', count: 20, cursor: '', guest_toke
 
 //https://github.com/FixTweet/FixTweet/blob/main/src/helpers/translate.ts
 const getTranslate = async (ctx = { id: '0', type: 'tweets', target: 'en', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
-    let { id, type, target, guest_token, cookie, authorization } = preCheckCtx(ctx, { id: '0', type: 'tweets', target: 'en', guest_token: {}, cookie: {}, authorization: 1 })
+    let { id, type, target, guest_token, cookie, authorization } = preCheckCtx(ctx, {
+        id: '0',
+        type: 'tweets',
+        target: 'en',
+        guest_token: {},
+        cookie: {},
+        authorization: 1
+    })
     if (!guest_token.success) {
         guest_token = await getToken(authorization)
     }
@@ -904,7 +1073,13 @@ const getImage = async (path = '', headers = {}) => {
 // ANONYMOUS (for server region)
 // COOKIE REQUIRED (for custom region)
 const getTrends = async (ctx = { initial_tab_id: 'trending', count: 20, guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
-    let { initial_tab_id, count, guest_token, cookie, authorization } = preCheckCtx(ctx, { initial_tab_id: 'trending', count: 20, guest_token: {}, cookie: {}, authorization: 1 })
+    let { initial_tab_id, count, guest_token, cookie, authorization } = preCheckCtx(ctx, {
+        initial_tab_id: 'trending',
+        count: 20,
+        guest_token: {},
+        cookie: {},
+        authorization: 1
+    })
     if (!guest_token.success) {
         guest_token = await getToken(1)
     }
@@ -934,7 +1109,15 @@ const getTrends = async (ctx = { initial_tab_id: 'trending', count: 20, guest_to
 //id: `screen_name` in restful mode and `uid` in graphql mode
 //count: max is `200`
 const getFollowingOrFollowers = async (ctx = { cookie: {}, guest_token: {}, id: '', count: false, type: 'Followers', cursor: '', graphqlMode: false }, env = {}) => {
-    let { cookie, guest_token, id, count, type, cursor, graphqlMode } = preCheckCtx(ctx, { cookie: {}, guest_token: {}, id: '', count: false, type: 'Followers', cursor: '', graphqlMode: false })
+    let { cookie, guest_token, id, count, type, cursor, graphqlMode } = preCheckCtx(ctx, {
+        cookie: {},
+        guest_token: {},
+        id: '',
+        count: false,
+        type: 'Followers',
+        cursor: '',
+        graphqlMode: false
+    })
     //cookie: auth_token
     if (!guest_token.success) {
         guest_token = await getToken(Number(graphqlMode))
@@ -963,7 +1146,10 @@ const getFollowingOrFollowers = async (ctx = { cookie: {}, guest_token: {}, id: 
                 'https://api.twitter.com/graphql/' +
                     (type === 'Followers' ? _Followers.queryId : _Following.queryId) +
                     `/${type}?` +
-                    new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(type === 'Followers' ? _Followers.features : _Following.features) }).toString(),
+                    new URLSearchParams({
+                        variables: JSON.stringify(graphqlVariables),
+                        features: JSON.stringify(type === 'Followers' ? _Followers.features : _Following.features)
+                    }).toString(),
                 guest_token,
                 cookie,
                 1
@@ -997,7 +1183,14 @@ const getFollowingOrFollowers = async (ctx = { cookie: {}, guest_token: {}, id: 
 
 //id: `screen_name` in restful mode and `uid` in graphql mode
 const getLikes = async (ctx = { cookie: {}, guest_token: {}, id: '', count: 20, cursor: '', graphqlMode: false }, env = {}) => {
-    let { cookie, guest_token, id, count, cursor, graphqlMode } = preCheckCtx(ctx, { cookie: {}, guest_token: {}, id: '', count: 20, cursor: '', graphqlMode: false })
+    let { cookie, guest_token, id, count, cursor, graphqlMode } = preCheckCtx(ctx, {
+        cookie: {},
+        guest_token: {},
+        id: '',
+        count: 20,
+        cursor: '',
+        graphqlMode: false
+    })
     //TODO precheck
     //cookie: {ct0, auth_token}
     if (!id || !cookie.ct0 || !cookie.auth_token) {
@@ -1066,7 +1259,15 @@ const getLikes = async (ctx = { cookie: {}, guest_token: {}, id: '', count: 20, 
 //}
 /*conversation_control: Community | ByInvitation */
 const postTweet = async (ctx = { cookie: {}, guest_token: {}, text: '', media: [], reply_tweet_id: '', quote_tweet_id: '', conversation_control: '' }, env = {}) => {
-    let { cookie, guest_token, text, media, reply_tweet_id, quote_tweet_id, conversation_control } = preCheckCtx(ctx, { cookie: {}, guest_token: {}, text: '', media: [], reply_tweet_id: '', quote_tweet_id: '', conversation_control: '' })
+    let { cookie, guest_token, text, media, reply_tweet_id, quote_tweet_id, conversation_control } = preCheckCtx(ctx, {
+        cookie: {},
+        guest_token: {},
+        text: '',
+        media: [],
+        reply_tweet_id: '',
+        quote_tweet_id: '',
+        conversation_control: ''
+    })
     //TODO precheck
     //cookie: {ct0, auth_token}
     if ((!text && media.length === 0) || !cookie.ct0 || !cookie.auth_token) {
@@ -1119,7 +1320,12 @@ const postTweet = async (ctx = { cookie: {}, guest_token: {}, text: '', media: [
     })
 }
 const postConversationControl = async (ctx = { cookie: {}, guest_token: {}, tweet_id: '', conversation_control: '' }, env = {}) => {
-    let { cookie, guest_token, tweet_id, conversation_control } = preCheckCtx(ctx, { cookie: {}, guest_token: {}, tweet_id: '', conversation_control: '' })
+    let { cookie, guest_token, tweet_id, conversation_control } = preCheckCtx(ctx, {
+        cookie: {},
+        guest_token: {},
+        tweet_id: '',
+        conversation_control: ''
+    })
     //TODO precheck
     //cookie: {ct0, auth_token}
     if (!tweet_id || !cookie.ct0 || !cookie.auth_token) {
@@ -1488,6 +1694,8 @@ export {
     getListInfo,
     getListMember,
     getListTimeLine,
+    getCommunityInfo,
+    getCommunityTweetsTimeline,
     getTranslate,
     getTrends,
     getImage,

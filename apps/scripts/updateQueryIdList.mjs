@@ -1,8 +1,9 @@
 import { writeFileSync } from 'fs'
 import { basePath } from '../../libs/share/NodeConstant.mjs'
 import axiosFetch from 'axios-helper'
+import { PregMatchAll } from '../../libs/core/Core.function.mjs'
 
-let link = 'https://twitter.com/'
+let link = 'https://twitter.com/explore'
 
 if (process.argv[2]) {
     try {
@@ -16,18 +17,41 @@ if (process.argv[2]) {
 let queryIdList = {}
 let featuresValueList = {}
 const updateIdList = (content, type = 'main') => {
-    const pattern = /exports=({.+?})(;|)},/gm //=Object\.freeze\(([\w:!,"{}]+)\)
+    const pattern = /exports=({.+?})(;|)},|params:({.+?})};/gm //=Object\.freeze\(([\w:!,"{}]+)\)
 
     while ((match = pattern.exec(content)) !== null) {
         if (match.index === pattern.lastIndex) {
             pattern.lastIndex++
         }
-        let tmpData = Function(`return ${match[1]}`)()
-        queryIdList[tmpData.operationName] = tmpData
+        //console.log(match)
+        let tmpData = {}
+        try {
+            tmpData = Function(`return ${match[1] || match[3]}`)()
+        } catch (e) {
+            //console.log(e)
+        }
+        let tmpName = tmpData?.operationName || tmpData?.name || false
+        if (!tmpName) {
+            continue
+        }
+        if (tmpData.name && !tmpData.operationName) {
+            tmpData.operationName = tmpData.name
+            delete tmpData.name
+        }
+        if (tmpData.id && !tmpData.queryId) {
+            tmpData.queryId = tmpData.id
+            delete tmpData.id
+        }
+        if (tmpData.metadata?.features && !tmpData.metadata?.featureSwitches) {
+            tmpData.metadata.featureSwitches = JSON.parse(JSON.stringify(tmpData.metadata?.features))
+            delete tmpData.metadata?.features
+            //console.log(tmpData)
+        }
+        queryIdList[tmpName] = tmpData
         //features
-        //console.log(queryIdList[tmpData.operationName])
-        if (queryIdList[tmpData.operationName].metadata) {
-            queryIdList[tmpData.operationName].features = Object.fromEntries(queryIdList[tmpData.operationName].metadata.featureSwitches.map((feature) => [feature, featuresValueList[feature]]))
+        //console.log(queryIdList[tmpName])
+        if (queryIdList[tmpName]?.metadata?.featureSwitches) {
+            queryIdList[tmpName].features = Object.fromEntries((queryIdList[tmpName].metadata.featureSwitches || {}).map((feature) => [feature, featuresValueList[feature]]))
         }
     }
     writeFileSync(
@@ -52,10 +76,21 @@ axiosFetch()
     })
     .then(async (response) => {
         if (response.data) {
+            // NOT a good regexp, we will fix it later.
+            const jsFileValues = ((regexpData) =>
+                Object.fromEntries(
+                    regexpData[0]
+                        .map((x, index) => {
+                            if (regexpData[1][index] === 'value') {
+                                return null
+                            }
+                            return [regexpData[1][index], regexpData[2][index]]
+                        })
+                        .filter((x) => x)
+                ))(PregMatchAll(/(?:"|)([\w\/~\-\.]+)(?:"|):"([\w]{7})"(?:,|})/gm, response.data))
             //get main link
             const mainLink = /(https:\/\/abs\.twimg\.com\/responsive-web\/client-web(?:[^\/]+|)\/main\.[^.]+\.js)/gm.exec(response.data)[0]
             //api:"8684ec1"
-            const apiLink = `https://abs.twimg.com/responsive-web/client-web/api.${/api:(?:\s+|)"([^"]+)"/gm.exec(response.data)[1]}a.js`
 
             const __INITIAL_STATE__ = Function(`return ${/window\.__INITIAL_STATE__=([^;]+);/gm.exec(response.data)[1]}`)()
             const tmpConfigKV = { ...__INITIAL_STATE__.featureSwitch.defaultConfig, ...__INITIAL_STATE__.featureSwitch.user.config }
@@ -74,7 +109,7 @@ axiosFetch()
                 if (mainId.data) {
                     updateIdList(mainId.data, 'main')
                 }
-                const apiId = await axiosFetch().get(apiLink)
+                const apiId = await axiosFetch().get(`https://abs.twimg.com/responsive-web/client-web/api.${jsFileValues['api']}a.js`)
                 if (apiId.data) {
                     updateIdList(apiId.data, 'api')
                 }

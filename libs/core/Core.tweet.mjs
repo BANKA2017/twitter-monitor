@@ -379,7 +379,29 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
         place = content?.legacy?.place || content?.place || {}
     }
 
-    return { GeneralTweetData, userInfo, retweetUserInfo, tags, richtext, quote, media, quoteMedia, cardMedia, video, card, cardApp, cardMessage, place, polls, interactiveData, isQuote, isRetweet, isRtl, displayTextRange, vibe }
+    return {
+        GeneralTweetData,
+        userInfo,
+        retweetUserInfo,
+        tags,
+        richtext,
+        quote,
+        media,
+        quoteMedia,
+        cardMedia,
+        video,
+        card,
+        cardApp,
+        cardMessage,
+        place,
+        polls,
+        interactiveData,
+        isQuote,
+        isRetweet,
+        isRtl,
+        displayTextRange,
+        vibe
+    }
 }
 
 const GenerateEntities = (entities = [], uid = '0', tweetId = '0', hidden = false) => {
@@ -883,6 +905,11 @@ const Card = (cardInfo = {}, uid = '0', tweetId = '0', hidden = false, url = '',
                 tmpCardInfo.data.vanity_url = childCardInfo.component_objects.text.data.subtitle.content
                 tmpCardInfo.data.url = childCardInfo.destination_objects.article.data.url_data.url
                 break
+            case 'community_details':
+                tmpCardInfo.data.title = childCardInfo.component_objects.details_1.data.name.content
+                tmpCardInfo.data.description = childCardInfo.component_objects.details_1.data.member_count
+                tmpCardInfo.data.vanity_url = childCardInfo.destination_objects.destination_1.data.url_data.vanity
+                tmpCardInfo.data.url = childCardInfo.destination_objects.destination_1.data.url_data.url
             default:
             //https://developer.twitter.com/en/docs/twitter-ads-api/creatives/api-reference/cards
             //不知道还有什么，现在只找到这些
