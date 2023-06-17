@@ -9,23 +9,21 @@ on:
 jobs:
     build:
         runs-on: ubuntu-latest
-
-        strategy:
-            matrix:
-                node-version: [16.x]
         steps:
             - uses: actions/checkout@v3
-            - name: Use Node.js ${{ matrix.node-version }}
+            - name: Use Node.js 18.x
               uses: actions/setup-node@v3
               with:
-                  node-version: ${{ matrix.node-version }}
-            - run: yarn
-            - run: yarn run build:rollup
-            - name: Upload dist
-              uses: actions/upload-artifact@v3.1.2
-              with:
-                  name: 'dist'
-                  path: dist
+                  node-version: 18.x
+            - name: Yarn install and build
+              run: |
+                yarn
+                yarn run build:rollup
+            # - name: Upload dist
+            #   uses: actions/upload-artifact@v3.1.2
+            #   with:
+            #       name: 'dist'
+            #       path: dist
             - name: Upload browser script
               uses: actions/upload-artifact@v3.1.2
               with:
@@ -41,3 +39,9 @@ jobs:
               with:
                   name: 'app_online.js'
                   path: dist/backend/app_online.js
+            - name: Deploy to workers
+              uses: cloudflare/wrangler-action@2.0.0
+              with:
+                  apiToken: ${{ secrets.CF_API_TOKEN }}
+                  accountId: ${{ secrets.CF_ACCOUNT_ID }}
+                  workingDirectory: 'apps/cfworkers'

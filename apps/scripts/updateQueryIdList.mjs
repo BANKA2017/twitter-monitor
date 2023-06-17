@@ -2,6 +2,17 @@ import { writeFileSync } from 'fs'
 import { basePath } from '../../libs/share/NodeConstant.mjs'
 import axiosFetch from 'axios-helper'
 
+let link = 'https://twitter.com/'
+
+if (process.argv[2]) {
+    try {
+        new URL(process.argv[2])
+        link = process.argv[2]
+    } catch (e) {
+        console.log(`tmv3: Invalid link`)
+    }
+}
+
 let queryIdList = {}
 let featuresValueList = {}
 const updateIdList = (content, type = 'main') => {
@@ -14,7 +25,7 @@ const updateIdList = (content, type = 'main') => {
         let tmpData = Function(`return ${match[1]}`)()
         queryIdList[tmpData.operationName] = tmpData
         //features
-        console.log(queryIdList[tmpData.operationName])
+        //console.log(queryIdList[tmpData.operationName])
         if (queryIdList[tmpData.operationName].metadata) {
             queryIdList[tmpData.operationName].features = Object.fromEntries(queryIdList[tmpData.operationName].metadata.featureSwitches.map((feature) => [feature, featuresValueList[feature]]))
         }
@@ -33,7 +44,12 @@ const updateIdList = (content, type = 'main') => {
 
 let match
 axiosFetch()
-    .get('https://twitter.com/', { headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36', cookie: 'guest_id=v1:0' } })
+    .get(link, {
+        headers: {
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
+            cookie: 'guest_id=v1:0'
+        }
+    })
     .then(async (response) => {
         if (response.data) {
             //get main link
