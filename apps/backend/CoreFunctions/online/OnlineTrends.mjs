@@ -10,7 +10,7 @@ const ApiTrends = async (req, env) => {
         await env.updateGuestToken(env, 'guest_token2', 1, tmpTrendsRequest.headers.get('x-rate-limit-remaining') < 20, 'Trending')
 
         tmpTrends = tmpTrendsRequest.data.timeline.instructions[1].addEntries.entries
-            .filter((entity) => entity.entryId === 'trends')[0]
+            .find((entity) => entity.entryId === 'trends')
             .content.timelineModule.items.map((item) => ({
                 name: item?.item?.content?.trend?.name ?? '',
                 domainContext: item?.item?.content?.trend?.trendMetadata?.domainContext ?? '',

@@ -1,5 +1,5 @@
 import { GenerateAccountInfo } from '../../../../libs/core/Core.account.mjs'
-import { getCommunityInfo, getListInfo, getListMember, getTypeahead } from '../../../../libs/core/Core.fetch.mjs'
+import { getCommunityInfo, getCommunitySearch, getListInfo, getListMember, getTypeahead } from '../../../../libs/core/Core.fetch.mjs'
 import { GetEntitiesFromText, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
 import { TweetsInfo } from '../../../../libs/core/Core.tweet.mjs'
 import { apiTemplate } from '../../../../libs/share/Constant.mjs'
@@ -180,9 +180,63 @@ const ApiCommunityInfo = async (req, env) => {
         return env.json(apiTemplate(200, 'OK', responseData, 'online'))
     } catch (e) {
         console.log(e)
-        console.error(`[${new Date()}]: #OnlineCommunityInfo ${'#' + listId} #${e.code} ${e.message}`)
+        console.error(`[${new Date()}]: #OnlineCommunityInfo ${'#' + communityId} #${e.code} ${e.message}`)
         return env.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
     }
 }
 
-export { ApiTypeahead, ApiListInfo, ApiListMemberList, ApiCommunityInfo }
+const ApiCommunitySearch = async (req, env) => {
+    const queryString = VerifyQueryString(req.query.q, '')
+    const cursor = VerifyQueryString(req.query.cursor, '')
+    // Note: now 'count' is unused, it might useful in future
+    const count = VerifyQueryString(req.query.count, 0)
+
+    if (!queryString) {
+        return env.json(apiTemplate(403, 'Invalid Request', {}, 'online'))
+    }
+    try {
+        const tmpCommunitySearchResponse = await getCommunitySearch({ queryString, cursor, count, guest_token: env.guest_token2, authorization: 1 })
+
+        const communitiesList = []
+        // community
+        if (Array.isArray(tmpCommunitySearchResponse.data.data?.communities_search_slice?.items_results)) {
+            for (const tmpCommunityInfo of tmpCommunitySearchResponse.data.data?.communities_search_slice?.items_results) {
+                const tmpCommunityResult = tmpCommunityInfo.result
+                communitiesList.push({
+                    name: tmpCommunityResult.name ?? '',
+                    id: tmpCommunityResult.rest_id ?? '',
+                    member_count: tmpCommunityResult.member_count ?? 0,
+                    default_theme: tmpCommunityResult.default_theme ?? tmpCommunityResult.custom_theme ?? '_',
+                    banner: {
+                        url: tmpCommunityResult?.custom_banner_media?.media_info?.original_img_url ?? tmpCommunityResult?.default_banner_media?.media_info?.original_img_url ?? '',
+                        original_height: tmpCommunityResult?.custom_banner_media?.media_info?.original_img_height ?? tmpCommunityResult?.default_banner_media?.media_info?.original_img_height ?? 0,
+                        original_width: tmpCommunityResult?.custom_banner_media?.media_info?.original_img_width ?? tmpCommunityResult?.default_banner_media?.media_info?.original_img_width ?? 0,
+                        media_key: tmpCommunityResult?.custom_banner_media?.id ?? tmpCommunityResult?.default_banner_media?.id ?? ''
+                    }
+                })
+            }
+        }
+
+        // cursor
+        const nextCursor = tmpCommunitySearchResponse.data.data?.communities_search_slice?.slice_info?.next_cursor || ''
+
+        return env.json(
+            apiTemplate(
+                200,
+                'OK',
+                {
+                    communities_list: communitiesList,
+                    cursor: nextCursor,
+                    hasmore: !!nextCursor
+                },
+                'online'
+            )
+        )
+    } catch (e) {
+        console.error(e)
+        console.error(`[${new Date()}]: #OnlineCommunitySearch ${queryString} #${e.code} ${e.message}`)
+        return env.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
+    }
+}
+
+export { ApiTypeahead, ApiListInfo, ApiListMemberList, ApiCommunityInfo, ApiCommunitySearch }

@@ -144,7 +144,7 @@ do {
             const tweetsInfo = TweetsInfo(x.value.data, true)
             //console.log(tweetsInfo.contents.filter(tweet => String(tweet?.content?.itemContent?.tweet_results?.result?.rest_id || '0') === tmpTweetIdList[index])[0])
 
-            if (!tweetsInfo.contents.filter((tweet) => String(tweet?.content?.itemContent?.tweet_results?.result?.rest_id || '0') === tmpTweetIdList[index])[0]) {
+            if (!tweetsInfo.contents.find((tweet) => String(tweet?.content?.itemContent?.tweet_results?.result?.rest_id || '0') === tmpTweetIdList[index])) {
                 console.log(`error: ${tmpTweetIdList[index]}`)
                 errorList.push(tmpTweetIdList[index])
                 writeFileSync('./errorList.json', JSON.stringify(errorList))

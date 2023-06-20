@@ -4,6 +4,9 @@ import {
     getArticle,
     getAudioSpace,
     getBroadcast,
+    getCommunityInfo,
+    getCommunitySearch,
+    getCommunityTweetsTimeline,
     getConversation,
     getEditHistory,
     getListInfo,
@@ -69,21 +72,57 @@ describe('Timeline', () => {
         expect(await getTweets({ queryString: '783214', guest_token: guest_token1.token, graphqlMode: true, online: true, authorization: 0 })).toHaveProperty('data')
     })
     test.concurrent('Tweets & Replies (token 1)', async ({ expect }) => {
-        expect(await getTweets({ queryString: '783214', guest_token: guest_token1.token, graphqlMode: true, online: true, withReply: true, authorization: 0 })).toHaveProperty('data')
+        expect(
+            await getTweets({
+                queryString: '783214',
+                guest_token: guest_token1.token,
+                graphqlMode: true,
+                online: true,
+                withReply: true,
+                authorization: 0
+            })
+        ).toHaveProperty('data')
     })
     //search is not available
     test.skip('Search (token 1)', async ({ expect }) => {
-        expect(await getTweets({ queryString: '#twitter', guest_token: guest_token1.token, graphqlMode: true, online: true, searchMode: true, authorization: 0 })).toHaveProperty('data')
+        expect(
+            await getTweets({
+                queryString: '#twitter',
+                guest_token: guest_token1.token,
+                graphqlMode: true,
+                online: true,
+                searchMode: true,
+                authorization: 0
+            })
+        ).toHaveProperty('data')
     })
     test.concurrent('Tweets (token 2)', async ({ expect }) => {
         expect(await getTweets({ queryString: '783214', guest_token: guest_token2.token, graphqlMode: true, online: true, authorization: 1 })).toHaveProperty('data')
     })
     test.concurrent('Tweets & Replies (token 2)', async ({ expect }) => {
-        expect(await getTweets({ queryString: '783214', guest_token: guest_token2.token, graphqlMode: true, online: true, withReply: true, authorization: 1 })).toHaveProperty('data')
+        expect(
+            await getTweets({
+                queryString: '783214',
+                guest_token: guest_token2.token,
+                graphqlMode: true,
+                online: true,
+                withReply: true,
+                authorization: 1
+            })
+        ).toHaveProperty('data')
     })
     //search is not available
     test.skip('Search (token 2)', async ({ expect }) => {
-        expect(await getTweets({ queryString: '#twitter', guest_token: guest_token2.token, graphqlMode: true, online: true, searchMode: true, authorization: 1 })).toHaveProperty('data')
+        expect(
+            await getTweets({
+                queryString: '#twitter',
+                guest_token: guest_token2.token,
+                graphqlMode: true,
+                online: true,
+                searchMode: true,
+                authorization: 1
+            })
+        ).toHaveProperty('data')
     })
 })
 
@@ -183,5 +222,18 @@ describe('List', () => {
     })
     test.concurrent('@esa/astronauts Timeline (token 2)', async ({ expect }) => {
         expect(await getListTimeLine({ id: '53645372', guest_token: guest_token2.token, authorization: 1 })).toHaveProperty('data')
+    })
+})
+
+describe('Community', () => {
+    //NOT SUPPORTED TOKEN 1
+    test.concurrent('Cat Twitter/1539049437791666176 Info (token 2)', async ({ expect }) => {
+        expect(await getCommunityInfo({ id: '1539049437791666176', guest_token: guest_token2.token, authorization: 1 })).toHaveProperty('data')
+    })
+    test.concurrent('Cat Twitter/1539049437791666176 Timeline (token 2)', async ({ expect }) => {
+        expect(await getCommunityTweetsTimeline({ id: '1539049437791666176', count: 20, cursor: '', guest_token: guest_token2.token, authorization: 1 })).toHaveProperty('data')
+    })
+    test.concurrent('Cat Twitter/1539049437791666176 Search (token 2)', async ({ expect }) => {
+        expect(await getCommunitySearch({ queryString: 'Cat Twitter', guest_token: guest_token2.token, authorization: 1 })).toHaveProperty('data')
     })
 })

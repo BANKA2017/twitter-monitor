@@ -250,7 +250,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
             if (recrawlMode) {
             } else {
                 //find tweet content from contentList
-                content = contentList.filter((contentItem) => contentItem.id_str === content.retweeted_status_id_str)[0]
+                content = contentList.find((contentItem) => contentItem.id_str === content.retweeted_status_id_str)
                 if (!content) {
                     console.log('tmv3: no retweet content')
                     return { error: { code: 1003, message: 'No retweet content' } }
@@ -315,7 +315,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
     if (isQuote) {
         GeneralTweetData.quote_status = path2array('quote_tweet_id', content)
         //TODO recrawl mode
-        const quoteContent = graphqlMode ? path2array('quote_graphql_path', content) : contentList.filter((contentItem) => contentItem.id_str === GeneralTweetData.quote_status)[0]
+        const quoteContent = graphqlMode ? path2array('quote_graphql_path', content) : contentList.find((contentItem) => contentItem.id_str === GeneralTweetData.quote_status)
         if (quoteContent && !quoteContent.tombstone) {
             const quoteObject = GetQuote(quoteContent, users, GeneralTweetData.uid, GeneralTweetData.tweet_id, graphqlMode, hidden, online)
             quote = quoteObject.inSqlQuote
@@ -867,7 +867,7 @@ const Card = (cardInfo = {}, uid = '0', tweetId = '0', hidden = false, url = '',
                 //TODO dest were not same, but i have to join them in the same string
                 let index = 0
                 for (const slide of childCardInfo.layout.data.slides) {
-                    const tmpSlideItem = slide.filter((x) => x.startsWith('details_'))[0] || ''
+                    const tmpSlideItem = slide.find((x) => x.startsWith('details_')) || ''
                     if (!tmpSlideItem) {
                         continue
                     }

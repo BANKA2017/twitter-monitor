@@ -4,6 +4,7 @@ import {
     _AudioSpaceById,
     _Bookmarks,
     _CommunitiesFetchOneQuery,
+    _CommunitiesSearchQuery,
     _CommunityTweetsTimeline,
     _ConversationControlChange,
     _ConversationControlDelete,
@@ -996,6 +997,47 @@ const getCommunityTweetsTimeline = async (ctx = { id: '', count: 20, cursor: '',
     })
 }
 
+const getCommunitySearch = async (ctx = { queryString: '', count: 20, cursor: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
+    // Note: now 'count' is unused, it might useful in future
+    let { queryString, count, cursor, guest_token, cookie, authorization } = preCheckCtx(ctx, {
+        queryString: '',
+        count: 20,
+        cursor: '',
+        guest_token: {},
+        cookie: {},
+        authorization: 1
+    })
+    if (!guest_token.success) {
+        guest_token = await getToken(authorization)
+    }
+
+    const graphqlVariables = {
+        query: queryString,
+        count,
+        cursor: cursor || null
+    }
+
+    return await new Promise((resolve, reject) => {
+        coreFetch(
+            'https://api.twitter.com/graphql/' +
+                _CommunitiesSearchQuery.queryId +
+                '/CommunitiesSearchQuery?' +
+                new URLSearchParams({
+                    variables: JSON.stringify(graphqlVariables)
+                }).toString(),
+            guest_token,
+            cookie,
+            authorization
+        )
+            .then((response) => {
+                resolve(response)
+            })
+            .catch((e) => {
+                reject(e)
+            })
+    })
+}
+
 //https://github.com/FixTweet/FixTweet/blob/main/src/helpers/translate.ts
 const getTranslate = async (ctx = { id: '0', type: 'tweets', target: 'en', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
     let { id, type, target, guest_token, cookie, authorization } = preCheckCtx(ctx, {
@@ -1042,7 +1084,7 @@ const getPollResult = async (ctx = { tweet_id: '', guest_token: {}, cookie: {}, 
         return { code: 404, message: 'No tweets', data: [] }
     }
 
-    const tweetItem = path2array('tweet_content', tmpTweet.filter((tmpTweetItem) => tmpTweetItem.entryId === 'tweet-' + tweet_id)[0] ?? [])
+    const tweetItem = path2array('tweet_content', tmpTweet.find((tmpTweetItem) => tmpTweetItem.entryId === 'tweet-' + tweet_id) ?? [])
     const cardInfo = path2array('tweet_card_path', tweetItem)
     if (cardInfo && String(path2array('tweet_card_name', cardInfo)).startsWith('poll')) {
         const data = []
@@ -1696,6 +1738,7 @@ export {
     getListTimeLine,
     getCommunityInfo,
     getCommunityTweetsTimeline,
+    getCommunitySearch,
     getTranslate,
     getTrends,
     getImage,

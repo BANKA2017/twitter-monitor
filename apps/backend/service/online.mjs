@@ -3,7 +3,7 @@ import { ApiUserInfo } from '../CoreFunctions/online/OnlineUserInfo.mjs'
 import { ApiTweets, ApiSearch, ApiPoll, ApiAudioSpace, ApiMedia, ApiBroadcast } from '../CoreFunctions/online/OnlineTweet.mjs'
 import { apiTemplate } from '../../../libs/share/Constant.mjs'
 import { ApiTrends } from '../CoreFunctions/online/OnlineTrends.mjs'
-import { ApiCommunityInfo, ApiListInfo, ApiListMemberList, ApiTypeahead } from '../CoreFunctions/online/OnlineMisc.mjs'
+import { ApiCommunityInfo, ApiCommunitySearch, ApiListInfo, ApiListMemberList, ApiTypeahead } from '../CoreFunctions/online/OnlineMisc.mjs'
 
 const online = express()
 online.use(async (req, res, next) => {
@@ -80,6 +80,10 @@ online.get('/data/listmember/', async (req, res) => {
 })
 online.get('/data/communityinfo/', async (req, res) => {
     const _res = await ApiCommunityInfo(req, req.env)
+    res.json(_res.data)
+})
+online.get('/data/communitysearch/', async (req, res) => {
+    const _res = await ApiCommunitySearch(req, req.env)
     res.json(_res.data)
 })
 

@@ -113,6 +113,10 @@ axiosFetch()
                 if (apiId.data) {
                     updateIdList(apiId.data, 'api')
                 }
+                const communityId = await axiosFetch().get(`https://abs.twimg.com/responsive-web/client-web/bundle.Communities.${jsFileValues['bundle.Communities']}a.js`)
+                if (communityId.data) {
+                    updateIdList(communityId.data, 'community')
+                }
                 process.exit()
             } catch (e) {
                 console.log(e)

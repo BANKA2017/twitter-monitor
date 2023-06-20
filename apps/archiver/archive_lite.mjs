@@ -143,7 +143,7 @@ if (cursor.tweets.cursor !== 'complete') {
                 //restful
                 //uid = Object.values(tmpTweetsInfo.tweetsInfo.users).filter(user => user.screen_name.toLocaleLowerCase() === name.toLocaleLowerCase())[0]?.id_str || null
                 //graphql
-                uid = Object.values(tmpTweetsInfo.tweetsInfo.users).filter((user) => user.legacy.screen_name.toLocaleLowerCase() === name.toLocaleLowerCase())[0]?.rest_id || null
+                uid = Object.values(tmpTweetsInfo.tweetsInfo.users).find((user) => user.legacy.screen_name.toLocaleLowerCase() === name.toLocaleLowerCase())?.rest_id || null
 
                 if (!uid) {
                     throw `archiver: no such account!!!`
@@ -288,7 +288,10 @@ if (broadcastsCards.length <= 0) {
         console.log(`archiver: broadcast (${broadcastsCards.length})`)
         let tmpCardsList = broadcastsCards.splice(0, 100)
         await window.guest_token.updateGuestToken(1)
-        let broadcasts = await getBroadcast({ id: tmpCardsList.map((card) => card.url.replaceAll(/.*\/([^\/\?#]+)(?:$|\?.*|#.*)/gm, '$1')), guest_token: window.guest_token.token })
+        let broadcasts = await getBroadcast({
+            id: tmpCardsList.map((card) => card.url.replaceAll(/.*\/([^\/\?#]+)(?:$|\?.*|#.*)/gm, '$1')),
+            guest_token: window.guest_token.token
+        })
         window.guest_token.updateRateLimit('BroadCast', 100)
 
         for (let index in broadcasts) {

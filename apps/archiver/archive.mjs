@@ -265,7 +265,7 @@ if (activeFlags.tweet) {
                     //restful
                     //uid = Object.values(tmpTweetsInfo.tweetsInfo.users).filter(user => user.screen_name.toLocaleLowerCase() === name.toLocaleLowerCase())[0]?.id_str || null
                     //graphql
-                    uid = Object.values(tmpTweetsInfo.tweetsInfo.users).filter((user) => user.legacy.screen_name.toLocaleLowerCase() === name.toLocaleLowerCase())[0]?.rest_id || null
+                    uid = Object.values(tmpTweetsInfo.tweetsInfo.users).find((user) => user.legacy.screen_name.toLocaleLowerCase() === name.toLocaleLowerCase())?.rest_id || null
 
                     if (!uid) {
                         console.error(`archiver: no such account!!!`)
@@ -423,7 +423,10 @@ if (activeFlags.broadcast) {
 
             const tmpCardsList = broadcastsCards.splice(0, 100)
             await global.guest_token.updateGuestToken(1)
-            const broadcasts = await getBroadcast({ id: tmpCardsList.map((card) => card.url.replaceAll(/.*\/([^\/\?#]+)(?:$|\?.*|#.*)/gm, '$1')), guest_token: global.guest_token.token })
+            const broadcasts = await getBroadcast({
+                id: tmpCardsList.map((card) => card.url.replaceAll(/.*\/([^\/\?#]+)(?:$|\?.*|#.*)/gm, '$1')),
+                guest_token: global.guest_token.token
+            })
             global.guest_token.updateRateLimit('BroadCast', 100)
 
             for (const index in broadcasts) {
@@ -727,7 +730,13 @@ if (true) {
                     await global.legacy_guest_token.updateGuestToken(0)
                     cookieRequestsRateLimit = 0
                 }
-                const followingResponse = await getFollowingOrFollowers({ id: screen_name, type: 'Following', count: 200, cursor: cursor.following.cursor, guest_token: global.legacy_guest_token.token })
+                const followingResponse = await getFollowingOrFollowers({
+                    id: screen_name,
+                    type: 'Following',
+                    count: 200,
+                    cursor: cursor.following.cursor,
+                    guest_token: global.legacy_guest_token.token
+                })
                 //next_cursor_str
                 //previous_cursor_str
                 cookieRequestsRateLimit++
@@ -780,7 +789,13 @@ if (true) {
                     await global.legacy_guest_token.updateGuestToken(0)
                     cookieRequestsRateLimit = 0
                 }
-                const followersResponse = await getFollowingOrFollowers({ id: screen_name, type: 'Followers', count: 200, cursor: cursor.followers.cursor, guest_token: global.legacy_guest_token.token })
+                const followersResponse = await getFollowingOrFollowers({
+                    id: screen_name,
+                    type: 'Followers',
+                    count: 200,
+                    cursor: cursor.followers.cursor,
+                    guest_token: global.legacy_guest_token.token
+                })
                 cookieRequestsRateLimit++
 
                 for (const tmpUserInfo of followersResponse.data.users) {

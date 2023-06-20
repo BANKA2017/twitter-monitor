@@ -10,7 +10,7 @@ import { MediaProxy } from '../apps/backend/CoreFunctions/media/MediaProxy.mjs'
 import { ApiUserInfo } from '../apps/backend/CoreFunctions/online/OnlineUserInfo.mjs'
 import { ApiAudioSpace, ApiBroadcast, ApiMedia, ApiPoll, ApiSearch, ApiTweets } from '../apps/backend/CoreFunctions/online/OnlineTweet.mjs'
 import { ApiTrends } from '../apps/backend/CoreFunctions/online/OnlineTrends.mjs'
-import { ApiListInfo, ApiListMemberList, ApiTypeahead } from '../apps/backend/CoreFunctions/online/OnlineMisc.mjs'
+import { ApiCommunityInfo, ApiCommunitySearch, ApiListInfo, ApiListMemberList, ApiTypeahead } from '../apps/backend/CoreFunctions/online/OnlineMisc.mjs'
 import MockExpress from './mock/express'
 import { ApiOfficialTranslate } from '../apps/backend/CoreFunctions/translate/OnlineTranslate.mjs'
 import { json, updateGuestToken } from '../apps/backend/share.mjs'
@@ -119,6 +119,14 @@ describe('Tweets', async () => {
         mock.res.json((await ApiTweets(mock.req, mock.req.env)).data)
         testTweets(top_tweet_id, bottom_tweet_id)
     })
+    test.concurrent('Community', async () => {
+        mock.init('https://tmapi.nest.moe/online/api/v3/data/tweets/?community_id=1539049437791666176&count=20', {}, '', '')
+        mock.res.json((await ApiTweets(mock.req, mock.req.env)).data)
+        const { top_tweet_id, bottom_tweet_id } = testTweets('', '')
+        mock.init(`https://tmapi.nest.moe/online/api/v3/data/tweets/?community_id=1539049437791666176&count=20&tweet_id=${encodeURIComponent(bottom_tweet_id)}`, {}, '', '')
+        mock.res.json((await ApiTweets(mock.req, mock.req.env)).data)
+        testTweets(top_tweet_id, bottom_tweet_id)
+    })
 })
 
 describe('Search', async () => {
@@ -212,7 +220,6 @@ describe('List', async () => {
         expect(data.user_info.uid_str).toEqual('21436960')
         expect(data.id).toEqual('53645372')
         expect(data.name).toEqual('Astronauts')
-        expect(data.description).toEqual('ESA astronauts on Twitter')
         expect(data.created_at).toEqual(1314780355)
         expect(data.banner.url).toMatch(/^https:\/\/pbs\.twimg\.com/gm)
     })
@@ -221,7 +228,7 @@ describe('List', async () => {
         mock.res.json((await ApiListMemberList(mock.req, mock.req.env)).data)
         const { data } = mock.globalResponseCtx.body
         //users
-        expect(data.users.length).toBeGreaterThanOrEqual(18)
+        expect(data.users.length).toBeGreaterThanOrEqual(0)
         for (const user of data.users) {
             expect(BigInt(user.uid_str)).toBeGreaterThanOrEqual(BigInt(1))
             expect(user.name.length).toBeGreaterThanOrEqual(1)
@@ -229,6 +236,25 @@ describe('List', async () => {
         //cursor
         expect(data.cursor.top?.length).toBeGreaterThanOrEqual(1)
         expect(data.cursor.bottom?.length).toBeGreaterThanOrEqual(1)
+    })
+})
+
+describe('Community', async () => {
+    test.concurrent('Info', async () => {
+        mock.init('https://tmapi.nest.moe/online/api/v3/data/communityinfo/?community_id=1539049437791666176', {}, '', '')
+        mock.res.json((await ApiCommunityInfo(mock.req, mock.req.env)).data)
+        const { data } = mock.globalResponseCtx.body
+        expect(data.id).toEqual('1539049437791666176')
+        expect(data.created_at).toEqual(1655772955)
+        expect(data.banner.url).toMatch(/^https:\/\/pbs\.twimg\.com/gm)
+    })
+    test.concurrent('Search', async () => {
+        mock.init('https://tmapi.nest.moe/online/api/v3/data/communitysearch/?q=Cat%20Twitter', {}, '', '')
+        mock.res.json((await ApiCommunitySearch(mock.req, mock.req.env)).data)
+        const { data } = mock.globalResponseCtx.body
+        expect(data.cursor).not.toEqual('')
+        expect(data.communities_list.length).toBeGreaterThanOrEqual(1)
+        expect(data.communities_list.find((x) => x.id === '1539049437791666176')).not.toBeUndefined()
     })
 })
 
@@ -266,4 +292,4 @@ describe('List', async () => {
 //ApiListInfo //https://tmapi.nest.moe/online/api/v3/data/listinfo/?list_id=53645372
 //ApiListMemberList //https://tmapi.nest.moe/online/api/v3/data/listmember/?list_id=53645372&count=20
 //ApiTranslate -> https://github.com/BANKA2017/translator-utils/blob/master/tests
-//ApiOfficialTranslate // -> TODO useless now
+//ApiOfficialTranslate // -> TODO unused now

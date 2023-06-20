@@ -33,7 +33,7 @@ let errorList = []
 for (const index in media) {
     console.log(`${Number(index) + 1} / ${media.length}`)
     const x = media[index]
-    let tmpMediaInfo = media.filter((mediaObject) => x.tweet_id === mediaObject.tweet_id)[0]
+    let tmpMediaInfo = media.find((mediaObject) => x.tweet_id === mediaObject.tweet_id)
     //fix mediaInfo
 
     tmpMediaInfo.url = ''
