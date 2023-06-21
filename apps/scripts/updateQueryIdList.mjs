@@ -1,7 +1,7 @@
 import { writeFileSync } from 'fs'
 import { basePath } from '../../libs/share/NodeConstant.mjs'
 import axiosFetch from 'axios-helper'
-import { PregMatchAll } from '../../libs/core/Core.function.mjs'
+import { PregMatchAll } from '../../libs/share/MockFuntions.mjs'
 
 let link = 'https://twitter.com/explore'
 
@@ -81,7 +81,7 @@ axiosFetch()
                 Object.fromEntries(
                     regexpData[0]
                         .map((x, index) => {
-                            if (regexpData[1][index] === 'value') {
+                            if (['themeColor', 'type', 'value'].includes(regexpData[1][index])) {
                                 return null
                             }
                             return [regexpData[1][index], regexpData[2][index]]
@@ -109,14 +109,25 @@ axiosFetch()
                 if (mainId.data) {
                     updateIdList(mainId.data, 'main')
                 }
-                const apiId = await axiosFetch().get(`https://abs.twimg.com/responsive-web/client-web/api.${jsFileValues['api']}a.js`)
-                if (apiId.data) {
-                    updateIdList(apiId.data, 'api')
+                // full version
+                for (const tmpValue of Object.entries(jsFileValues)) {
+                    const data = (await axiosFetch().get(`https://abs.twimg.com/responsive-web/client-web/${tmpValue[0]}.${tmpValue[1]}a.js`)).data //readFileSync(`./js/${file}`).toString()// await axiosFetch().get(`https://abs.twimg.com/responsive-web/client-web/bundle.Communities.${jsFileValues['bundle.Communities']}a.js`)
+                    if (data) {
+                        updateIdList(data, tmpValue[0])
+                    } else {
+                        console.log(`tmv3: graphqlQueryIdList ${tmpValue[0]} error`)
+                    }
                 }
-                const communityId = await axiosFetch().get(`https://abs.twimg.com/responsive-web/client-web/bundle.Communities.${jsFileValues['bundle.Communities']}a.js`)
-                if (communityId.data) {
-                    updateIdList(communityId.data, 'community')
-                }
+
+                // for twitter monitor only
+                //const apiId = await axiosFetch().get(`https://abs.twimg.com/responsive-web/client-web/api.${jsFileValues['api']}a.js`)
+                //if (apiId.data) {
+                //    updateIdList(apiId.data, 'api')
+                //}
+                //const communityId = await axiosFetch().get(`https://abs.twimg.com/responsive-web/client-web/bundle.Communities.${jsFileValues['bundle.Communities']}a.js`)
+                //if (communityId.data) {
+                //    updateIdList(communityId.data, 'community')
+                //}
                 process.exit()
             } catch (e) {
                 console.log(e)
