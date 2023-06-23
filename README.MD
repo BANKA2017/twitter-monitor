@@ -16,7 +16,7 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 ## Environment
 
 * x86_64/arm64
-* NodeJS 16+
+* Node.js 16+
 * Nginx
 * MySQL 8.0 / MariaDB (some function is not supported MariaDB, like function `ANY_VALUE()`, parser `ngram`)
 
@@ -161,7 +161,7 @@ Those are Chinese articles
 ## 环境要求
 
 * x86_64/arm64 (理论上是全平台支持的)
-* NodeJS 16+
+* Node.js 16+
 * Nginx
 * MySQL 8.0 (使用MariaDB等基于 MySQL 5.x 的发行版可能不能支持函数 `ANY_VALUE()`, 解析器 `ngram`，会导致部分api不可用，若不使用api可忽略此处)
 

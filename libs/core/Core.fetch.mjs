@@ -25,6 +25,7 @@ import {
     _ListLatestTweetsTimeline,
     _ListMembers,
     _SearchTimeline,
+    _TweetActivityQuery,
     _TweetDetail,
     _TweetEditHistory,
     _TwitterArticleByRestId,
@@ -37,6 +38,7 @@ import {
     _UsersVerifiedAvatars
 } from '../../libs/assets/graphql/graphqlQueryIdList.js'
 import axiosFetch from 'axios-helper'
+import { fileTypeFromBuffer } from 'file-type'
 
 const generateCsrfToken = async () => {
     // @ts-ignore
@@ -80,18 +82,22 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
     if (!url) {
         throw 'tmv3: Invalid url'
     }
-    if (!guest_token.success) {
+    let loginMode = !!(cookie?.auth_token && cookie?.ct0)
+    if (!loginMode && !guest_token.success) {
         guest_token = await getToken(authorization)
     }
-    const objectBody = typeof body === 'object' && body !== null
+    const objectBody = typeof body === 'object' && body !== null && (!headers['content-type'] || headers['content-type'] === 'application/json')
     if (objectBody) {
         body = JSON.stringify(body)
     }
     //cookie
     let requestCookie = { ct0 }
     //guest token
-    requestCookie.gt = guest_token.token
-    requestCookie = { ...requestCookie, ...Object.fromEntries(guest_token.cookies.map((tmpCookie) => tmpCookie.split('='))) }
+    if (!loginMode) {
+        requestCookie.gt = guest_token.token
+        requestCookie = { ...requestCookie, ...Object.fromEntries(guest_token.cookies.map((tmpCookie) => tmpCookie.split('='))) }
+    }
+
     //input cookie
     requestCookie = { ...requestCookie, ...cookie }
 
@@ -99,7 +105,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
         axios(url, {
             headers: {
                 authorization: Authorization[authorization],
-                'x-guest-token': guest_token.token,
+                'x-guest-token': loginMode ? undefined : guest_token.token,
                 'content-type': 'application/json',
                 'x-csrf-token': requestCookie.ct0,
                 cookie: Object.entries(requestCookie)
@@ -107,7 +113,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
                     .join(';'),
                 ...headers
             },
-            method: body ? 'post' : 'get',
+            method: body !== undefined ? 'post' : 'get',
             data: body ? body : undefined
         })
             .then((response) => {
@@ -1294,16 +1300,75 @@ const getLikes = async (ctx = { cookie: {}, guest_token: {}, id: '', count: 20, 
 }
 
 // COOKIE REQUIRED
-//const uploadMedia = async (link = '', cookie) => {
-//  if (!link) {
-//
-//  }
-//}
-/*conversation_control: Community | ByInvitation */
-const postTweet = async (ctx = { cookie: {}, guest_token: {}, text: '', media: [], reply_tweet_id: '', quote_tweet_id: '', conversation_control: '' }, env = {}) => {
-    let { cookie, guest_token, text, media, reply_tweet_id, quote_tweet_id, conversation_control } = preCheckCtx(ctx, {
+// type: INIT | APPEND | FINALIZE | STATUS
+// media: ArrayBuffer | null
+// To use this feature, you might have to upgrade to Node.js v18
+const uploadMedia = async (ctx = { cookie: {}, media: null, type: 'INIT', media_id: '' }, env = {}) => {
+    let { cookie, media, type, media_id } = preCheckCtx(ctx, {
         cookie: {},
-        guest_token: {},
+        media: null,
+        type: 'INIT',
+        media_id: ''
+    })
+    //TODO precheck
+    //cookie: {ct0, auth_token}
+    if (!cookie.ct0 || !cookie.auth_token) {
+    }
+    if ((['APPEND', 'INIT'].includes(type) && !media) || (['FINALIZE', 'STATUS', 'APPEND'].includes(type) && (!media_id || isNaN(media_id)))) {
+        return Promise.reject({ code: -1003, message: `miss ${['FINALIZE', 'STATUS', 'APPEND'].includes(type) ? 'media id' : 'media buffer'}`, e: {} })
+    } else {
+        let queryObject = new URLSearchParams({
+            command: type
+        })
+        const formData = new FormData()
+        switch (type) {
+            case 'INIT':
+                queryObject.append('total_bytes', media.byteLength)
+                const mime = await fileTypeFromBuffer(media)
+                queryObject.append('media_type', mime.mime)
+                const tmpMediaCategory = mime.mime.endsWith('/gif') ? 'tweet_gif' : mime.mime.startsWith('video') ? 'tweet_video' : 'tweet_image'
+                queryObject.append('media_category', tmpMediaCategory)
+                //TODO check duration is necessary?
+                //if (tmpMediaCategory === 'tweet_video') {
+                //    queryObject.append('video_duration_ms', tmpMediaCategory)
+                //}
+                break
+            case 'APPEND':
+                queryObject.append('media_id', media_id)
+                queryObject.append('segment_index', 0) //TODO length for slice
+                formData.append('media', new Blob([media]), 'blob')
+
+                break
+            case 'FINALIZE':
+                queryObject.append('allow_async', true)
+            case 'STATUS':
+                queryObject.append('media_id', media_id)
+        }
+        return await new Promise((resolve, reject) => {
+            coreFetch(
+                `https://upload.twitter.com/i/media/upload.json?${queryObject.toString()}`,
+                {},
+                cookie,
+                1,
+                {
+                    referer: 'https://twitter.com/',
+                    'content-type': type === 'APPEND' ? 'multipart/form-data' : 'application/x-www-form-urlencoded'
+                },
+                type === 'STATUS' ? undefined : formData
+            )
+                .then((response) => {
+                    resolve(response)
+                })
+                .catch((e) => {
+                    reject(e)
+                })
+        })
+    }
+}
+/*conversation_control: Community | ByInvitation */
+const postTweet = async (ctx = { cookie: {}, text: '', media: [], reply_tweet_id: '', quote_tweet_id: '', conversation_control: '' }, env = {}) => {
+    let { cookie, text, media, reply_tweet_id, quote_tweet_id, conversation_control } = preCheckCtx(ctx, {
+        cookie: {},
         text: '',
         media: [],
         reply_tweet_id: '',
@@ -1314,14 +1379,11 @@ const postTweet = async (ctx = { cookie: {}, guest_token: {}, text: '', media: [
     //cookie: {ct0, auth_token}
     if ((!text && media.length === 0) || !cookie.ct0 || !cookie.auth_token) {
     }
-    if (!guest_token.success) {
-        guest_token = await getToken(1)
-    }
 
     let graphqlVariables = {
         tweet_text: text,
         dark_request: false,
-        media: { media_entities: media, possibly_sensitive: false },
+        media: { media_entities: media, possibly_sensitive: false }, // {media_entities: [{media_id: "_", tagged_users: []}], possibly_sensitive: false}
         semantic_annotation_ids: []
     }
 
@@ -1343,7 +1405,7 @@ const postTweet = async (ctx = { cookie: {}, guest_token: {}, text: '', media: [
     return await new Promise((resolve, reject) => {
         coreFetch(
             'https://api.twitter.com/graphql/' + _CreateTweet.queryId + '/CreateTweet',
-            guest_token,
+            {},
             cookie,
             1,
             {},
@@ -1361,19 +1423,15 @@ const postTweet = async (ctx = { cookie: {}, guest_token: {}, text: '', media: [
             })
     })
 }
-const postConversationControl = async (ctx = { cookie: {}, guest_token: {}, tweet_id: '', conversation_control: '' }, env = {}) => {
-    let { cookie, guest_token, tweet_id, conversation_control } = preCheckCtx(ctx, {
+const postConversationControl = async (ctx = { cookie: {}, tweet_id: '', conversation_control: '' }, env = {}) => {
+    let { cookie, tweet_id, conversation_control } = preCheckCtx(ctx, {
         cookie: {},
-        guest_token: {},
         tweet_id: '',
         conversation_control: ''
     })
     //TODO precheck
     //cookie: {ct0, auth_token}
     if (!tweet_id || !cookie.ct0 || !cookie.auth_token) {
-    }
-    if (!guest_token.success) {
-        guest_token = await getToken(1)
     }
     let tmpMode = ''
     if (['ByInvitation', 'Community'].includes(conversation_control)) {
@@ -1382,7 +1440,7 @@ const postConversationControl = async (ctx = { cookie: {}, guest_token: {}, twee
     return await new Promise((resolve, reject) => {
         coreFetch(
             'https://api.twitter.com/graphql/' + (tmpMode ? _ConversationControlChange.queryId + '/ConversationControlChange' : _ConversationControlDelete.queryId + '/ConversationControlDelete'),
-            guest_token,
+            {},
             cookie,
             1,
             {},
@@ -1401,19 +1459,16 @@ const postConversationControl = async (ctx = { cookie: {}, guest_token: {}, twee
     })
 }
 
-const postPinTweet = async (ctx = { cookie: {}, guest_token: {}, tweet_id: '', unpin: false }, env = {}) => {
-    let { cookie, guest_token, tweet_id, unpin } = preCheckCtx(ctx, { cookie: {}, guest_token: {}, tweet_id: '', unpin: false })
+const postPinTweet = async (ctx = { cookie: {}, tweet_id: '', unpin: false }, env = {}) => {
+    let { cookie, tweet_id, unpin } = preCheckCtx(ctx, { cookie: {}, tweet_id: '', unpin: false })
     //TODO precheck
     //cookie: {ct0, auth_token}
     if (!tweet_id || !cookie.ct0 || !cookie.auth_token) {
     }
-    if (!guest_token.success) {
-        guest_token = await getToken(1)
-    }
     return await new Promise((resolve, reject) => {
         coreFetch(
             `https://api.twitter.com/1.1/account/${unpin ? 'unpin_tweet' : 'pin_tweet'}.json`,
-            guest_token,
+            {},
             cookie,
             1,
             { 'content-type': 'application/x-www-form-urlencoded' },
@@ -1431,14 +1486,11 @@ const postPinTweet = async (ctx = { cookie: {}, guest_token: {}, tweet_id: '', u
     })
 }
 
-const postRetweet = async (ctx = { cookie: {}, guest_token: {}, tweet_id: '', deleteRetweet: false }, env = {}) => {
-    let { cookie, guest_token, tweet_id, deleteRetweet } = preCheckCtx(ctx, { cookie: {}, guest_token: {}, tweet_id: '', deleteRetweet: false })
+const postRetweet = async (ctx = { cookie: {}, tweet_id: '', deleteRetweet: false }, env = {}) => {
+    let { cookie, tweet_id, deleteRetweet } = preCheckCtx(ctx, { cookie: {}, tweet_id: '', deleteRetweet: false })
     //TODO precheck
     //cookie: {ct0, auth_token}
     if (!tweet_id || !cookie.ct0 || !cookie.auth_token) {
-    }
-    if (!guest_token.success) {
-        guest_token = await getToken(1)
     }
 
     let graphqlVariables = {
@@ -1453,7 +1505,7 @@ const postRetweet = async (ctx = { cookie: {}, guest_token: {}, tweet_id: '', de
     return await new Promise((resolve, reject) => {
         coreFetch(
             'https://api.twitter.com/graphql/' + (deleteRetweet ? _DeleteRetweet.queryId + '/DeleteRetweet' : _CreateRetweet.queryId + '/CreateRetweet'),
-            guest_token,
+            {},
             cookie,
             1,
             {},
@@ -1472,20 +1524,17 @@ const postRetweet = async (ctx = { cookie: {}, guest_token: {}, tweet_id: '', de
     })
 }
 
-const postBookmark = async (ctx = { cookie: {}, guest_token: {}, tweet_id: '', deleteBookmark: false }, env = {}) => {
-    let { cookie, guest_token, tweet_id, deleteBookmark } = preCheckCtx(ctx, { cookie: {}, guest_token: {}, tweet_id: '', deleteBookmark: false })
+const postBookmark = async (ctx = { cookie: {}, tweet_id: '', deleteBookmark: false }, env = {}) => {
+    let { cookie, tweet_id, deleteBookmark } = preCheckCtx(ctx, { cookie: {}, tweet_id: '', deleteBookmark: false })
     //TODO precheck
     //cookie: {ct0, auth_token}
     if (!tweet_id || !cookie.ct0 || !cookie.auth_token) {
-    }
-    if (!guest_token.success) {
-        guest_token = await getToken(1)
     }
 
     return await new Promise((resolve, reject) => {
         coreFetch(
             'https://api.twitter.com/graphql/' + (deleteBookmark ? _DeleteBookmark.queryId + '/DeleteBookmark' : _CreateBookmark.queryId + '/CreateBookmark'),
-            guest_token,
+            {},
             cookie,
             1,
             {},
@@ -1504,19 +1553,16 @@ const postBookmark = async (ctx = { cookie: {}, guest_token: {}, tweet_id: '', d
     })
 }
 
-const postDeleteTweet = async (ctx = { cookie: {}, guest_token: {}, tweet_id: '' }, env = {}) => {
-    let { cookie, guest_token, tweet_id } = preCheckCtx(ctx, { cookie: {}, guest_token: {}, tweet_id: '' })
+const postDeleteTweet = async (ctx = { cookie: {}, tweet_id: '' }, env = {}) => {
+    let { cookie, tweet_id } = preCheckCtx(ctx, { cookie: {}, tweet_id: '' })
     //TODO precheck
     //cookie: {ct0, auth_token}
     if (!tweet_id || !cookie.ct0 || !cookie.auth_token) {
     }
-    if (!guest_token.success) {
-        guest_token = await getToken(1)
-    }
     return await new Promise((resolve, reject) => {
         coreFetch(
             'https://twitter.com/i/api/graphql/' + _DeleteTweet.queryId + '/DeleteTweet',
-            guest_token,
+            {},
             cookie,
             1,
             {},
@@ -1535,12 +1581,10 @@ const postDeleteTweet = async (ctx = { cookie: {}, guest_token: {}, tweet_id: ''
     })
 }
 
-const postHomeTimeLine = async (ctx = { cookie: {}, guest_token: {}, count: 20, cursor: '', isForYou: false }, env = {}) => {
-    let { cookie, guest_token, count, cursor, isForYou } = preCheckCtx(ctx, { cookie: {}, guest_token: {}, count: 20, cursor: '', isForYou: false })
+const postHomeTimeLine = async (ctx = { cookie: {}, count: 20, cursor: '', isForYou: false }, env = {}) => {
+    let { cookie, count, cursor, isForYou } = preCheckCtx(ctx, { cookie: {}, count: 20, cursor: '', isForYou: false })
     //cookie: {ct0, auth_token}
-    if (!guest_token.success) {
-        guest_token = await getToken(1)
-    }
+
     let graphqlVariables = {
         count,
         includePromotedContent: true,
@@ -1559,7 +1603,7 @@ const postHomeTimeLine = async (ctx = { cookie: {}, guest_token: {}, count: 20, 
     return await new Promise((resolve, reject) => {
         coreFetch(
             'https://api.twitter.com/graphql/' + (isForYou ? _HomeTimeline.queryId + '/HomeTimeline' : _HomeLatestTimeline.queryId + '/HomeLatestTimeline'),
-            guest_token,
+            {},
             cookie,
             1,
             {},
@@ -1578,12 +1622,10 @@ const postHomeTimeLine = async (ctx = { cookie: {}, guest_token: {}, count: 20, 
     })
 }
 
-const getBookmark = async (ctx = { cookie: {}, guest_token: {}, count: 20, cursor: '' }, env = {}) => {
-    let { cookie, guest_token, count, cursor } = preCheckCtx(ctx, { cookie: {}, guest_token: {}, count: 20, cursor: '' })
+const getBookmark = async (ctx = { cookie: {}, count: 20, cursor: '' }, env = {}) => {
+    let { cookie, count, cursor } = preCheckCtx(ctx, { cookie: {}, count: 20, cursor: '' })
     //cookie: {ct0, auth_token}
-    if (!guest_token.success) {
-        guest_token = await getToken(1)
-    }
+
     let graphqlVariables = {
         count,
         includePromotedContent: true
@@ -1600,7 +1642,7 @@ const getBookmark = async (ctx = { cookie: {}, guest_token: {}, count: 20, curso
                     variables: JSON.stringify(graphqlVariables),
                     features: JSON.stringify(_Bookmarks.features)
                 }).toString(),
-            guest_token,
+            {},
             cookie,
             1
         )
@@ -1613,49 +1655,53 @@ const getBookmark = async (ctx = { cookie: {}, guest_token: {}, count: 20, curso
     })
 }
 
-//TODO add queryId for TweetActivityQuery
-//const getTweetAnalytics = async (cookie = {}, guest_token = {}, tweet_id = '', time_range_from = '', time_range_to = '') => {
-//  //TODO precheck
-//  //cookie: {ct0, auth_token}
-//  if (!tweet_id || !cookie.ct0 || !cookie.auth_token) {
-//
-//  }
-//  if (!guest_token.success) {
-//    guest_token = await getToken(1)
-//  }
-//  let graphqlVariables = {
-//    restId: tweet_id,
-//    from_time: time_range_from ? (new Date(time_range_from)).toISOString() : '',
-//    to_time: time_range_to ? (new Date(time_range_to)).toISOString() : '',
-//    first_48_hours_time: time_range_from ? (new Date(Number(new Date(time_range_from))+48*60*60*1000)).toISOString() : '',
-//    requested_organic_metrics: ["DetailExpands", "Engagements", "Follows", "Impressions", "LinkClicks", "ProfileVisits"],
-//    requested_promoted_metrics: ["DetailExpands", "Engagements", "Follows", "Impressions", "LinkClicks", "ProfileVisits", "CostPerFollower"]
-//  }
-//  return await new Promise((resolve, reject) => {
-//    coreFetch("https://api.twitter.com/graphql/" + _TweetActivityQuery.queryId + "/TweetActivityQuery?" + (new URLSearchParams({
-//      variables: JSON.stringify(graphqlVariables),
-//      features: JSON.stringify(_TweetActivityQuery.features)
-//    })).toString(), guest_token, cookie, 1).then(response => {
-//      resolve(response)
-//    }).catch(e => {
-//      reject(e)
-//    })
-//  })
-//}
+const getTweetAnalytics = async (ctx = { cookie: {}, tweet_id: '', time_range_from: '', time_range_to: '' }, env = {}) => {
+    let { cookie, tweet_id, time_range_from, time_range_to } = preCheckCtx(ctx, { cookie: {}, tweet_id: '', time_range_from: '', time_range_to: '' })
+    //TODO precheck
+    //cookie: {ct0, auth_token}
+    if (!tweet_id || !cookie.ct0 || !cookie.auth_token) {
+    }
+    let graphqlVariables = {
+        restId: tweet_id,
+        from_time: time_range_from ? new Date(time_range_from).toISOString() : '',
+        to_time: time_range_to ? new Date(time_range_to).toISOString() : '',
+        first_48_hours_time: time_range_from ? new Date(Number(new Date(time_range_from)) + 48 * 60 * 60 * 1000).toISOString() : '',
+        requested_organic_metrics: ['DetailExpands', 'Engagements', 'Follows', 'Impressions', 'LinkClicks', 'ProfileVisits'],
+        requested_promoted_metrics: ['DetailExpands', 'Engagements', 'Follows', 'Impressions', 'LinkClicks', 'ProfileVisits', 'CostPerFollower']
+    }
+    return await new Promise((resolve, reject) => {
+        coreFetch(
+            'https://api.twitter.com/graphql/' +
+                _TweetActivityQuery.queryId +
+                '/TweetActivityQuery?' +
+                new URLSearchParams({
+                    variables: JSON.stringify(graphqlVariables),
+                    features: JSON.stringify(_TweetActivityQuery.features)
+                }).toString(),
+            {},
+            cookie,
+            1
+        )
+            .then((response) => {
+                resolve(response)
+            })
+            .catch((e) => {
+                reject(e)
+            })
+    })
+}
 
-const postFollow = async (ctx = { cookie: {}, guest_token: {}, uid: '', follow: true }, env = {}) => {
-    let { cookie, guest_token, uid, follow } = preCheckCtx(ctx, { cookie: {}, guest_token: {}, uid: '', follow: true })
+const postFollow = async (ctx = { cookie: {}, uid: '', follow: true }, env = {}) => {
+    let { cookie, uid, follow } = preCheckCtx(ctx, { cookie: {}, uid: '', follow: true })
     //TODO precheck
     //cookie: {ct0, auth_token}
     if (!uid || !cookie.ct0 || !cookie.auth_token) {
     }
-    if (!guest_token.success) {
-        guest_token = await getToken(1)
-    }
+
     return await new Promise((resolve, reject) => {
         coreFetch(
             `https://twitter.com/i/api/1.1/friendships/${follow ? 'create' : 'destroy'}.json`,
-            guest_token,
+            {},
             cookie,
             1,
             {
@@ -1687,16 +1733,14 @@ const postFollow = async (ctx = { cookie: {}, guest_token: {}, uid: '', follow: 
     })
 }
 
-const postLike = async (ctx = { cookie: {}, guest_token: {}, tweet_id: '', like: true }, env = {}) => {
-    let { cookie, guest_token, tweet_id, like } = preCheckCtx(ctx, { cookie: {}, guest_token: {}, tweet_id: '', like: true })
+const postLike = async (ctx = { cookie: {}, tweet_id: '', like: true }, env = {}) => {
+    let { cookie, tweet_id, like } = preCheckCtx(ctx, { cookie: {}, tweet_id: '', like: true })
     //cookie: {ct0, auth_token}
-    if (!guest_token.success) {
-        guest_token = await getToken(1)
-    }
+
     return await new Promise((resolve, reject) => {
         coreFetch(
             'https://api.twitter.com/graphql/' + (like ? _FavoriteTweet.queryId + '/FavoriteTweet' : _UnfavoriteTweet.queryId + '/UnfavoriteTweet'),
-            guest_token,
+            {},
             cookie,
             1,
             {},
@@ -1745,4 +1789,4 @@ export {
     Authorization
 }
 //COOKIE
-export { getFollowingOrFollowers, postTweet, postConversationControl, postPinTweet, postRetweet, postBookmark, postDeleteTweet, postHomeTimeLine, getBookmark, getLikes, /* getTweetAnalytics, */ postFollow, postLike }
+export { getFollowingOrFollowers, uploadMedia, postTweet, postConversationControl, postPinTweet, postRetweet, postBookmark, postDeleteTweet, postHomeTimeLine, getBookmark, getLikes, getTweetAnalytics, postFollow, postLike }
