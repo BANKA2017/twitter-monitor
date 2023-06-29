@@ -42,9 +42,20 @@ import axiosFetch from 'axios-helper'
 import GetMine from 'get-mime'
 import { MockDocument } from '../share/MockFuntions.mjs'
 import { parse } from 'acorn'
-import cryptoHandle from 'crypto-helper'
 
-const generateCsrfToken = () => cryptoHandle.randomUUID().replaceAll('-', '')
+const generateCsrfToken = async () => {
+    // @ts-ignore
+    if (typeof process !== 'undefined' && !process?.browser) {
+        //nodejs
+        const { webcrypto } = await import('crypto')
+        return webcrypto.randomUUID().replaceAll('-', '')
+    } else if (typeof window !== 'undefined') {
+        //browser // workers // deno
+        return crypto.randomUUID().replaceAll('-', '')
+    } else {
+        return 0
+    }
+}
 
 const TW_AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAAPYXBAAAAAAACLXUNDekMxqa8h%2F40K4moUkGsoc%3DTYfbDKbT3jJPCEVnMYqilB28NHfOPqkca3qaAxGfsyKCs0wRbw' //old token
 
@@ -55,7 +66,7 @@ const TWEETDECK_AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAAF7aAAAAAAAASCiRjWvh
 const TWEETDECK_AUTHORIZATION2 = 'Bearer AAAAAAAAAAAAAAAAAAAAAFQODgEAAAAAVHTp76lzh3rFzcHbmHVvQxYYpTw%3DckAlMINMjmCwxUcaXbAN4XqJVdgMJaHqNOFgPMK0zN1qLqLQCF' //new tweetdeck
 
 const Authorization = [TW_AUTHORIZATION, TW_AUTHORIZATION2]
-const ct0 = generateCsrfToken()
+const ct0 = await generateCsrfToken()
 
 const axios = axiosFetch({
     headers: {

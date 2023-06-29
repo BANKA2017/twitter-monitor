@@ -1,13 +1,14 @@
 name = "twitter-monitor-workers"
 compatibility_date = "2023-03-25"
 main = "workers.mjs"
+node_compat = true
 
 # read https://developers.cloudflare.com/workers/wrangler/workers-kv/#create-a-kv-namespace-with-wrangler 
 # and create kv space named 'twitter-monitor-workers-kv' in https://dash.cloudflare.com/
 # or executed `npx wrangler kv:namespace create kv`
 # then copy the 'id' into 'kv_namespaces[0].id' to replace '<YOUR_ID>'
 kv_namespaces = [
-    { binding = "kv", preview_id = "NOT_NECESSARY_TO_CHANGE_THIS_VALUE_KV", id = "5e4a8ba542104631bb6578632152f433" } # <YOUR_ID> # for open version 4174ec8cc0dd475f9c9c54f724bf870a
+    { binding = "kv", preview_id = "NOT_NECESSARY_TO_CHANGE_THIS_VALUE_KV", id = "<YOUR_ID>" }
 ]
 
 [vars]
