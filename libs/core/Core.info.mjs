@@ -78,4 +78,25 @@ const GenerateAccountInfo = (accountDataOriginal, extAccountData = {}) => {
     return { GeneralAccountData, ...GeneralAccountData, monitorDataInfo, update }
 }
 
-export { GenerateAccountInfo }
+const GenerateCommunityInfo = (communityDataOriginal, communityDataExtra = {}) => {
+    return {
+        //admin_results: [],
+        name: communityDataOriginal.name ?? '',
+        description: communityDataOriginal.description ?? '',
+        id: communityDataOriginal.id_str ?? '',
+        member_count: communityDataOriginal.member_count ?? 0,
+        moderator_count: communityDataOriginal.moderator_count ?? 0,
+        default_theme: communityDataOriginal.default_theme ?? '_',
+        created_at: Math.ceil((communityDataOriginal.created_at ?? 0) / 1000),
+        rules: communityDataOriginal.rules ? communityDataOriginal.rules.map((rule) => ({ name: rule.name, description: rule.description })) : [],
+        join_policy: communityDataOriginal.join_policy ?? 'Unknown',
+        banner: {
+            url: communityDataOriginal?.custom_banner_media?.media_info?.original_img_url ?? communityDataOriginal?.default_banner_media?.media_info?.original_img_url ?? '',
+            original_height: communityDataOriginal?.custom_banner_media?.media_info?.original_img_height ?? communityDataOriginal?.default_banner_media?.media_info?.original_img_height ?? 0,
+            original_width: communityDataOriginal?.custom_banner_media?.media_info?.original_img_width ?? communityDataOriginal?.default_banner_media?.media_info?.original_img_width ?? 0,
+            media_key: communityDataOriginal?.custom_banner_media?.id ?? communityDataOriginal?.default_banner_media?.id ?? ''
+        }
+    }
+}
+
+export { GenerateAccountInfo, GenerateCommunityInfo }

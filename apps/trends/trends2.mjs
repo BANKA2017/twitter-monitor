@@ -173,7 +173,7 @@ for (const member of member_list.users) {
     let dayRange = 0
     for (const singleEntitiesData of sqlEntitiesData) {
         const tmpNow = new Date(singleEntitiesData.timestamp * 1000)
-        dayRange = Number('' + tmpNow.getFullYear() + (tmpNow.getMonth() + 1) + tmpNow.getDate())
+        dayRange = Number('' + tmpNow.getFullYear() + String(tmpNow.getMonth() + 1).padStart(2, '0') + String(tmpNow.getDate()).padStart(2, '0'))
 
         if (dayRange > cursorDate) {
             userData.tweets_daily[dayRange].tag = Object.fromEntries(

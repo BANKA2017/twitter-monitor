@@ -1,4 +1,4 @@
-import { getToken } from './Core.fetch.mjs'
+import { getToken, postFlowTask, getJsInstData, getViewer } from './Core.fetch.mjs'
 //import * as twitter_text from 'twitter-text'
 
 export class setGlobalServerInfo {
@@ -92,6 +92,205 @@ export class GuestToken {
     }
     get token() {
         return this.#guest_token
+    }
+}
+
+//TODO guest token rate limit
+export class Login {
+    cookie = {}
+    flow_token = ''
+    subtask_id = ''
+    guest_token = {}
+    constructor(guest_token, cookie = {}, flow_token = '') {
+        this.guest_token = guest_token
+        this.cookie = { ...Object.fromEntries((this.guest_token?.token?.cookies || []).map((x) => x.split('='))), ...cookie }
+        if (flow_token) {
+            this.flow_token = flow_token
+        }
+    }
+    get pureCookie() {
+        return { auth_token: this.cookie.auth_token, ct0: this.cookie.ct0 }
+    }
+    getItem(itemName = 'cookie') {
+        if (itemName in this) {
+            return this[itemName]
+        } else {
+            return undefined
+        }
+    }
+    updateItems(flowData = {}) {
+        //console.log(flowData)
+        if (flowData.flow_data?.flow_token) {
+            this.flow_token = flowData.flow_data.flow_token
+        }
+        if (Object.keys(flowData.flow_data?.cookie || {}).length > 0) {
+            this.cookie = { ...this.cookie, ...flowData.flow_data.cookie }
+        }
+        if (flowData.flow_data?.subtask_id) {
+            this.subtask_id = flowData.flow_data.subtask_id
+        }
+        return this
+    }
+    // set att
+    async Init() {
+        const tmpLoginData = await postFlowTask({ flow_name: 'login', guest_token: this.guest_token, cookie: this.cookie })
+        this.updateItems(tmpLoginData)
+        return tmpLoginData
+    }
+    // set _twitter_sess
+    async LoginJsInstrumentationSubtask() {
+        const jsInstrumentation = await getJsInstData({ cookie: this.cookie })
+        this.updateItems(jsInstrumentation)
+        const loginTasks = await postFlowTask({
+            guest_token: false, //this.guest_token,
+            cookie: this.cookie,
+            flow_token: this.flow_token,
+            sub_task: {
+                js_instrumentation: {
+                    link: 'next_link',
+                    response: JSON.stringify(jsInstrumentation.js_instrumentation)
+                },
+                subtask_id: 'LoginJsInstrumentationSubtask'
+            }
+        })
+        this.updateItems(loginTasks)
+        return loginTasks
+    }
+    // Screen name only, because [Discoverability by phone number/email restriction bypass](https://hackerone.com/reports/1439026)
+
+    async LoginEnterUserIdentifierSSO(account = '') {
+        const postId = await postFlowTask({
+            guest_token: false, //this.guest_token,
+            cookie: this.cookie,
+            flow_token: this.flow_token,
+            sub_task: {
+                settings_list: {
+                    link: 'next_link',
+                    setting_responses: [
+                        {
+                            key: 'user_identifier',
+                            response_data: {
+                                text_data: {
+                                    result: account
+                                }
+                            }
+                        }
+                    ]
+                },
+                subtask_id: 'LoginEnterUserIdentifierSSO'
+            }
+        })
+        this.updateItems(postId)
+        return postId
+    }
+    async LoginEnterAlternateIdentifierSubtask(screen_name = '') {
+        const postScreenName = await postFlowTask({
+            guest_token: false, //this.guest_token,
+            cookie: this.cookie,
+            flow_token: this.flow_token,
+            sub_task: {
+                enter_text: {
+                    link: 'next_link',
+                    text: screen_name
+                },
+                subtask_id: 'LoginEnterAlternateIdentifierSubtask'
+            }
+        })
+        this.updateItems(postScreenName)
+        return postScreenName
+    }
+    async LoginEnterPassword(password) {
+        const postPassword = await postFlowTask({
+            guest_token: false, //this.guest_token,
+            cookie: this.cookie,
+            flow_token: this.flow_token,
+            sub_task: {
+                enter_password: {
+                    link: 'next_link',
+                    password
+                },
+                subtask_id: 'LoginEnterPassword'
+            }
+        })
+        this.updateItems(postPassword)
+        return postPassword
+    }
+    async AccountDuplicationCheck() {
+        const loginCheck = await postFlowTask({
+            guest_token: false, //this.guest_token,
+            cookie: this.cookie,
+            flow_token: this.flow_token,
+            sub_task: {
+                check_logged_in_account: {
+                    link: 'AccountDuplicationCheck_false'
+                },
+                subtask_id: 'AccountDuplicationCheck'
+            }
+        })
+        //get auth_token
+        this.updateItems(loginCheck)
+        return loginCheck
+    }
+    async LoginTwoFactorAuthChallenge(_2fa) {
+        const post2FA = await postFlowTask({
+            guest_token: false, //this.guest_token,
+            cookie: this.cookie,
+            flow_token: this.flow_token,
+            sub_task: {
+                enter_text: {
+                    link: 'next_link',
+                    text: _2fa
+                },
+                subtask_id: 'LoginTwoFactorAuthChallenge'
+            }
+        })
+        //get auth_token
+        this.updateItems(post2FA)
+        return post2FA
+    }
+    //select 2fa type '0' -> totp, '1' -> security key, '2' -> backup
+    async LoginTwoFactorAuthChooseMethod(type = '0') {
+        const choose2FA = await postFlowTask({
+            guest_token: false, //this.guest_token,
+            cookie: { att: this.cookie.att, _twitter_sess: this.cookie.att._twitter_sess },
+            flow_token: this.flow_token,
+            sub_task: {
+                choice_selection: {
+                    link: 'next_link',
+                    selected_choices: [String(type)]
+                },
+                subtask_id: 'LoginTwoFactorAuthChooseMethod'
+            }
+        })
+        //get auth_token
+        this.updateItems(choose2FA)
+        return choose2FA
+    }
+    // for those accounts without 2fa, and send single-use code to email
+    // email's title is:
+    // We noticed an attempt to log in to your account @<YOUR_SCREEN_NAME> that seems suspicious. Was this you?
+    async LoginAcid(acid) {
+        const postAcid = await postFlowTask({
+            guest_token: false, //this.guest_token,
+            cookie: this.cookie,
+            flow_token: this.flow_token,
+            sub_task: {
+                enter_text: {
+                    text: acid,
+                    link: 'next_link'
+                },
+                subtask_id: 'LoginAcid'
+            }
+        })
+        //get auth_token
+        this.updateItems(postAcid)
+        return postAcid
+    }
+    async Viewer() {
+        //get ct0
+        const tmpViewer = await getViewer({ cookie: this.cookie, guest_token: this.guest_token })
+        this.cookie = { ...this.cookie, ...Object.fromEntries(tmpViewer.headers['set-cookie'].map((x) => x.split(';')[0].split('='))) }
+        return { data: tmpViewer.data, cookie: this.cookie }
     }
 }
 

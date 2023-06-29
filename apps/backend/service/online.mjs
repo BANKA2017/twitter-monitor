@@ -4,8 +4,11 @@ import { ApiTweets, ApiSearch, ApiPoll, ApiAudioSpace, ApiMedia, ApiBroadcast } 
 import { apiTemplate } from '../../../libs/share/Constant.mjs'
 import { ApiTrends } from '../CoreFunctions/online/OnlineTrends.mjs'
 import { ApiCommunityInfo, ApiCommunitySearch, ApiListInfo, ApiListMemberList, ApiTypeahead } from '../CoreFunctions/online/OnlineMisc.mjs'
+import { ApiLoginFlow, ApiLogout } from '../CoreFunctions/online/OnlineLogin.mjs'
+import cookieParser from 'cookie-parser'
 
 const online = express()
+online.use(cookieParser())
 online.use(async (req, res, next) => {
     if (global.dbmode) {
         res.json(apiTemplate(403, 'DB Mode is not included onlone api'))
@@ -84,6 +87,26 @@ online.get('/data/communityinfo/', async (req, res) => {
 })
 online.get('/data/communitysearch/', async (req, res) => {
     const _res = await ApiCommunitySearch(req, req.env)
+    res.json(_res.data)
+})
+
+// cookie required
+
+online.post('/account/taskflow/', async (req, res) => {
+    req.postBody = new Map(Object.entries(req.body))
+    //console.log(req.body)
+    const _res = await ApiLoginFlow(req, req.env)
+    for (const header of [..._res.headers]) {
+        res.append(header[0], header[1])
+    }
+    res.json(_res.data)
+})
+
+online.post('/account/logout/', async (req, res) => {
+    const _res = await ApiLogout(req, req.env)
+    for (const header of [..._res.headers]) {
+        res.append(header[0], header[1])
+    }
     res.json(_res.data)
 })
 

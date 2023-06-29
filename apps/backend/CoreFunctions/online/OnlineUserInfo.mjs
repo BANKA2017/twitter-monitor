@@ -1,4 +1,4 @@
-import { GenerateAccountInfo } from '../../../../libs/core/Core.account.mjs'
+import { GenerateAccountInfo } from '../../../../libs/core/Core.info.mjs'
 import { getUserInfo } from '../../../../libs/core/Core.fetch.mjs'
 import { GetEntitiesFromText, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
 import { apiTemplate } from '../../../../libs/share/Constant.mjs'

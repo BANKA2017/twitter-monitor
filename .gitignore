@@ -23,6 +23,10 @@ apps/cfworkers/dist/
 
 !apps/crawler/savetweets/.gitkeep
 
+packages/get-mime/*
+!packages/get-mime/index.js
+!packages/get-mime/package.json
+
 .DS_Store
 node_modules
 .yarn

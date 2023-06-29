@@ -57,7 +57,7 @@ const ALERT_PUSH_TO = '' //for telegram bot, keep empty if needn't
 const BOT_CHAT_ID = '' //for telegram api, keep empty if needn't
 
 const EXPRESS_PORT = 3000
-const EXPRESS_ALLOW_ORIGIN = '*'
+const EXPRESS_ALLOW_ORIGIN = ['*']
 
 const STATIC_PATH = basePath + '/../apps/backend/static'
 const TWEETS_SAVE_PATH = basePath + '/../apps/crawler/savetweets/'

@@ -454,6 +454,14 @@ const TweetsData = (content = {}, users = {}, contents = [], precheckName = '', 
     if (exportTweet.richtext?.richtext) {
         exportTweet.GeneralTweetData.richtext = exportTweet.richtext.richtext
     }
+    //community
+    if (exportTweet.community && Object.keys(exportTweet.community).length > 0) {
+        exportTweet.GeneralTweetData.community = exportTweet.community
+    }
+    //socialContent
+    if ((exportTweet?.socialContext?.contextType || '').toLocaleLowerCase() === 'pin') {
+        exportTweet.GeneralTweetData.is_top = true
+    }
     //check poster
     if (isConversation || precheckName === '' || precheckName.toLocaleLowerCase() === exportTweet.GeneralTweetData.name.toLocaleLowerCase()) {
         return {

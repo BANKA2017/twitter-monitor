@@ -35,24 +35,16 @@ import {
     _UserMedia,
     _UserTweets,
     _UserTweetsAndReplies,
-    _UsersVerifiedAvatars
+    _UsersVerifiedAvatars,
+    _Viewer
 } from '../../libs/assets/graphql/graphqlQueryIdList.js'
 import axiosFetch from 'axios-helper'
-import { fileTypeFromBuffer } from 'file-type'
+import GetMine from 'get-mime'
+import { MockDocument } from '../share/MockFuntions.mjs'
+import { parse } from 'acorn'
+import cryptoHandle from 'crypto-helper'
 
-const generateCsrfToken = async () => {
-    // @ts-ignore
-    if (typeof process !== 'undefined' && !process?.browser) {
-        //nodejs
-        const { webcrypto } = await import('crypto')
-        return webcrypto.randomUUID().replaceAll('-', '')
-    } else if (typeof window !== 'undefined') {
-        //browser // workers // deno
-        return crypto.randomUUID().replaceAll('-', '')
-    } else {
-        return 0
-    }
-}
+const generateCsrfToken = () => cryptoHandle.randomUUID().replaceAll('-', '')
 
 const TW_AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAAPYXBAAAAAAACLXUNDekMxqa8h%2F40K4moUkGsoc%3DTYfbDKbT3jJPCEVnMYqilB28NHfOPqkca3qaAxGfsyKCs0wRbw' //old token
 
@@ -63,7 +55,7 @@ const TWEETDECK_AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAAF7aAAAAAAAASCiRjWvh
 const TWEETDECK_AUTHORIZATION2 = 'Bearer AAAAAAAAAAAAAAAAAAAAAFQODgEAAAAAVHTp76lzh3rFzcHbmHVvQxYYpTw%3DckAlMINMjmCwxUcaXbAN4XqJVdgMJaHqNOFgPMK0zN1qLqLQCF' //new tweetdeck
 
 const Authorization = [TW_AUTHORIZATION, TW_AUTHORIZATION2]
-const ct0 = await generateCsrfToken()
+const ct0 = generateCsrfToken()
 
 const axios = axiosFetch({
     headers: {
@@ -82,7 +74,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
     if (!url) {
         throw 'tmv3: Invalid url'
     }
-    let loginMode = !!(cookie?.auth_token && cookie?.ct0)
+    let loginMode = !!(cookie?.auth_token && cookie?.ct0) || !guest_token
     if (!loginMode && !guest_token.success) {
         guest_token = await getToken(authorization)
     }
@@ -160,7 +152,8 @@ const getToken = async (authorizationMode = 0) => {
             ListMember: 470, //500
             ListTimeLime: 470, //500
             CommunityInfo: 470, //500
-            CommunityTimeLime: 470 //500
+            CommunityTimeLime: 470, //500
+            Login: 180 //187
         },
         expire: Date.now() + 870000 //15 min
     }
@@ -210,8 +203,10 @@ const getUserInfo = async (ctx = { user: '', guest_token: {}, graphqlMode: true,
         cookie: {},
         authorization: 1
     })
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
     if (Array.isArray(user)) {
         //TODO while user length larger then 500 (max value for one guest token)
@@ -267,8 +262,10 @@ const getUserInfo = async (ctx = { user: '', guest_token: {}, graphqlMode: true,
 //account owned nft avatar or had blue verified
 const getVerifiedAvatars = async (ctx = { uid: [], guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
     let { uid, guest_token, cookie, authorization } = preCheckCtx(ctx, { uid: [], guest_token: {}, cookie: {}, authorization: 1 })
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
     if (!(uid instanceof Array)) {
         uid = [uid]
@@ -301,8 +298,10 @@ const getVerifiedAvatars = async (ctx = { uid: [], guest_token: {}, cookie: {}, 
 //max is 37-38
 const getRecommendations = async (ctx = { user: '', guest_token: {}, count: 40, cookie: {}, authorization: 1 }, env = {}) => {
     let { user, guest_token, count, cookie, authorization } = preCheckCtx(ctx, { user: '', guest_token: {}, count: 40, cookie: {}, authorization: 1 })
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
     if (Array.isArray(user)) {
         //TODO while user length larger then 500 (max value for one guest token)
@@ -338,8 +337,10 @@ const getMediaTimeline = async (ctx = { uid: [], guest_token: {}, count: 20, gra
         authorization: 1
     })
     count = (count || -1) > 0 ? count : 20
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
     if (Array.isArray(uid)) {
         return await Promise.allSettled(uid.map((singleUid) => getMediaTimeline({ uid: singleUid, guest_token, count, graphqlMode, cookie, authorization })))
@@ -418,8 +419,10 @@ const getTweets = async (
         authorization: 1
     })
     count = count ? count : cursor ? 499 : online ? 40 : graphqlMode ? 499 : 999
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
     if (Array.isArray(queryString)) {
         return await Promise.allSettled(queryString.map((queryStringItem) => getTweets({ queryString: queryStringItem, cursor, guest_token, count, online, graphqlMode, searchMode, cookie, authorization })))
@@ -578,8 +581,10 @@ const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMod
         cursor: '',
         cookie: {}
     })
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
     if (Array.isArray(tweet_id)) {
         return await Promise.allSettled(tweet_id.map((tweetId) => getConversation({ tweet_id: tweetId, guest_token, graphqlMode, authorization, cursor, cookie })))
@@ -640,8 +645,10 @@ const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMod
 
 const getEditHistory = async (ctx = { tweet_id: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
     let { tweet_id, guest_token, cookie, authorization } = preCheckCtx(ctx, { tweet_id: '', guest_token: {}, cookie: {}, authorization: 1 })
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
     if (Array.isArray(tweet_id)) {
         return await Promise.allSettled(tweet_id.map((tweetId) => getEditHistory({ tweet_id: tweetId, guest_token, graphqlMode, cookie, authorization })))
@@ -674,8 +681,10 @@ const getEditHistory = async (ctx = { tweet_id: '', guest_token: {}, cookie: {},
 
 const getAudioSpace = async (ctx = { id: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
     let { id, guest_token, cookie, authorization } = preCheckCtx(ctx, { id: '', guest_token: {}, cookie: {}, authorization: 1 })
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
     if (Array.isArray(id)) {
         return await Promise.allSettled(id.map((justId) => getAudioSpace({ id: justId, guest_token, cookie, authorization })))
@@ -709,8 +718,10 @@ const getAudioSpace = async (ctx = { id: '', guest_token: {}, cookie: {}, author
 
 const getBroadcast = async (ctx = { id: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
     let { id, guest_token, cookie, authorization } = preCheckCtx(ctx, { id: '', guest_token: {}, cookie: {}, authorization: 1 })
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
     if (Array.isArray(id)) {
         return await Promise.allSettled(id.map((justId) => getBroadcast({ id: justId, guest_token, cookie, authorization })))
@@ -728,8 +739,10 @@ const getBroadcast = async (ctx = { id: '', guest_token: {}, cookie: {}, authori
 
 const getLiveVideoStream = async (ctx = { media_key: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
     let { media_key, guest_token, cookie, authorization } = preCheckCtx(ctx, { media_key: '', guest_token: {}, cookie: {}, authorization: 1 })
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
     if (Array.isArray(media_key)) {
         return await Promise.allSettled(id.map((justId) => getLiveVideoStream({ id: justId, guest_token, cookie, authorization })))
@@ -747,8 +760,10 @@ const getLiveVideoStream = async (ctx = { media_key: '', guest_token: {}, cookie
 
 const getTypeahead = async (ctx = { text: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
     let { text, guest_token, cookie, authorization } = preCheckCtx(ctx, { text: '', guest_token: {}, cookie: {}, authorization: 1 })
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
     return await new Promise((resolve, reject) => {
         coreFetch(`https://api.twitter.com/1.1/search/typeahead.json?include_ext_is_blue_verified=1&q=${text}&src=search_box&result_type=events%2Cusers%2Ctopics`, guest_token, cookie, authorization)
@@ -807,8 +822,10 @@ const getListInfo = async (ctx = { id: '', screenName: '', listSlug: '', guest_t
         cookie: {},
         authorization: 1
     })
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
 
     const listById = /^[\d]+$/.test(String(id))
@@ -850,8 +867,10 @@ const getListMember = async (ctx = { id: '', count: 20, cursor: '', guest_token:
         cookie: {},
         authorization: 1
     })
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
 
     const graphqlVariables = {
@@ -888,8 +907,10 @@ const getListTimeLine = async (ctx = { id: '', count: 20, cursor: '', guest_toke
         cookie: {},
         authorization: 1
     })
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
 
     const graphqlVariables = {
@@ -929,8 +950,10 @@ const getCommunityInfo = async (ctx = { id: '', guest_token: {}, cookie: {}, aut
         cookie: {},
         authorization: 1
     })
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
 
     let graphqlVariables = {
@@ -968,8 +991,10 @@ const getCommunityTweetsTimeline = async (ctx = { id: '', count: 20, cursor: '',
         cookie: {},
         authorization: 1
     })
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
 
     const graphqlVariables = {
@@ -1013,8 +1038,10 @@ const getCommunitySearch = async (ctx = { queryString: '', count: 20, cursor: ''
         cookie: {},
         authorization: 1
     })
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
 
     const graphqlVariables = {
@@ -1054,8 +1081,10 @@ const getTranslate = async (ctx = { id: '0', type: 'tweets', target: 'en', guest
         cookie: {},
         authorization: 1
     })
-    if (!guest_token.success) {
+    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
+    } else if (cookie?.ct0 && cookie?.auth_token) {
+        guest_token = false
     }
     return await new Promise((resolve, reject) => {
         const url =
@@ -1299,16 +1328,170 @@ const getLikes = async (ctx = { cookie: {}, guest_token: {}, id: '', count: 20, 
     }
 }
 
+// COOKIE REQUIRED && GUEST_TOKEN REQUIRED
+
+// TODO flow_name=password_reset
+const postFlowTask = async (ctx = { flow_name: '', flow_token: '', sub_task: {}, guest_token: {}, cookie: {} }, env = {}) => {
+    let { cookie, flow_name, flow_token, sub_task, guest_token } = preCheckCtx(ctx, {
+        flow_name: '',
+        flow_token: '',
+        sub_task: {},
+        guest_token: {},
+        cookie: {}
+    })
+    try {
+        const tmpResponse = await coreFetch(
+            `https://api.twitter.com/1.1/onboarding/task.json${flow_name ? `?flow_name=${flow_name}` : ''}`,
+            guest_token.token,
+            cookie,
+            1,
+            {},
+            flow_name
+                ? {
+                      input_flow_data: { flow_context: { debug_overrides: {}, start_location: { location: 'unknown' } } },
+                      subtask_versions: {
+                          action_list: 2,
+                          alert_dialog: 1,
+                          app_download_cta: 1,
+                          check_logged_in_account: 1,
+                          choice_selection: 3,
+                          contacts_live_sync_permission_prompt: 0,
+                          cta: 7,
+                          email_verification: 2,
+                          end_flow: 1,
+                          enter_date: 1,
+                          enter_email: 2,
+                          enter_password: 5,
+                          enter_phone: 2,
+                          enter_recaptcha: 1,
+                          enter_text: 5,
+                          enter_username: 2,
+                          generic_urt: 3,
+                          in_app_notification: 1,
+                          interest_picker: 3,
+                          js_instrumentation: 1,
+                          menu_dialog: 1,
+                          notifications_permission_prompt: 2,
+                          open_account: 2,
+                          open_home_timeline: 1,
+                          open_link: 1,
+                          phone_verification: 4,
+                          privacy_options: 1,
+                          security_key: 3,
+                          select_avatar: 4,
+                          select_banner: 2,
+                          settings_list: 7,
+                          show_code: 1,
+                          sign_up: 2,
+                          sign_up_review: 4,
+                          tweet_selection_urt: 1,
+                          update_users: 1,
+                          upload_media: 1,
+                          user_recommendations_list: 4,
+                          user_recommendations_urt: 1,
+                          wait_spinner: 3,
+                          web_modal: 1
+                      }
+                  }
+                : JSON.stringify({
+                      flow_token,
+                      subtask_inputs: [sub_task]
+                  })
+        )
+        //flow token
+        return {
+            code: 200,
+            message: 'OK',
+            flow_data: {
+                subtask_id: tmpResponse.data?.subtasks ? tmpResponse.data.subtasks?.[0]?.subtask_id : 'Ended',
+                flow_token: tmpResponse.data.flow_token,
+                cookie: { ...cookie, ...Object.fromEntries((tmpResponse.headers['set-cookie'] || []).map((x) => x.split(';')[0].split('='))) }
+            },
+            ...tmpResponse
+        }
+    } catch (e) {
+        return { code: e.code || -1005, message: `Unable to continue flow #${sub_task.subtask_id}, ${e.message || ''}`, e, flow_data: { subtask_id: 'Ended', flowToken: '', cookie } }
+    }
+}
+
+const getViewer = async (ctx = { cookie: {}, guest_token: {} }, env = {}) => {
+    let { cookie, guest_token } = preCheckCtx(ctx, { cookie: {}, guest_token: {} })
+    //if (!guest_token.success) {
+    //    guest_token = await getToken(1)
+    //}
+    return await new Promise((resolve, reject) => {
+        coreFetch(
+            'https://api.twitter.com/graphql/' +
+                _Viewer.queryId +
+                '/Viewer?' +
+                new URLSearchParams({
+                    variables: JSON.stringify({ withCommunitiesMemberships: true, withSubscribedTab: true, withCommunitiesCreation: true }),
+                    features: JSON.stringify(_Viewer.features)
+                }).toString(),
+            false, //guest_token.token,
+            cookie
+        )
+            .then((response) => {
+                resolve(response)
+            })
+            .catch((e) => {
+                reject(e)
+            })
+    })
+}
+
 // COOKIE REQUIRED
+
+const getJsInstData = async (ctx = { jsInstrumentationLink: 'https://twitter.com/i/js_inst?c_name=ui_metrics', cookie: {} }, env = {}) => {
+    let { cookie, jsInstrumentationLink } = preCheckCtx(ctx, {
+        jsInstrumentationLink: 'https://twitter.com/i/js_inst?c_name=ui_metrics',
+        cookie: {}
+    })
+    if (typeof globalThis.document === 'undefined') {
+        globalThis.document = new MockDocument()
+    }
+    try {
+        const jsInstData = await axios.get(jsInstrumentationLink, {
+            headers: {
+                cookie
+            }
+        })
+        const rawJs = jsInstData.data
+        const astParse = parse(rawJs, { ecmaVersion: 'latest' })
+        const start = astParse.body[0].body.body[0].declarations[0].init.body.body[0].start
+        const end = astParse.body[0].body.body[0].declarations[0].init.body.body[0].end
+
+        const js_instrumentation = new Function(`const document=globalThis.document;return ${rawJs.slice(start, end)}()`)()
+        return {
+            code: 200,
+            message: 'OK',
+            data: rawJs,
+            flow_data: {
+                cookie: { ...cookie, ...Object.fromEntries(jsInstData.headers['set-cookie'].map((x) => x.split(';')[0].split('='))) },
+                js_instrumentation
+            }
+        }
+    } catch (e) {
+        return { code: -1004, message: 'Unable to parse response', e, flow_data: { cookie, js_instrumentation: {} } }
+    }
+}
+
+const postLogout = async (ctx = { cookie: {} }, env = {}) => {
+    let { cookie } = preCheckCtx(ctx, { cookie: {} })
+    // success {status: "ok"}
+    return await coreFetch(`https://api.twitter.com/1.1/account/logout.json`, false, cookie, 1, {}, null)
+}
+
 // type: INIT | APPEND | FINALIZE | STATUS
 // media: ArrayBuffer | null
-// To use this feature, you might have to upgrade to Node.js v18
-const uploadMedia = async (ctx = { cookie: {}, media: null, type: 'INIT', media_id: '' }, env = {}) => {
-    let { cookie, media, type, media_id } = preCheckCtx(ctx, {
+// To use this feature, you have to upgrade to Node.js v18
+const uploadMedia = async (ctx = { cookie: {}, media: null, type: 'INIT', media_id: '', segment_index: 0 }, env = {}) => {
+    let { cookie, media, type, media_id, segment_index } = preCheckCtx(ctx, {
         cookie: {},
         media: null,
         type: 'INIT',
-        media_id: ''
+        media_id: '',
+        segment_index: 0
     })
     //TODO precheck
     //cookie: {ct0, auth_token}
@@ -1324,18 +1507,19 @@ const uploadMedia = async (ctx = { cookie: {}, media: null, type: 'INIT', media_
         switch (type) {
             case 'INIT':
                 queryObject.append('total_bytes', media.byteLength)
-                const mime = await fileTypeFromBuffer(media)
+                const mime = GetMine(media, true)
                 queryObject.append('media_type', mime.mime)
                 const tmpMediaCategory = mime.mime.endsWith('/gif') ? 'tweet_gif' : mime.mime.startsWith('video') ? 'tweet_video' : 'tweet_image'
                 queryObject.append('media_category', tmpMediaCategory)
                 //TODO check duration is necessary?
+                //and how to do by pure js?
                 //if (tmpMediaCategory === 'tweet_video') {
-                //    queryObject.append('video_duration_ms', tmpMediaCategory)
+                //    queryObject.append('video_duration_ms', ??)
                 //}
                 break
             case 'APPEND':
                 queryObject.append('media_id', media_id)
-                queryObject.append('segment_index', 0) //TODO length for slice
+                queryObject.append('segment_index', segment_index) //TODO length for slice
                 formData.append('media', new Blob([media]), 'blob')
 
                 break
@@ -1360,6 +1544,9 @@ const uploadMedia = async (ctx = { cookie: {}, media: null, type: 'INIT', media_
                     resolve(response)
                 })
                 .catch((e) => {
+                    if (type === 'APPEND' && e.code === -1000 && e.message === 'empty data') {
+                        resolve({ code: 200, message: `upload: segment ${segment_index} success` })
+                    }
                     reject(e)
                 })
         })
@@ -1789,4 +1976,23 @@ export {
     Authorization
 }
 //COOKIE
-export { getFollowingOrFollowers, uploadMedia, postTweet, postConversationControl, postPinTweet, postRetweet, postBookmark, postDeleteTweet, postHomeTimeLine, getBookmark, getLikes, getTweetAnalytics, postFollow, postLike }
+export {
+    getFollowingOrFollowers,
+    postFlowTask,
+    getViewer,
+    postLogout,
+    getJsInstData,
+    uploadMedia,
+    postTweet,
+    postConversationControl,
+    postPinTweet,
+    postRetweet,
+    postBookmark,
+    postDeleteTweet,
+    postHomeTimeLine,
+    getBookmark,
+    getLikes,
+    getTweetAnalytics,
+    postFollow,
+    postLike
+}

@@ -1,5 +1,5 @@
 import { Router } from 'itty-router'
-import { ResponseWrapper, json, mediaCacheSave, mediaExistPreCheck, updateGuestToken } from './share.mjs'
+import { PostBodyParser, ResponseWrapper, json, mediaCacheSave, mediaExistPreCheck, updateGuestToken } from './share.mjs'
 import { apiTemplate } from '../../libs/share/Constant.mjs'
 import { AlbumSearch } from '../backend/CoreFunctions/album/Album.mjs'
 import { ApiOfficialTranslate, ApiTranslate } from '../backend/CoreFunctions/translate/OnlineTranslate.mjs'
@@ -8,6 +8,7 @@ import { ApiCommunityInfo, ApiCommunitySearch, ApiListInfo, ApiListMemberList, A
 import { ApiUserInfo } from '../backend/CoreFunctions/online/OnlineUserInfo.mjs'
 import { ApiAudioSpace, ApiBroadcast, ApiMedia, ApiPoll, ApiSearch, ApiTweets } from '../backend/CoreFunctions/online/OnlineTweet.mjs'
 import { MediaProxy } from '../backend/CoreFunctions/media/MediaProxy.mjs'
+import { ApiLoginFlow, ApiLogout } from '../backend/CoreFunctions/online/OnlineLogin.mjs'
 
 const workersApi = Router()
 
@@ -33,6 +34,13 @@ workersApi.all('*', (req, env) => {
     env.ResponseWrapper = ResponseWrapper
     env.mediaExistPreCheck = mediaExistPreCheck
     env.mediaCacheSave = mediaCacheSave
+    env.PostBodyParser = PostBodyParser
+    req.cookies = Object.fromEntries(
+        (req.headers.get('cookie') || '')
+            .split(';')
+            .map((cookie) => cookie.trim().split('='))
+            .filter((cookie) => cookie.length === 2)
+    )
 })
 
 //favicon
@@ -93,27 +101,7 @@ workersApi.get(
 workersApi.post(
     '/translate/online/',
     async (req) => {
-        if (req.body) {
-            const reader = req.body.getReader()
-            const pipe = []
-            while (true) {
-                const { done, value } = await reader.read()
-                if (done) {
-                    break
-                }
-                pipe.push(value)
-            }
-            //https://gist.github.com/72lions/4528834
-            let offset = 0
-            let body = new Uint8Array(pipe.reduce((acc, cur) => acc + cur.byteLength, 0))
-            for (const chunk of pipe) {
-                body.set(new Uint8Array(chunk), offset)
-                offset += chunk.byteLength
-            }
-            req.postBody = new URLSearchParams(new TextDecoder('utf-8').decode(body))
-        } else {
-            req.postBody = new Map([['text', '']])
-        }
+        req.postBody = PostBodyParser(req, new Map([['text', '']]))
     },
     ApiTranslate
 )
@@ -143,15 +131,38 @@ workersApi.get(
     MediaProxy
 ) //for m3u8
 
+// account
+workersApi.post(
+    '/online/api/v3/account/taskflow/',
+    (req) => {
+        req.postBody = env.PostBodyParser(req)
+    },
+    ApiLoginFlow
+)
+workersApi.post('/online/api/v3/account/logout/', ApiLogout)
+
 workersApi.all('*', () => new Response(JSON.stringify(apiTemplate(403, 'Invalid Request', {}, 'global_api')), { status: 403 }))
 
 export default {
-    fetch: (...args) =>
+    fetch: (req, env, ...args) =>
         workersApi
-            .handle(...args)
-            .then((response) => {
-                response.headers.set('Access-Control-Allow-Origin', '*') // and other CORS headers
-                return response
+            .handle(req, env, ...args)
+            .then((res) => {
+                const WORKERS_ALLOW_ORIGIN = env.WORKERS_ALLOW_ORIGIN || []
+                if (WORKERS_ALLOW_ORIGIN) {
+                    const referer = req.headers.get('referer')
+                    if (referer) {
+                        const origin = new URL(referer).origin
+                        const tmpReferer = WORKERS_ALLOW_ORIGIN.includes('*') ? '*' : WORKERS_ALLOW_ORIGIN.includes(origin) ? origin : ''
+                        if (tmpReferer) {
+                            res.headers.set('Access-Control-Allow-Origin', tmpReferer)
+                        }
+                    }
+                }
+                res.headers.set('X-Powered-By', 'Twitter Monitor Api')
+                res.headers.set('Access-Control-Allow-Methods', '*')
+                res.headers.set('Access-Control-Allow-Credentials', 'true')
+                return res
             })
             .catch((e) => {
                 console.log(e)

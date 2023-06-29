@@ -13,7 +13,7 @@ const updateGuestToken = async (env, k, tokenType = 0, update = true, type = '')
     return {}
 }
 
-const ResponseWrapper = (data, status = 403, headers = {}) => ({
+const ResponseWrapper = (data, status = 403, headers = new Headers()) => ({
     data,
     status,
     headers

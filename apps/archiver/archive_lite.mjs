@@ -6,7 +6,7 @@ import { getAudioSpace, getBroadcast, getFollowingOrFollowers, getImage, getLive
 
 import { GuestToken, PathInfo, Sleep } from '../../libs/core/Core.function.mjs'
 import path2array from '../../libs/core/Core.apiPath.mjs'
-import { GenerateAccountInfo } from '../../libs/core/Core.account.mjs'
+import { GenerateAccountInfo } from '../../libs/core/Core.info.mjs'
 import { GenerateData } from '../backend/CoreFunctions/online/OnlineTweet.mjs'
 import { AudioSpace, Broadcast } from '../../libs/core/Core.tweet.mjs'
 import { Parser } from 'm3u8-parser'

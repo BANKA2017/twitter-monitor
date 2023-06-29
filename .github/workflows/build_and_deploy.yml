@@ -20,6 +20,7 @@ jobs:
                   yarn
                   yarn run build:rollup
                   sed -i 's/<YOUR_ID>/${{ secrets.CF_KV_ID }}/g' apps/cfworkers/wrangler.toml
+                  sed -i 's/["*"]/${{ secrets.CF_ENV_WORKERS_ALLOW_ORIGIN }}/g' apps/cfworkers/wrangler.toml
             # - name: Upload dist
             #   uses: actions/upload-artifact@v3.1.2
             #   with:

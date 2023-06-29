@@ -9,7 +9,7 @@ import { getAudioSpace, getBroadcast, getFollowingOrFollowers, getImage, getLive
 import { GuestToken, PathInfo, Sleep } from '../../libs/core/Core.function.mjs'
 import path2array from '../../libs/core/Core.apiPath.mjs'
 //import { TGPush } from '../../libs/core/Core.push.mjs'
-import { GenerateAccountInfo } from '../../libs/core/Core.account.mjs'
+import { GenerateAccountInfo } from '../../libs/core/Core.info.mjs'
 import { argv } from 'node:process'
 import { GenerateData } from '../backend/CoreFunctions/online/OnlineTweet.mjs'
 import { AudioSpace, Broadcast } from '../../libs/core/Core.tweet.mjs'

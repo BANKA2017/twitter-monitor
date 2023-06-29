@@ -19,4 +19,34 @@ const PregMatchAll = (regex = new RegExp('', 'gm'), text = '') => {
     return match
 }
 
-export { PregMatchAll }
+class MockDocument {
+    globalBody = []
+    constructor() {
+        this.globalBody = []
+        this.createElement('body')
+    }
+    createElement(tagName) {
+        let children = []
+        let newDom = {
+            tagName,
+            innerText: '',
+            parentNode: '',
+            get lastElementChild() {
+                return this.children.length === 0 ? undefined : this.children[this.children.length - 1]
+            },
+            children,
+            appendChild: (domHandle) => {
+                domHandle.parentNode = newDom
+            },
+            removeChild: (_) => {}, //needn't
+            setAttribute: (_, __) => {} //Mock needn't 'display:none;'
+        }
+        this.globalBody.push(newDom)
+        return newDom
+    }
+    getElementsByTagName(tagName) {
+        return this.globalBody.filter((x) => x.tagName === tagName)
+    }
+}
+
+export { PregMatchAll, MockDocument }

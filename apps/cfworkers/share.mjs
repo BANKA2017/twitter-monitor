@@ -20,7 +20,7 @@ const updateGuestToken = async (env, k, tokenType = 0, update = true, type = '')
     return {}
 }
 
-const ResponseWrapper = (data, status = 403, headers = {}) =>
+const ResponseWrapper = (data, status = 403, headers = new Headers()) =>
     new Response(data, {
         status,
         headers
@@ -30,4 +30,29 @@ const mediaExistPreCheck = (path = '') => false
 
 const mediaCacheSave = (buffer, name) => {}
 
-export { json, updateGuestToken, ResponseWrapper, mediaExistPreCheck, mediaCacheSave }
+const PostBodyParser = async (req, defaultValue = new Map([])) => {
+    if (req.body) {
+        const reader = req.body.getReader()
+        const pipe = []
+        while (true) {
+            const { done, value } = await reader.read()
+            if (done) {
+                break
+            }
+            pipe.push(value)
+        }
+        //https://gist.github.com/72lions/4528834
+        let offset = 0
+        let body = new Uint8Array(pipe.reduce((acc, cur) => acc + cur.byteLength, 0))
+        for (const chunk of pipe) {
+            body.set(new Uint8Array(chunk), offset)
+            offset += chunk.byteLength
+        }
+        //TODO json parser
+        req.postBody = new URLSearchParams(new TextDecoder('utf-8').decode(body))
+    } else {
+        return defaultValue
+    }
+}
+
+export { json, updateGuestToken, ResponseWrapper, mediaExistPreCheck, mediaCacheSave, PostBodyParser }

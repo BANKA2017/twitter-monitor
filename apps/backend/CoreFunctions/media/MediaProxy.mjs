@@ -24,7 +24,7 @@ const MediaProxy = async (req, env) => {
         mediaLinkArray.extension = format
         mediaLinkArray.basename += `.${format}`
     }
-    let responseHeaders = {}
+    let responseHeaders = new Headers()
     //check
     if (!mediaLinkArray.filename || (!/^(abs|pbs|video)\.twimg\.com\//.test(mediaLinkArray.dirname) && !/^[^\/]+\.pscp\.tv\//.test(mediaLinkArray.dirname) && !ext)) {
         //res.setHeader('Content-Type', 'image/svg+xml')
@@ -32,13 +32,10 @@ const MediaProxy = async (req, env) => {
     } else if (mediaLinkArray.basename === 'banner.jpg') {
         try {
             const banner = await getImage(`https://${mediaLinkArray.dirname.slice(0, -1)}`)
-            responseHeaders['Content-Type'] = banner.headers.get('content-type')
+            responseHeaders.set('Content-Type', banner.headers.get('content-type'))
             //res.setHeader('Content-Disposition', 'attachment;filename=banner.jpg')
             //response.data.pipe(res)
-            return env.ResponseWrapper(banner.data, 200, {
-                ...responseHeaders,
-                'content-type': GetMime(responseHeaders['Content-Type'])
-            })
+            return env.ResponseWrapper(banner.data, 200, responseHeaders)
         } catch (e) {
             return env.ResponseWrapper(null, 500, responseHeaders)
         }
@@ -54,10 +51,10 @@ const MediaProxy = async (req, env) => {
             case 'aac':
             case 'gif':
                 if (!['mp4', 'm4s', 'm3u8', 'aac'].includes(mediaLinkArray.extension) && (mediaLinkArray.size === 'small' || mediaLinkArray.extension === 'ts') && env.mediaExistPreCheck(mediaLinkArray.basename)) {
-                    responseHeaders['X-TMCache'] = 1
+                    responseHeaders.set('X-TMCache', 1)
                     return env.ResponseWrapper(`/media/cache/${mediaLinkArray.basename}`, 307, responseHeaders)
                 } else {
-                    responseHeaders['X-TMCache'] = 0
+                    responseHeaders.set('X-TMCache', 0)
                     let realLink = ''
                     switch (mediaLinkArray.pathtype) {
                         case 3:
@@ -85,19 +82,13 @@ const MediaProxy = async (req, env) => {
                                 env.mediaCacheSave(tmpBuffer.data, mediaLinkArray.basename)
                             }
                             //res.setHeader('content-disposition', `attachment;filename=${mediaLinkArray.basename}`)
-                            responseHeaders['Content-Length'] = contentLength
-                            responseHeaders['Content-Type'] = tmpBuffer?.headers?.['content-type'] || (tmpBuffer?.headers ?? new Map()).get('content-type')
+                            responseHeaders.set('Content-Length', contentLength)
+                            responseHeaders.set('Content-Type', tmpBuffer?.headers?.['content-type'] || (tmpBuffer?.headers ?? new Map()).get('content-type'))
                             //response.data.pipe(res)
                             if (mediaLinkArray.pathtype === 3 && ['m3u8', 'm3u'].includes(mediaLinkArray.extension) && prefix) {
-                                return env.ResponseWrapper(new TextDecoder('utf-8').decode(tmpBuffer.data).replaceAll(/^\//gm, `${prefix}${mediaLinkArray.firstpath}/`), 200, {
-                                    ...responseHeaders,
-                                    'content-type': GetMime(mediaLinkArray.extension)
-                                })
+                                return env.ResponseWrapper(new TextDecoder('utf-8').decode(tmpBuffer.data).replaceAll(/^\//gm, `${prefix}${mediaLinkArray.firstpath}/`), 200, responseHeaders)
                             } else {
-                                return env.ResponseWrapper(tmpBuffer.data, 200, {
-                                    ...responseHeaders,
-                                    'content-type': GetMime(mediaLinkArray.extension)
-                                })
+                                return env.ResponseWrapper(tmpBuffer.data, 200, responseHeaders)
                             }
                             //res.send(response.data)
                         }

@@ -1,7 +1,7 @@
 import { SupportedCardNameList } from '../share/Constant.mjs'
 import { GetEntitiesFromText, PathInfo } from './Core.function.mjs'
 import { GetMime } from '../share/Mime.mjs'
-import { GenerateAccountInfo } from './Core.account.mjs'
+import { GenerateAccountInfo, GenerateCommunityInfo } from './Core.info.mjs'
 import path2array from './Core.apiPath.mjs'
 
 const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
@@ -192,8 +192,14 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
         imgDescription: '',
         discoveryQueryText: ''
     }
+    let community = {}
+    let socialContext = {}
+
     let originTextAndEntities
     if (graphqlMode) {
+        if (content?.content?.itemContent?.socialContext) {
+            socialContext = content.content.itemContent.socialContext
+        }
         content = path2array('tweet_content', content)
     }
     GeneralTweetData.tweet_id = path2array('tweet_id', content)
@@ -271,6 +277,11 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
                 }
             }
         }
+    }
+
+    //community
+    if (graphqlMode && content?.community_results) {
+        community = GenerateCommunityInfo(content.community_results.result)
     }
 
     //给卡片找源链接
@@ -400,7 +411,9 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
         isRetweet,
         isRtl,
         displayTextRange,
-        vibe
+        vibe,
+        community,
+        socialContext
     }
 }
 
@@ -480,7 +493,9 @@ const GetQuote = (content = {}, users = {}, uid = '0', tweetId = '0', graphqlMod
     //从返回的数据里面重新抽出该条推文
     //content = $tweets["globalObjects"]["tweets"][content["quoted_status_id_str"]];//来吧
     //$in_sql["quote_status"] = content["quoted_status_id_str"];//TODO get quote tweet_id in main
-
+    if (graphqlMode && content.tweet) {
+        content = content.tweet
+    }
     // tombstone means deleted
     if (content.tombstone) {
         console.log(`tmv3: Quote deleted`)

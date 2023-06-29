@@ -2,9 +2,9 @@ import { writeFileSync } from 'node:fs'
 import { basePath } from '../../libs/share/NodeConstant.mjs'
 
 const apiPathList = {
-    rest_id: ['id_str', 'data.user.result.rest_id', 'core.user_results.result.rest_id', 'rest_id'],
-    user_is_blue_verified: ['data.user.result.is_blue_verified', 'ext_is_blue_verified', 'is_blue_verified'],
-    user_info_legacy: ['data.user.result.legacy', 'legacy', ''],
+    rest_id: ['id_str', 'rest_id', 'data.user.result.rest_id', 'core.user_results.result.rest_id', 'viewer.user_results.result.rest_id'],
+    user_is_blue_verified: ['ext_is_blue_verified', 'is_blue_verified', 'data.user.result.is_blue_verified', 'data.viewer.user_results.result.is_blue_verified'],
+    user_info_legacy: ['data.user.result.legacy', 'viewer.user_results.result.legacy', 'legacy', ''],
     tweets_instructions: [
         'globalObjects.tweets',
         'data.user.result.timeline_v2.timeline.instructions',

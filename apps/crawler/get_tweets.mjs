@@ -5,7 +5,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 
 import { getTweets, getUserInfo } from '../../libs/core/Core.fetch.mjs'
-import { GenerateAccountInfo } from '../../libs/core/Core.account.mjs'
+import { GenerateAccountInfo } from '../../libs/core/Core.info.mjs'
 
 //server info
 import V2ServerInfo from '../../libs/model/twitter_monitor/v2_server_info.js'
@@ -47,6 +47,9 @@ process.on('unhandledRejection', async (reason, promise) => {
     if (typeof reason === 'object' && reason?.success !== undefined && reason?.token !== undefined) {
         //guest token error
         console.error(`tmv3: Restarting(guest_token)...`, reason)
+        const sleepTime = 15 * 60 * 1000
+        console.error(`tmv3: #429 and wait ${sleepTime}ms`)
+        await Sleep(sleepTime)
         process.exit(0)
     }
 })
@@ -208,6 +211,7 @@ while (true) {
         })
 
         if (!GeneralAccountData.uid) {
+            //console.error(accountInfo, accountInfo.value?.data)
             userInfoErrorsForPush += refreshableList[index][0].name + ' wrong data #accont_info \n'
             continue
         }
@@ -351,7 +355,14 @@ while (true) {
             }
 
             console.log(`tmv3: ${accountInfo.display_name} (@${accountInfo.name}) #${String(accountInfo.uid)} ${accountInfo.last_cursor ? '- new' : ''}`)
-            const tweets = await getTweets({ queryString: accountInfo.uid, cursor: accountInfo.cursor, guest_token: global.guest_token.token, count: false, online: false, graphqlMode: GRAPHQL_MODE })
+            const tweets = await getTweets({
+                queryString: accountInfo.uid,
+                cursor: accountInfo.cursor,
+                guest_token: global.guest_token.token,
+                count: false,
+                online: false,
+                graphqlMode: GRAPHQL_MODE
+            })
             global.guest_token.updateRateLimit('UserTweets')
             server_info.updateValue('total_req_times')
             const tmpTweetsInfo = TweetsInfo(tweets.data, GRAPHQL_MODE)

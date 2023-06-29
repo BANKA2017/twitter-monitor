@@ -1,0 +1,13 @@
+{
+    "name": "get-mime",
+    "type": "module",
+    "main": "index.js",
+    "exports": {
+        ".": {
+            "default": {
+                "default": "./index.js"
+            }
+        },
+        "./package.json": "./package.json"
+    }
+}

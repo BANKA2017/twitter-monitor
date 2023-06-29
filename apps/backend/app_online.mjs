@@ -17,7 +17,7 @@ import { ApiTranslate } from './CoreFunctions/translate/OnlineTranslate.mjs'
 let settingsFile = basePath + '/assets/setting.mjs'
 
 let EXPRESS_PORT = 3000
-let EXPRESS_ALLOW_ORIGIN = '*'
+let EXPRESS_ALLOW_ORIGIN = ['*']
 let ACTIVE_SERVICE = []
 
 for (const argvContent of process.argv.slice(2)) {
@@ -56,12 +56,16 @@ app.use((req, res, next) => {
         guest_token2: {}
     }
 
-    res.set('X-Powered-By', 'Twitter Monitor Api')
+    res.setHeader('X-Powered-By', 'Twitter Monitor Api')
     if (EXPRESS_ALLOW_ORIGIN) {
-        res.append('Access-Control-Allow-Origin', [EXPRESS_ALLOW_ORIGIN])
+        const origin = new URL(req.headers.referer).origin
+        const tmpReferer = EXPRESS_ALLOW_ORIGIN.includes('*') ? '*' : EXPRESS_ALLOW_ORIGIN.includes(origin) ? origin : ''
+        if (tmpReferer) {
+            res.append('Access-Control-Allow-Origin', tmpReferer)
+        }
     }
-    res.append('Access-Control-Allow-Methods', 'GET')
-    res.append('Access-Control-Allow-Headers', 'Content-Type')
+    res.append('Access-Control-Allow-Methods', '*')
+    res.append('Access-Control-Allow-Credentials', 'true')
     next()
 })
 
@@ -97,7 +101,7 @@ media.use(
 media.get(/(proxy)\/(.*)/, async (req, res) => {
     req.params.link = req.params?.[1] || ''
     const _res = await MediaProxy(req, req.env)
-    for (const header of Object.entries(_res.headers)) {
+    for (const header of [..._res.headers]) {
         res.setHeader(header[0], header[1])
     }
     switch (_res.status) {
@@ -116,7 +120,7 @@ media.get(/(proxy)\/(.*)/, async (req, res) => {
 app.get(/^\/(ext_tw_video|amplify_video)\/(.*)/, async (req, res) => {
     req.params.link = req.params?.[1] || ''
     const _res = await MediaProxy(req, req.env)
-    for (const header of Object.entries(_res.headers)) {
+    for (const header of [..._res.headers]) {
         res.setHeader(header[0], header[1])
     }
     switch (_res.status) {
