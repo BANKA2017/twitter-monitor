@@ -1,6 +1,6 @@
 import axios from 'redaxios'
 
-const axiosFetch = (config) => {
+const axiosFetch = (config = {}) => {
     let axiosConfig = {
         timeout: 30000, //TODO check timeout
         headers: {

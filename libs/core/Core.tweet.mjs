@@ -32,7 +32,7 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
         let cursorList = []
         if (graphqlMode) {
             for (const tmpTweet of tmpTweets) {
-                if (tmpTweet.type === 'TimelineAddEntries') {
+                if (tmpTweet.type === 'TimelineAddEntries' || tmpTweet.__typename === 'TimelineAddEntries') {
                     cursorList = tmpTweet.entries.filter((content) => content.entryId.startsWith('cursor-'))
                     objectForReturn.contents = objectForReturn.contents
                         .concat(tmpTweet.entries)
@@ -67,9 +67,9 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
                     for (const tmpUser of tmpTweet.entries.filter((content) => content.entryId.startsWith('user-'))) {
                         objectForReturn.users[tmpUser.content.itemContent.user_results.result.rest_id] = tmpUser.content.itemContent.user_results.result
                     }
-                } else if (tmpTweet.type === 'TimelinePinEntry') {
+                } else if (tmpTweet.type === 'TimelinePinEntry' || tmpTweet.__typename === 'TimelinePinEntry') {
                     objectForReturn.contents.push(tmpTweet.entry)
-                } else if (tmpTweet.type === 'TimelineReplaceEntry') {
+                } else if (tmpTweet.type === 'TimelineReplaceEntry' || tmpTweet.__typename === 'TimelineReplaceEntry') {
                     if (tmpTweet.entry_id_to_replace.startsWith('cursor-')) {
                         cursorList.push(tmpTweet.entry)
                     }
@@ -194,6 +194,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
     }
     let community = {}
     let socialContext = {}
+    let birdwatch = {}
 
     let originTextAndEntities
     if (graphqlMode) {
@@ -390,6 +391,16 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
         place = content?.legacy?.place || content?.place || {}
     }
 
+    //birdwatch
+    if (graphqlMode && content?.birdwatch_pivot) {
+        //TODO add entities
+        birdwatch = {
+            id: content.birdwatch_pivot?.note?.rest_id || '0',
+            text: content.birdwatch_pivot?.subtitle?.text || '',
+            title: content.birdwatch_pivot?.footer?.text || ''
+        }
+    }
+
     return {
         GeneralTweetData,
         userInfo,
@@ -413,7 +424,8 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
         displayTextRange,
         vibe,
         community,
-        socialContext
+        socialContext,
+        birdwatch
     }
 }
 

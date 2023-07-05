@@ -43,7 +43,7 @@ app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 
 //get init token
-global.guest_token = new GuestToken()
+global.guest_token = new GuestToken('android')
 
 app.use((req, res, next) => {
     req.env = {
@@ -57,7 +57,7 @@ app.use((req, res, next) => {
     }
 
     res.setHeader('X-Powered-By', 'Twitter Monitor Api')
-    if (EXPRESS_ALLOW_ORIGIN) {
+    if (EXPRESS_ALLOW_ORIGIN && req.headers.referer) {
         const origin = new URL(req.headers.referer).origin
         const tmpReferer = EXPRESS_ALLOW_ORIGIN.includes('*') ? '*' : EXPRESS_ALLOW_ORIGIN.includes(origin) ? origin : ''
         if (tmpReferer) {

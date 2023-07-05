@@ -458,6 +458,10 @@ const TweetsData = (content = {}, users = {}, contents = [], precheckName = '', 
     if (exportTweet.community && Object.keys(exportTweet.community).length > 0) {
         exportTweet.GeneralTweetData.community = exportTweet.community
     }
+    //birdwatch
+    if (exportTweet.birdwatch && Object.keys(exportTweet.birdwatch).length > 0) {
+        exportTweet.GeneralTweetData.birdwatch = exportTweet.birdwatch
+    }
     //socialContent
     if ((exportTweet?.socialContext?.contextType || '').toLocaleLowerCase() === 'pin') {
         exportTweet.GeneralTweetData.is_top = true
@@ -565,7 +569,7 @@ const GenerateData = (tweets, isConversation = false, filterName = '', graphqlMo
             if (!content) {
                 return false
             }
-            if (['TimelineTimelineItem'].includes(content?.content?.entryType)) {
+            if (['TimelineTimelineItem'].includes(content?.content?.entryType || content?.content?.__typename)) {
                 let tmpData = TweetsData(content, {}, [], '', graphqlMode, false)
 
                 if (tmpData.code === 200 && Object.keys(tmpData.data).length) {

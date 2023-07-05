@@ -12,6 +12,7 @@ const apiPathList = {
         'data.threaded_conversation_with_injections_v2.instructions',
         'data.threaded_conversation_with_injections.instructions',
         'data.search_by_raw_query.search_timeline.timeline.instructions',
+        'data.search.timeline_response.timeline.instructions',
         'data.home.home_timeline_urt.instructions',
         'data.bookmark_timeline_v2.timeline.instructions',
         'data.list.tweets_timeline.timeline.instructions',
@@ -30,6 +31,8 @@ const apiPathList = {
         'data.threaded_conversation_with_injections.instructions[0].entries',
         'data.search_by_raw_query.search_timeline.timeline.instructions[1].entries',
         'data.search_by_raw_query.search_timeline.timeline.instructions[0].entries',
+        'data.search.timeline_response.timeline.instructions[1].entries',
+        'data.search.timeline_response.timeline.instructions[0].entries',
         'data.home.home_timeline_urt.instructions[0].entries',
         'data.bookmark_timeline_v2.timeline.instructions[0].entries',
         'data.list.tweets_timeline.timeline.instructions[1].entries',
@@ -38,8 +41,17 @@ const apiPathList = {
         'data.communityResults.result.community_timeline.timeline.instructions[0].entries'
     ],
     tweets_top_content: ['data.user.result.timeline_v2.timeline.instructions[2].entry', 'data.user.result.timeline.timeline.instructions[2].entry'],
-    tweet_content: ['content.itemContent.tweet_results.result', 'content.itemContent.tweet', 'item.itemContent.tweet_results.result', 'item.itemContent.tweet'],
-    tweet_id: ['id_str', 'rest_id', 'content.itemContent.tweet.rest_id', 'content.itemContent.tweet_results.result.rest_id', 'item.itemContent.tweet.rest_id', 'item.itemContent.tweet_results.result.rest_id'],
+    tweet_content: ['content.itemContent.tweet_results.result', 'content.content.tweetResult.result', 'content.itemContent.tweet', 'item.itemContent.tweet_results.result', 'item.itemContent.tweet'],
+    tweet_id: [
+        'id_str',
+        'rest_id',
+        'content.content.itemContent.tweet.rest_id',
+        'content.content.tweetResult.result.rest_id',
+        'content.tweetResult.result.rest_id',
+        'content.itemContent.tweet_results.result.rest_id',
+        'item.itemContent.tweet.rest_id',
+        'item.itemContent.tweet_results.result.rest_id'
+    ],
     tweet_uid: ['user_id_str', 'legacy.user_id_str'],
     tweet_conversation_id_str: ['conversation_id_str', 'legacy.conversation_id_str'],
     tweet_created_at: ['created_at', 'legacy.created_at'],
@@ -55,7 +67,7 @@ const apiPathList = {
     retweet_graphql_path: ['legacy.retweeted_status', 'legacy.retweeted_status_result.result'],
     quote_tweet_id: ['quoted_status_id_str', 'legacy.quoted_status_id_str'],
     quote_graphql_path: ['quoted_status_result.result', 'quoted_status'],
-    graphql_user_result: ['core.user_results.result', 'core.user']
+    graphql_user_result: ['core.user_results.result', 'core.user_result.result', 'core.user']
 }
 
 const codeText = Object.keys(apiPathList)

@@ -42,6 +42,7 @@ import axiosFetch from 'axios-helper'
 import GetMine from 'get-mime'
 import { MockDocument } from '../share/MockFuntions.mjs'
 import { parse } from 'acorn'
+import { getOauthAuthorization } from './Core.android.mjs'
 
 const generateCsrfToken = async () => {
     // @ts-ignore
@@ -62,18 +63,17 @@ const TW_AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAAPYXBAAAAAAACLXUNDekMxqa8h%
 const TW_AUTHORIZATION2 = 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA' //new token
 
 //for tweetdeck, but useless until login
-const TWEETDECK_AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAAF7aAAAAAAAASCiRjWvh7R5wxaKkFp7MM%2BhYBqM%3DbQ0JPmjU9F6ZoMhDfI4uTNAaQuTDm2uO9x3WFVr2xBZ2nhjdP0' //tweetdeck
-const TWEETDECK_AUTHORIZATION2 = 'Bearer AAAAAAAAAAAAAAAAAAAAAFQODgEAAAAAVHTp76lzh3rFzcHbmHVvQxYYpTw%3DckAlMINMjmCwxUcaXbAN4XqJVdgMJaHqNOFgPMK0zN1qLqLQCF' //new tweetdeck
+// const TWEETDECK_AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAAF7aAAAAAAAASCiRjWvh7R5wxaKkFp7MM%2BhYBqM%3DbQ0JPmjU9F6ZoMhDfI4uTNAaQuTDm2uO9x3WFVr2xBZ2nhjdP0' //tweetdeck
+// const TWEETDECK_AUTHORIZATION2 = 'Bearer AAAAAAAAAAAAAAAAAAAAAFQODgEAAAAAVHTp76lzh3rFzcHbmHVvQxYYpTw%3DckAlMINMjmCwxUcaXbAN4XqJVdgMJaHqNOFgPMK0zN1qLqLQCF' //new tweetdeck
+
+const TW_WEBAPI_PREFIX = 'https://api.twitter.com'
+const TW_ANDROID_PREFIX = 'https://global.albtls.t.co'
+const TW_ANDROID_SEARCH_PREFIX = 'https://na.albtls.t.co'
 
 const Authorization = [TW_AUTHORIZATION, TW_AUTHORIZATION2]
 const ct0 = await generateCsrfToken()
 
-const axios = axiosFetch({
-    headers: {
-        authorization: TW_AUTHORIZATION,
-        'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
-    }
-})
+const axios = axiosFetch()
 
 const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization = 0, headers = {}, body = undefined) => {
     /* 
@@ -85,7 +85,8 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
     if (!url) {
         throw 'tmv3: Invalid url'
     }
-    let loginMode = !!(cookie?.auth_token && cookie?.ct0) || !guest_token
+    let loginMode = !!(cookie?.auth_token && cookie?.ct0) || (guest_token?.open_account?.oauth_token && guest_token?.open_account?.oauth_token_secret) || !guest_token
+    //TODO fix rate limit
     if (!loginMode && !guest_token.success) {
         guest_token = await getToken(authorization)
     }
@@ -104,16 +105,49 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
     //input cookie
     requestCookie = { ...requestCookie, ...cookie }
 
+    // authorization
+
+    if (guest_token?.open_account?.oauth_token && guest_token?.open_account?.oauth_token_secret) {
+        //url = url.replace(TW_WEBAPI_PREFIX, TW_ANDROID_PREFIX)
+        const oauthSign = getOauthAuthorization(guest_token.open_account.oauth_token, guest_token.open_account.oauth_token_secret, body !== undefined ? 'POST' : 'GET', url, body)
+        authorization = `OAuth realm="http://api.twitter.com/", oauth_version="1.0", oauth_token="${oauthSign.oauth_token}", oauth_nonce="${oauthSign.oauth_nonce}", oauth_timestamp="${oauthSign.timestamp}", oauth_signature="${encodeURIComponent(
+            oauthSign.sign
+        )}", oauth_consumer_key="${oauthSign.oauth_consumer_key}", oauth_signature_method="HMAC-SHA1"`
+    } else if (guest_token?.open_account?.authorization) {
+        authorization = guest_token.open_account.authorization
+    }
+
+    let tmpHeaders = {
+        authorization: typeof authorization === 'string' ? authorization : Authorization[authorization],
+        'x-guest-token': loginMode || (typeof authorization === 'string' && authorization.startsWith('OAuth')) ? undefined : guest_token.token,
+        'content-type': 'application/json',
+        'x-csrf-token': requestCookie.ct0,
+        cookie: Object.entries(requestCookie)
+            .map((x) => x.join('='))
+            .join(';')
+    }
+    if ((typeof authorization === 'string' && authorization.startsWith('OAuth')) || guest_token?.open_account) {
+        if (typeof authorization === 'string' && authorization.startsWith('OAuth')) {
+            delete tmpHeaders['x-guest-token']
+        }
+        tmpHeaders = {
+            ...tmpHeaders,
+            ...{
+                'User-Agent': 'TwitterAndroid/9.95.0-release.0 (29950000-r-0) ONEPLUS+A3010/9 (OnePlus;ONEPLUS+A3010;OnePlus;OnePlus3;0;;1;2016)',
+                'X-Twitter-API-Version': 5,
+                'X-Twitter-Client': 'TwitterAndroid',
+                'X-Twitter-Client-Version': '9.95.0-release.0',
+                'OS-Version': '28',
+                'System-User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 9; ONEPLUS A3010 Build/PKQ1.181203.001)',
+                'X-Twitter-Active-User': 'yes'
+            }
+        }
+    }
+
     return await new Promise((resolve, reject) => {
         axios(url, {
             headers: {
-                authorization: Authorization[authorization],
-                'x-guest-token': loginMode ? undefined : guest_token.token,
-                'content-type': 'application/json',
-                'x-csrf-token': requestCookie.ct0,
-                cookie: Object.entries(requestCookie)
-                    .map((x) => x.join('='))
-                    .join(';'),
+                ...tmpHeaders,
                 ...headers
             },
             method: body !== undefined ? 'post' : 'get',
@@ -126,7 +160,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
                 resolve(response)
             })
             .catch((e) => {
-                //console.log(e)
+                console.log(e)
                 if (!e.response) {
                     reject({ code: -1000, message: e.code, e })
                 } else if (e.response?.status === 429) {
@@ -142,7 +176,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
 }
 
 // ANONYMOUS
-const getToken = async (authorizationMode = 0) => {
+const getToken = async (authorization = 0) => {
     let tmpResponse = {
         success: false,
         token: '',
@@ -171,9 +205,9 @@ const getToken = async (authorizationMode = 0) => {
     return await new Promise((resolve, reject) => {
         //2000 per 30 min i guess
         axios
-            .post('https://api.twitter.com/1.1/guest/activate.json', '', {
+            .post(TW_WEBAPI_PREFIX + '/1.1/guest/activate.json', '', {
                 headers: {
-                    authorization: Authorization[authorizationMode],
+                    authorization: typeof authorization === 'string' ? authorization : Authorization[authorization],
                     'x-csrf-token': ct0,
                     cookie: 'ct0=' + ct0
                 }
@@ -230,7 +264,8 @@ const getUserInfo = async (ctx = { user: '', guest_token: {}, graphqlMode: true,
                 if (!isNaN(user)) {
                     graphqlVariables['userId'] = user
                     return (
-                        'https://api.twitter.com/graphql/' +
+                        TW_WEBAPI_PREFIX +
+                        '/graphql/' +
                         _UserByRestId.queryId +
                         '/UserByRestId?' +
                         new URLSearchParams({
@@ -241,7 +276,8 @@ const getUserInfo = async (ctx = { user: '', guest_token: {}, graphqlMode: true,
                 } else {
                     graphqlVariables['screen_name'] = user
                     return (
-                        'https://api.twitter.com/graphql/' +
+                        TW_WEBAPI_PREFIX +
+                        '/graphql/' +
                         _UserByScreenName.queryId +
                         '/UserByScreenName?' +
                         new URLSearchParams({
@@ -252,7 +288,8 @@ const getUserInfo = async (ctx = { user: '', guest_token: {}, graphqlMode: true,
                 }
             } else {
                 return (
-                    'https://api.twitter.com/1.1/users/show.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&' +
+                    TW_WEBAPI_PREFIX +
+                    '/1.1/users/show.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&' +
                     (!isNaN(user) ? 'user_id=' : 'screen_name=') +
                     user
                 )
@@ -288,7 +325,7 @@ const getVerifiedAvatars = async (ctx = { uid: [], guest_token: {}, cookie: {}, 
     //https://api.twitter.com/graphql/AkfLpq1RURPtDOcd56qyCg/UsersVerifiedAvatars?variables=%7B%22userIds%22%3A%5B%222392179773%22%2C%22815928932759285760%22%5D%7D&features=%7B%22responsive_web_twitter_blue_verified_badge_is_enabled%22%3Atrue%7D
     return await new Promise((resolve, reject) => {
         coreFetch(
-            `https://api.twitter.com/graphql/${_UsersVerifiedAvatars.queryId}/UsersVerifiedAvatars?` +
+            `${TW_WEBAPI_PREFIX}/graphql/${_UsersVerifiedAvatars.queryId}/UsersVerifiedAvatars?` +
                 new URLSearchParams({
                     variables: JSON.stringify(graphqlVariables),
                     features: JSON.stringify(_UsersVerifiedAvatars.features)
@@ -321,7 +358,7 @@ const getRecommendations = async (ctx = { user: '', guest_token: {}, count: 40, 
     } else {
         return await new Promise((resolve, reject) => {
             coreFetch(
-                `https://api.twitter.com/1.1/users/recommendations.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&skip_status=1&&pc=true&display_location=profile_accounts_sidebar&limit=${count}&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CreplyvotingDownvotePerspective%2CvoiceInfo%2CbirdwatchPivot%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl%2Ccollab_control%2Cvibe&` +
+                `${TW_WEBAPI_PREFIX}/1.1/users/recommendations.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&skip_status=1&&pc=true&display_location=profile_accounts_sidebar&limit=${count}&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CreplyvotingDownvotePerspective%2CvoiceInfo%2CbirdwatchPivot%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl%2Ccollab_control%2Cvibe&` +
                     (!isNaN(user) ? 'user_id=' : 'screen_name=') +
                     user,
                 guest_token,
@@ -379,7 +416,8 @@ const getMediaTimeline = async (ctx = { uid: [], guest_token: {}, count: 20, gra
 
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' +
+            TW_WEBAPI_PREFIX +
+                '/graphql/' +
                 _UserMedia.queryId +
                 '/UserMedia?' +
                 new URLSearchParams({
@@ -466,7 +504,8 @@ const getTweets = async (
 
         return await new Promise((resolve, reject) => {
             coreFetch(
-                'https://twitter.com/i/api/graphql/' +
+                TW_WEBAPI_PREFIX +
+                    '/graphql/' +
                     (withReply ? _UserTweetsAndReplies.queryId + '/UserTweetsAndReplies?' : _UserTweets.queryId + '/UserTweets?') +
                     new URLSearchParams({
                         variables: JSON.stringify(graphqlVariables),
@@ -526,25 +565,55 @@ const getTweets = async (
             ext: 'mediaStats,highlightedLabel,hasNftAvatar,voiceInfo,birdwatchPivot,enrichments,superFollowMetadata,unmentionInfo,editControl,vibe'
         }
         //https://abs.twimg.com/responsive-web/client-web/shared~ondemand.SettingsInternals~bundle.Place~bundle.Search~bundle.QuoteTweetActivity.431ada6a.js
+        //let graphqlVariables = {
+        //    rawQuery: queryString.trim(),
+        //    count,
+        //    product: 'Latest', //Top, People, Photos, Videos, Latest
+        //    withDownvotePerspective: false,
+        //    withReactionsMetadata: false,
+        //    withReactionsPerspective: false
+        //}
+
+        //TODO fix web version
+
         let graphqlVariables = {
-            rawQuery: queryString.trim(),
-            count,
-            product: 'Latest', //Top, People, Photos, Videos, Latest
-            withDownvotePerspective: false,
-            withReactionsMetadata: false,
-            withReactionsPerspective: false
+            includeTweetImpression: true,
+            query_source: 'typed_query',
+            includeHasBirdwatchNotes: false,
+            includeEditPerspective: false,
+            includeEditControl: true,
+            query: queryString.trim(),
+            timeline_type: 'Latest'
         }
         if (cursor) {
             graphqlVariables['cursor'] = cursor
         }
         return await new Promise((resolve, reject) => {
             coreFetch(
-                'https://api.twitter.com/graphql/' +
-                    _SearchTimeline.queryId +
+                TW_ANDROID_PREFIX +
+                    '/graphql/' +
+                    'G8jKRx5LiyrRDs5FcsUjsw' + //_SearchTimeline.queryId +
                     '/SearchTimeline?' +
                     new URLSearchParams({
                         variables: JSON.stringify(graphqlVariables),
-                        features: JSON.stringify(_SearchTimeline.features)
+                        features: JSON.stringify({
+                            longform_notetweets_inline_media_enabled: true,
+                            super_follow_badge_privacy_enabled: true,
+                            longform_notetweets_rich_text_read_enabled: true,
+                            super_follow_user_api_enabled: true,
+                            unified_cards_ad_metadata_container_dynamic_card_content_query_enabled: true,
+                            super_follow_tweet_api_enabled: true,
+                            android_graphql_skip_api_media_color_palette: true,
+                            creator_subscriptions_tweet_preview_api_enabled: true,
+                            freedom_of_speech_not_reach_fetch_enabled: true,
+                            creator_subscriptions_subscription_count_enabled: true,
+                            tweetypie_unmention_optimization_enabled: true,
+                            longform_notetweets_consumption_enabled: true,
+                            subscriptions_verification_info_enabled: true,
+                            blue_business_profile_image_shape_enabled: true,
+                            tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: true,
+                            super_follow_exclusive_tweet_notifications_enabled: true
+                        }) //JSON.stringify(_SearchTimeline.features)
                     }).toString(),
                 guest_token,
                 cookie,
@@ -557,7 +626,7 @@ const getTweets = async (
                     reject(e)
                 })
 
-            //coreFetch("https://twitter.com/i/api/2/search/adaptive.json?" + (new URLSearchParams//(tmpQueryObject)).toString(), guest_token).then(response => {
+            //coreFetch(TW_WEBAPI_PREFIX+"/2/search/adaptive.json?" + (new URLSearchParams//(tmpQueryObject)).toString(), guest_token).then(response => {
             //  resolve(response)
             //}).catch(e => {
             //  reject(e)
@@ -567,7 +636,7 @@ const getTweets = async (
         // no use because http 429 loop
         return await new Promise((resolve, reject) => {
             coreFetch(
-                `https://api.twitter.com/2/timeline/profile/${queryString}.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_composer_source=true&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweets=true&ext=mediaStats%2CcameraMoment&count=` +
+                `${TW_WEBAPI_PREFIX}/2/timeline/profile/${queryString}.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_composer_source=true&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweets=true&ext=mediaStats%2CcameraMoment&count=` +
                     (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''),
                 guest_token,
                 cookie,
@@ -622,7 +691,7 @@ const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMod
 
         return await new Promise((resolve, reject) => {
             coreFetch(
-                'https://api.twitter.com/graphql/' + _TweetDetail.queryId + '/TweetDetail?' + new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_TweetDetail.features) }).toString(),
+                TW_WEBAPI_PREFIX + '/graphql/' + _TweetDetail.queryId + '/TweetDetail?' + new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_TweetDetail.features) }).toString(),
                 guest_token,
                 cookie,
                 authorization
@@ -637,7 +706,8 @@ const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMod
     } else {
         return await new Promise((resolve, reject) => {
             coreFetch(
-                'https://api.twitter.com/2/timeline/conversation/' +
+                TW_WEBAPI_PREFIX +
+                    '/2/timeline/conversation/' +
                     tweet_id +
                     '.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_composer_source=true&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweets=true&count=1&ext=mediaStats%2CcameraMoment',
                 guest_token,
@@ -676,7 +746,7 @@ const getEditHistory = async (ctx = { tweet_id: '', guest_token: {}, cookie: {},
 
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' + _TweetEditHistory.queryId + '/TweetEditHistory?' + new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_TweetEditHistory.features) }).toString(),
+            TW_WEBAPI_PREFIX + '/graphql/' + _TweetEditHistory.queryId + '/TweetEditHistory?' + new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_TweetEditHistory.features) }).toString(),
             guest_token,
             cookie,
             authorization
@@ -713,7 +783,7 @@ const getAudioSpace = async (ctx = { id: '', guest_token: {}, cookie: {}, author
 
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' + _AudioSpaceById.queryId + '/AudioSpaceById?' + new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_AudioSpaceById.features) }).toString(),
+            TW_WEBAPI_PREFIX + '/graphql/' + _AudioSpaceById.queryId + '/AudioSpaceById?' + new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_AudioSpaceById.features) }).toString(),
             guest_token,
             cookie,
             authorization
@@ -738,7 +808,7 @@ const getBroadcast = async (ctx = { id: '', guest_token: {}, cookie: {}, authori
         return await Promise.allSettled(id.map((justId) => getBroadcast({ id: justId, guest_token, cookie, authorization })))
     }
     return await new Promise((resolve, reject) => {
-        coreFetch(`https://api.twitter.com/1.1/broadcasts/show.json?ids=${id}&include_events=true`, guest_token, cookie, authorization)
+        coreFetch(`${TW_WEBAPI_PREFIX}/1.1/broadcasts/show.json?ids=${id}&include_events=true`, guest_token, cookie, authorization)
             .then((response) => {
                 resolve(response)
             })
@@ -759,7 +829,7 @@ const getLiveVideoStream = async (ctx = { media_key: '', guest_token: {}, cookie
         return await Promise.allSettled(id.map((justId) => getLiveVideoStream({ id: justId, guest_token, cookie, authorization })))
     }
     return await new Promise((resolve, reject) => {
-        coreFetch(`https://api.twitter.com/1.1/live_video_stream/status/${media_key}?client=web&use_syndication_guest_id=false&cookie_set_host=twitter.com`, guest_token, cookie, authorization)
+        coreFetch(`${TW_WEBAPI_PREFIX}/1.1/live_video_stream/status/${media_key}?client=web&use_syndication_guest_id=false&cookie_set_host=twitter.com`, guest_token, cookie, authorization)
             .then((response) => {
                 resolve(response)
             })
@@ -777,7 +847,7 @@ const getTypeahead = async (ctx = { text: '', guest_token: {}, cookie: {}, autho
         guest_token = false
     }
     return await new Promise((resolve, reject) => {
-        coreFetch(`https://api.twitter.com/1.1/search/typeahead.json?include_ext_is_blue_verified=1&q=${text}&src=search_box&result_type=events%2Cusers%2Ctopics`, guest_token, cookie, authorization)
+        coreFetch(`${TW_WEBAPI_PREFIX}/1.1/search/typeahead.json?include_ext_is_blue_verified=1&q=${text}&src=search_box&result_type=events%2Cusers%2Ctopics`, guest_token, cookie, authorization)
             .then((response) => {
                 resolve(response)
             })
@@ -804,7 +874,8 @@ const getArticle = async (ctx = { id: '', guest_token: {}, cookie: {}, authoriza
 
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' +
+            TW_WEBAPI_PREFIX +
+                '/graphql/' +
                 _TwitterArticleByRestId.queryId +
                 '/TwitterArticleByRestId?' +
                 new URLSearchParams({
@@ -850,7 +921,8 @@ const getListInfo = async (ctx = { id: '', screenName: '', listSlug: '', guest_t
 
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' +
+            TW_WEBAPI_PREFIX +
+                '/graphql/' +
                 (!listById ? _ListBySlug.queryId + '/ListBySlug?' : _ListByRestId.queryId + '/ListByRestId?') +
                 new URLSearchParams({
                     variables: JSON.stringify(graphqlVariables),
@@ -895,7 +967,7 @@ const getListMember = async (ctx = { id: '', count: 20, cursor: '', guest_token:
 
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' + _ListMembers.queryId + '/ListMembers?' + new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_ListMembers.features) }).toString(),
+            TW_WEBAPI_PREFIX + '/graphql/' + _ListMembers.queryId + '/ListMembers?' + new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_ListMembers.features) }).toString(),
             guest_token,
             cookie,
             authorization
@@ -934,7 +1006,8 @@ const getListTimeLine = async (ctx = { id: '', count: 20, cursor: '', guest_toke
 
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' +
+            TW_WEBAPI_PREFIX +
+                '/graphql/' +
                 _ListLatestTweetsTimeline.queryId +
                 '/ListLatestTweetsTimeline?' +
                 new URLSearchParams({
@@ -973,7 +1046,8 @@ const getCommunityInfo = async (ctx = { id: '', guest_token: {}, cookie: {}, aut
 
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' +
+            TW_WEBAPI_PREFIX +
+                '/graphql/' +
                 _CommunitiesFetchOneQuery.queryId +
                 '/CommunitiesFetchOneQuery?' +
                 new URLSearchParams({
@@ -1019,7 +1093,8 @@ const getCommunityTweetsTimeline = async (ctx = { id: '', count: 20, cursor: '',
 
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' +
+            TW_WEBAPI_PREFIX +
+                '/graphql/' +
                 _CommunityTweetsTimeline.queryId +
                 '/CommunityTweetsTimeline?' +
                 new URLSearchParams({
@@ -1063,7 +1138,8 @@ const getCommunitySearch = async (ctx = { queryString: '', count: 20, cursor: ''
 
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' +
+            TW_WEBAPI_PREFIX +
+                '/graphql/' +
                 _CommunitiesSearchQuery.queryId +
                 '/CommunitiesSearchQuery?' +
                 new URLSearchParams({
@@ -1083,14 +1159,15 @@ const getCommunitySearch = async (ctx = { queryString: '', count: 20, cursor: ''
 }
 
 //https://github.com/FixTweet/FixTweet/blob/main/src/helpers/translate.ts
-const getTranslate = async (ctx = { id: '0', type: 'tweets', target: 'en', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
-    let { id, type, target, guest_token, cookie, authorization } = preCheckCtx(ctx, {
+const getTranslate = async (ctx = { id: '0', type: 'tweets', target: 'en', guest_token: {}, cookie: {}, authorization: 1, graphqlMode: true }, env = {}) => {
+    let { id, type, target, guest_token, cookie, authorization, graphqlMode } = preCheckCtx(ctx, {
         id: '0',
         type: 'tweets',
         target: 'en',
         guest_token: {},
         cookie: {},
-        authorization: 1
+        authorization: 1,
+        graphqlMode: true
     })
     if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
@@ -1098,10 +1175,13 @@ const getTranslate = async (ctx = { id: '0', type: 'tweets', target: 'en', guest
         guest_token = false
     }
     return await new Promise((resolve, reject) => {
-        const url =
-            type === 'profile'
-                ? `https://twitter.com/i/api/1.1/strato/column/None/profileUserId=${id},destinationLanguage=None,translationSource=Some(Google)/translation/service/translateProfile`
-                : `https://twitter.com/i/api/1.1/strato/column/None/tweetId=${id},destinationLanguage=None,translationSource=Some(Google),feature=None,timeout=None,onlyCached=None/translation/service/translateTweet`
+        const url = graphqlMode
+            ? type === 'profile'
+                ? `${TW_WEBAPI_PREFIX}/graphql/w9iN3QyYsynBlEXr9h6M2Q/TranslateProfileQuery?variables=%7B%22includeTweetImpression%22%3Atrue%2C%22includeHasBirdwatchNotes%22%3Afalse%2C%22includeEditPerspective%22%3Afalse%2C%22includeEditControl%22%3Atrue%2C%22rest_id%22%3A${id}%7D`
+                : `${TW_WEBAPI_PREFIX}/graphql/hE1HCUzioO9QSLpvIBvvYA/TranslateTweetQuery?variables=%7B%22includeTweetImpression%22%3Atrue%2C%22includeHasBirdwatchNotes%22%3Afalse%2C%22includeEditPerspective%22%3Afalse%2C%22tweet_id%22%3A${id}%2C%22includeEditControl%22%3Atrue%7`
+            : type === 'profile'
+            ? `${TW_WEBAPI_PREFIX}/1.1/strato/column/None/profileUserId=${id},destinationLanguage=None,translationSource=Some(Google)/translation/service/translateProfile`
+            : `${TW_WEBAPI_PREFIX}/1.1/strato/column/None/tweetId=${id},destinationLanguage=None,translationSource=Some(Google),feature=None,timeout=None,onlyCached=None/translation/service/translateTweet`
 
         coreFetch(url, guest_token, cookie, authorization, { 'x-twitter-client-language': target })
             .then((response) => {
@@ -1174,8 +1254,8 @@ const getTrends = async (ctx = { initial_tab_id: 'trending', count: 20, guest_to
     return await new Promise((resolve, reject) => {
         coreFetch(
             initial_tab_id === 'trends'
-                ? `https://api.twitter.com/2/guide.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=false&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_collab_control=true&include_ext_views=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&count=${count}&candidate_source=trends&include_page_configuration=false&entity_tokens=false&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl%2Ccollab_control%2Cvibe`
-                : `https://api.twitter.com/2/guide.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=false&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_collab_control=true&include_ext_views=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&count=${count}&include_page_configuration=true&initial_tab_id=${initial_tab_id}&entity_tokens=false&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl%2Ccollab_control%2Cvibe${
+                ? `${TW_WEBAPI_PREFIX}/2/guide.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=false&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_collab_control=true&include_ext_views=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&count=${count}&candidate_source=trends&include_page_configuration=false&entity_tokens=false&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl%2Ccollab_control%2Cvibe`
+                : `${TW_WEBAPI_PREFIX}/2/guide.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=false&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_collab_control=true&include_ext_views=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&count=${count}&include_page_configuration=true&initial_tab_id=${initial_tab_id}&entity_tokens=false&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl%2Ccollab_control%2Cvibe${
                       cookie.length ? '%2CbirdwatchPivot' : ''
                   }`,
             guest_token,
@@ -1231,7 +1311,8 @@ const getFollowingOrFollowers = async (ctx = { cookie: {}, guest_token: {}, id: 
 
         return await new Promise((resolve, reject) => {
             coreFetch(
-                'https://api.twitter.com/graphql/' +
+                TW_WEBAPI_PREFIX +
+                    '/graphql/' +
                     (type === 'Followers' ? _Followers.queryId : _Following.queryId) +
                     `/${type}?` +
                     new URLSearchParams({
@@ -1258,7 +1339,7 @@ const getFollowingOrFollowers = async (ctx = { cookie: {}, guest_token: {}, id: 
             queryObject.cursor = cursor
         }
         return await new Promise((resolve, reject) => {
-            coreFetch(`https://api.twitter.com/1.1/${type === 'Followers' ? 'followers' : 'friends'}/list.json?` + new URLSearchParams(queryObject).toString(), guest_token, cookie, 0)
+            coreFetch(`${TW_WEBAPI_PREFIX}/1.1/${type === 'Followers' ? 'followers' : 'friends'}/list.json?` + new URLSearchParams(queryObject).toString(), guest_token, cookie, 0)
                 .then((response) => {
                     resolve(response)
                 })
@@ -1301,7 +1382,8 @@ const getLikes = async (ctx = { cookie: {}, guest_token: {}, id: '', count: 20, 
         }
         return await new Promise((resolve, reject) => {
             coreFetch(
-                'https://api.twitter.com/graphql/' +
+                TW_WEBAPI_PREFIX +
+                    '/graphql/' +
                     _Likes.queryId +
                     '/Likes?' +
                     new URLSearchParams({
@@ -1328,7 +1410,7 @@ const getLikes = async (ctx = { cookie: {}, guest_token: {}, id: '', count: 20, 
             queryObject.max_id = cursor
         }
         return await new Promise((resolve, reject) => {
-            coreFetch(`https://api.twitter.com/1.1/favorites/list.json?` + new URLSearchParams(queryObject).toString(), guest_token, cookie, 0)
+            coreFetch(`${TW_WEBAPI_PREFIX}/1.1/favorites/list.json?` + new URLSearchParams(queryObject).toString(), guest_token, cookie, 0)
                 .then((response) => {
                     resolve(response)
                 })
@@ -1352,7 +1434,7 @@ const postFlowTask = async (ctx = { flow_name: '', flow_token: '', sub_task: {},
     })
     try {
         const tmpResponse = await coreFetch(
-            `https://api.twitter.com/1.1/onboarding/task.json${flow_name ? `?flow_name=${flow_name}` : ''}`,
+            `${TW_WEBAPI_PREFIX}/1.1/onboarding/task.json${flow_name ? `?flow_name=${flow_name}` : ''}`,
             guest_token.token,
             cookie,
             1,
@@ -1432,7 +1514,8 @@ const getViewer = async (ctx = { cookie: {}, guest_token: {} }, env = {}) => {
     //}
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' +
+            TW_WEBAPI_PREFIX +
+                '/graphql/' +
                 _Viewer.queryId +
                 '/Viewer?' +
                 new URLSearchParams({
@@ -1490,7 +1573,7 @@ const getJsInstData = async (ctx = { jsInstrumentationLink: 'https://twitter.com
 const postLogout = async (ctx = { cookie: {} }, env = {}) => {
     let { cookie } = preCheckCtx(ctx, { cookie: {} })
     // success {status: "ok"}
-    return await coreFetch(`https://api.twitter.com/1.1/account/logout.json`, false, cookie, 1, {}, null)
+    return await coreFetch(`${TW_WEBAPI_PREFIX}/1.1/account/logout.json`, false, cookie, 1, {}, null)
 }
 
 // type: INIT | APPEND | FINALIZE | STATUS
@@ -1602,7 +1685,7 @@ const postTweet = async (ctx = { cookie: {}, text: '', media: [], reply_tweet_id
 
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' + _CreateTweet.queryId + '/CreateTweet',
+            TW_WEBAPI_PREFIX + '/graphql/' + _CreateTweet.queryId + '/CreateTweet',
             {},
             cookie,
             1,
@@ -1637,7 +1720,7 @@ const postConversationControl = async (ctx = { cookie: {}, tweet_id: '', convers
     }
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' + (tmpMode ? _ConversationControlChange.queryId + '/ConversationControlChange' : _ConversationControlDelete.queryId + '/ConversationControlDelete'),
+            TW_WEBAPI_PREFIX + '/graphql/' + (tmpMode ? _ConversationControlChange.queryId + '/ConversationControlChange' : _ConversationControlDelete.queryId + '/ConversationControlDelete'),
             {},
             cookie,
             1,
@@ -1665,7 +1748,7 @@ const postPinTweet = async (ctx = { cookie: {}, tweet_id: '', unpin: false }, en
     }
     return await new Promise((resolve, reject) => {
         coreFetch(
-            `https://api.twitter.com/1.1/account/${unpin ? 'unpin_tweet' : 'pin_tweet'}.json`,
+            `${TW_WEBAPI_PREFIX}/1.1/account/${unpin ? 'unpin_tweet' : 'pin_tweet'}.json`,
             {},
             cookie,
             1,
@@ -1702,7 +1785,7 @@ const postRetweet = async (ctx = { cookie: {}, tweet_id: '', deleteRetweet: fals
 
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' + (deleteRetweet ? _DeleteRetweet.queryId + '/DeleteRetweet' : _CreateRetweet.queryId + '/CreateRetweet'),
+            TW_WEBAPI_PREFIX + '/graphql/' + (deleteRetweet ? _DeleteRetweet.queryId + '/DeleteRetweet' : _CreateRetweet.queryId + '/CreateRetweet'),
             {},
             cookie,
             1,
@@ -1731,7 +1814,7 @@ const postBookmark = async (ctx = { cookie: {}, tweet_id: '', deleteBookmark: fa
 
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' + (deleteBookmark ? _DeleteBookmark.queryId + '/DeleteBookmark' : _CreateBookmark.queryId + '/CreateBookmark'),
+            TW_WEBAPI_PREFIX + '/graphql/' + (deleteBookmark ? _DeleteBookmark.queryId + '/DeleteBookmark' : _CreateBookmark.queryId + '/CreateBookmark'),
             {},
             cookie,
             1,
@@ -1759,7 +1842,7 @@ const postDeleteTweet = async (ctx = { cookie: {}, tweet_id: '' }, env = {}) => 
     }
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://twitter.com/i/api/graphql/' + _DeleteTweet.queryId + '/DeleteTweet',
+            TW_WEBAPI_PREFIX + '/graphql/' + _DeleteTweet.queryId + '/DeleteTweet',
             {},
             cookie,
             1,
@@ -1800,7 +1883,7 @@ const postHomeTimeLine = async (ctx = { cookie: {}, count: 20, cursor: '', isFor
     }
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' + (isForYou ? _HomeTimeline.queryId + '/HomeTimeline' : _HomeLatestTimeline.queryId + '/HomeLatestTimeline'),
+            TW_WEBAPI_PREFIX + '/graphql/' + (isForYou ? _HomeTimeline.queryId + '/HomeTimeline' : _HomeLatestTimeline.queryId + '/HomeLatestTimeline'),
             {},
             cookie,
             1,
@@ -1833,7 +1916,8 @@ const getBookmark = async (ctx = { cookie: {}, count: 20, cursor: '' }, env = {}
     }
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' +
+            TW_WEBAPI_PREFIX +
+                '/graphql/' +
                 _Bookmarks.queryId +
                 '/Bookmarks?' +
                 new URLSearchParams({
@@ -1869,7 +1953,8 @@ const getTweetAnalytics = async (ctx = { cookie: {}, tweet_id: '', time_range_fr
     }
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' +
+            TW_WEBAPI_PREFIX +
+                '/graphql/' +
                 _TweetActivityQuery.queryId +
                 '/TweetActivityQuery?' +
                 new URLSearchParams({
@@ -1898,7 +1983,7 @@ const postFollow = async (ctx = { cookie: {}, uid: '', follow: true }, env = {})
 
     return await new Promise((resolve, reject) => {
         coreFetch(
-            `https://twitter.com/i/api/1.1/friendships/${follow ? 'create' : 'destroy'}.json`,
+            TW_WEBAPI_PREFIX + `/1.1/friendships/${follow ? 'create' : 'destroy'}.json`,
             {},
             cookie,
             1,
@@ -1937,7 +2022,7 @@ const postLike = async (ctx = { cookie: {}, tweet_id: '', like: true }, env = {}
 
     return await new Promise((resolve, reject) => {
         coreFetch(
-            'https://api.twitter.com/graphql/' + (like ? _FavoriteTweet.queryId + '/FavoriteTweet' : _UnfavoriteTweet.queryId + '/UnfavoriteTweet'),
+            TW_WEBAPI_PREFIX + '/graphql/' + (like ? _FavoriteTweet.queryId + '/FavoriteTweet' : _UnfavoriteTweet.queryId + '/UnfavoriteTweet'),
             {},
             cookie,
             1,
@@ -1960,6 +2045,8 @@ const postLike = async (ctx = { cookie: {}, tweet_id: '', like: true }, env = {}
 //ANONYMOUS
 export {
     axios as AxiosFetch,
+    generateCsrfToken,
+    preCheckCtx,
     getToken,
     coreFetch,
     getUserInfo,

@@ -2,6 +2,8 @@
 // @BANKA2017 && NEST.MOE
 // Archive()
 
+// TODO fix guest token && oauth token
+
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 
 import { getAudioSpace, getBroadcast, getFollowingOrFollowers, getImage, getLiveVideoStream, getPollResult, getTweets, AxiosFetch } from '../../libs/core/Core.fetch.mjs'
@@ -145,9 +147,9 @@ if (existsSync(basePath + '/savedata/data.json')) {
 let uid = UserData.account_info?.uid || null
 
 //get init token
-global.guest_token = new GuestToken()
+global.guest_token = new GuestToken('android')
 global.legacy_guest_token = new GuestToken()
-await global.guest_token.updateGuestToken(1)
+await global.guest_token.updateGuestToken(global.guest_token?.open_account?.authorization)
 await global.legacy_guest_token.updateGuestToken(0)
 
 if (global.guest_token.token.nextActiveTime) {

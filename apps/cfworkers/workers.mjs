@@ -14,16 +14,20 @@ const workersApi = Router()
 
 // middleware
 const updateToken = async (req, env) => {
-    if (new URL(req.url).pathname === '/favicon.ico') {
+    const parseRequest = new URL(req.url)
+    if (['/favicon.ico', '/robots.txt'].includes(parseRequest.pathname)) {
         return
-    }
-    //req.guest_token = JSON.parse((await env.kv.get('guest_token'))??'{}')// { token: {} }//new GuestToken
-    env.guest_token2 = JSON.parse((await env.kv.get('guest_token2')) ?? '{}') //new GuestToken
-    //if (!req.guest_token?.token || req.guest_token.expire < Date.now) {
-    //    req.guest_token = await updateGuestToken(env, 'guest_token', 0, true)
-    //}
-    if (!env.guest_token2?.token || env.guest_token2.expire < Date.now) {
-        env.guest_token2 = await updateGuestToken(env, 'guest_token2', 1, true)
+    } else if (parseRequest.pathname.startsWith('/media/') || parseRequest.pathname.startsWith('/amplify_video/') || parseRequest.pathname.startsWith('/ext_tw_video/')) {
+        return
+    } else {
+        //req.guest_token = JSON.parse((await env.kv.get('guest_token'))??'{}')// { token: {} }//new GuestToken
+        env.guest_token2 = JSON.parse((await env.kv.get('guest_token2')) ?? '{}') //new GuestToken
+        //if (!req.guest_token?.token || req.guest_token.expire < Date.now) {
+        //    req.guest_token = await updateGuestToken(env, 'guest_token', 0, true)
+        //}
+        if (!env.guest_token2?.token || env.guest_token2.expire < Date.now) {
+            env.guest_token2 = await updateGuestToken(env, 'guest_token2', 1, true)
+        }
     }
 }
 

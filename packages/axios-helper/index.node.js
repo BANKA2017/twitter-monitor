@@ -4,7 +4,7 @@ import { Agent as httpsAgent } from 'https'
 import { Agent as httpAgent } from 'http'
 import { DEFAULT_CIPHERS } from 'tls'
 
-const axiosFetch = (config) => {
+const axiosFetch = (config = {}) => {
     const HTTPS_PROXY = process.env.https_proxy || process.env.HTTPS_PROXY || ''
     const HTTP_PROXY = process.env.http_proxy || process.env.HTTP_PROXY || ''
 

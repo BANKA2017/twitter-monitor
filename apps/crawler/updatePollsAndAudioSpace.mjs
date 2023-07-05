@@ -1,3 +1,5 @@
+// TODO fix guest token && oauth token
+
 import V2TwitterPolls from '../../libs/model/twitter_monitor/v2_twitter_polls.js'
 import V2TwitterCards from '../../libs/model/twitter_monitor/v2_twitter_cards.js'
 import { Op } from 'sequelize'

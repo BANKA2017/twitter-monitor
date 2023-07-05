@@ -7,7 +7,9 @@ const json = (data, status = 200) => ({
 })
 
 const updateGuestToken = async (env, k, tokenType = 0, update = true, type = '') => {
-    if (type) {
+    if (update) {
+        env[`${k}_handle`].updateRateLimit(type, 0)
+    } else if (type) {
         env[`${k}_handle`].updateRateLimit(type)
     }
     return {}

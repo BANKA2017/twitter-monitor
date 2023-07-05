@@ -1,3 +1,4 @@
+import { getBearerToken, postOpenAccount, postOpenAccountInit } from './Core.android.mjs'
 import { getToken, postFlowTask, getJsInstData, getViewer } from './Core.fetch.mjs'
 //import * as twitter_text from 'twitter-text'
 
@@ -44,8 +45,40 @@ export class GuestToken {
     #guest_token = {}
     heartBeat
     errorCount = 10
-    constructor() {}
+    open_account = {}
+    type = 'browser'
+    constructor(type = 'browser') {
+        this.type = type
+        this.open_account = {}
+    }
+    async openAccountInit() {
+        console.log(`[${new Date()}]: #GuestToken Update open account`)
+        try {
+            //TODO error
+            this.open_account.authorization = ((token) => token.data?.token_type + ' ' + token.data?.access_token)(await getBearerToken())
+            await this.updateGuestToken(this.open_account.authorization)
+            if (this.type === 'android') {
+                const onboardingResponse = (await postOpenAccountInit({ guest_token: this.#guest_token, authorization: this.open_account.authorization })).data
+                let flowToken = onboardingResponse.flow_token
+                const OpenAccount = (await postOpenAccount({ guest_token: this.#guest_token, authorization: this.open_account.authorization, flow_token: flowToken })).data
+                this.open_account.oauth_token = OpenAccount.subtasks[0].open_account.oauth_token
+                this.open_account.oauth_token_secret = OpenAccount.subtasks[0].open_account.oauth_token_secret
+                const OpenAccountUser = OpenAccount.subtasks[0].open_account.user
+                this.#guest_token.open_account = this.open_account
+                console.log(`[${new Date()}]: #GuestToken Successful get account @${OpenAccountUser.screen_name}`)
+            }
+        } catch (e) {
+            console.error(e)
+        }
+
+        return this
+    }
     async updateGuestToken(authorizationMode = 0) {
+        // init authorizationMode not string
+        if (['android', 'android_bearer'].includes(this.type) && typeof authorizationMode !== 'string') {
+            await this.openAccountInit()
+            return this
+        }
         const now = Date.now()
         if (
             (!this.#guest_token.nextActiveTime || (this.#guest_token.nextActiveTime && this.#guest_token.nextActiveTime < now)) &&
@@ -67,6 +100,9 @@ export class GuestToken {
                 this.heartBeat = now
                 this.errorCount = 10
             }
+        }
+        if (this.type === 'android') {
+            this.#guest_token.open_account = this.open_account
         }
         //console.log({...this.#guest_token.rate_limit, ...{expire: this.#guest_token.expire}})
         return this

@@ -1,4 +1,5 @@
 import { getToken } from '../../libs/core/Core.fetch.mjs'
+import { GuestToken } from '../../libs/core/Core.function.mjs'
 
 const json = (data) =>
     new Response(JSON.stringify(data), {
@@ -11,7 +12,9 @@ const json = (data) =>
 //Type is useless in cfworkers api
 const updateGuestToken = async (env, k, tokenType = 0, update = true, type = '') => {
     if (update) {
-        const tmpToken = await getToken(tokenType)
+        const handle = new GuestToken('android')
+        await handle.updateGuestToken(handle.open_account.authorization)
+        const tmpToken = handle.token //  await getToken()
         if (tmpToken.success) {
             await env.kv.put(k, JSON.stringify(tmpToken), { expiration: Math.floor(tmpToken.expire / 1000) })
         }

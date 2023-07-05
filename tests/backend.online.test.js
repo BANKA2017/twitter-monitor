@@ -16,15 +16,15 @@ import { ApiOfficialTranslate } from '../apps/backend/CoreFunctions/translate/On
 import { json, updateGuestToken } from '../apps/backend/share.mjs'
 
 const mock = new MockExpress()
-global.guest_token2 = mock.guest_token2
+//global.guest_token2 = mock.guest_token2
 mock.setEnv('guest_token2_handle', mock.guest_token2)
-mock.setEnv('guest_token2', mock.guest_token2.token)
 mock.setEnv('json', json)
 mock.setEnv('updateGuestToken', updateGuestToken)
 
 test('Guest token', async () => {
-    await global.guest_token2.updateGuestToken(1)
-    expect(global.guest_token2.token.success).toBeTruthy
+    await mock.req.env.guest_token2_handle.updateGuestToken(mock.req.env.guest_token2_handle.open_account.authorization)
+    mock.setEnv('guest_token2', mock.guest_token2.token)
+    expect(mock.req.env.guest_token2_handle.token.success).toBeTruthy
 })
 
 describe('UserInfo', async () => {

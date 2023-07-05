@@ -12,7 +12,7 @@ album.use(async (req, res, next) => {
         res.json(apiTemplate(403, 'DB Mode is not included album api'))
         return
     }
-    await req.env.guest_token2_handle.updateGuestToken(1)
+    await req.env.guest_token2_handle.updateGuestToken(req.env.guest_token2_handle?.open_account?.authorization)
     if (req.env.guest_token2_handle.token.nextActiveTime) {
         console.error(`[${new Date()}]: #Album #GuestToken #429 Wait until ${req.env.guest_token2_handle.token.nextActiveTime}`)
         res.json(apiTemplate(429, `Wait until ${req.env.guest_token2_handle.token.nextActiveTime}`), {}, 'album')

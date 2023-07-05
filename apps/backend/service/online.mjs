@@ -15,7 +15,7 @@ online.use(async (req, res, next) => {
         return
     }
     //await global.guest_token2.updateGuestToken(0)
-    await req.env.guest_token2_handle.updateGuestToken(1)
+    await req.env.guest_token2_handle.updateGuestToken(req.env.guest_token2_handle?.open_account?.authorization)
     //if (global.guest_token2.token.nextActiveTime) {
     //    console.error(`[${new Date()}]: #Online #GuestToken #429 Wait until ${global.guest_token2.token.nextActiveTime}`)
     //    res.json(apiTemplate(429, `Wait until ${global.guest_token2.token.nextActiveTime}`))

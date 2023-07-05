@@ -22,11 +22,11 @@ class MockExpress {
     globalResponseCtx = {}
 
     constructor() {
-        this.guest_token2 = new GuestToken()
+        this.guest_token2 = new GuestToken('android')
     }
 
     updateGuestToken() {
-        this.guest_token2.updateGuestToken(1)
+        this.guest_token2.updateGuestToken(this.guest_token2.open_account.authorization)
     }
     init(url = '', params = [], body = '', type = '') {
         this.statusCode = 200
@@ -81,6 +81,7 @@ class MockExpress {
     }
     json = (obj) => this.responseCtx(obj)
     responseCtx = (body) => {
+        //console.log(body)
         this.globalResponseCtx = {
             body,
             status: this.statusCode,
