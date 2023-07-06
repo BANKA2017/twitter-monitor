@@ -285,6 +285,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
     }
 
     //community
+    //TODO broken in v2 timeline
     if (graphqlMode && content?.community_results) {
         community = GenerateCommunityInfo(content.community_results.result)
     }
@@ -310,6 +311,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
         tags = GenerateEntities(tmpEntities, GeneralTweetData.uid, GeneralTweetData.tweet_id, hidden)
     }
     //richtext
+    //TODO broken in v2 timeline
     if (content?.note_tweet?.note_tweet_results?.result?.richtext) {
         richtext = { richtext: content.note_tweet.note_tweet_results.result.richtext, text: GeneralTweetData.full_text_origin, entities: tags }
     }

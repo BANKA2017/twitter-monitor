@@ -47,7 +47,7 @@ const apiPathList = {
         'data.communityResults.result.community_timeline.timeline.instructions[0].entries'
     ],
     tweets_top_content: ['data.user.result.timeline_v2.timeline.instructions[2].entry', 'data.user.result.timeline.timeline.instructions[2].entry'],
-    tweet_content: ['content.itemContent.tweet_results.result', 'content.content.tweetResult.result', 'content.itemContent.tweet', 'item.itemContent.tweet_results.result', 'item.itemContent.tweet', 'content.items[0].item.content.tweetResult.result'],
+    tweet_content: ['content.itemContent.tweet_results.result', 'content.content.tweetResult.result.tweet', 'content.content.tweetResult.result',  'content.itemContent.tweet', 'item.itemContent.tweet_results.result', 'item.itemContent.tweet', 'content.items[0].item.content.tweetResult.result'],
     tweet_id: [
         'id_str',
         'rest_id',
