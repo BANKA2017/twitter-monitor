@@ -1,11 +1,10 @@
-// TODO fix guest token && oauth token
-
 import V2TwitterPolls from '../../libs/model/twitter_monitor/v2_twitter_polls.js'
 import V2TwitterCards from '../../libs/model/twitter_monitor/v2_twitter_cards.js'
 import { Op } from 'sequelize'
 import { Time2SnowFlake } from '../../libs/core/Core.tweet.mjs'
 import dbHandle from '../../libs/core/Core.db.mjs'
 import { getAudioSpace, getPollResult, getToken } from '../../libs/core/Core.fetch.mjs'
+import { GuestToken } from '../../libs/core/Core.function.mjs'
 //import { TGPush } from '../../libs/core/Core.push.mjs'
 
 const now = Math.floor(Date.now() / 1000) - 300
@@ -24,23 +23,24 @@ const polls = await V2TwitterPolls.findAll({
 
 const tweetIdList = [...new Set(polls.map((poll) => poll.origin_tweet_id))]
 
-let get_token = await getToken()
-if (!get_token.success) {
+let get_token = new GuestToken('android') // await getToken()
+await get_token.updateGuestToken(get_token.open_account.authorization)
+if (!get_token.token.success) {
     console.log('tmv3: no token #noToken #polls')
     process.exit()
 }
 
 let t = await dbHandle.twitter_monitor.transaction()
 for (const idIndex in tweetIdList) {
-    if (idIndex % 950 === 0) {
-        get_token = await getToken()
-        if (!get_token.success) {
+    if (idIndex % get_token.token.rate_limit.TweetDetail === 0) {
+        await get_token.updateGuestToken(get_token.open_account.authorization)
+        if (!get_token.token.success) {
             console.log('tmv3: no token #noToken #polls')
             process.exit()
         }
     }
     console.log(`-->${tweetIdList[idIndex]}<--`)
-    const pollData = await getPollResult({ tweet_id: tweetIdList[idIndex], guest_token: get_token })
+    const pollData = await getPollResult({ tweet_id: tweetIdList[idIndex], guest_token: get_token.token })
     if (pollData.code !== 200) {
         console.log(`tmv3: ${pollData.message} (${tweetIdList[idIndex]}) #errorpoll`)
         //TGPush(`tmv3: ${pollData.message} (${tweetIdList[idIndex]}) #errorpoll`)
@@ -87,8 +87,16 @@ const AudioSpaces = await V2TwitterCards.findAll({
 const audioSpaceList = [...new Set(AudioSpaces.map((AudioSpace) => AudioSpace.url))]
 
 t = await dbHandle.twitter_monitor.transaction()
-for (const audioSpaceId of audioSpaceList) {
-    const tmpAudioSpaceResult = await getAudioSpace({ id: audioSpaceId, guest_token: get_token })
+for (const idIndex in audioSpaceList) {
+    if (idIndex % get_token.token.rate_limit.AudioSpaceById === 0) {
+        await get_token.updateGuestToken(get_token.open_account.authorization)
+        if (!get_token.token.success) {
+            console.log('tmv3: no token #noToken #polls')
+            process.exit()
+        }
+    }
+    const audioSpaceId = audioSpaceList[idIndex]
+    const tmpAudioSpaceResult = await getAudioSpace({ id: audioSpaceId, guest_token: get_token.token })
     if (tmpAudioSpaceResult.data.data.audioSpace.metadata) {
         await V2TwitterCards.update(
             {

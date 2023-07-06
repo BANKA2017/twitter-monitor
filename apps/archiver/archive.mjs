@@ -2,8 +2,6 @@
 // @BANKA2017 && NEST.MOE
 // Archive()
 
-// TODO fix guest token && oauth token
-
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 
 import { getAudioSpace, getBroadcast, getFollowingOrFollowers, getImage, getLiveVideoStream, getPollResult, getTweets, AxiosFetch } from '../../libs/core/Core.fetch.mjs'
@@ -156,7 +154,7 @@ if (global.guest_token.token.nextActiveTime) {
     //await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
     console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
     await Sleep(global.guest_token.token.nextActiveTime - Date.now())
-    await global.guest_token.updateGuestToken(1)
+    await global.guest_token.updateGuestToken(global.guest_token?.open_account?.authorization)
     if (!global.guest_token.token.success) {
         process.exit()
     }
@@ -206,7 +204,7 @@ if (activeFlags.tweet) {
         const query = [`from:${name}`, 'include:replies', 'include:nativeretweets', 'include:retweets', 'include:quote', `since_id:${cursor.tweets.tmpId ? cursor.tweets.tmpId : 0}`].join(' ')
         console.log(`archiver: query string -->${query}<--`)
         do {
-            await global.guest_token.updateGuestToken(1)
+            await global.guest_token.updateGuestToken(global.guest_token?.open_account?.authorization)
             if (global.guest_token.token.nextActiveTime) {
                 //await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
                 console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
@@ -225,6 +223,7 @@ if (activeFlags.tweet) {
                     withReply: true
                 })
                 global.guest_token.updateRateLimit('Search')
+                console.log(JSON.stringify(tweets.data))
             } catch (e) {
                 //try again
                 console.log('archiver: first retry...')
@@ -424,7 +423,7 @@ if (activeFlags.broadcast) {
             console.log(`archiver: broadcast (${broadcastsCards.length})`)
 
             const tmpCardsList = broadcastsCards.splice(0, 100)
-            await global.guest_token.updateGuestToken(1)
+            await global.guest_token.updateGuestToken(global.guest_token?.open_account?.authorization)
             const broadcasts = await getBroadcast({
                 id: tmpCardsList.map((card) => card.url.replaceAll(/.*\/([^\/\?#]+)(?:$|\?.*|#.*)/gm, '$1')),
                 guest_token: global.guest_token.token
@@ -531,7 +530,7 @@ if (activeFlags.space) {
             console.log(`archiver: audiospace (${audiospacesCards.length})`)
 
             const tmpCardsList = audiospacesCards.splice(0, 100)
-            await global.guest_token.updateGuestToken(1)
+            await global.guest_token.updateGuestToken(global.guest_token?.open_account?.authorization)
             const audiospaces = await getAudioSpace({ id: tmpCardsList.map((card) => card.url), guest_token: global.guest_token.token })
             global.guest_token.updateRateLimit('AudioSpaceById', 100)
 

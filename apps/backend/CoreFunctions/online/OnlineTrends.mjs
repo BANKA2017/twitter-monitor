@@ -7,7 +7,7 @@ const ApiTrends = async (req, env) => {
         const tmpTrendsRequest = await getTrends({ initial_tab_id: 'trends', count: 20, guest_token: env.guest_token2 })
 
         //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 1, tmpTrendsRequest.headers.get('x-rate-limit-remaining') < 20, 'Trending')
+        await env.updateGuestToken(env, 'guest_token2', 1, tmpTrendsRequest.headers.get('x-rate-limit-remaining') < 1, 'Trending')
 
         tmpTrends = tmpTrendsRequest.data.timeline.instructions[1].addEntries.entries
             .find((entity) => entity.entryId === 'trends')

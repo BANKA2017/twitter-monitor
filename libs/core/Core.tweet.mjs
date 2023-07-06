@@ -37,8 +37,8 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
                     objectForReturn.contents = objectForReturn.contents
                         .concat(tmpTweet.entries)
                         .filter((content) => content.entryId.startsWith('tweet-') || content.entryId.startsWith('conversationthread-') || content.entryId.startsWith('profile-conversation'))
-                    objectForReturn.tweetRange.max = path2array('tweet_id', objectForReturn.contents[0]) || 0
-                    objectForReturn.tweetRange.min = path2array('tweet_id', objectForReturn.contents.slice(-1)[0]) || 0
+                    objectForReturn.tweetRange.max = (objectForReturn.contents[0].entryId || '0').replace(/.*\-(\d+)/, '$1') //path2array('tweet_id', objectForReturn.contents[0]) || 0
+                    objectForReturn.tweetRange.min = (objectForReturn.contents.slice(-1)[0].entryId || '0').replace(/.*\-(\d+)/, '$1') //path2array('tweet_id', objectForReturn.contents.slice(-1)[0]) || 0
                     //users from tweets
                     objectForReturn.users = Object.fromEntries(
                         tmpTweet.entries
@@ -70,8 +70,10 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
                 } else if (tmpTweet.type === 'TimelinePinEntry' || tmpTweet.__typename === 'TimelinePinEntry') {
                     objectForReturn.contents.push(tmpTweet.entry)
                 } else if (tmpTweet.type === 'TimelineReplaceEntry' || tmpTweet.__typename === 'TimelineReplaceEntry') {
-                    if (tmpTweet.entry_id_to_replace.startsWith('cursor-')) {
+                    if (tmpTweet.entry_id_to_replace?.startsWith('cursor-')) {
                         cursorList.push(tmpTweet.entry)
+                    } else if ((tmpTweet.entries || []).some((content) => content.entryId.startsWith('cursor-'))) {
+                        cursorList = tmpTweet.entries.filter((content) => content.entryId.startsWith('cursor-'))
                     }
                 }
             }
@@ -87,8 +89,10 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
                             value: tmpCursor.content.itemContent.value
                         }
                     }
+                } else if (tmpCursor?.content?.content) {
+                    tmpCursor = tmpCursor.content
                 }
-                if (tmpCursor.content.entryType !== 'TimelineTimelineCursor') {
+                if (tmpCursor.content.entryType !== 'TimelineTimelineCursor' && tmpCursor.content.__typename !== 'TimelineTimelineCursor') {
                     continue
                 }
                 if (tmpCursor.content.cursorType === 'Top') {
@@ -340,8 +344,39 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
 
     //card
     const tmpCard = path2array('tweet_card_path', content)
-    if (tmpCard) {
-        const cardObject = GetCard(tmpCard, GeneralTweetData.uid, GeneralTweetData.tweet_id, cardUrl, graphqlMode, hidden, online)
+
+    if (tmpCard || content.voice_info) {
+        let cardObject
+        if (tmpCard) {
+            cardObject = GetCard(tmpCard, GeneralTweetData.uid, GeneralTweetData.tweet_id, cardUrl, graphqlMode, hidden, online)
+        } else if (content.voice_info) {
+            //audio space for V2 response
+            cardObject = {
+                supported: true,
+                card_name: 'audiospace',
+                message: 'Success',
+                card_type: 'audiospace',
+                data: {
+                    type: 'audiospace', //类型
+                    secondly_type: '', //子类型
+                    title: content.voice_info.audio_space_title, //标题
+                    description: '', //简介
+                    vanity_url: '', //用于展示的域名
+                    url: content.voice_info.audio_space_id, //实际域名
+                    media: 0, //是否有媒体
+                    unified_card_app: 0,
+                    poll: 0, //是否有投票
+                    uid: GeneralTweetData.uid,
+                    tweet_id: GeneralTweetData.tweet_id,
+                    hidden,
+                    polls: []
+                },
+                poll: 0,
+                media: [],
+                app_data: []
+            }
+        }
+
         GeneralTweetData.card = cardObject.card_type
         GeneralTweetData.poll = cardObject.poll
         card = cardObject.data

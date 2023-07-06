@@ -24,7 +24,7 @@ import {
     _ListBySlug,
     _ListLatestTweetsTimeline,
     _ListMembers,
-    _SearchTimeline,
+    _SearchTimeline as _SearchTimelineWeb,
     _TweetActivityQuery,
     _TweetDetail,
     _TweetEditHistory,
@@ -43,6 +43,7 @@ import GetMine from 'get-mime'
 import { MockDocument } from '../share/MockFuntions.mjs'
 import { parse } from 'acorn'
 import { getOauthAuthorization } from './Core.android.mjs'
+import { _ConversationTimelineV2, _SearchTimeline, _TranslateProfileQuery, _TranslateTweetQuery, _UserWithProfileTweetsAndRepliesQueryV2, _UserWithProfileTweetsQueryV2 } from '../assets/graphql/androidQueryIdList.js'
 
 const generateCsrfToken = async () => {
     // @ts-ignore
@@ -62,6 +63,8 @@ const TW_AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAAPYXBAAAAAAACLXUNDekMxqa8h%
 
 const TW_AUTHORIZATION2 = 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA' //new token
 
+const TW_AUTHORIZATION3 = 'Bearer AAAAAAAAAAAAAAAAAAAAAIK1zgAAAAAA2tUWuhGZ2JceoId5GwYWU5GspY4%3DUq7gzFoCZs1QfwGoVdvSac3IniczZEYXIcDyumCauIXpcAPorE' //another token
+
 //for tweetdeck, but useless until login
 // const TWEETDECK_AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAAF7aAAAAAAAASCiRjWvh7R5wxaKkFp7MM%2BhYBqM%3DbQ0JPmjU9F6ZoMhDfI4uTNAaQuTDm2uO9x3WFVr2xBZ2nhjdP0' //tweetdeck
 // const TWEETDECK_AUTHORIZATION2 = 'Bearer AAAAAAAAAAAAAAAAAAAAAFQODgEAAAAAVHTp76lzh3rFzcHbmHVvQxYYpTw%3DckAlMINMjmCwxUcaXbAN4XqJVdgMJaHqNOFgPMK0zN1qLqLQCF' //new tweetdeck
@@ -70,7 +73,7 @@ const TW_WEBAPI_PREFIX = 'https://api.twitter.com'
 const TW_ANDROID_PREFIX = 'https://global.albtls.t.co'
 const TW_ANDROID_SEARCH_PREFIX = 'https://na.albtls.t.co'
 
-const Authorization = [TW_AUTHORIZATION, TW_AUTHORIZATION2]
+const Authorization = [TW_AUTHORIZATION, TW_AUTHORIZATION2, TW_AUTHORIZATION3]
 const ct0 = await generateCsrfToken()
 
 const axios = axiosFetch()
@@ -183,21 +186,21 @@ const getToken = async (authorization = 0) => {
         code: -1000,
         cookies: {},
         rate_limit: {
-            UserByRestId: 470, //500
-            UserByScreenName: 470, //500
-            UserTweets: 470, //500
-            TweetDetail: 470, //500//poll also use this
-            AudioSpaceById: 470, //500
+            UserByRestId: 495, //500
+            UserByScreenName: 495, //500
+            UserTweets: 495, //500
+            TweetDetail: 495, //500//poll also use this
+            AudioSpaceById: 495, //500
             BroadCast: 180, //187
-            Search: 195, //200 graphql && 245,//250 restful
+            Search: 49, // 50 Android app && 195,// 200 graphql && 245,//250 restful
             Recommendation: 55, //60,
-            Translation: 180, //187
+            Translation: 495, // graphql in Android app 180, //187 1.1
             Trending: 19990, //20000
-            ListInfo: 470, //500
-            ListMember: 470, //500
-            ListTimeLime: 470, //500
-            CommunityInfo: 470, //500
-            CommunityTimeLime: 470, //500
+            ListInfo: 495, //500
+            ListMember: 495, //500
+            ListTimeLime: 495, //500
+            CommunityInfo: 495, //500
+            CommunityTimeLime: 495, //500
             Login: 180 //187
         },
         expire: Date.now() + 870000 //15 min
@@ -451,11 +454,12 @@ const getTweets = async (
         searchMode: false,
         withReply: false,
         cookie: {},
-        authorization: 1
+        authorization: 1,
+        web: false
     },
     env = {}
 ) => {
-    let { queryString, cursor, guest_token, count, online, graphqlMode, searchMode, withReply, cookie, authorization } = preCheckCtx(ctx, {
+    let { queryString, cursor, guest_token, count, online, graphqlMode, searchMode, withReply, cookie, authorization, web } = preCheckCtx(ctx, {
         queryString: '',
         cursor: '',
         guest_token: {},
@@ -465,7 +469,8 @@ const getTweets = async (
         searchMode: false,
         withReply: false,
         cookie: {},
-        authorization: 1
+        authorization: 1,
+        web: false
     })
     count = count ? count : cursor ? 499 : online ? 40 : graphqlMode ? 499 : 999
     if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
@@ -481,21 +486,36 @@ const getTweets = async (
     //网页版使用的
     //https://api.twitter.com/2/timeline/conversation/:uid.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_composer_source=true&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweets=true&count=20&ext=mediaStats%2CcameraMoment
     if (graphqlMode && !searchMode) {
-        let graphqlVariables = {
-            userId: queryString,
-            count,
-            withTweetQuoteCount: true,
-            withQuickPromoteEligibilityTweetFields: true,
-            withSuperFollowsUserFields: true,
-            withSuperFollowsTweetFields: true,
-            withDownvotePerspective: false,
-            withReactionsMetadata: false,
-            includePromotedContent: true,
-            withReactionsPerspective: false,
-            withUserResults: false,
-            withVoice: true,
-            withNonLegacyCard: true,
-            withV2Timeline: true
+        let graphqlVariables = {}
+
+        if (web) {
+            graphqlVariables = {
+                userId: queryString,
+                count,
+                withTweetQuoteCount: true,
+                withQuickPromoteEligibilityTweetFields: true,
+                withSuperFollowsUserFields: true,
+                withSuperFollowsTweetFields: true,
+                withDownvotePerspective: false,
+                withReactionsMetadata: false,
+                includePromotedContent: true,
+                withReactionsPerspective: false,
+                withUserResults: false,
+                withVoice: true,
+                withNonLegacyCard: true,
+                withV2Timeline: true // might cause count 'limit <= 20'
+            }
+        } else {
+            graphqlVariables = {
+                includeTweetImpression: true,
+                includeHasBirdwatchNotes: false,
+                includeEditPerspective: false,
+                includeEditControl: true,
+                count,
+                rest_id: queryString,
+                includeTweetVisibilityNudge: true,
+                autoplay_enabled: true
+            }
         }
 
         if (cursor) {
@@ -506,10 +526,16 @@ const getTweets = async (
             coreFetch(
                 TW_WEBAPI_PREFIX +
                     '/graphql/' +
-                    (withReply ? _UserTweetsAndReplies.queryId + '/UserTweetsAndReplies?' : _UserTweets.queryId + '/UserTweets?') +
+                    (web
+                        ? withReply
+                            ? _UserTweetsAndReplies.queryId + '/UserTweetsAndReplies?'
+                            : _UserTweets.queryId + '/UserTweets?'
+                        : withReply
+                        ? _UserWithProfileTweetsAndRepliesQueryV2.queryId + '/UserWithProfileTweetsAndRepliesQueryV2?'
+                        : _UserWithProfileTweetsQueryV2.queryId + '/UserWithProfileTweetsQueryV2?') +
                     new URLSearchParams({
                         variables: JSON.stringify(graphqlVariables),
-                        features: JSON.stringify(withReply ? _UserTweetsAndReplies.features : _UserTweets.features)
+                        features: JSON.stringify(web ? (withReply ? _UserTweetsAndReplies.features : _UserTweets.features) : withReply ? _UserWithProfileTweetsAndRepliesQueryV2.features : _UserWithProfileTweetsQueryV2.features)
                     }).toString(),
                 guest_token,
                 cookie,
@@ -565,26 +591,30 @@ const getTweets = async (
             ext: 'mediaStats,highlightedLabel,hasNftAvatar,voiceInfo,birdwatchPivot,enrichments,superFollowMetadata,unmentionInfo,editControl,vibe'
         }
         //https://abs.twimg.com/responsive-web/client-web/shared~ondemand.SettingsInternals~bundle.Place~bundle.Search~bundle.QuoteTweetActivity.431ada6a.js
-        //let graphqlVariables = {
-        //    rawQuery: queryString.trim(),
-        //    count,
-        //    product: 'Latest', //Top, People, Photos, Videos, Latest
-        //    withDownvotePerspective: false,
-        //    withReactionsMetadata: false,
-        //    withReactionsPerspective: false
-        //}
 
-        //TODO fix web version
+        let graphqlVariables = {}
 
-        let graphqlVariables = {
-            includeTweetImpression: true,
-            query_source: 'typed_query',
-            includeHasBirdwatchNotes: false,
-            includeEditPerspective: false,
-            includeEditControl: true,
-            query: queryString.trim(),
-            timeline_type: 'Latest'
+        if (web) {
+            graphqlVariables = {
+                timeline_type: 'Latest',
+                rawQuery: queryString.trim(),
+                count,
+                product: 'Latest', //Top, People, Photos, Videos, Latest
+                withDownvotePerspective: false,
+                withReactionsMetadata: false,
+                withReactionsPerspective: false
+            }
+        } else {
+            graphqlVariables = {
+                includeTweetImpression: true,
+                query_source: 'typed_query',
+                includeHasBirdwatchNotes: false,
+                includeEditPerspective: false,
+                includeEditControl: true,
+                query: queryString.trim()
+            }
         }
+
         if (cursor) {
             graphqlVariables['cursor'] = cursor
         }
@@ -592,28 +622,11 @@ const getTweets = async (
             coreFetch(
                 TW_ANDROID_PREFIX +
                     '/graphql/' +
-                    'G8jKRx5LiyrRDs5FcsUjsw' + //_SearchTimeline.queryId +
+                    (web ? _SearchTimelineWeb.queryId : _SearchTimeline.queryId) +
                     '/SearchTimeline?' +
                     new URLSearchParams({
                         variables: JSON.stringify(graphqlVariables),
-                        features: JSON.stringify({
-                            longform_notetweets_inline_media_enabled: true,
-                            super_follow_badge_privacy_enabled: true,
-                            longform_notetweets_rich_text_read_enabled: true,
-                            super_follow_user_api_enabled: true,
-                            unified_cards_ad_metadata_container_dynamic_card_content_query_enabled: true,
-                            super_follow_tweet_api_enabled: true,
-                            android_graphql_skip_api_media_color_palette: true,
-                            creator_subscriptions_tweet_preview_api_enabled: true,
-                            freedom_of_speech_not_reach_fetch_enabled: true,
-                            creator_subscriptions_subscription_count_enabled: true,
-                            tweetypie_unmention_optimization_enabled: true,
-                            longform_notetweets_consumption_enabled: true,
-                            subscriptions_verification_info_enabled: true,
-                            blue_business_profile_image_shape_enabled: true,
-                            tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: true,
-                            super_follow_exclusive_tweet_notifications_enabled: true
-                        }) //JSON.stringify(_SearchTimeline.features)
+                        features: JSON.stringify(web ? _SearchTimelineWeb.features : _SearchTimeline.features)
                     }).toString(),
                 guest_token,
                 cookie,
@@ -652,14 +665,15 @@ const getTweets = async (
     }
 }
 
-const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMode: true, authorization: 1, cursor: '', cookie: {} }, env = {}) => {
-    let { tweet_id, guest_token, graphqlMode, authorization, cursor, cookie } = preCheckCtx(ctx, {
+const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMode: true, authorization: 1, cursor: '', cookie: {}, web: false }, env = {}) => {
+    let { tweet_id, guest_token, graphqlMode, authorization, cursor, cookie, web } = preCheckCtx(ctx, {
         tweet_id: '',
         guest_token: {},
         graphqlMode: true,
         authorization: 1,
         cursor: '',
-        cookie: {}
+        cookie: {},
+        web: false
     })
     if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
@@ -670,20 +684,35 @@ const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMod
         return await Promise.allSettled(tweet_id.map((tweetId) => getConversation({ tweet_id: tweetId, guest_token, graphqlMode, authorization, cursor, cookie })))
     }
     if (graphqlMode) {
-        let graphqlVariables = {
-            focalTweetId: tweet_id,
-            with_rux_injections: false,
-            includePromotedContent: true,
-            withCommunity: true,
-            withQuickPromoteEligibilityTweetFields: true,
-            withBirdwatchNotes: true,
-            withSuperFollowsUserFields: true,
-            withDownvotePerspective: false,
-            withReactionsMetadata: false,
-            withReactionsPerspective: false,
-            withSuperFollowsTweetFields: true,
-            withVoice: true,
-            withV2Timeline: true
+        let graphqlVariables = {}
+        if (web) {
+            graphqlVariables = {
+                focalTweetId: tweet_id,
+                with_rux_injections: false,
+                includePromotedContent: true,
+                withCommunity: true,
+                withQuickPromoteEligibilityTweetFields: true,
+                withBirdwatchNotes: true,
+                withSuperFollowsUserFields: true,
+                withDownvotePerspective: false,
+                withReactionsMetadata: false,
+                withReactionsPerspective: false,
+                withSuperFollowsTweetFields: true,
+                withVoice: true,
+                withV2Timeline: true
+            }
+        } else {
+            graphqlVariables = {
+                referrer: 'profile',
+                includeTweetImpression: true,
+                includeHasBirdwatchNotes: false,
+                isReaderMode: false,
+                includeEditPerspective: false,
+                includeEditControl: true,
+                focalTweetId: tweet_id,
+                includeCommunityTweetRelationship: true,
+                includeTweetVisibilityNudge: true
+            }
         }
         if (cursor) {
             graphqlVariables.cursor = cursor
@@ -691,7 +720,10 @@ const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMod
 
         return await new Promise((resolve, reject) => {
             coreFetch(
-                TW_WEBAPI_PREFIX + '/graphql/' + _TweetDetail.queryId + '/TweetDetail?' + new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_TweetDetail.features) }).toString(),
+                TW_WEBAPI_PREFIX +
+                    '/graphql/' +
+                    (web ? _TweetDetail.queryId + '/TweetDetail?' : _ConversationTimelineV2.queryId + '/ConversationTimelineV2?') +
+                    new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(web ? _TweetDetail.features : _ConversationTimelineV2.features) }).toString(),
                 guest_token,
                 cookie,
                 authorization
@@ -1176,9 +1208,18 @@ const getTranslate = async (ctx = { id: '0', type: 'tweets', target: 'en', guest
     }
     return await new Promise((resolve, reject) => {
         const url = graphqlMode
-            ? type === 'profile'
-                ? `${TW_WEBAPI_PREFIX}/graphql/w9iN3QyYsynBlEXr9h6M2Q/TranslateProfileQuery?variables=%7B%22includeTweetImpression%22%3Atrue%2C%22includeHasBirdwatchNotes%22%3Afalse%2C%22includeEditPerspective%22%3Afalse%2C%22includeEditControl%22%3Atrue%2C%22rest_id%22%3A${id}%7D`
-                : `${TW_WEBAPI_PREFIX}/graphql/hE1HCUzioO9QSLpvIBvvYA/TranslateTweetQuery?variables=%7B%22includeTweetImpression%22%3Atrue%2C%22includeHasBirdwatchNotes%22%3Afalse%2C%22includeEditPerspective%22%3Afalse%2C%22tweet_id%22%3A${id}%2C%22includeEditControl%22%3Atrue%7`
+            ? TW_WEBAPI_PREFIX +
+              '/graphql/' +
+              (type === 'profile' ? _TranslateProfileQuery.queryId + '/TranslateProfileQuery' : _TranslateTweetQuery.queryId + '/TranslateTweetQuery?') +
+              new URLSearchParams({
+                  variables: JSON.stringify({
+                      includeTweetImpression: true,
+                      includeHasBirdwatchNotes: false,
+                      includeEditPerspective: false,
+                      includeEditControl: true,
+                      ...(type === 'profile' ? { rest_id: id } : { tweet_id: id })
+                  })
+              })
             : type === 'profile'
             ? `${TW_WEBAPI_PREFIX}/1.1/strato/column/None/profileUserId=${id},destinationLanguage=None,translationSource=Some(Google)/translation/service/translateProfile`
             : `${TW_WEBAPI_PREFIX}/1.1/strato/column/None/tweetId=${id},destinationLanguage=None,translationSource=Some(Google),feature=None,timeout=None,onlyCached=None/translation/service/translateTweet`

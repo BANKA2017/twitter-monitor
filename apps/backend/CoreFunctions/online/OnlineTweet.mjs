@@ -44,7 +44,7 @@ const ApiTweets = async (req, env) => {
                 cursor: isNaN(cursor) ? (cursor ? cursor : '') : ''
             })
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20, 'ListTimeLime')
+            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 1, 'ListTimeLime')
         } catch (e) {
             console.log(e)
             console.error(`[${new Date()}]: #OnlineListTimeline #${tweet_id} #${e.code} ${e.message}`)
@@ -61,7 +61,7 @@ const ApiTweets = async (req, env) => {
                 cursor: isNaN(cursor) ? (cursor ? cursor : '') : ''
             })
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20, 'CommunityTimeLime')
+            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 1, 'CommunityTimeLime')
         } catch (e) {
             console.log(e)
             console.error(`[${new Date()}]: #OnlineCommunityTimeline #${tweet_id} #${e.code} ${e.message}`)
@@ -71,7 +71,7 @@ const ApiTweets = async (req, env) => {
         try {
             tweets = await getConversation({ tweet_id, guest_token: env.guest_token2, graphqlMode: true, cursor: isNaN(cursor) ? cursor : '' })
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20, 'TweetDetail')
+            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
         } catch (e) {
             console.error(`[${new Date()}]: #OnlineTweetsConversation #${tweet_id} #${e.code} ${e.message}`)
             return env.json(apiTemplate(e.code, e.message))
@@ -136,7 +136,7 @@ const ApiTweets = async (req, env) => {
             //tweets = await getTweets(queryArray.join(' '), '', global.guest_token2.token, count, true, false, true)
 
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20, 'UserTweets')
+            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 1, 'UserTweets')
         } catch (e) {
             console.error(`[${new Date()}]: #OnlineTweetsTimeline #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
             return env.json(apiTemplate(e.code, e.message))
@@ -250,7 +250,7 @@ const ApiSearch = async (req, env) => {
             searchMode: true
         })
         //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20, 'Search')
+        await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 1, 'Search')
     } catch (e) {
         console.error(`[${new Date()}]: #OnlineTweetsSearch #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
         return env.json(apiTemplate(e.code, e.message))
@@ -278,7 +278,7 @@ const ApiPoll = async (req, env) => {
     const tmpPollData = await getPollResult({ tweet_id, guest_token: env.guest_token2 })
 
     //updateGuestToken
-    await env.updateGuestToken(env, 'guest_token2', 1, tmpPollData.headers.get('x-rate-limit-remaining') < 20, 'TweetDetail')
+    await env.updateGuestToken(env, 'guest_token2', 1, tmpPollData.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
     if (tmpPollData.code === 200) {
         return env.json(
             apiTemplate(
@@ -301,7 +301,7 @@ const ApiAudioSpace = async (req, env) => {
     const tmpAudioSpaceData = await getAudioSpace({ id, guest_token: env.guest_token2 })
 
     //updateGuestToken
-    await env.updateGuestToken(env, 'guest_token2', 1, tmpAudioSpaceData.headers.get('x-rate-limit-remaining') < 20, 'AudioSpaceById')
+    await env.updateGuestToken(env, 'guest_token2', 1, tmpAudioSpaceData.headers.get('x-rate-limit-remaining') < 1, 'AudioSpaceById')
     if (tmpAudioSpaceData.data?.data?.audioSpace || false) {
         let tmpAudioSpace = AudioSpace(tmpAudioSpaceData.data)
         //get link
@@ -340,7 +340,7 @@ const ApiBroadcast = async (req, env) => {
         const tmpBroadcastData = await getBroadcast({ id, guest_token: env.guest_token2 })
 
         //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 1, tmpBroadcastData.headers.get('x-rate-limit-remaining') < 20, 'BroadCast')
+        await env.updateGuestToken(env, 'guest_token2', 1, tmpBroadcastData.headers.get('x-rate-limit-remaining') < 1, 'BroadCast')
         let tmpBroadcast = Broadcast(tmpBroadcastData.data)
         //get link
         if (tmpBroadcast.is_available_for_replay || (Number(tmpBroadcast.start) <= Date.now() && tmpBroadcast.end === '0')) {
@@ -401,7 +401,7 @@ const ApiMedia = async (req, env) => {
         })
 
         //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 1, tmpConversation.headers.get('x-rate-limit-remaining') < 20, 'TweetDetail')
+        await env.updateGuestToken(env, 'guest_token2', 1, tmpConversation.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
         const tweetsInfo = TweetsInfo(tmpConversation.data, true)
         if (tweetsInfo.errors.code !== 0) {
             return env.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))

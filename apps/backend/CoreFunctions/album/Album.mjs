@@ -39,11 +39,19 @@ const AlbumSearch = async (req, env) => {
             //TODO fix tokens
             tweets = await getConversation({ tweet_id: tweetId, guest_token: env.guest_token2, graphqlMode: true })
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20, 'TweetDetail')
+            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
         } else {
-            tweets = await getTweets({ queryString: queryArray.join(' '), cursor: '', guest_token: env.guest_token2, count: 20, online: true, graphqlMode: false, searchMode: true })
+            tweets = await getTweets({
+                queryString: queryArray.join(' '),
+                cursor: '',
+                guest_token: env.guest_token2,
+                count: 20,
+                online: true,
+                graphqlMode: false,
+                searchMode: true
+            })
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 20, 'Search')
+            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 1, 'Search')
         }
     } catch (e) {
         console.error(`[${new Date()}]: #Album #${e.code} ${e.message}`)

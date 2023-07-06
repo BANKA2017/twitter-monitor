@@ -17,10 +17,10 @@ const getBearerToken = async () => {
     const tmpTokenResponse = await axios(TW_WEBAPI_PREFIX + '/oauth2/token', {
         headers: {
             Authorization: TW_ANDROID_BASIC_TOKEN,
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/x-www-form-urlencoded'
         },
         method: 'post',
-        data: 'grant_type=client_credentials',
+        data: 'grant_type=client_credentials'
     })
     return tmpTokenResponse
 }
