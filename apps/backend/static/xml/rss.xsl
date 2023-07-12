@@ -9,33 +9,56 @@
                 <meta http-equiv="x-ua-compatible" content="IE=edge,chrome=1" />
                 <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,shrink-to-fit=no" />
                 <style type="text/css">
-                    /* Your custom styles can go here! */
+                    .main{
+                            margin: 2rem 1rem;
+                        }
+                    @media screen and (min-width:640.01px){
+                        .main{
+                            margin: 2rem 5rem;
+                        }
+                    }
+                    @media screen and (min-width:768.01px){
+                        .main{
+                            margin: 2rem 10rem;
+                        }
+                    }
+                    @media screen and (min-width:1024.01px){
+                        .main{
+                            margin: 2rem 16rem;
+                        }
+                    }
                 </style>
             </head>
-            <body>
+            <body class="main">
                 <header>
-                    <h1>RSS Feed</h1>
-                    <h2>
-                        <xsl:value-of select="/rss/channel/title"/>
-                    </h2>
-                    <p>
-                        <xsl:value-of select="/rss/channel/description"/>
-                    </p>
+                    <h1>Twitter Monitor RSS</h1>
                     <a hreflang="en" target="_blank">
                         <xsl:attribute name="href">
                             <xsl:value-of select="/rss/channel/link"/>
                         </xsl:attribute>
-                        Visit Website &#x2192;
+                        <h2>
+                        <xsl:value-of select="/rss/channel/title"/>
+                        &#x2192;
+                    </h2>
                     </a>
+                    <p>
+                        <xsl:value-of select="/rss/channel/description"/>
+                    </p>
+                    
                 </header>
                 <main>
-                    <h2>Recent Posts</h2>
+                    <hr />
+                    <a hreflang="en">
+                        <xsl:attribute name="href">
+                            <xsl:value-of select="/rss/channel/topCursor"/>
+                        </xsl:attribute>
+                        <h3>&#x2191; Newer &#x2191;</h3>
+                    </a>
                     <xsl:for-each select="/rss/channel/item">
                     <hr />
                         <article>
-                            <h3>
-                                <xsl:value-of select="title"/>
-                            </h3>
+                            <h3><xsl:value-of select="author"/></h3>
+                            <p><xsl:value-of select="title"/></p>
                             <footer>
                                 Published:
                                 <time>
@@ -50,6 +73,13 @@
                             </footer>
                         </article>
                     </xsl:for-each>
+                    <hr />
+                    <a hreflang="en">
+                        <xsl:attribute name="href">
+                            <xsl:value-of select="/rss/channel/bottomCursor"/>
+                        </xsl:attribute>
+                        <h3>&#x2193; More &#x2193;</h3>
+                    </a>
                 </main>
             </body>
         </html>

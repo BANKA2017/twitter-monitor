@@ -88,7 +88,7 @@ const ApiTweets = async (req, env) => {
     //    }
     //}
     else {
-        if (name === '') {
+        if (uid === '') {
             return env.json(apiTemplate(404, 'No such account'))
         }
         //queryArray.push('-filter:replies')
@@ -144,7 +144,7 @@ const ApiTweets = async (req, env) => {
         }
     }
 
-    const { tweetsInfo, tweetsContent, rssContent } = GenerateData(tweets, isConversation, loadConversation || listId || communityId || displayType === 'include_reply' ? '' : name, true)
+    const { tweetsInfo, tweetsContent, rssContent } = GenerateData(tweets, isConversation, loadConversation || listId || communityId || displayType === 'include_reply' ? '' : uid, true, req)
     if (tweetsInfo.errors.code !== 0) {
         return env.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
     } else if (isRssMode) {
@@ -157,7 +157,7 @@ const ApiTweets = async (req, env) => {
             //top_tweet_id: tweetsInfo.tweetRange.max || '0',
             //bottom_tweet_id: tweetsInfo.tweetRange.min || '0'
             top_tweet_id: tweetsInfo.cursor.top || '',
-            bottom_tweet_id: tweetsContent.length ? tweetsInfo.cursor.bottom || '' : ''
+            bottom_tweet_id: tweetsInfo.cursor.bottom || ''
         })
     )
 }
@@ -259,7 +259,7 @@ const ApiSearch = async (req, env) => {
         return env.json(apiTemplate(e.code, e.message))
     }
 
-    const { tweetsInfo, tweetsContent, rssContent } = GenerateData(tweets, false, '', false)
+    const { tweetsInfo, tweetsContent, rssContent } = GenerateData(tweets, false, '', false, req)
     if (tweetsInfo.errors.code !== 0) {
         return env.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
     } else if (isRssMode) {
@@ -436,7 +436,7 @@ const ApiMedia = async (req, env) => {
     }
 }
 
-const TweetsData = (content = {}, users = {}, contents = [], precheckName = '', graphqlMode = true, isConversation = false) => {
+const TweetsData = (content = {}, users = {}, contents = [], precheckUid = '', graphqlMode = true, isConversation = false) => {
     let exportTweet = Tweet(content, users, contents, {}, graphqlMode, false, true)
     exportTweet.GeneralTweetData.favorite_count = exportTweet.interactiveData.favorite_count
     exportTweet.GeneralTweetData.retweet_count = exportTweet.interactiveData.retweet_count
@@ -472,7 +472,7 @@ const TweetsData = (content = {}, users = {}, contents = [], precheckName = '', 
         exportTweet.GeneralTweetData.is_top = true
     }
     //check poster
-    if (isConversation || precheckName === '' || precheckName.toLocaleLowerCase() === exportTweet.GeneralTweetData.name.toLocaleLowerCase()) {
+    if (isConversation || precheckUid === '' || precheckUid === exportTweet.GeneralTweetData.id_str) {
         return {
             code: 200,
             userInfo: exportTweet.userInfo,
@@ -563,7 +563,7 @@ const returnDataForTweets = (tweet = {}, historyMode = false, tweetEntities = []
     return tweet
 }
 
-const GenerateData = (tweets, isConversation = false, filterName = '', graphqlMode = false) => {
+const GenerateData = (tweets, isConversation = false, precheckUid = '', graphqlMode = false, req = null) => {
     const tweetsInfo = TweetsInfo(tweets.data, graphqlMode)
     if (tweetsInfo.errors.code !== 0) {
         return { tweetsInfo: tweetsInfo, tweetsContent: [] }
@@ -588,7 +588,7 @@ const GenerateData = (tweets, isConversation = false, filterName = '', graphqlMo
                     reverse = false
                 }
                 return content.content.items.map((item) => {
-                    let tmpData = TweetsData(item, tweetsInfo.users, tweetsInfo.contents, filterName, graphqlMode, isConversation)
+                    let tmpData = TweetsData(item, tweetsInfo.users, tweetsInfo.contents, precheckUid, graphqlMode, isConversation)
 
                     if (tmpData.code === 200 && Object.keys(tmpData.data).length) {
                         tmpData.data.user_info = tmpData.userInfo
@@ -598,7 +598,7 @@ const GenerateData = (tweets, isConversation = false, filterName = '', graphqlMo
                     return false
                 })
             } else {
-                let tmpData = TweetsData(content, tweetsInfo.users, tweetsInfo.contents, filterName, graphqlMode, isConversation)
+                let tmpData = TweetsData(content, tweetsInfo.users, tweetsInfo.contents, precheckUid, graphqlMode, isConversation)
 
                 if (tmpData.code === 200 && Object.keys(tmpData.data).length) {
                     tmpData.data.user_info = tmpData.userInfo
@@ -616,16 +616,28 @@ const GenerateData = (tweets, isConversation = false, filterName = '', graphqlMo
     }
 
     //rss content
-    
+
     const rss = new Rss()
     //get account list
     let tmpAccount
-    if (filterName) {
-        tmpAccount = tweetsContent.find(content => content.user_info.name.toLocaleLowerCase() === filterName.toLocaleLowerCase())?.user_info || {}
+    if (precheckUid) {
+        tmpAccount = tweetsContent.find((content) => content.uid === precheckUid)?.user_info || {}
     }
+
+    const buildRssCursor = (url, tweet_id, cursor, top = false) => {
+        url.searchParams.set('tweet_id', String(tweet_id))
+        url.searchParams.set('cursor', String(cursor))
+        url.searchParams.set('refresh', top ? '1' : '0')
+        const tmpSearchParame = url.searchParams.toString()
+        return '/online/api/v3' + url.pathname + (tmpSearchParame ? '?' + tmpSearchParame : '')
+    }
+    if (req?.url && typeof req?.url === 'string') {
+        req.url = new URL('http://localhost' + req.url)
+    }
+
     rss.channel({
-        title: { text: 'Twitter Monitor Timeline' + (tmpAccount ? ` ${tmpAccount?.display_name} (@${tmpAccount?.name})` : ''), cdata: true },
-        link: { text: filterName ? 'https://twitter.com' : `https://twitter.com/${filterName}/`, cdata: false },
+        title: { text: tmpAccount?.name ? ` ${tmpAccount?.display_name} (@${tmpAccount?.name})` : 'Twitter Monitor Timeline', cdata: true },
+        link: { text: tmpAccount?.name ? 'https://twitter.com' : `https://twitter.com/${tmpAccount?.name || ''}`, cdata: false },
         description: { text: tmpAccount?.description ? tmpAccount.description : 'Monitor timeline', cdata: true }, //TODOs
         generator: { text: 'Twitter Monitor', cdata: false },
         webMaster: { text: 'NEST.MOE', cdata: false },
@@ -638,14 +650,34 @@ const GenerateData = (tweets, isConversation = false, filterName = '', graphqlMo
             cdata: false
         },
         ttl: { text: 60, cdata: false },
-        //topCursor: { text: '&cursor=' + tweetsContent[0].id_str, cdata: true},
-        //bottomCursor: { text: '&cursor=' + tweetsContent.slice(-1)[0].id_str, cdata: true},
+        ...(tmpAccount?.header
+            ? {
+                  image: {
+                      text: {
+                          title: { text: `${tmpAccount?.display_name} (@${tmpAccount?.name})`, cdata: false },
+                          link: { text: `https://twitter.com/${tmpAccount?.name}/`, cdata: false },
+                          url: { text: `/media/proxy/${tmpAccount.header}`, cdata: false },
+                          width: { text: 128, cdata: false },
+                          height: { text: 128, cdata: false }
+                      },
+                      cdata: false
+                  }
+              }
+            : {}),
+        ...(req?.url?.searchParams
+            ? {
+                  topCursor: { text: buildRssCursor(req.url, tweetsInfo.tweetRange.max, tweetsInfo.cursor.top, true), cdata: true },
+                  bottomCursor: { text: buildRssCursor(req.url, tweetsInfo.tweetRange.min, tweetsInfo.cursor.bottom, false), cdata: true }
+              }
+            : {})
     })
     for (const x in tweetsContent) {
-        const tmpImageText = tweetsContent[x].mediaObject.map(media => {
-            const tmpContent = `<img src="https://${media.url}" alt="${((media?.title || '') + (media?.description || '') || 'media')}" />`
-            return tmpContent
-        }).join(' ')
+        const tmpImageText = tweetsContent[x].mediaObject
+            .map((media) => {
+                const tmpContent = `<img src="https://${media.url}" alt="${(media?.title || '') + (media?.description || '') || 'media'}" />`
+                return tmpContent
+            })
+            .join(' ')
         rss.item({
             title: { text: tweetsContent[x].full_text_origin, cdata: true },
             description: {
@@ -653,14 +685,15 @@ const GenerateData = (tweets, isConversation = false, filterName = '', graphqlMo
                 cdata: true
             },
             pubDate: {
-                text: new Date(tweetsContent[x].time*1000)
+                text: new Date(tweetsContent[x].time * 1000)
                     .toString()
                     .replaceAll(/\(.*\)/gm, '')
                     .trim(),
                 cdata: false
             },
+            guid: { text: `https://twitter.com/${tweetsContent[x].name}/status/${tweetsContent[x].tweet_id}`, cdata: false },
             link: { text: `https://twitter.com/${tweetsContent[x].name}/status/${tweetsContent[x].tweet_id}`, cdata: false },
-            author: { text: tweetsContent[x].display_name, cdata: true }
+            author: { text: `${tweetsContent[x].retweet_from_name ? 'RT ' : ''}${tweetsContent[x].retweet_from || tweetsContent[x].display_name} (@${tweetsContent[x].retweet_from_name || tweetsContent[x].name})`, cdata: true }
         })
     }
 

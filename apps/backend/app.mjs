@@ -35,7 +35,7 @@ for (const argvContent of process.argv.slice(2)) {
 if (settingsFile && existsSync(settingsFile)) {
     const settings = await import(settingsFile)
     EXPRESS_PORT = settings.EXPRESS_PORT
-    //EXPRESS_ALLOW_ORIGIN = settings.EXPRESS_ALLOW_ORIGIN
+    EXPRESS_ALLOW_ORIGIN = settings.EXPRESS_ALLOW_ORIGIN
     STATIC_PATH = settings.STATIC_PATH
     ACTIVE_SERVICE = settings.ACTIVE_SERVICE
 }
@@ -65,7 +65,7 @@ app.use((req, res, next) => {
         mediaExistPreCheck,
         mediaCacheSave,
         guest_token2_handle: global.guest_token,
-        guest_token2: {},
+        guest_token2: {}
         //guest_token3_handle: global.guest_token3,
         //guest_token3: {},
     }

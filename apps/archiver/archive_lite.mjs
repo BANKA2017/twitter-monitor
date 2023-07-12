@@ -143,7 +143,7 @@ if (cursor.tweets.cursor !== 'complete') {
                 //restful
                 //uid = Object.values(tmpTweetsInfo.tweetsInfo.users).filter(user => user.screen_name.toLocaleLowerCase() === name.toLocaleLowerCase())[0]?.id_str || null
                 //graphql
-                uid = (user => user?.rest_id || user?.id_str || null)(Object.values(tmpTweetsInfo.tweetsInfo.users).find((user) => (user?.legacy?.screen_name || user.screen_name || '').toLocaleLowerCase() === name.toLocaleLowerCase()))
+                uid = ((user) => user?.rest_id || user?.id_str || null)(Object.values(tmpTweetsInfo.tweetsInfo.users).find((user) => (user?.legacy?.screen_name || user.screen_name || '').toLocaleLowerCase() === name.toLocaleLowerCase()))
 
                 if (!uid) {
                     throw `archiver: no such account!!!`

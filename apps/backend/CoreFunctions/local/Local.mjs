@@ -81,7 +81,7 @@ const ApiLocalTweets = async (req, res) => {
     let isRssMode = VerifyQueryString(req.query.format, 'json') === 'rss'
     let query = req.query
     if (Object.keys(req.params).length > 0) {
-        query = {...query, ...{ name: req.params[0] }}
+        query.name = VerifyQueryString(req.params[0], '')
         isRssMode = true
     }
     const { uid } = await GetUid(query)
@@ -302,7 +302,7 @@ const ApiLocalTweets = async (req, res) => {
             }
         }
         //console.log(tmpTweets.length, count, top, typeof top, count + 1)
-        const tmpTweetData = await getDataFromTweets(tmpTweets, count + 1, top, true, isRssMode)
+        const tmpTweetData = await getDataFromTweets(tmpTweets, count + 1, top, true, isRssMode, false, req)
         if (isRssMode) {
             res.append('content-type', 'application/xml;charset=UTF-8')
             res.setHeader('Access-Control-Allow-Origin', '*')
@@ -457,7 +457,7 @@ const ApiLocalSearch = async (req, res) => {
             res.json(apiTemplate(500, 'Unknown error #GetAdvancedSearchTweets', {}, 'v3'))
             return
         }
-        const tmpTweetData = await getDataFromTweets(tweets || [], count, '0', true, isRssMode)
+        const tmpTweetData = await getDataFromTweets(tweets || [], count, '0', true, isRssMode, false, req)
         if (isRssMode) {
             res.append('content-type', 'application/xml;charset=UTF-8')
             res.setHeader('Access-Control-Allow-Origin', '*')
@@ -533,7 +533,7 @@ const ApiLocalSearch = async (req, res) => {
                 res.json(apiTemplate(500, 'Unknown error #GetSearchTweets', {}, 'v3'))
                 return
             }
-            const tmpTweetData = await getDataFromTweets(tweets || [], count, '0', true, isRssMode)
+            const tmpTweetData = await getDataFromTweets(tweets || [], count, '0', true, isRssMode, false, req)
             if (isRssMode) {
                 res.append('content-type', 'application/xml;charset=UTF-8')
                 res.setHeader('Access-Control-Allow-Origin', '*')
@@ -687,7 +687,7 @@ const ApiLocalTag = async (req, res) => {
         res.json(apiTemplate(404, 'No tag', [], 'v3'))
         return
     }
-    const tmpTweetData = await getDataFromTweets(tweets, count, '0', true, isRssMode)
+    const tmpTweetData = await getDataFromTweets(tweets, count, '0', true, isRssMode, false, req)
     if (isRssMode) {
         res.append('content-type', 'application/xml;charset=UTF-8')
         res.setHeader('Access-Control-Allow-Origin', '*')
@@ -988,7 +988,7 @@ const findGroups = (list = [], name = '') => {
     }
     return ['', []]
 }
-const getDataFromTweets = async (tweets = [], count = 0, top = '0', historyMode = false, isRssMode = false, noUserName = false) => {
+const getDataFromTweets = async (tweets = [], count = 0, top = '0', historyMode = false, isRssMode = false, noUserName = false, req = null) => {
     tweets = tweets.filter((tweet) => tweet.tweet_id)
     let realCount = tweets.length
     //console.log(realCount, count)
@@ -999,7 +999,6 @@ const getDataFromTweets = async (tweets = [], count = 0, top = '0', historyMode 
     }
     let checkNewTweetId = '0'
     let tweetId = '0'
-
 
     let tmpEntities = null
     let tmpPollObject = null
@@ -1148,7 +1147,7 @@ const getDataFromTweets = async (tweets = [], count = 0, top = '0', historyMode 
                                 delete media.description
                             }
                             if (media.source === 'tweets' && media.tweet_id === tweets[x].tweet_id) {
-                                tmpImageText += `<img src="https://${media.url}" alt="${((media?.title || '') + (media?.description || '') || 'media')}" />`
+                                tmpImageText += `<img src="https://${media.url}" alt="${(media?.title || '') + (media?.description || '') || 'media'}" />`
                             }
                             return media
                         })
@@ -1164,7 +1163,6 @@ const getDataFromTweets = async (tweets = [], count = 0, top = '0', historyMode 
         tweets[x].uid_str = String(tweets[x].uid)
         tweetId = tweets[x].tweet_id_str //bottom id
 
-        
         if (isRssMode) {
             rss.item({
                 title: { text: tweets[x].full_text_origin, cdata: true },
@@ -1173,23 +1171,34 @@ const getDataFromTweets = async (tweets = [], count = 0, top = '0', historyMode 
                     cdata: true
                 },
                 pubDate: {
-                    text: new Date(tweets[x].time*1000)
+                    text: new Date(tweets[x].time * 1000)
                         .toString()
                         .replaceAll(/\(.*\)/gm, '')
                         .trim(),
                     cdata: false
                 },
+                guid: { text: `https://twitter.com/${tweets[x].name}/status/${tweets[x].tweet_id}`, cdata: false },
                 link: { text: `https://twitter.com/${tweets[x].name}/status/${tweets[x].tweet_id}`, cdata: false },
-                author: { text: tweets[x].display_name, cdata: true }
+                author: { text: `${tweets[x].retweet_from_name ? 'RT ' : ''}${tweets[x].retweet_from || tweets[x].display_name} (@${tweets[x].retweet_from_name || tweets[x].name})`, cdata: true }
             })
         }
     }
 
     if (isRssMode) {
+        const buildRssCursor = (url, tweet_id, top = false) => {
+            url.searchParams.set('tweet_id', String(tweet_id))
+            url.searchParams.set('refresh', top ? '1' : '0')
+            const tmpSearchParame = url.searchParams.toString()
+            return '/api/v3' + url.pathname + (tmpSearchParame ? '?' + tmpSearchParame : '')
+        }
+        if (req?.url && typeof req?.url === 'string') {
+            req.url = new URL('http://localhost' + req.url)
+        }
+        const tweetsExists = tweets.length > 0
         rss.channel({
-            title: { text: 'Twitter Monitor Timeline' + (noUserName ? '' : ` ${tweets[0].display_name} (@${tweets[0].name})`), cdata: true },
-            link: { text: noUserName ? 'https://twitter.com' : `https://twitter.com/${tweets[0].name}/`, cdata: false },
-            description: { text: 'todo', cdata: false }, //TODOs
+            title: { text: noUserName || !tweetsExists ? 'Twitter Monitor Timeline' + (req.query.name ? ` @${req.query.name}` : '') : `${tweets[0].display_name} (@${tweets[0].name})`, cdata: true },
+            link: { text: noUserName ? 'https://twitter.com' : `https://twitter.com/${tweets?.[0]?.name || req.query.name || ''}/`, cdata: false },
+            description: { text: 'Feed', cdata: false }, //TODOs
             generator: { text: 'Twitter Monitor', cdata: false },
             webMaster: { text: 'NEST.MOE', cdata: false },
             language: { text: 'zh-cn', cdata: false },
@@ -1201,8 +1210,12 @@ const getDataFromTweets = async (tweets = [], count = 0, top = '0', historyMode 
                 cdata: false
             },
             ttl: { text: 60, cdata: false },
-            //topCursor: { text: '?cursor=' + String(checkNewTweetId), cdata: false},
-            //bottomCursor: { text: '?cursor=' + String(tweetId), cdata: false},
+            ...(req?.url?.searchParams && tweetsExists
+                ? {
+                      topCursor: { text: buildRssCursor(req.url, tweets[0].tweet_id_str, true), cdata: true },
+                      bottomCursor: { text: buildRssCursor(req.url, tweets.slice(-1)[0].tweet_id_str, false), cdata: true }
+                  }
+                : {})
         })
         return { rss_message: rss.value, rss_mode: true }
     } else {

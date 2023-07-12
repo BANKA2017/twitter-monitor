@@ -39,8 +39,8 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
                     objectForReturn.contents = objectForReturn.contents
                         .concat(tmpTweet.entries)
                         .filter((content) => content.entryId.startsWith('tweet-') || content.entryId.startsWith('conversationthread-') || content.entryId.startsWith('profile-conversation'))
-                    objectForReturn.tweetRange.max = (objectForReturn.contents[0].entryId || '0').replace(/.*\-(\d+)/, '$1') //path2array('tweet_id', objectForReturn.contents[0]) || 0
-                    objectForReturn.tweetRange.min = (objectForReturn.contents.slice(-1)[0].entryId || '0').replace(/.*\-(\d+)/, '$1') //path2array('tweet_id', objectForReturn.contents.slice(-1)[0]) || 0
+                    objectForReturn.tweetRange.max = (objectForReturn.contents?.[0]?.entryId || '0').replace(/.*\-(\d+)/, '$1') //path2array('tweet_id', objectForReturn.contents[0]) || 0
+                    objectForReturn.tweetRange.min = (objectForReturn.contents.slice(-1)?.[0]?.entryId || '0').replace(/.*\-(\d+)/, '$1') //path2array('tweet_id', objectForReturn.contents.slice(-1)[0]) || 0
                     //users from tweets
                     objectForReturn.users = Object.fromEntries(
                         tmpTweet.entries
@@ -104,10 +104,18 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
                 }
             }
         } else {
-            objectForReturn.users = globalObjects?.globalObjects?.users || isTweetDeckSearch ? Object.fromEntries(tmpTweets.map(tweet => tweet?.status?.data?.user).filter(tweet => tweet).map(user => [user.id_str, user])) : []
-            objectForReturn.contents = isTweetDeckSearch ? tmpTweets.map(tweet => tweet?.status?.data).filter(tweet => tweet) : Object.values(tmpTweets)
+            objectForReturn.users =
+                globalObjects?.globalObjects?.users || isTweetDeckSearch
+                    ? Object.fromEntries(
+                          tmpTweets
+                              .map((tweet) => tweet?.status?.data?.user)
+                              .filter((tweet) => tweet)
+                              .map((user) => [user.id_str, user])
+                      )
+                    : []
+            objectForReturn.contents = isTweetDeckSearch ? tmpTweets.map((tweet) => tweet?.status?.data).filter((tweet) => tweet) : Object.values(tmpTweets)
             objectForReturn.contentLength = objectForReturn.contents.length
-            const tmpContentKeys = isTweetDeckSearch ? tmpTweets.map(tweet => tweet?.status?.data?.id_str).filter(tweet_id => tweet_id) : Object.keys(tmpTweets).sort((a, b) => b - a)
+            const tmpContentKeys = isTweetDeckSearch ? tmpTweets.map((tweet) => tweet?.status?.data?.id_str).filter((tweet_id) => tweet_id) : Object.keys(tmpTweets).sort((a, b) => b - a)
             objectForReturn.tweetRange.max = tmpContentKeys[0]
             objectForReturn.tweetRange.min = tmpContentKeys.slice(-1)[0]
 

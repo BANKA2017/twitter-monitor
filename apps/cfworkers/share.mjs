@@ -9,7 +9,7 @@ const json = (data, status = 200) =>
         }
     })
 
-const xml = (data, status = 200) => 
+const xml = (data, status = 200) =>
     new Response(data, {
         status,
         headers: {

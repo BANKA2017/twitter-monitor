@@ -59,7 +59,7 @@ export class GuestToken {
         } else {
             try {
                 //TODO error
-                this.open_account.authorization = getBearerToken()//((token) => token.data?.token_type + ' ' + token.data?.access_token)(await getBearerToken())
+                this.open_account.authorization = getBearerToken() //((token) => token.data?.token_type + ' ' + token.data?.access_token)(await getBearerToken())
                 await this.updateGuestToken(this.open_account.authorization)
                 if (this.type === 'android') {
                     const onboardingResponse = (await postOpenAccountInit({ guest_token: this.#guest_token, authorization: this.open_account.authorization })).data

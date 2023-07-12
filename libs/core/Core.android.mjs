@@ -8,7 +8,7 @@ import { Base64 } from 'crypto-es/lib/enc-base64.js'
 const TW_ANDROID_BASIC_TOKEN = 'Basic M25WdVNvQlpueDZVNHZ6VXhmNXc6QmNzNTlFRmJic2RGNlNsOU5nNzFzbWdTdFdFR3dYWEtTall2UFZ0N3F5cw=='
 const TW_CONSUMER_KEY = '3nVuSoBZnx6U4vzUxf5w'
 const TW_CONSUMER_SECRET = 'Bcs59EFbbsdF6Sl9Ng71smgStWEGwXXKSjYvPVt7qys'
-const TW_ANDROID_BEARER_TOKEN = "Bearer AAAAAAAAAAAAAAAAAAAAAFXzAwAAAAAAMHCxpeSDG1gLNLghVe8d74hl6k4%3DRUMF4xAQLsbeBhTSRrCiQpJtxoGWeyHrDb5te2jpGskWDFW82F"
+const TW_ANDROID_BEARER_TOKEN = 'Bearer AAAAAAAAAAAAAAAAAAAAAFXzAwAAAAAAMHCxpeSDG1gLNLghVe8d74hl6k4%3DRUMF4xAQLsbeBhTSRrCiQpJtxoGWeyHrDb5te2jpGskWDFW82F'
 
 const TW_ANDROID_PREFIX = 'https://na.albtls.t.co'
 const TW_WEBAPI_PREFIX = 'https://api.twitter.com'
@@ -24,7 +24,7 @@ const getBearerToken = () => {
     //    method: 'post',
     //    data: 'grant_type=client_credentials'
     //})
-    return TW_ANDROID_BEARER_TOKEN//tmpTokenResponse
+    return TW_ANDROID_BEARER_TOKEN //tmpTokenResponse
 }
 
 const postOpenAccountInit = async (ctx = { guest_token: {}, authorization: '' }, env = {}) => {

@@ -158,7 +158,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
             data: body ? body : undefined
         })
             .then((response) => {
-                //console.log(response, JSON.stringify(response.data))
+                console.log(response, JSON.stringify(response.data))
                 if (!response.data) {
                     reject({ code: -1000, message: 'empty data' })
                 }
@@ -208,7 +208,7 @@ const getToken = async (authorization = 0) => {
         expire: Date.now() + 870000, //15 min
         authorization: typeof authorization === 'string' ? authorization : Authorization[authorization]
     }
-    
+
     return await new Promise((resolve, reject) => {
         //2000 per 30 min i guess
         axios
@@ -665,17 +665,18 @@ const getTweets = async (
             send_error_codes: 1,
             tweet_mode: 'extended',
             include_ext_alt_text: true,
-            include_reply_count: true,
+            include_reply_count: true
         }
-        
-        return await new Promise((resolve, reject) => {
-            coreFetch(TW_WEBAPI_PREFIX+"/1.1/search/universal.json?" + (new URLSearchParams(tmpQueryObject)).toString(), guest_token, cookie, authorization).then(response => {
-              resolve(response)
-            }).catch(e => {
-              reject(e)
-            })
-        })
 
+        return await new Promise((resolve, reject) => {
+            coreFetch(TW_WEBAPI_PREFIX + '/1.1/search/universal.json?' + new URLSearchParams(tmpQueryObject).toString(), guest_token, cookie, authorization)
+                .then((response) => {
+                    resolve(response)
+                })
+                .catch((e) => {
+                    reject(e)
+                })
+        })
     } else {
         // no use because http 429 loop
         return await new Promise((resolve, reject) => {

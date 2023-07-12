@@ -55,7 +55,7 @@ app.use((req, res, next) => {
         mediaExistPreCheck,
         mediaCacheSave,
         guest_token2_handle: global.guest_token,
-        guest_token2: {},
+        guest_token2: {}
         //guest_token3_handle: global.guest_token3,
         //guest_token3: {},
     }
