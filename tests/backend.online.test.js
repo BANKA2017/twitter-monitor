@@ -22,7 +22,7 @@ mock.setEnv('json', json)
 mock.setEnv('updateGuestToken', updateGuestToken)
 
 test('Guest token', async () => {
-    await mock.req.env.guest_token2_handle.updateGuestToken(mock.req.env.guest_token2_handle.open_account.authorization)
+    await mock.req.env.guest_token2_handle.updateGuestToken(4)
     mock.setEnv('guest_token2', mock.guest_token2.token)
     expect(mock.req.env.guest_token2_handle.token.success).toBeTruthy
 })

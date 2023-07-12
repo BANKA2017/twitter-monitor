@@ -23,8 +23,8 @@ const polls = await V2TwitterPolls.findAll({
 
 const tweetIdList = [...new Set(polls.map((poll) => poll.origin_tweet_id))]
 
-let get_token = new GuestToken('android') // await getToken()
-await get_token.updateGuestToken(get_token.open_account.authorization)
+let get_token = new GuestToken() // await getToken()
+await get_token.updateGuestToken(4)
 if (!get_token.token.success) {
     console.log('tmv3: no token #noToken #polls')
     process.exit()
@@ -33,7 +33,7 @@ if (!get_token.token.success) {
 let t = await dbHandle.twitter_monitor.transaction()
 for (const idIndex in tweetIdList) {
     if (idIndex % get_token.token.rate_limit.TweetDetail === 0) {
-        await get_token.updateGuestToken(get_token.open_account.authorization)
+        await get_token.updateGuestToken(4)
         if (!get_token.token.success) {
             console.log('tmv3: no token #noToken #polls')
             process.exit()
@@ -89,7 +89,7 @@ const audioSpaceList = [...new Set(AudioSpaces.map((AudioSpace) => AudioSpace.ur
 t = await dbHandle.twitter_monitor.transaction()
 for (const idIndex in audioSpaceList) {
     if (idIndex % get_token.token.rate_limit.AudioSpaceById === 0) {
-        await get_token.updateGuestToken(get_token.open_account.authorization)
+        await get_token.updateGuestToken(4)
         if (!get_token.token.success) {
             console.log('tmv3: no token #noToken #polls')
             process.exit()

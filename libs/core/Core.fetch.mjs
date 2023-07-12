@@ -59,21 +59,22 @@ const generateCsrfToken = async () => {
     }
 }
 
+//for web
 const TW_AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAAPYXBAAAAAAACLXUNDekMxqa8h%2F40K4moUkGsoc%3DTYfbDKbT3jJPCEVnMYqilB28NHfOPqkca3qaAxGfsyKCs0wRbw' //old token
 
 const TW_AUTHORIZATION2 = 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA' //new token
 
 const TW_AUTHORIZATION3 = 'Bearer AAAAAAAAAAAAAAAAAAAAAIK1zgAAAAAA2tUWuhGZ2JceoId5GwYWU5GspY4%3DUq7gzFoCZs1QfwGoVdvSac3IniczZEYXIcDyumCauIXpcAPorE' //another token
 
-//for tweetdeck, but useless until login
-// const TWEETDECK_AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAAF7aAAAAAAAASCiRjWvh7R5wxaKkFp7MM%2BhYBqM%3DbQ0JPmjU9F6ZoMhDfI4uTNAaQuTDm2uO9x3WFVr2xBZ2nhjdP0' //tweetdeck
-// const TWEETDECK_AUTHORIZATION2 = 'Bearer AAAAAAAAAAAAAAAAAAAAAFQODgEAAAAAVHTp76lzh3rFzcHbmHVvQxYYpTw%3DckAlMINMjmCwxUcaXbAN4XqJVdgMJaHqNOFgPMK0zN1qLqLQCF' //new tweetdeck
+//for tweetdeck, most endpoints work except for SearchTimeline
+const TWEETDECK_AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAAF7aAAAAAAAASCiRjWvh7R5wxaKkFp7MM%2BhYBqM%3DbQ0JPmjU9F6ZoMhDfI4uTNAaQuTDm2uO9x3WFVr2xBZ2nhjdP0' //tweetdeck
+const TWEETDECK_AUTHORIZATION2 = 'Bearer AAAAAAAAAAAAAAAAAAAAAFQODgEAAAAAVHTp76lzh3rFzcHbmHVvQxYYpTw%3DckAlMINMjmCwxUcaXbAN4XqJVdgMJaHqNOFgPMK0zN1qLqLQCF' //new tweetdeck
 
 const TW_WEBAPI_PREFIX = 'https://api.twitter.com'
 const TW_ANDROID_PREFIX = 'https://global.albtls.t.co'
 const TW_ANDROID_SEARCH_PREFIX = 'https://na.albtls.t.co'
 
-const Authorization = [TW_AUTHORIZATION, TW_AUTHORIZATION2, TW_AUTHORIZATION3]
+const Authorization = [TW_AUTHORIZATION, TW_AUTHORIZATION2, TW_AUTHORIZATION3, TWEETDECK_AUTHORIZATION, TWEETDECK_AUTHORIZATION2]
 const ct0 = await generateCsrfToken()
 
 const axios = axiosFetch()
@@ -116,8 +117,8 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
         authorization = `OAuth realm="http://api.twitter.com/", oauth_version="1.0", oauth_token="${oauthSign.oauth_token}", oauth_nonce="${oauthSign.oauth_nonce}", oauth_timestamp="${oauthSign.timestamp}", oauth_signature="${encodeURIComponent(
             oauthSign.sign
         )}", oauth_consumer_key="${oauthSign.oauth_consumer_key}", oauth_signature_method="HMAC-SHA1"`
-    } else if (guest_token?.open_account?.authorization) {
-        authorization = guest_token.open_account.authorization
+    } else if (guest_token?.open_account?.authorization || guest_token?.authorization) {
+        authorization = guest_token?.open_account?.authorization || guest_token?.authorization
     }
 
     let tmpHeaders = {
@@ -157,6 +158,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
             data: body ? body : undefined
         })
             .then((response) => {
+                //console.log(response, JSON.stringify(response.data))
                 if (!response.data) {
                     reject({ code: -1000, message: 'empty data' })
                 }
@@ -192,7 +194,7 @@ const getToken = async (authorization = 0) => {
             TweetDetail: 495, //500//poll also use this
             AudioSpaceById: 495, //500
             BroadCast: 180, //187
-            Search: 49, // 50 Android app && 195,// 200 graphql && 245,//250 restful
+            Search: 1500, //UNKNOWN for tweetdeck //49, // 50 Android app && 195,// 200 graphql && 245,//250 restful
             Recommendation: 55, //60,
             Translation: 495, // graphql in Android app 180, //187 1.1
             Trending: 19990, //20000
@@ -203,14 +205,16 @@ const getToken = async (authorization = 0) => {
             CommunityTimeLime: 495, //500
             Login: 180 //187
         },
-        expire: Date.now() + 870000 //15 min
+        expire: Date.now() + 870000, //15 min
+        authorization: typeof authorization === 'string' ? authorization : Authorization[authorization]
     }
+    
     return await new Promise((resolve, reject) => {
         //2000 per 30 min i guess
         axios
             .post(TW_WEBAPI_PREFIX + '/1.1/guest/activate.json', '', {
                 headers: {
-                    authorization: typeof authorization === 'string' ? authorization : Authorization[authorization],
+                    authorization: tmpResponse.authorization,
                     'x-csrf-token': ct0,
                     cookie: 'ct0=' + ct0
                 }
@@ -548,7 +552,7 @@ const getTweets = async (
                     reject(e)
                 })
         })
-    } else if (searchMode) {
+    } else if (graphqlMode && searchMode) {
         //TODO Graphql for search
         //https://api.twitter.com/2/search/adaptive.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=false&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_collab_control=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&q=from%3Abang_dream_info&tweet_search_mode=live&count=20&query_source=recent_search_click&pc=1&spelling_corrections=1&include_ext_edit_control=true&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2CbirdwatchPivot%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl%2Ccollab_control%2Cvibe
         let tmpQueryObject = {
@@ -645,6 +649,33 @@ const getTweets = async (
             //  reject(e)
             //})
         })
+    } else if (searchMode) {
+        //https://api.twitter.com/1.1/search/universal.json?q=twitter%20&count=40&modules=status&result_type=recent&pc=false&ui_lang=en-US&cards_platform=Web-13&include_entities=1&include_user_entities=1&include_cards=1&send_error_codes=1&tweet_mode=extended&include_ext_alt_text=true&include_reply_count=true
+        let tmpQueryObject = {
+            q: queryString.trim(),
+            count,
+            modules: 'status',
+            result_type: 'recent',
+            pc: false,
+            ui_lang: 'en-US',
+            cards_platform: 'Web-13',
+            include_entities: 1,
+            include_user_entities: 1,
+            include_cards: 1,
+            send_error_codes: 1,
+            tweet_mode: 'extended',
+            include_ext_alt_text: true,
+            include_reply_count: true,
+        }
+        
+        return await new Promise((resolve, reject) => {
+            coreFetch(TW_WEBAPI_PREFIX+"/1.1/search/universal.json?" + (new URLSearchParams(tmpQueryObject)).toString(), guest_token, cookie, authorization).then(response => {
+              resolve(response)
+            }).catch(e => {
+              reject(e)
+            })
+        })
+
     } else {
         // no use because http 429 loop
         return await new Promise((resolve, reject) => {

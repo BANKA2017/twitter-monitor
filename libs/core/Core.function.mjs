@@ -51,26 +51,30 @@ export class GuestToken {
         this.type = type
         this.open_account = {}
     }
-    async openAccountInit() {
+    async openAccountInit(openAccount = null) {
         console.log(`[${new Date()}]: #GuestToken Update open account`)
-        try {
-            //TODO error
-            this.open_account.authorization = ((token) => token.data?.token_type + ' ' + token.data?.access_token)(await getBearerToken())
+        if (openAccount && openAccount?.authorization && openAccount?.oauth_token && openAccount.oauth_token_secret) {
+            this.open_account = openAccount
             await this.updateGuestToken(this.open_account.authorization)
-            if (this.type === 'android') {
-                const onboardingResponse = (await postOpenAccountInit({ guest_token: this.#guest_token, authorization: this.open_account.authorization })).data
-                let flowToken = onboardingResponse.flow_token
-                const OpenAccount = (await postOpenAccount({ guest_token: this.#guest_token, authorization: this.open_account.authorization, flow_token: flowToken })).data
-                this.open_account.oauth_token = OpenAccount.subtasks[0].open_account.oauth_token
-                this.open_account.oauth_token_secret = OpenAccount.subtasks[0].open_account.oauth_token_secret
-                const OpenAccountUser = OpenAccount.subtasks[0].open_account.user
-                this.#guest_token.open_account = this.open_account
-                console.log(`[${new Date()}]: #GuestToken Successful get account @${OpenAccountUser.screen_name}`)
+        } else {
+            try {
+                //TODO error
+                this.open_account.authorization = getBearerToken()//((token) => token.data?.token_type + ' ' + token.data?.access_token)(await getBearerToken())
+                await this.updateGuestToken(this.open_account.authorization)
+                if (this.type === 'android') {
+                    const onboardingResponse = (await postOpenAccountInit({ guest_token: this.#guest_token, authorization: this.open_account.authorization })).data
+                    let flowToken = onboardingResponse.flow_token
+                    const OpenAccount = (await postOpenAccount({ guest_token: this.#guest_token, authorization: this.open_account.authorization, flow_token: flowToken })).data
+                    this.open_account.oauth_token = OpenAccount.subtasks[0].open_account.oauth_token
+                    this.open_account.oauth_token_secret = OpenAccount.subtasks[0].open_account.oauth_token_secret
+                    const OpenAccountUser = OpenAccount.subtasks[0].open_account.user
+                    this.#guest_token.open_account = this.open_account
+                    console.log(`[${new Date()}]: #GuestToken Successful get account @${OpenAccountUser.screen_name}`)
+                }
+            } catch (e) {
+                console.error(e)
             }
-        } catch (e) {
-            console.error(e)
         }
-
         return this
     }
     async updateGuestToken(authorizationMode = 0) {

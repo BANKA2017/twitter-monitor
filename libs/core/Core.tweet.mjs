@@ -20,6 +20,8 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
         }
     }
 
+    const isTweetDeckSearch = globalObjects.modules && Array.isArray(globalObjects.modules)
+
     if (globalObjects.errors && !graphqlMode) {
         objectForReturn.errors.code = globalObjects[0].code
         objectForReturn.errors.message = globalObjects[0].message
@@ -102,14 +104,14 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
                 }
             }
         } else {
-            objectForReturn.users = globalObjects.globalObjects.users
-            objectForReturn.contents = Object.values(tmpTweets)
+            objectForReturn.users = globalObjects?.globalObjects?.users || isTweetDeckSearch ? Object.fromEntries(tmpTweets.map(tweet => tweet?.status?.data?.user).filter(tweet => tweet).map(user => [user.id_str, user])) : []
+            objectForReturn.contents = isTweetDeckSearch ? tmpTweets.map(tweet => tweet?.status?.data).filter(tweet => tweet) : Object.values(tmpTweets)
             objectForReturn.contentLength = objectForReturn.contents.length
-            const tmpContentKeys = Object.keys(tmpTweets).sort((a, b) => b - a)
+            const tmpContentKeys = isTweetDeckSearch ? tmpTweets.map(tweet => tweet?.status?.data?.id_str).filter(tweet_id => tweet_id) : Object.keys(tmpTweets).sort((a, b) => b - a)
             objectForReturn.tweetRange.max = tmpContentKeys[0]
             objectForReturn.tweetRange.min = tmpContentKeys.slice(-1)[0]
 
-            for (const first_instructions of globalObjects.timeline.instructions) {
+            for (const first_instructions of globalObjects?.timeline?.instructions || []) {
                 for (const second_instructions_value of Object.values(first_instructions)) {
                     if (second_instructions_value.entry) {
                         if (second_instructions_value.entryIdToReplace.endsWith('cursor-top')) {
@@ -592,8 +594,8 @@ const GetQuote = (content = {}, users = {}, uid = '0', tweetId = '0', graphqlMod
             console.log(`tmv2: warning, no display name [${inSqlQuote.tweet_id}]`)
         }
     } else {
-        inSqlQuote.display_name = users[content.user_id_str]?.name ?? ''
-        inSqlQuote.name = users[content.user_id_str]?.screen_name ?? ''
+        inSqlQuote.display_name = content?.user?.name ?? users[content.user_id_str]?.name ?? ''
+        inSqlQuote.name = content?.user?.screen_name ?? users[content.user_id_str]?.screen_name ?? ''
     }
 
     //full_text

@@ -145,16 +145,16 @@ if (existsSync(basePath + '/savedata/data.json')) {
 let uid = UserData.account_info?.uid || null
 
 //get init token
-global.guest_token = new GuestToken('android')
+global.guest_token = new GuestToken()
 global.legacy_guest_token = new GuestToken()
-await global.guest_token.updateGuestToken(global.guest_token?.open_account?.authorization)
+await global.guest_token.updateGuestToken(4)
 await global.legacy_guest_token.updateGuestToken(0)
 
 if (global.guest_token.token.nextActiveTime) {
     //await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
     console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
     await Sleep(global.guest_token.token.nextActiveTime - Date.now())
-    await global.guest_token.updateGuestToken(global.guest_token?.open_account?.authorization)
+    await global.guest_token.updateGuestToken(4)
     if (!global.guest_token.token.success) {
         process.exit()
     }
@@ -204,7 +204,7 @@ if (activeFlags.tweet) {
         const query = [`from:${name}`, 'include:replies', 'include:nativeretweets', 'include:retweets', 'include:quote', `since_id:${cursor.tweets.tmpId ? cursor.tweets.tmpId : 0}`].join(' ')
         console.log(`archiver: query string -->${query}<--`)
         do {
-            await global.guest_token.updateGuestToken(global.guest_token?.open_account?.authorization)
+            await global.guest_token.updateGuestToken(4)
             if (global.guest_token.token.nextActiveTime) {
                 //await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
                 console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
@@ -216,7 +216,7 @@ if (activeFlags.tweet) {
                     queryString: forceTimelineForUpdate ? uid : query,
                     cursor: forceTimelineForUpdate ? '' : cursor.tweets.cursor || '',
                     guest_token: global.guest_token.token,
-                    count: 999,
+                    count: !forceTimelineForUpdate ? 100 : 999,
                     online: true,
                     graphqlMode: forceTimelineForUpdate,
                     searchMode: !forceTimelineForUpdate,
@@ -232,7 +232,7 @@ if (activeFlags.tweet) {
                         queryString: forceTimelineForUpdate ? uid : query,
                         cursor: forceTimelineForUpdate ? '' : cursor.tweets.cursor || '',
                         guest_token: global.guest_token.token,
-                        count: 999,
+                        count: !forceTimelineForUpdate ? 100 : 999,
                         online: true,
                         graphqlMode: forceTimelineForUpdate,
                         searchMode: !forceTimelineForUpdate,
@@ -251,7 +251,7 @@ if (activeFlags.tweet) {
             }
 
             //const tmpTweetsInfo = TweetsInfo(tweets.data, true)
-            const tmpTweetsInfo = GenerateData(tweets, false, '', true)
+            const tmpTweetsInfo = GenerateData(tweets, false, '', forceTimelineForUpdate)
             if (tmpTweetsInfo.tweetsInfo.errors.code !== 0) {
                 console.log(`archiver: error #${tmpTweetsInfo.tweetsInfo.errors.code} , ${tmpTweetsInfo.tweetsInfo.errors.message}`)
                 //TGPush(`archiver: error #${tmpTweetsInfo.tweetsInfo.errors.code} , ${tmpTweetsInfo.tweetsInfo.errors.message}`)
@@ -266,7 +266,7 @@ if (activeFlags.tweet) {
                     //restful
                     //uid = Object.values(tmpTweetsInfo.tweetsInfo.users).filter(user => user.screen_name.toLocaleLowerCase() === name.toLocaleLowerCase())[0]?.id_str || null
                     //graphql
-                    uid = Object.values(tmpTweetsInfo.tweetsInfo.users).find((user) => user.legacy.screen_name.toLocaleLowerCase() === name.toLocaleLowerCase())?.rest_id || null
+                    uid = (user => user?.rest_id || user?.id_str || null)(Object.values(tmpTweetsInfo.tweetsInfo.users).find((user) => (user?.legacy?.screen_name || user.screen_name || '').toLocaleLowerCase() === name.toLocaleLowerCase()))
 
                     if (!uid) {
                         console.error(`archiver: no such account!!!`)
@@ -423,7 +423,7 @@ if (activeFlags.broadcast) {
             console.log(`archiver: broadcast (${broadcastsCards.length})`)
 
             const tmpCardsList = broadcastsCards.splice(0, 100)
-            await global.guest_token.updateGuestToken(global.guest_token?.open_account?.authorization)
+            await global.guest_token.updateGuestToken(4)
             const broadcasts = await getBroadcast({
                 id: tmpCardsList.map((card) => card.url.replaceAll(/.*\/([^\/\?#]+)(?:$|\?.*|#.*)/gm, '$1')),
                 guest_token: global.guest_token.token
@@ -530,7 +530,7 @@ if (activeFlags.space) {
             console.log(`archiver: audiospace (${audiospacesCards.length})`)
 
             const tmpCardsList = audiospacesCards.splice(0, 100)
-            await global.guest_token.updateGuestToken(global.guest_token?.open_account?.authorization)
+            await global.guest_token.updateGuestToken(4)
             const audiospaces = await getAudioSpace({ id: tmpCardsList.map((card) => card.url), guest_token: global.guest_token.token })
             global.guest_token.updateRateLimit('AudioSpaceById', 100)
 

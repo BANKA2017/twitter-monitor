@@ -52,7 +52,7 @@ const buildConfig = (input, outputPath, format = 'esm', minified = false, browse
 // include full version of backend, tweet crawler, analytics, trends
 export default [
     //...buildConfig('apps/backend/app.mjs', 'dist/backend/', 'esm', false, false, [], false), // full backend build success but run failed
-    ...buildConfig('apps/backend/app_online.mjs', 'dist/backend/app_online.js', 'esm', false, false), // online mode
-    ...buildConfig('apps/archiver/archive.mjs', 'dist/archiver/archive_node.js', 'esm', false, false),
+    ...buildConfig('apps/backend/app_online.mjs', 'dist/backend/app_online.mjs', 'esm', false, false), // online mode
+    ...buildConfig('apps/archiver/archive.mjs', 'dist/archiver/archive_node.mjs', 'esm', false, false),
     ...buildConfig('apps/archiver/archive_lite.mjs', 'dist/archiver/archive_browser.js', 'esm', true, true)
 ]

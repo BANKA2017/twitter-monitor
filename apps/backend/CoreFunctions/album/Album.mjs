@@ -39,7 +39,7 @@ const AlbumSearch = async (req, env) => {
             //TODO fix tokens
             tweets = await getConversation({ tweet_id: tweetId, guest_token: env.guest_token2, graphqlMode: true })
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
+            await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
         } else {
             tweets = await getTweets({
                 queryString: queryArray.join(' '),
@@ -51,14 +51,14 @@ const AlbumSearch = async (req, env) => {
                 searchMode: true
             })
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 1, 'Search')
+            await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'Search')
         }
     } catch (e) {
         console.error(`[${new Date()}]: #Album #${e.code} ${e.message}`)
         return env.json(apiTemplate(e.code, e.message, {}, 'album'))
     }
 
-    let { tweetsInfo, tweetsContent } = GenerateData(tweets, isPhotos, '', true)
+    let { tweetsInfo, tweetsContent } = GenerateData(tweets, isPhotos, '', false)
     if (tweetsInfo.errors.code !== 0) {
         return env.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message, {}, 'album'))
     }

@@ -14,7 +14,7 @@ const ApiUserInfo = async (req, env) => {
     try {
         userInfo = await getUserInfo({ user: name || uid, guest_token: env.guest_token2 })
         //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 1, userInfo.headers.get('x-rate-limit-remaining') < 1, !name ? 'UserByRestId' : 'UserByScreenName')
+        await env.updateGuestToken(env, 'guest_token2', 4, userInfo.headers.get('x-rate-limit-remaining') < 1, !name ? 'UserByRestId' : 'UserByScreenName')
     } catch (e) {
         console.error(`[${new Date()}]: #OnlineUserInfo #${name || uid} #${e.code} ${e.message}`)
         return env.json(apiTemplate(e.code, e.message))

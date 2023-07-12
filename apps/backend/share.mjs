@@ -3,7 +3,14 @@ import { basePath } from '../../libs/share/NodeConstant.mjs'
 
 const json = (data, status = 200) => ({
     status,
-    data
+    data,
+    format: 'json'
+})
+
+const xml = (data, status = 200) => ({
+    status,
+    data,
+    format: 'xml'
 })
 
 const updateGuestToken = async (env, k, tokenType = 0, update = true, type = '') => {
@@ -31,4 +38,4 @@ const mediaCacheSave = (buffer, name) => {
     }
 }
 
-export { json, updateGuestToken, ResponseWrapper, mediaExistPreCheck, mediaCacheSave }
+export { json, xml, updateGuestToken, ResponseWrapper, mediaExistPreCheck, mediaCacheSave }

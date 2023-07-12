@@ -4,9 +4,10 @@ import { getAudioSpace, getLiveVideoStream, getConversation, getPollResult, getT
 import { GetEntitiesFromText, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
 import { AudioSpace, Broadcast, Time2SnowFlake, Tweet, TweetsInfo } from '../../../../libs/core/Core.tweet.mjs'
 import { apiTemplate } from '../../../../libs/share/Constant.mjs'
+import { Rss } from '../../../../libs/core/Core.Rss.mjs'
 
 const ApiTweets = async (req, env) => {
-    const isRssMode = req.query.format === 'rss'
+    const isRssMode = ['rss', 'xml'].includes(req.query.format)
     const queryCount = VerifyQueryString(req.query.count, 0)
     const count = queryCount ? (queryCount > 100 ? 100 : queryCount < 1 ? 1 : queryCount) : isRssMode ? 20 : 10
     const tweet_id = VerifyQueryString(req.query.tweet_id, 0)
@@ -44,7 +45,7 @@ const ApiTweets = async (req, env) => {
                 cursor: isNaN(cursor) ? (cursor ? cursor : '') : ''
             })
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 1, 'ListTimeLime')
+            await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'ListTimeLime')
         } catch (e) {
             console.log(e)
             console.error(`[${new Date()}]: #OnlineListTimeline #${tweet_id} #${e.code} ${e.message}`)
@@ -61,7 +62,7 @@ const ApiTweets = async (req, env) => {
                 cursor: isNaN(cursor) ? (cursor ? cursor : '') : ''
             })
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 1, 'CommunityTimeLime')
+            await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'CommunityTimeLime')
         } catch (e) {
             console.log(e)
             console.error(`[${new Date()}]: #OnlineCommunityTimeline #${tweet_id} #${e.code} ${e.message}`)
@@ -71,7 +72,7 @@ const ApiTweets = async (req, env) => {
         try {
             tweets = await getConversation({ tweet_id, guest_token: env.guest_token2, graphqlMode: true, cursor: isNaN(cursor) ? cursor : '' })
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
+            await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
         } catch (e) {
             console.error(`[${new Date()}]: #OnlineTweetsConversation #${tweet_id} #${e.code} ${e.message}`)
             return env.json(apiTemplate(e.code, e.message))
@@ -136,16 +137,18 @@ const ApiTweets = async (req, env) => {
             //tweets = await getTweets(queryArray.join(' '), '', global.guest_token2.token, count, true, false, true)
 
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 1, 'UserTweets')
+            await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'UserTweets')
         } catch (e) {
             console.error(`[${new Date()}]: #OnlineTweetsTimeline #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
             return env.json(apiTemplate(e.code, e.message))
         }
     }
 
-    const { tweetsInfo, tweetsContent } = GenerateData(tweets, isConversation, loadConversation || listId || communityId || displayType === 'include_reply' ? '' : name, true)
+    const { tweetsInfo, tweetsContent, rssContent } = GenerateData(tweets, isConversation, loadConversation || listId || communityId || displayType === 'include_reply' ? '' : name, true)
     if (tweetsInfo.errors.code !== 0) {
         return env.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
+    } else if (isRssMode) {
+        return env.xml(rssContent)
     }
     return env.json(
         apiTemplate(200, 'OK', {
@@ -160,7 +163,7 @@ const ApiTweets = async (req, env) => {
 }
 
 const ApiSearch = async (req, env) => {
-    const isRssMode = req.query.format === 'rss'
+    const isRssMode = ['rss', 'xml'].includes(req.query.format)
     const type = req.type //req.params[0]
     const advancedSearchMode = (req.query.advanced || '0') === '1'
     const cursor = BigInt(VerifyQueryString(req.query.tweet_id, 0))
@@ -250,15 +253,17 @@ const ApiSearch = async (req, env) => {
             searchMode: true
         })
         //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 1, tweets.headers.get('x-rate-limit-remaining') < 1, 'Search')
+        await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'Search')
     } catch (e) {
         console.error(`[${new Date()}]: #OnlineTweetsSearch #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
         return env.json(apiTemplate(e.code, e.message))
     }
 
-    const { tweetsInfo, tweetsContent } = GenerateData(tweets, false, '', true)
+    const { tweetsInfo, tweetsContent, rssContent } = GenerateData(tweets, false, '', false)
     if (tweetsInfo.errors.code !== 0) {
         return env.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
+    } else if (isRssMode) {
+        return env.xml(rssContent)
     }
     return env.json(
         apiTemplate(200, 'OK', {
@@ -278,7 +283,7 @@ const ApiPoll = async (req, env) => {
     const tmpPollData = await getPollResult({ tweet_id, guest_token: env.guest_token2 })
 
     //updateGuestToken
-    await env.updateGuestToken(env, 'guest_token2', 1, tmpPollData.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
+    await env.updateGuestToken(env, 'guest_token2', 4, tmpPollData.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
     if (tmpPollData.code === 200) {
         return env.json(
             apiTemplate(
@@ -301,7 +306,7 @@ const ApiAudioSpace = async (req, env) => {
     const tmpAudioSpaceData = await getAudioSpace({ id, guest_token: env.guest_token2 })
 
     //updateGuestToken
-    await env.updateGuestToken(env, 'guest_token2', 1, tmpAudioSpaceData.headers.get('x-rate-limit-remaining') < 1, 'AudioSpaceById')
+    await env.updateGuestToken(env, 'guest_token2', 4, tmpAudioSpaceData.headers.get('x-rate-limit-remaining') < 1, 'AudioSpaceById')
     if (tmpAudioSpaceData.data?.data?.audioSpace || false) {
         let tmpAudioSpace = AudioSpace(tmpAudioSpaceData.data)
         //get link
@@ -340,7 +345,7 @@ const ApiBroadcast = async (req, env) => {
         const tmpBroadcastData = await getBroadcast({ id, guest_token: env.guest_token2 })
 
         //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 1, tmpBroadcastData.headers.get('x-rate-limit-remaining') < 1, 'BroadCast')
+        await env.updateGuestToken(env, 'guest_token2', 4, tmpBroadcastData.headers.get('x-rate-limit-remaining') < 1, 'BroadCast')
         let tmpBroadcast = Broadcast(tmpBroadcastData.data)
         //get link
         if (tmpBroadcast.is_available_for_replay || (Number(tmpBroadcast.start) <= Date.now() && tmpBroadcast.end === '0')) {
@@ -401,7 +406,7 @@ const ApiMedia = async (req, env) => {
         })
 
         //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 1, tmpConversation.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
+        await env.updateGuestToken(env, 'guest_token2', 4, tmpConversation.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
         const tweetsInfo = TweetsInfo(tmpConversation.data, true)
         if (tweetsInfo.errors.code !== 0) {
             return env.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
@@ -610,7 +615,56 @@ const GenerateData = (tweets, isConversation = false, filterName = '', graphqlMo
         tweetsContent = tweetsContent.reverse() //sort((a, b) => b.tweet_id - a.tweet_id)
     }
 
-    return { tweetsInfo, tweetsContent }
+    //rss content
+    
+    const rss = new Rss()
+    //get account list
+    let tmpAccount
+    if (filterName) {
+        tmpAccount = tweetsContent.find(content => content.user_info.name.toLocaleLowerCase() === filterName.toLocaleLowerCase())?.user_info || {}
+    }
+    rss.channel({
+        title: { text: 'Twitter Monitor Timeline' + (tmpAccount ? ` ${tmpAccount?.display_name} (@${tmpAccount?.name})` : ''), cdata: true },
+        link: { text: filterName ? 'https://twitter.com' : `https://twitter.com/${filterName}/`, cdata: false },
+        description: { text: tmpAccount?.description ? tmpAccount.description : 'Monitor timeline', cdata: true }, //TODOs
+        generator: { text: 'Twitter Monitor', cdata: false },
+        webMaster: { text: 'NEST.MOE', cdata: false },
+        language: { text: 'zh-cn', cdata: false },
+        lastBuildDate: {
+            text: new Date()
+                .toString()
+                .replaceAll(/\(.*\)/gm, '')
+                .trim(),
+            cdata: false
+        },
+        ttl: { text: 60, cdata: false },
+        //topCursor: { text: '&cursor=' + tweetsContent[0].id_str, cdata: true},
+        //bottomCursor: { text: '&cursor=' + tweetsContent.slice(-1)[0].id_str, cdata: true},
+    })
+    for (const x in tweetsContent) {
+        const tmpImageText = tweetsContent[x].mediaObject.map(media => {
+            const tmpContent = `<img src="https://${media.url}" alt="${((media?.title || '') + (media?.description || '') || 'media')}" />`
+            return tmpContent
+        }).join(' ')
+        rss.item({
+            title: { text: tweetsContent[x].full_text_origin, cdata: true },
+            description: {
+                text: tweetsContent[x].full_text.replaceAll(/<a href="([^"]+)" id="([^"]+)"(| target="_blank")>([^<]+)<\/a>/gm, (...match) => (match[2] === 'url' ? match[1] : match[4])) + ' ' + tmpImageText,
+                cdata: true
+            },
+            pubDate: {
+                text: new Date(tweetsContent[x].time*1000)
+                    .toString()
+                    .replaceAll(/\(.*\)/gm, '')
+                    .trim(),
+                cdata: false
+            },
+            link: { text: `https://twitter.com/${tweetsContent[x].name}/status/${tweetsContent[x].tweet_id}`, cdata: false },
+            author: { text: tweetsContent[x].display_name, cdata: true }
+        })
+    }
+
+    return { tweetsInfo, tweetsContent, rssContent: rss.value }
 }
 
 export { ApiTweets, ApiSearch, ApiPoll, ApiAudioSpace, ApiBroadcast, ApiMedia, GenerateData }

@@ -33,7 +33,7 @@ const ApiOfficialTranslate = async (req, env) => {
         const tmpTranslate = await getTranslate({ id, type, target, guest_token: env.guest_token2 })
 
         //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 1, tmpTranslate.headers.get('x-rate-limit-remaining') < 1, 'Translation')
+        await env.updateGuestToken(env, 'guest_token2', 4, tmpTranslate.headers.get('x-rate-limit-remaining') < 1, 'Translation')
 
         if (tmpTranslate.data || (tmpTranslate.data?.translationState ?? '').toLowerCase() !== 'success') {
             let tmpReaponse = {

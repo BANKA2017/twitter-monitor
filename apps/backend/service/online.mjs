@@ -15,7 +15,7 @@ online.use(async (req, res, next) => {
         return
     }
     //await global.guest_token2.updateGuestToken(0)
-    await req.env.guest_token2_handle.updateGuestToken(req.env.guest_token2_handle?.open_account?.authorization)
+    await req.env.guest_token2_handle.updateGuestToken(4)
     //if (global.guest_token2.token.nextActiveTime) {
     //    console.error(`[${new Date()}]: #Online #GuestToken #429 Wait until ${global.guest_token2.token.nextActiveTime}`)
     //    res.json(apiTemplate(429, `Wait until ${global.guest_token2.token.nextActiveTime}`))
@@ -39,7 +39,13 @@ online.get('/data/userinfo/', async (req, res) => {
 })
 online.get('/data/tweets/', async (req, res) => {
     const _res = await ApiTweets(req, req.env)
-    res.json(_res.data)
+    if (_res.format === 'xml') {
+        res.append('content-type', 'application/xml;charset=UTF-8')
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.send(_res.data)
+    } else {
+        res.json(_res.data)
+    }
 })
 online.get('/data/chart/', (req, res) => {
     res.json(apiTemplate(200, 'No record found', []))
@@ -47,7 +53,14 @@ online.get('/data/chart/', (req, res) => {
 online.get(/^\/data\/(hashtag|cashtag|search)(\/|)$/, async (req, res) => {
     req.type = req.params[0] || ''
     const _res = await ApiSearch(req, req.env)
-    res.json(_res.data)
+    if (_res.format === 'xml') {
+        res.append('content-type', 'application/xml;charset=UTF-8')
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.send(_res.data)
+    } else {
+        res.json(_res.data)
+    }
+    //res.json(apiTemplate(404, 'Search endpoint is not yet avaliable', {}, 'online'))
 })
 online.get('/data/poll/', async (req, res) => {
     const _res = await ApiPoll(req, req.env)

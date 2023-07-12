@@ -15,12 +15,12 @@ jobs:
               uses: actions/setup-node@v3
               with:
                   node-version: 18.x
-            - name: Yarn install and build && Replace Workers' id
+            - name: Yarn install and build
               run: |
                   yarn
                   yarn run build:rollup
-                  sed -i 's/<YOUR_ID>/${{ secrets.CF_KV_ID }}/g' apps/cfworkers/wrangler.toml
-                  sed -i 's/\[\"\*\"\]/${{ secrets.CF_ENV_WORKERS_ALLOW_ORIGIN }}/g' apps/cfworkers/wrangler.toml
+            #      sed -i 's/<YOUR_ID>/${{ secrets.CF_KV_ID }}/g' apps/cfworkers/wrangler.toml
+            #       sed -i 's/\[\"\*\"\]/${{ secrets.CF_ENV_WORKERS_ALLOW_ORIGIN }}/g' apps/cfworkers/wrangler.toml
             # - name: Upload dist
             #   uses: actions/upload-artifact@v3.1.2
             #   with:
@@ -35,15 +35,15 @@ jobs:
               uses: actions/upload-artifact@v3.1.2
               with:
                   name: 'archive_node.js'
-                  path: dist/archiver/archive_node.js
+                  path: dist/archiver/archive_node.mjs
             - name: Upload online backend
               uses: actions/upload-artifact@v3.1.2
               with:
                   name: 'app_online.js'
-                  path: dist/backend/app_online.js
-            - name: Deploy to workers
-              uses: cloudflare/wrangler-action@2.0.0
-              with:
-                  apiToken: ${{ secrets.CF_API_TOKEN }}
-                  accountId: ${{ secrets.CF_ACCOUNT_ID }}
-                  workingDirectory: 'apps/cfworkers'
+                  path: dist/backend/app_online.mjs
+            #- name: Deploy to workers
+            #  uses: cloudflare/wrangler-action@2.0.0
+            #  with:
+            #      apiToken: ${{ secrets.CF_API_TOKEN }}
+            #      accountId: ${{ secrets.CF_ACCOUNT_ID }}
+            #      workingDirectory: 'apps/cfworkers'

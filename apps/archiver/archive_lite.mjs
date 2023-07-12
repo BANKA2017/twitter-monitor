@@ -11,8 +11,8 @@ import { GenerateData } from '../backend/CoreFunctions/online/OnlineTweet.mjs'
 import { AudioSpace, Broadcast } from '../../libs/core/Core.tweet.mjs'
 import { Parser } from 'm3u8-parser'
 
-let name = window.name //readFileSync('./screen_name.txt').toString().trim()
-let forceTimelineForUpdate = window.timelineFirst || false
+let name = globalThis.name //readFileSync('./screen_name.txt').toString().trim()
+let forceTimelineForUpdate = globalThis.timelineFirst || false
 
 //save date
 let now = Date.now()
@@ -25,8 +25,8 @@ let range = {
 let rawTweetData = {}
 let rawUserInfoData = {}
 let resetCursor = false
-if (window.UserData?.account_info?.name !== name) {
-    window.UserData = {
+if (globalThis.UserData?.account_info?.name !== name) {
+    globalThis.UserData = {
         account_info: null,
         account_list: {},
         tweets: {},
@@ -34,30 +34,30 @@ if (window.UserData?.account_info?.name !== name) {
     }
     resetCursor = true
 }
-let UserData = window.UserData
+let UserData = globalThis.UserData
 let uid = UserData.account_info?.uid || null
 
 //get init token
-window.guest_token = new GuestToken()
-await window.guest_token.updateGuestToken(1)
+globalThis.guest_token = new GuestToken()
+await globalThis.guest_token.updateGuestToken(4)
 
-if (window.guest_token.token.nextActiveTime) {
-    await Sleep(window.guest_token.token.nextActiveTime - Date.now())
-    await window.guest_token.updateGuestToken(1)
-    if (!window.guest_token.token.success) {
-        throw window.guest_token
+if (globalThis.guest_token.token.nextActiveTime) {
+    await Sleep(globalThis.guest_token.token.nextActiveTime - Date.now())
+    await globalThis.guest_token.updateGuestToken(4)
+    if (!globalThis.guest_token.token.success) {
+        throw globalThis.guest_token
     }
 }
 
 // cursor
-if (resetCursor || !Object.values(window.cursor || {}).some((v) => v.cursor)) {
-    window.cursor = {
+if (resetCursor || !Object.values(globalThis.cursor || {}).some((v) => v.cursor)) {
+    globalThis.cursor = {
         tweets: { maxId: '', tmpId: '', cursor: '' },
         broadcast: { maxId: '', tmpId: '', cursor: '' },
         space: { maxId: '', tmpId: '', cursor: '' }
     }
 }
-let cursor = window.cursor
+let cursor = globalThis.cursor
 
 //userinfo and tweets
 if (cursor.tweets.cursor === '') {
@@ -80,9 +80,9 @@ if (cursor.tweets.cursor !== 'complete') {
     let query = [`from:${name}`, 'include:replies', 'include:nativeretweets', 'include:retweets', 'include:quote', `since_id:${cursor.tweets.tmpId ? cursor.tweets.tmpId : 0}`].join(' ')
     console.log(`archiver: query string -->${query}<--`)
     do {
-        await window.guest_token.updateGuestToken(1)
-        if (window.guest_token.token.nextActiveTime) {
-            console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${window.guest_token.token.nextActiveTime}`)
+        await globalThis.guest_token.updateGuestToken(4)
+        if (globalThis.guest_token.token.nextActiveTime) {
+            console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${globalThis.guest_token.token.nextActiveTime}`)
             break //只处理现有的
         }
         let tweets = null
@@ -90,8 +90,8 @@ if (cursor.tweets.cursor !== 'complete') {
             tweets = await getTweets({
                 queryString: forceTimelineForUpdate ? uid : query,
                 cursor: forceTimelineForUpdate ? '' : cursor.tweets.cursor || '',
-                guest_token: window.guest_token.token,
-                count: 999,
+                guest_token: globalThis.guest_token.token,
+                count: !forceTimelineForUpdate ? 100 : 999,
                 online: true,
                 graphqlMode: forceTimelineForUpdate,
                 searchMode: !forceTimelineForUpdate,
@@ -103,7 +103,7 @@ if (cursor.tweets.cursor !== 'complete') {
                         .filter((cookie) => cookie.length >= 2)
                 )
             })
-            window.guest_token.updateRateLimit('Search')
+            globalThis.guest_token.updateRateLimit('Search')
         } catch (e) {
             //try again
             console.log('archiver: first retry...')
@@ -111,14 +111,14 @@ if (cursor.tweets.cursor !== 'complete') {
                 tweets = await getTweets({
                     queryString: forceTimelineForUpdate ? uid : query,
                     cursor: forceTimelineForUpdate ? '' : cursor.tweets.cursor || '',
-                    guest_token: window.guest_token.token,
-                    count: 999,
+                    guest_token: globalThis.guest_token.token,
+                    count: !forceTimelineForUpdate ? 100 : 999,
                     online: true,
                     graphqlMode: forceTimelineForUpdate,
                     searchMode: !forceTimelineForUpdate,
                     withReply: true
                 })
-                window.guest_token.updateRateLimit('Search')
+                globalThis.guest_token.updateRateLimit('Search')
             } catch (e1) {
                 console.log('archiver: retry failed...')
                 throw e1
@@ -129,7 +129,7 @@ if (cursor.tweets.cursor !== 'complete') {
         }
 
         //let tmpTweetsInfo = TweetsInfo(tweets.data, true)
-        let tmpTweetsInfo = GenerateData(tweets, false, '', true)
+        let tmpTweetsInfo = GenerateData(tweets, false, '', forceTimelineForUpdate)
         if (tmpTweetsInfo.tweetsInfo.errors.code !== 0) {
             console.log(`archiver: error #${tmpTweetsInfo.tweetsInfo.errors.code} , ${tmpTweetsInfo.tweetsInfo.errors.message}`)
             continue
@@ -143,7 +143,7 @@ if (cursor.tweets.cursor !== 'complete') {
                 //restful
                 //uid = Object.values(tmpTweetsInfo.tweetsInfo.users).filter(user => user.screen_name.toLocaleLowerCase() === name.toLocaleLowerCase())[0]?.id_str || null
                 //graphql
-                uid = Object.values(tmpTweetsInfo.tweetsInfo.users).find((user) => user.legacy.screen_name.toLocaleLowerCase() === name.toLocaleLowerCase())?.rest_id || null
+                uid = (user => user?.rest_id || user?.id_str || null)(Object.values(tmpTweetsInfo.tweetsInfo.users).find((user) => (user?.legacy?.screen_name || user.screen_name || '').toLocaleLowerCase() === name.toLocaleLowerCase()))
 
                 if (!uid) {
                     throw `archiver: no such account!!!`
@@ -287,12 +287,12 @@ if (broadcastsCards.length <= 0) {
     while (broadcastsCards.length > 0) {
         console.log(`archiver: broadcast (${broadcastsCards.length})`)
         let tmpCardsList = broadcastsCards.splice(0, 100)
-        await window.guest_token.updateGuestToken(1)
+        await globalThis.guest_token.updateGuestToken(4)
         let broadcasts = await getBroadcast({
             id: tmpCardsList.map((card) => card.url.replaceAll(/.*\/([^\/\?#]+)(?:$|\?.*|#.*)/gm, '$1')),
-            guest_token: window.guest_token.token
+            guest_token: globalThis.guest_token.token
         })
-        window.guest_token.updateRateLimit('BroadCast', 100)
+        globalThis.guest_token.updateRateLimit('BroadCast', 100)
 
         for (let index in broadcasts) {
             let broadcastResponse = broadcasts[index]
@@ -358,9 +358,9 @@ if (audiospacesCards.length <= 0) {
         console.log(`archiver: audiospace (${audiospacesCards.length})`)
 
         let tmpCardsList = audiospacesCards.splice(0, 100)
-        await window.guest_token.updateGuestToken(1)
-        let audiospaces = await getAudioSpace({ id: tmpCardsList.map((card) => card.url), guest_token: window.guest_token.token })
-        window.guest_token.updateRateLimit('AudioSpaceById', 100)
+        await globalThis.guest_token.updateGuestToken(4)
+        let audiospaces = await getAudioSpace({ id: tmpCardsList.map((card) => card.url), guest_token: globalThis.guest_token.token })
+        globalThis.guest_token.updateRateLimit('AudioSpaceById', 100)
 
         for (let index in audiospaces) {
             let audiospaceResponse = audiospaces[index]
@@ -412,4 +412,4 @@ const Download = (url, fileName) => {
     document.body.removeChild(element)
 }
 
-Download(URL.createObjectURL(new Blob([JSON.stringify(window.UserData, null, 4)], { type: 'application/json' })), `${name}.json`)
+Download(URL.createObjectURL(new Blob([JSON.stringify(globalThis.UserData, null, 4)], { type: 'application/json' })), `${name}.json`)

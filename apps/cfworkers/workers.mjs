@@ -1,5 +1,5 @@
 import { Router } from 'itty-router'
-import { PostBodyParser, ResponseWrapper, json, mediaCacheSave, mediaExistPreCheck, updateGuestToken } from './share.mjs'
+import { PostBodyParser, ResponseWrapper, json, xml, mediaCacheSave, mediaExistPreCheck, updateGuestToken } from './share.mjs'
 import { apiTemplate } from '../../libs/share/Constant.mjs'
 import { AlbumSearch } from '../backend/CoreFunctions/album/Album.mjs'
 import { ApiOfficialTranslate, ApiTranslate } from '../backend/CoreFunctions/translate/OnlineTranslate.mjs'
@@ -34,6 +34,7 @@ const updateToken = async (req, env) => {
 workersApi.all('*', (req, env) => {
     updateToken(req, env)
     env.json = json
+    env.xml = xml
     env.updateGuestToken = updateGuestToken
     env.ResponseWrapper = ResponseWrapper
     env.mediaExistPreCheck = mediaExistPreCheck
@@ -85,6 +86,7 @@ workersApi.get(
         req.type = 'hashtag'
     },
     ApiSearch
+    //() => ResponseWrapper(apiTemplate(404, 'Search endpoint is not yet avaliable', {}, 'online'))
 )
 workersApi.get(
     '/online/api/v3/data/cashtag/',
@@ -92,6 +94,7 @@ workersApi.get(
         req.type = 'cashtag'
     },
     ApiSearch
+    //() => ResponseWrapper(apiTemplate(404, 'Search endpoint is not yet avaliable', {}, 'online'))
 )
 workersApi.get(
     '/online/api/v3/data/search/',
@@ -99,6 +102,7 @@ workersApi.get(
         req.type = 'search'
     },
     ApiSearch
+    //() => ResponseWrapper(apiTemplate(404, 'Search endpoint is not yet avaliable', {}, 'online'))
 )
 
 //translator

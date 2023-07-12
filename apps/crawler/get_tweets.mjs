@@ -58,8 +58,8 @@ const once = (process.argv[2] || '') === 'once'
 let firstRun = true
 
 //get init token
-global.guest_token = new GuestToken('android')
-await global.guest_token.updateGuestToken(global.guest_token?.open_account?.authorization)
+global.guest_token = new GuestToken()
+await global.guest_token.updateGuestToken(4)
 const cycleMilliseconds = CYCLE_SECONDS * 1000
 
 while (true) {
@@ -77,7 +77,7 @@ while (true) {
         await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
         console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
         await Sleep(global.guest_token.token.nextActiveTime - Date.now())
-        await global.guest_token.updateGuestToken(global.guest_token?.open_account?.authorization)
+        await global.guest_token.updateGuestToken(4)
         server_info.updateValue('total_req_times') //for init guest token
         if (!global.guest_token.token.success) {
             continue
@@ -131,7 +131,7 @@ while (true) {
             allInfoForAccount = allInfoForAccount.concat(await getUserInfo({ user: tmpRefreshableIdList, guest_token: global.guest_token.token, graphqlMode: GRAPHQL_MODE }, global.guest_token.token, GRAPHQL_MODE))
             global.guest_token.updateRateLimit('UserByScreenName', tmpRefreshableIdList.filter((id) => isNaN(id)).length)
             global.guest_token.updateRateLimit('UserByRestId', tmpRefreshableIdList.filter((id) => !isNaN(id)).length)
-            await global.guest_token.updateGuestToken(global.guest_token?.open_account?.authorization)
+            await global.guest_token.updateGuestToken(4)
             server_info.updateValue('total_req_times')
             if (global.guest_token.token.nextActiveTime) {
                 await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
@@ -346,7 +346,7 @@ while (true) {
             //太长不看: 1000/guestToken -->这是旧的//180req/15min
             //graphql只需要在999更换即可
 
-            await global.guest_token.updateGuestToken(global.guest_token?.open_account?.authorization)
+            await global.guest_token.updateGuestToken(4)
             server_info.updateValue('total_req_times')
             if (global.guest_token.token.nextActiveTime) {
                 await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)

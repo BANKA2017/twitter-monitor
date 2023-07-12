@@ -1,19 +1,27 @@
 import { getToken } from '../../libs/core/Core.fetch.mjs'
 import { GuestToken } from '../../libs/core/Core.function.mjs'
 
-const json = (data) =>
+const json = (data, status = 200) =>
     new Response(JSON.stringify(data), {
-        status: 200,
+        status,
         headers: {
             'content-type': 'application/json'
+        }
+    })
+
+const xml = (data, status = 200) => 
+    new Response(data, {
+        status,
+        headers: {
+            'content-type': 'application/xml;charset=UTF-8'
         }
     })
 
 //Type is useless in cfworkers api
 const updateGuestToken = async (env, k, tokenType = 0, update = true, type = '') => {
     if (update) {
-        const handle = new GuestToken('android')
-        await handle.updateGuestToken(handle.open_account.authorization)
+        const handle = new GuestToken()
+        await handle.updateGuestToken(4)
         const tmpToken = handle.token //  await getToken()
         if (tmpToken.success) {
             await env.kv.put(k, JSON.stringify(tmpToken), { expiration: Math.floor(tmpToken.expire / 1000) })
@@ -58,4 +66,4 @@ const PostBodyParser = async (req, defaultValue = new Map([])) => {
     }
 }
 
-export { json, updateGuestToken, ResponseWrapper, mediaExistPreCheck, mediaCacheSave, PostBodyParser }
+export { json, xml, updateGuestToken, ResponseWrapper, mediaExistPreCheck, mediaCacheSave, PostBodyParser }

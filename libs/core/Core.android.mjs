@@ -1,28 +1,30 @@
 import axiosFetch from 'axios-helper'
 import { coreFetch, preCheckCtx } from './Core.fetch.mjs'
-import createHmac from 'create-hmac'
+import { HmacSHA1 } from 'crypto-es/lib/sha1.js'
+import { Base64 } from 'crypto-es/lib/enc-base64.js'
 
 // The official app installed from Google Play Store (9.95.0-release.0)
 // TW_ANDROID_BASIC_TOKEN = `Basic ${base64_encode(TW_CONSUMER_KEY+':'+TW_CONSUMER_SECRET)}`
 const TW_ANDROID_BASIC_TOKEN = 'Basic M25WdVNvQlpueDZVNHZ6VXhmNXc6QmNzNTlFRmJic2RGNlNsOU5nNzFzbWdTdFdFR3dYWEtTall2UFZ0N3F5cw=='
 const TW_CONSUMER_KEY = '3nVuSoBZnx6U4vzUxf5w'
 const TW_CONSUMER_SECRET = 'Bcs59EFbbsdF6Sl9Ng71smgStWEGwXXKSjYvPVt7qys'
+const TW_ANDROID_BEARER_TOKEN = "Bearer AAAAAAAAAAAAAAAAAAAAAFXzAwAAAAAAMHCxpeSDG1gLNLghVe8d74hl6k4%3DRUMF4xAQLsbeBhTSRrCiQpJtxoGWeyHrDb5te2jpGskWDFW82F"
 
 const TW_ANDROID_PREFIX = 'https://na.albtls.t.co'
 const TW_WEBAPI_PREFIX = 'https://api.twitter.com'
 
 const axios = axiosFetch()
 
-const getBearerToken = async () => {
-    const tmpTokenResponse = await axios(TW_WEBAPI_PREFIX + '/oauth2/token', {
-        headers: {
-            Authorization: TW_ANDROID_BASIC_TOKEN,
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        method: 'post',
-        data: 'grant_type=client_credentials'
-    })
-    return tmpTokenResponse
+const getBearerToken = () => {
+    //const tmpTokenResponse = await axios(TW_WEBAPI_PREFIX + '/oauth2/token', {
+    //    headers: {
+    //        Authorization: TW_ANDROID_BASIC_TOKEN,
+    //        'Content-Type': 'application/x-www-form-urlencoded'
+    //    },
+    //    method: 'post',
+    //    data: 'grant_type=client_credentials'
+    //})
+    return TW_ANDROID_BEARER_TOKEN//tmpTokenResponse
 }
 
 const postOpenAccountInit = async (ctx = { guest_token: {}, authorization: '' }, env = {}) => {
@@ -220,9 +222,7 @@ const getOauthAuthorization = (oauth_token, oauth_token_secret, method = 'GET', 
         oauth_consumer_key: TW_CONSUMER_KEY,
         oauth_consumer_secret: TW_CONSUMER_SECRET,
         payload,
-        sign: createHmac('sha1', TW_CONSUMER_SECRET + '&' + (oauth_token_secret ? oauth_token_secret : ''))
-            .update(forSign)
-            .digest('base64')
+        sign: HmacSHA1(forSign, TW_CONSUMER_SECRET + '&' + (oauth_token_secret ? oauth_token_secret : '')).toString(Base64)
     }
 }
 

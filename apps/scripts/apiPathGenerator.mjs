@@ -19,7 +19,8 @@ const apiPathList = {
         'data.bookmark_timeline_v2.timeline.instructions',
         'data.list.tweets_timeline.timeline.instructions',
         'data.list.members_timeline.timeline.instructions',
-        'data.communityResults.result.community_timeline.timeline.instructions'
+        'data.communityResults.result.community_timeline.timeline.instructions',
+        'modules'
     ],
     tweets_contents: [
         'globalObjects.tweets',
@@ -58,7 +59,7 @@ const apiPathList = {
         'item.itemContent.tweet.rest_id',
         'item.itemContent.tweet_results.result.rest_id'
     ],
-    tweet_uid: ['user_id_str', 'legacy.user_id_str'],
+    tweet_uid: ['user_id_str', 'legacy.user_id_str', 'user.id_str'],
     tweet_conversation_id_str: ['conversation_id_str', 'legacy.conversation_id_str'],
     tweet_created_at: ['created_at', 'legacy.created_at'],
     tweet_source: ['source', 'legacy.source'],

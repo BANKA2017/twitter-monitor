@@ -44,7 +44,7 @@ const ApiLoginFlow = async (req, env) => {
         loginFlow = new Login(env.guest_token2)
         tmpResponse = await loginFlow.Init()
         //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 1, tmpResponse.headers.get('x-rate-limit-remaining') < 1, 'Login')
+        await env.updateGuestToken(env, 'guest_token2', 4, tmpResponse.headers.get('x-rate-limit-remaining') < 1, 'Login')
         if (exitFlow(tmpResponse)) {
             return exitFlowResponse(tmpResponse)
         }
