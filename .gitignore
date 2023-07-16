@@ -4,6 +4,7 @@ apps/scripts/t.mjs
 apps/scripts/save_spaces/
 apps/scripts/astParser/
 apps/backend/cache/*
+apps/open_account/
 !apps/backend/cache/.gitkeep
 
 apps/archiver/*

@@ -42,7 +42,8 @@ const ApiTweets = async (req, env) => {
                 guest_token: env.guest_token2,
                 authorization: 1,
                 graphqlMode: true,
-                cursor: isNaN(cursor) ? (cursor ? cursor : '') : ''
+                cursor: isNaN(cursor) ? (cursor ? cursor : '') : '',
+                cookie: req.cookies
             })
             //updateGuestToken
             await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'ListTimeLime')
@@ -59,7 +60,8 @@ const ApiTweets = async (req, env) => {
                 guest_token: env.guest_token2,
                 authorization: 1,
                 graphqlMode: true,
-                cursor: isNaN(cursor) ? (cursor ? cursor : '') : ''
+                cursor: isNaN(cursor) ? (cursor ? cursor : '') : '',
+                cookie: req.cookies
             })
             //updateGuestToken
             await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'CommunityTimeLime')
@@ -70,7 +72,7 @@ const ApiTweets = async (req, env) => {
         }
     } else if (isConversation) {
         try {
-            tweets = await getConversation({ tweet_id, guest_token: env.guest_token2, graphqlMode: true, cursor: isNaN(cursor) ? cursor : '' })
+            tweets = await getConversation({ tweet_id, guest_token: env.guest_token2, graphqlMode: true, cursor: isNaN(cursor) ? cursor : '', cookie: req.cookies })
             //updateGuestToken
             await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
         } catch (e) {
@@ -132,7 +134,8 @@ const ApiTweets = async (req, env) => {
                 online: true,
                 graphqlMode: true,
                 searchMode: false,
-                withReply: displayType === 'include_reply'
+                withReply: displayType === 'include_reply',
+                cookie: req.cookies
             })
             //tweets = await getTweets(queryArray.join(' '), '', global.guest_token2.token, count, true, false, true)
 
@@ -250,7 +253,8 @@ const ApiSearch = async (req, env) => {
             count: queryCount,
             online: true,
             graphqlMode: false,
-            searchMode: true
+            searchMode: true,
+            cookie: req.cookies
         })
         //updateGuestToken
         await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'Search')
@@ -280,7 +284,7 @@ const ApiPoll = async (req, env) => {
     if (!tweet_id) {
         return env.json(apiTemplate())
     }
-    const tmpPollData = await getPollResult({ tweet_id, guest_token: env.guest_token2 })
+    const tmpPollData = await getPollResult({ tweet_id, guest_token: env.guest_token2, cookie: req.cookies })
 
     //updateGuestToken
     await env.updateGuestToken(env, 'guest_token2', 4, tmpPollData.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
@@ -303,7 +307,7 @@ const ApiAudioSpace = async (req, env) => {
     if (!id) {
         return env.json(apiTemplate())
     }
-    const tmpAudioSpaceData = await getAudioSpace({ id, guest_token: env.guest_token2 })
+    const tmpAudioSpaceData = await getAudioSpace({ id, guest_token: env.guest_token2, cookie: req.cookies })
 
     //updateGuestToken
     await env.updateGuestToken(env, 'guest_token2', 4, tmpAudioSpaceData.headers.get('x-rate-limit-remaining') < 1, 'AudioSpaceById')
@@ -342,7 +346,7 @@ const ApiBroadcast = async (req, env) => {
 
     //TODO check Broadcast api rate limit
     try {
-        const tmpBroadcastData = await getBroadcast({ id, guest_token: env.guest_token2 })
+        const tmpBroadcastData = await getBroadcast({ id, guest_token: env.guest_token2, cookie: req.cookies })
 
         //updateGuestToken
         await env.updateGuestToken(env, 'guest_token2', 4, tmpBroadcastData.headers.get('x-rate-limit-remaining') < 1, 'BroadCast')
@@ -402,7 +406,8 @@ const ApiMedia = async (req, env) => {
             tweet_id,
             guest_token: env.guest_token2,
             graphqlMode: true,
-            authorization: authorizationMode
+            authorization: authorizationMode,
+            cookie: req.cookies
         })
 
         //updateGuestToken

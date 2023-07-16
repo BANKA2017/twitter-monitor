@@ -12,7 +12,7 @@ const ApiUserInfo = async (req, env) => {
     }
     let userInfo = {}
     try {
-        userInfo = await getUserInfo({ user: name || uid, guest_token: env.guest_token2 })
+        userInfo = await getUserInfo({ user: name || uid, guest_token: env.guest_token2, cookie: req.cookies })
         //updateGuestToken
         await env.updateGuestToken(env, 'guest_token2', 4, userInfo.headers.get('x-rate-limit-remaining') < 1, !name ? 'UserByRestId' : 'UserByScreenName')
     } catch (e) {

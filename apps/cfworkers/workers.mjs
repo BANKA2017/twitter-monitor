@@ -109,7 +109,7 @@ workersApi.get(
 workersApi.post(
     '/translate/online/',
     async (req) => {
-        req.postBody = PostBodyParser(req, new Map([['text', '']]))
+        PostBodyParser(req, new Map([['text', '']]))
     },
     ApiTranslate
 )
@@ -143,7 +143,7 @@ workersApi.get(
 workersApi.post(
     '/online/api/v3/account/taskflow/',
     (req) => {
-        req.postBody = env.PostBodyParser(req)
+        env.PostBodyParser(req)
     },
     ApiLoginFlow
 )

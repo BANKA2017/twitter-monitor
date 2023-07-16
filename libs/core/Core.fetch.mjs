@@ -85,6 +85,9 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
   cookie: auth_token, ct0 # ct0 is not always need
   headers: 
    - content-type: application/json
+
+   cookies(auth_token, ct0) > open_account(android oauth) > guest_token
+   suffix TnA or other...     suffix 82F                    suffix QCF or provided...
   */
     if (!url) {
         throw 'tmv3: Invalid url'
@@ -111,7 +114,10 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
 
     // authorization
 
-    if (guest_token?.open_account?.oauth_token && guest_token?.open_account?.oauth_token_secret) {
+    if (loginMode) {
+        // suffix TnA
+        authorization = Authorization[1]
+    } else if (guest_token?.open_account?.oauth_token && guest_token?.open_account?.oauth_token_secret) {
         //url = url.replace(TW_WEBAPI_PREFIX, TW_ANDROID_PREFIX)
         const oauthSign = getOauthAuthorization(guest_token.open_account.oauth_token, guest_token.open_account.oauth_token_secret, body !== undefined ? 'POST' : 'GET', url, body)
         authorization = `OAuth realm="http://api.twitter.com/", oauth_version="1.0", oauth_token="${oauthSign.oauth_token}", oauth_nonce="${oauthSign.oauth_nonce}", oauth_timestamp="${oauthSign.timestamp}", oauth_signature="${encodeURIComponent(

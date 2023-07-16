@@ -55,4 +55,5 @@ export default [
     ...buildConfig('apps/backend/app_online.mjs', 'dist/backend/app_online.mjs', 'esm', false, false), // online mode
     ...buildConfig('apps/archiver/archive.mjs', 'dist/archiver/archive_node.mjs', 'esm', false, false),
     ...buildConfig('apps/archiver/archive_lite.mjs', 'dist/archiver/archive_browser.js', 'esm', true, true)
+    //...buildConfig('apps/open_account/crawler/get_open_account.mjs', 'dist/open_account/crawler/get_open_account.js', 'esm', true, false)
 ]

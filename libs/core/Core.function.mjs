@@ -67,9 +67,9 @@ export class GuestToken {
                     const OpenAccount = (await postOpenAccount({ guest_token: this.#guest_token, authorization: this.open_account.authorization, flow_token: flowToken })).data
                     this.open_account.oauth_token = OpenAccount.subtasks[0].open_account.oauth_token
                     this.open_account.oauth_token_secret = OpenAccount.subtasks[0].open_account.oauth_token_secret
-                    const OpenAccountUser = OpenAccount.subtasks[0].open_account.user
+                    this.open_account.user = OpenAccount.subtasks[0].open_account.user
                     this.#guest_token.open_account = this.open_account
-                    console.log(`[${new Date()}]: #GuestToken Successful get account @${OpenAccountUser.screen_name}`)
+                    console.log(`[${new Date()}]: #GuestToken Successful get account @${this.open_account.user.screen_name}`)
                 }
             } catch (e) {
                 console.error(e)

@@ -334,7 +334,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
     media = GetMedia(content, GeneralTweetData.uid, GeneralTweetData.tweet_id, hidden, online)
 
     //video
-    if (media.length && (media[0]?.origin_type === 'video' || media[0]?.origin_type === 'animated_gif')) {
+    if (media.length && media.some((x) => ['video', 'animated_gif'].includes(x.origin_type))) {
         video = (path2array('tweet_media_path', content) || []).filter((x) => x.video_info).map((x) => x.video_info)
         GeneralTweetData.video = 1
     }

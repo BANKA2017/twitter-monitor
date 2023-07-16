@@ -35,7 +35,7 @@ const ApiListInfo = async (req, env) => {
     }
 
     try {
-        let listInfoResponse = await getListInfo({ id: listId ? listId : '', screenName, listSlug, guest_token: env.guest_token2, authorization: 1 })
+        let listInfoResponse = await getListInfo({ id: listId ? listId : '', screenName, listSlug, guest_token: env.guest_token2, authorization: 1, cookie: req.cookies })
         //updateGuestToken
         await env.updateGuestToken(env, 'guest_token2', 4, listInfoResponse.headers.get('x-rate-limit-remaining') < 1, 'ListInfo')
 
@@ -96,7 +96,7 @@ const ApiListMemberList = async (req, env) => {
     }
 
     try {
-        let listMemberResponse = await getListMember({ id: listId, cursor, count, guest_token: env.guest_token2, authorization: 1 })
+        let listMemberResponse = await getListMember({ id: listId, cursor, count, guest_token: env.guest_token2, authorization: 1, cookie: req.cookies })
         //updateGuestToken
         await env.updateGuestToken(env, 'guest_token2', 4, listMemberResponse.headers.get('x-rate-limit-remaining') < 1, 'ListMember')
 
