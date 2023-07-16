@@ -1,7 +1,6 @@
 name = "twitter-monitor-workers"
 compatibility_date = "2023-03-25"
 main = "workers.mjs"
-node_compat = true
 
 # read https://developers.cloudflare.com/workers/wrangler/workers-kv/#create-a-kv-namespace-with-wrangler 
 # and create kv space named 'twitter-monitor-workers-kv' in https://dash.cloudflare.com/

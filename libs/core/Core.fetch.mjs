@@ -44,20 +44,9 @@ import { MockDocument } from '../share/MockFuntions.mjs'
 import { parse } from 'acorn'
 import { getOauthAuthorization } from './Core.android.mjs'
 import { _ConversationTimelineV2, _SearchTimeline, _TranslateProfileQuery, _TranslateTweetQuery, _UserWithProfileTweetsAndRepliesQueryV2, _UserWithProfileTweetsQueryV2 } from '../assets/graphql/androidQueryIdList.js'
+import cryptoHandle from 'crypto-helper'
 
-const generateCsrfToken = async () => {
-    // @ts-ignore
-    if (typeof process !== 'undefined' && !process?.browser) {
-        //nodejs
-        const { webcrypto } = await import('crypto')
-        return webcrypto.randomUUID().replaceAll('-', '')
-    } else if (typeof window !== 'undefined') {
-        //browser // workers // deno
-        return crypto.randomUUID().replaceAll('-', '')
-    } else {
-        return 0
-    }
-}
+const generateCsrfToken = () => cryptoHandle.randomUUID().replaceAll('-', '')
 
 //for web
 const TW_AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAAPYXBAAAAAAACLXUNDekMxqa8h%2F40K4moUkGsoc%3DTYfbDKbT3jJPCEVnMYqilB28NHfOPqkca3qaAxGfsyKCs0wRbw' //old token
@@ -75,7 +64,6 @@ const TW_ANDROID_PREFIX = 'https://global.albtls.t.co'
 const TW_ANDROID_SEARCH_PREFIX = 'https://na.albtls.t.co'
 
 const Authorization = [TW_AUTHORIZATION, TW_AUTHORIZATION2, TW_AUTHORIZATION3, TWEETDECK_AUTHORIZATION, TWEETDECK_AUTHORIZATION2]
-const ct0 = await generateCsrfToken()
 
 const axios = axiosFetch()
 
@@ -102,7 +90,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
         body = JSON.stringify(body)
     }
     //cookie
-    let requestCookie = { ct0 }
+    let requestCookie = { ct0: generateCsrfToken() }
     //guest token
     if (!loginMode) {
         requestCookie.gt = guest_token.token
@@ -164,7 +152,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
             data: body ? body : undefined
         })
             .then((response) => {
-                console.log(response, JSON.stringify(response.data))
+                //console.log(response, JSON.stringify(response.data))
                 if (!response.data) {
                     reject({ code: -1000, message: 'empty data' })
                 }
@@ -214,6 +202,8 @@ const getToken = async (authorization = 0) => {
         expire: Date.now() + 870000, //15 min
         authorization: typeof authorization === 'string' ? authorization : Authorization[authorization]
     }
+
+    const ct0 = generateCsrfToken()
 
     return await new Promise((resolve, reject) => {
         //2000 per 30 min i guess
