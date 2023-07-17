@@ -539,7 +539,7 @@ const returnDataForTweets = (tweet = {}, historyMode = false, tweetEntities = []
     let tmpInageText = ''
     tweet.mediaObject = []
     if (tweet.media || tweet.cardObject.media || tweet.quoteObject.media) {
-        for (const queryMediaSingle of tweetMedia) {
+        for (let queryMediaSingle of tweetMedia) {
             //TODO check equal tweet id
             if (queryMediaSingle.tweet_id === tweet.tweet_id || queryMediaSingle.tweet_id === tweet.quote_status) {
                 queryMediaSingle.cover = queryMediaSingle.cover.replaceAll(/http(s|):\/\//gm, '')
@@ -636,9 +636,6 @@ const GenerateData = (tweets, isConversation = false, precheckUid = '', graphqlM
         const tmpSearchParame = url.searchParams.toString()
         return '/online/api/v3' + url.pathname + (tmpSearchParame ? '?' + tmpSearchParame : '')
     }
-    if (req?.url && typeof req?.url === 'string') {
-        req.url = new URL('http://localhost' + req.url)
-    }
 
     rss.channel({
         title: { text: tmpAccount?.name ? ` ${tmpAccount?.display_name} (@${tmpAccount?.name})` : 'Twitter Monitor Timeline', cdata: true },
@@ -671,8 +668,8 @@ const GenerateData = (tweets, isConversation = false, precheckUid = '', graphqlM
             : {}),
         ...(req?.url?.searchParams
             ? {
-                  topCursor: { text: buildRssCursor(req.url, tweetsInfo.tweetRange.max, tweetsInfo.cursor.top, true), cdata: true },
-                  bottomCursor: { text: buildRssCursor(req.url, tweetsInfo.tweetRange.min, tweetsInfo.cursor.bottom, false), cdata: true }
+                  topCursor: { text: buildRssCursor(new URL('http://localhost' + req.url), tweetsInfo.tweetRange.max, tweetsInfo.cursor.top, true), cdata: true },
+                  bottomCursor: { text: buildRssCursor(new URL('http://localhost' + req.url), tweetsInfo.tweetRange.min, tweetsInfo.cursor.bottom, false), cdata: true }
               }
             : {})
     })
