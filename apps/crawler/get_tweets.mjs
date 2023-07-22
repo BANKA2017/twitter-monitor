@@ -109,9 +109,9 @@ while (true) {
         .filter((user) => user[0].name && !user[0].deleted && ((userId) => userId[1] || (userId[0] > 0 && userId[0] !== '0' && userId[0] !== 'undefined'))([user[0]?.uid, user[0]?.name]))
     let refreshableIdList = refreshableList.map((user) => {
         if (user[0].uid && Number(user[0].uid) > 0) {
-            return user[0]?.uid
+            return [user[0]?.uid, -2]
         } else {
-            return user[0]?.name
+            return [user[0]?.name, -3]
         }
     })
     // TODO once have rete limit ban you have to stop crawler up to 30 mins
@@ -120,7 +120,7 @@ while (true) {
         const uidCount = refreshableIdList.filter((id) => !isNaN(id)).length
         const nameCount = refreshableIdList.filter((id) => isNaN(id)).length
         if (global.guest_token.preCheck('UserByScreenName', nameCount) && global.guest_token.preCheck('UserByRestId', uidCount)) {
-            allInfoForAccount = allInfoForAccount.concat(await getUserInfo({ user: refreshableIdList, guest_token: global.guest_token.token, graphqlMode: GRAPHQL_MODE }))
+            allInfoForAccount = allInfoForAccount.concat(await getUserInfo({ user: refreshableIdList, guest_token: global.guest_token.token, graphqlMode: GRAPHQL_MODE, authorization: 4 }))
             global.guest_token.updateRateLimit('UserByScreenName', nameCount)
             global.guest_token.updateRateLimit('UserByRestId', uidCount)
             break
@@ -128,9 +128,9 @@ while (true) {
             const uidLimit = global.guest_token.getRateLimit('UserByRestId')
             const nameLimit = global.guest_token.getRateLimit('UserByScreenName')
             const tmpRefreshableIdList = refreshableIdList.splice(0, uidLimit > nameLimit ? nameLimit : uidLimit)
-            allInfoForAccount = allInfoForAccount.concat(await getUserInfo({ user: tmpRefreshableIdList, guest_token: global.guest_token.token, graphqlMode: GRAPHQL_MODE }, global.guest_token.token, GRAPHQL_MODE))
-            global.guest_token.updateRateLimit('UserByScreenName', tmpRefreshableIdList.filter((id) => isNaN(id)).length)
-            global.guest_token.updateRateLimit('UserByRestId', tmpRefreshableIdList.filter((id) => !isNaN(id)).length)
+            allInfoForAccount = allInfoForAccount.concat(await getUserInfo({ user: tmpRefreshableIdList, guest_token: global.guest_token.token, graphqlMode: GRAPHQL_MODE, authorization: 4 }, global.guest_token.token, GRAPHQL_MODE))
+            global.guest_token.updateRateLimit('UserByScreenName', tmpRefreshableIdList.filter((id) => id[1] === -3).length)
+            global.guest_token.updateRateLimit('UserByRestId', tmpRefreshableIdList.filter((id) => id[1] === -2).length)
             await global.guest_token.updateGuestToken(4)
             server_info.updateValue('total_req_times')
             if (global.guest_token.token.nextActiveTime) {

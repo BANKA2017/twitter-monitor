@@ -59,6 +59,7 @@
         "redaxios": "^0.5.1",
         "sequelize": "^6.29.1",
         "sharp": "^0.31.3",
+        "sqlite3": "^5.1.6",
         "twemoji-parser": "^14.0.0",
         "twitter-text": "^3.1.0"
     },

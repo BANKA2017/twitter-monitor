@@ -105,7 +105,8 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
     if (loginMode) {
         // suffix TnA
         authorization = Authorization[1]
-    } else if (guest_token?.open_account?.oauth_token && guest_token?.open_account?.oauth_token_secret) {
+    }
+    if (guest_token?.open_account?.oauth_token && guest_token?.open_account?.oauth_token_secret) {
         //url = url.replace(TW_WEBAPI_PREFIX, TW_ANDROID_PREFIX)
         const oauthSign = getOauthAuthorization(guest_token.open_account.oauth_token, guest_token.open_account.oauth_token_secret, body !== undefined ? 'POST' : 'GET', url, body)
         authorization = `OAuth realm="http://api.twitter.com/", oauth_version="1.0", oauth_token="${oauthSign.oauth_token}", oauth_nonce="${oauthSign.oauth_nonce}", oauth_timestamp="${oauthSign.timestamp}", oauth_signature="${encodeURIComponent(
@@ -256,15 +257,21 @@ const getUserInfo = async (ctx = { user: '', guest_token: {}, graphqlMode: true,
     } else if (cookie?.ct0 && cookie?.auth_token) {
         guest_token = false
     }
-    if (Array.isArray(user)) {
+    if (Array.isArray(user) && !(user.length === 2 && [-1, -2, -3].includes(user[1]))) {
         //TODO while user length larger then 500 (max value for one guest token)
         //if (user.length > 500)
         return await Promise.allSettled(user.map((userId) => getUserInfo({ user: userId, guest_token, graphqlMode, cookie, authorization })))
     } else {
         const generateUrl = (user = '', isGraphql = false) => {
+            let autoUser = -1 // -1->auto, -2->uid, -3->screen_name
+            if (Array.isArray(user) && [-1, -2, -3].includes(user[1])) {
+                autoUser = user[1]
+                user = user[0]
+            }
+
             if (isGraphql) {
                 let graphqlVariables = { withSuperFollowsUserFields: true, withSafetyModeUserFields: true }
-                if (!isNaN(user)) {
+                if (autoUser === -1 || (autoUser === -2 && !isNaN(user))) {
                     graphqlVariables['userId'] = user
                     return (
                         TW_WEBAPI_PREFIX +
@@ -277,7 +284,7 @@ const getUserInfo = async (ctx = { user: '', guest_token: {}, graphqlMode: true,
                         }).toString()
                     )
                 } else {
-                    graphqlVariables['screen_name'] = user
+                    graphqlVariables['screen_name'] = String(user)
                     return (
                         TW_WEBAPI_PREFIX +
                         '/graphql/' +
@@ -293,7 +300,7 @@ const getUserInfo = async (ctx = { user: '', guest_token: {}, graphqlMode: true,
                 return (
                     TW_WEBAPI_PREFIX +
                     '/1.1/users/show.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&' +
-                    (!isNaN(user) ? 'user_id=' : 'screen_name=') +
+                    (autoUser === -1 || (autoUser === -2 && !isNaN(user)) ? 'user_id=' : 'screen_name=') +
                     user
                 )
             }
@@ -674,7 +681,6 @@ const getTweets = async (
                 })
         })
     } else {
-        // no use because http 429 loop
         return await new Promise((resolve, reject) => {
             coreFetch(
                 `${TW_WEBAPI_PREFIX}/2/timeline/profile/${queryString}.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_composer_source=true&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweets=true&ext=mediaStats%2CcameraMoment&count=` +
@@ -1270,13 +1276,14 @@ const getTranslate = async (ctx = { id: '0', type: 'tweets', target: 'en', guest
 const getPollResult = async (ctx = { tweet_id: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
     let { tweet_id, guest_token, cookie, authorization } = preCheckCtx(ctx, { tweet_id: '', guest_token: {}, cookie: {}, authorization: 1 })
     if (!tweet_id) {
-        return { code: 403, message: 'Invalid tweet id', data: [] }
+        return { code: 403, message: 'Invalid tweet id', data: [], headers: new Map() }
     }
     let tmpTweet = await getConversation({ tweet_id, guest_token, graphqlMode: true, cookie, authorization })
+    const tmpHeaders = tmpTweet.headers
 
     tmpTweet = path2array('tweets_contents', tmpTweet.data)
     if (!tmpTweet) {
-        return { code: 404, message: 'No tweets', data: [] }
+        return { code: 404, message: 'No tweets', data: [], headers: tmpHeaders }
     }
 
     const tweetItem = path2array('tweet_content', tmpTweet.find((tmpTweetItem) => tmpTweetItem.entryId === 'tweet-' + tweet_id) ?? [])
@@ -1290,9 +1297,9 @@ const getPollResult = async (ctx = { tweet_id: '', guest_token: {}, cookie: {}, 
             }
             data.push(tmpPollKV['choice' + x + '_count'].string_value)
         }
-        return { code: 200, message: 'Success', data }
+        return { code: 200, message: 'Success', data, headers: tmpHeaders }
     } else {
-        return { code: 403, message: 'Invalid card type', data: [] }
+        return { code: 403, message: 'Invalid card type', data: [], headers: tmpHeaders }
     }
 }
 

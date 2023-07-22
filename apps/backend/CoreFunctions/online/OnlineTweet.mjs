@@ -396,7 +396,7 @@ const ApiBroadcast = async (req, env) => {
 
 const ApiMedia = async (req, env) => {
     const tweet_id = VerifyQueryString(req.query.tweet_id, 0)
-    const authorizationMode = VerifyQueryString(req.query.mode, 1)
+    const authorizationMode = VerifyQueryString(req.query.mode, 4)
     if (!tweet_id) {
         return env.json(apiTemplate())
     }
