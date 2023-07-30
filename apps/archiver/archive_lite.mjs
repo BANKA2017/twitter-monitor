@@ -4,7 +4,7 @@
 
 import { getAudioSpace, getBroadcast, getFollowingOrFollowers, getImage, getLiveVideoStream, getPollResult, getTweets, AxiosFetch } from '../../libs/core/Core.fetch.mjs'
 
-import { GuestToken, PathInfo, Sleep } from '../../libs/core/Core.function.mjs'
+import { Log, GuestToken, PathInfo, Sleep } from '../../libs/core/Core.function.mjs'
 import path2array from '../../libs/core/Core.apiPath.mjs'
 import { GenerateAccountInfo } from '../../libs/core/Core.info.mjs'
 import { GenerateData } from '../backend/CoreFunctions/online/OnlineTweet.mjs'
@@ -61,7 +61,7 @@ let cursor = globalThis.cursor
 
 //userinfo and tweets
 if (cursor.tweets.cursor === '') {
-    console.log(`archiver: new account`)
+    Log(false, 'log', `archiver: new account`)
 } else if (cursor.tweets.cursor === 'complete') {
     cursor.tweets.cursor = ''
     if (cursor.tweets.maxId && cursor.tweets.maxId !== 0) {
@@ -69,20 +69,20 @@ if (cursor.tweets.cursor === '') {
         cursor.tweets.maxId = ''
     }
 }
-console.log('archiver: tweets...')
+Log(false, 'log', 'archiver: tweets...')
 if (!cursor.tweets.tmpId || !uid) {
-    console.log(`archiver: new task is unable to use timeline api`)
+    Log(false, 'log', `archiver: new task is unable to use timeline api`)
     forceTimelineForUpdate = false
 }
 if (cursor.tweets.cursor !== 'complete') {
     //TODO query string
     //TODO wait for retweets
     let query = [`from:${name}`, 'include:replies', 'include:nativeretweets', 'include:retweets', 'include:quote', `since_id:${cursor.tweets.tmpId ? cursor.tweets.tmpId : 0}`].join(' ')
-    console.log(`archiver: query string -->${query}<--`)
+    Log(false, 'log', `archiver: query string -->${query}<--`)
     do {
         await globalThis.guest_token.updateGuestToken(4)
         if (globalThis.guest_token.token.nextActiveTime) {
-            console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${globalThis.guest_token.token.nextActiveTime}`)
+            Log(false, 'error', `[${new Date()}]: #Crawler #GuestToken #429 Wait until ${globalThis.guest_token.token.nextActiveTime}`)
             break //只处理现有的
         }
         let tweets = null
@@ -106,7 +106,7 @@ if (cursor.tweets.cursor !== 'complete') {
             globalThis.guest_token.updateRateLimit('Search')
         } catch (e) {
             //try again
-            console.log('archiver: first retry...')
+            Log(false, 'log', 'archiver: first retry...')
             try {
                 tweets = await getTweets({
                     queryString: forceTimelineForUpdate ? uid : query,
@@ -120,7 +120,7 @@ if (cursor.tweets.cursor !== 'complete') {
                 })
                 globalThis.guest_token.updateRateLimit('Search')
             } catch (e1) {
-                console.log('archiver: retry failed...')
+                Log(false, 'log', 'archiver: retry failed...')
                 throw e1
             }
         }
@@ -131,10 +131,10 @@ if (cursor.tweets.cursor !== 'complete') {
         //let tmpTweetsInfo = TweetsInfo(tweets.data, true)
         let tmpTweetsInfo = GenerateData(tweets, false, '', forceTimelineForUpdate)
         if (tmpTweetsInfo.tweetsInfo.errors.code !== 0) {
-            console.log(`archiver: error #${tmpTweetsInfo.tweetsInfo.errors.code} , ${tmpTweetsInfo.tweetsInfo.errors.message}`)
+            Log(false, 'log', `archiver: error #${tmpTweetsInfo.tweetsInfo.errors.code} , ${tmpTweetsInfo.tweetsInfo.errors.message}`)
             continue
         }
-        console.log(`archiver: cursor -->${tmpTweetsInfo.tweetsInfo.cursor?.bottom || 'end'}<-- (${tmpTweetsInfo.tweetsInfo.contentLength})`)
+        Log(false, 'log', `archiver: cursor -->${tmpTweetsInfo.tweetsInfo.cursor?.bottom || 'end'}<-- (${tmpTweetsInfo.tweetsInfo.contentLength})`)
         //writeFileSync(basePath + `/rawdata/${forceTimelineForUpdate ? 'timeline_' : ''}${tmpTweetsInfo.tweetsInfo.tweetRange.max}_${tmpTweetsInfo.tweetsInfo.tweetRange.min}.json`, JSON.stringify(tweets.data))
 
         //get account info
@@ -185,7 +185,7 @@ if (cursor.tweets.cursor !== 'complete') {
                 }
 
                 UserData.tweets[tweet.tweet_id] = tweet
-                console.log(`archiver: #${++singleAccountTweetsCount} Success -> ${tweet.tweet_id}`)
+                Log(false, 'log', `archiver: #${++singleAccountTweetsCount} Success -> ${tweet.tweet_id}`)
             }
 
             //writeFileSync(basePath + '/rawdata/tweet.json', JSON.stringify(rawTweetData))
@@ -211,7 +211,7 @@ if (cursor.tweets.cursor !== 'complete') {
     } while (cursor.tweets.cursor && !forceTimelineForUpdate)
     cursor.tweets.cursor = 'complete'
     //writeFileSync(basePath + '/twitter_archive_cursor.json', JSON.stringify(cursor))
-    console.log(`archiver: tweets complete, cost ${new Date() - now} ms`)
+    Log(false, 'log', `archiver: tweets complete, cost ${new Date() - now} ms`)
 }
 //TODO moment
 
@@ -226,7 +226,7 @@ let pollsIndex = 0
 //}
 let pollsList = Object.values(UserData.tweets).filter((tweet) => tweet.polls && !tweet.polls[0].count)
 
-console.log(`archiver: polls... (${pollsList.length})`)
+Log(false, 'log', `archiver: polls... (${pollsList.length})`)
 
 for (; pollsIndex < pollsList.length; pollsIndex++) {
     const pollA = now / 1000 > pollsList[pollsIndex].polls[0].end_datetime
@@ -240,27 +240,27 @@ for (; pollsIndex < pollsList.length; pollsIndex++) {
                     break
                 }
                 pollsList[pollsIndex].polls[x - 1].count = tmpPollKV['choice' + x + '_count'].string_value
-                console.log(`${pollsList[pollsIndex].tweet_id}: #${x} > ${pollsList[pollsIndex].polls[x - 1].count}`)
+                Log(false, 'log', `${pollsList[pollsIndex].tweet_id}: #${x} > ${pollsList[pollsIndex].polls[x - 1].count}`)
             }
         } else {
             getPollsFailedList.push(pollsList[pollsIndex].tweet_id)
             //writeFileSync(basePath + '/twitter_monitor_polls_failed_list.json', JSON.stringify(getPollsFailedList))
-            console.log(`archiver: NO POLLS CONTENT (${pollsList[pollsIndex].tweet_id}) #errorpoll`)
+            Log(false, 'log', `archiver: NO POLLS CONTENT (${pollsList[pollsIndex].tweet_id}) #errorpoll`)
         }
     } else {
         let pollData = await getPollResult({ tweet_id: pollsList[pollsIndex].tweet_id })
         if (pollData.code !== 200) {
             getPollsFailedList.push(pollsList[pollsIndex].tweet_id)
             //writeFileSync(basePath + '/twitter_monitor_polls_failed_list.json', JSON.stringify(getPollsFailedList))
-            console.log(`archiver: ${pollData.message} (${pollsList[pollsIndex].tweet_id}) #errorpoll`)
+            Log(false, 'log', `archiver: ${pollData.message} (${pollsList[pollsIndex].tweet_id}) #errorpoll`)
         } else {
             for (let pollDataIndex in pollData.data) {
                 pollsList[pollsIndex].polls[pollDataIndex].count = pollData.data[pollDataIndex]
-                console.log(`${pollsList[pollsIndex].tweet_id}: #${Number(pollDataIndex) + 1} > ${pollsList[pollsIndex].polls[pollDataIndex].count}`)
+                Log(false, 'log', `${pollsList[pollsIndex].tweet_id}: #${Number(pollDataIndex) + 1} > ${pollsList[pollsIndex].polls[pollDataIndex].count}`)
             }
         }
     }
-    console.log(`archiver: ${pollsIndex + 1} / ${pollsList.length}`)
+    Log(false, 'log', `archiver: ${pollsIndex + 1} / ${pollsList.length}`)
     //writeFileSync(basePath + '/twitter_monitor_polls_index', String(pollsIndex))
 }
 
@@ -282,10 +282,10 @@ let broadcastRawList = {}
 //    } catch (e) {}
 //}
 if (broadcastsCards.length <= 0) {
-    console.log(`archiver: no broadcast (0)`)
+    Log(false, 'log', `archiver: no broadcast (0)`)
 } else {
     while (broadcastsCards.length > 0) {
-        console.log(`archiver: broadcast (${broadcastsCards.length})`)
+        Log(false, 'log', `archiver: broadcast (${broadcastsCards.length})`)
         let tmpCardsList = broadcastsCards.splice(0, 100)
         await globalThis.guest_token.updateGuestToken(4)
         let broadcasts = await getBroadcast({
@@ -316,21 +316,21 @@ if (broadcastsCards.length <= 0) {
                                     m3u8Url = urlPrefix + m3u8Parser.manifest.playlists.sort((a, b) => b.attributes.BANDWIDTH - a.attributes.BANDWIDTH)[0].uri
                                 }
                             } catch (e) {
-                                console.error(e)
-                                console.log(`archiver: Unable to parse playlists from '${m3u8Url}', fallback.`)
+                                Log(false, 'error', e)
+                                Log(false, 'log', `archiver: Unable to parse playlists from '${m3u8Url}', fallback.`)
                             }
                             tmpBroadcastResponseData.playback = m3u8Url.replaceAll('?type=replay', '').replaceAll('?type=live', '')
                         }
                     } catch (e) {
-                        console.error(e)
+                        Log(false, 'error', e)
                     }
                 }
-                console.log(`archiver: broadcast -->${tmpBroadcastResponseData.id}<--`)
+                Log(false, 'log', `archiver: broadcast -->${tmpBroadcastResponseData.id}<--`)
                 broadcastRawList[tmpBroadcastResponseData.id] = { info: broadcastResponse.value.data, source: tmpBroadcastLink?.data }
                 UserData.tweets[tmpCardsList[index].tweet_id].broadcastObject = tmpBroadcastResponseData
             } else {
                 broadcastErrorList.push(tmpCardsList[index])
-                console.log(`archiver: broadcast error -->${tmpCardsList[index].tweet_id}<--`)
+                Log(false, 'log', `archiver: broadcast error -->${tmpCardsList[index].tweet_id}<--`)
             }
         }
         //writeFileSync(basePath + '/savedata/data.json', JSON.stringify(UserData))
@@ -352,10 +352,10 @@ let audiospaceErrorList = []
 let audiospaceRawList = {}
 
 if (audiospacesCards.length <= 0) {
-    console.log(`archiver: no audiospace (0)`)
+    Log(false, 'log', `archiver: no audiospace (0)`)
 } else {
     while (audiospacesCards.length > 0) {
-        console.log(`archiver: audiospace (${audiospacesCards.length})`)
+        Log(false, 'log', `archiver: audiospace (${audiospacesCards.length})`)
 
         let tmpCardsList = audiospacesCards.splice(0, 100)
         await globalThis.guest_token.updateGuestToken(4)
@@ -375,15 +375,15 @@ if (audiospacesCards.length <= 0) {
                             tmpAudioSpace.playback = tmpAudioSpaceLink.data?.source?.noRedirectPlaybackUrl.replaceAll('?type=replay', '').replaceAll('?type=live', '')
                         }
                     } catch (e) {
-                        console.error(e)
+                        Log(false, 'error', e)
                     }
                 }
-                console.log(`archiver: audiospace -->${tmpAudioSpace.id}<--`)
+                Log(false, 'log', `archiver: audiospace -->${tmpAudioSpace.id}<--`)
                 audiospaceRawList[tmpAudioSpace.id] = { info: audiospaceResponse.value.data, source: tmpAudioSpaceLink?.data }
                 UserData.tweets[tmpCardsList[index].tweet_id].audiospaceObject = tmpAudioSpace
             } else {
                 audiospaceErrorList.push(tmpCardsList[index])
-                console.log(`archiver: audiospace error -->${tmpCardsList[index].tweet_id}<--`)
+                Log(false, 'log', `archiver: audiospace error -->${tmpCardsList[index].tweet_id}<--`)
             }
         }
         //writeFileSync(basePath + '/savedata/data.json', JSON.stringify(UserData))
@@ -395,11 +395,11 @@ if (audiospacesCards.length <= 0) {
 //writeFileSync(basePath + '/savedata/data.json', JSON.stringify(UserData))
 
 //TODO save to local
-//console.log(JSON.stringify(UserData))
+//Log(false, 'log', JSON.stringify(UserData))
 
-//console.log(getPollsFailedList)
+//Log(false, 'log', getPollsFailedList)
 
-console.log(`archiver: Time cost ${new Date() - now} ms`) //TODO remove
+Log(false, 'log', `archiver: Time cost ${new Date() - now} ms`) //TODO remove
 
 // Download
 const Download = (url, fileName) => {

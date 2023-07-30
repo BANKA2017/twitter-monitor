@@ -1,0 +1,39 @@
+name: Update rate limit status
+
+on:
+    push:
+        branches:
+            - master
+            - node
+    schedule:
+        - cron: '0 0 * * *'
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [18.x]
+        steps:
+            - uses: actions/checkout@v3
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v3
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - name: yarn install and Run
+              run: |
+                  yarn
+                  cd apps/rate_limit_checker/
+                  export TWITTER_GUEST_OAUTH_TOKEN_SECRET=${{ secrets.TWITTER_GUEST_OAUTH_TOKEN_SECRET }}
+                  export TWITTER_GUEST_OAUTH_TOKEN=${{ secrets.TWITTER_GUEST_OAUTH_TOKEN }}
+                  export now_date=$(date -u +"%y%m%d")
+                  node run.mjs
+            - name: Deploy
+              uses: s0/git-publish-subdir-action@develop
+              env:
+                  REPO: git@github.com:BANKA2017/twitter-rate-limit-status.git
+                  BRANCH: master
+                  FOLDER: apps/rate_limit_checker/data/
+                  COMMIT_NAME: ${{ secrets.COMMIT_NAME }}
+                  COMMIT_EMAIL: ${{ secrets.COMMIT_EMAIL }}
+                  MESSAGE: 'Daily Run - {sha}'
+                  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}

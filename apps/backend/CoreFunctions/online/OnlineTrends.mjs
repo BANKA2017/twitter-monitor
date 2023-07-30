@@ -1,4 +1,5 @@
 import { getTrends } from '../../../../libs/core/Core.fetch.mjs'
+import { Log } from '../../../../libs/core/Core.function.mjs'
 import { apiTemplate } from '../../../../libs/share/Constant.mjs'
 
 const ApiTrends = async (req, env) => {
@@ -18,7 +19,7 @@ const ApiTrends = async (req, env) => {
                 displayedRelatedVariants: item?.item?.clientEventInfo?.details?.guideDetails?.transparentGuideDetails?.trendMetadata?.displayedRelatedVariants ?? undefined
             }))
     } catch (e) {
-        console.log(e)
+        Log(false, 'log', e)
         return env.json(apiTemplate(500, 'Ok', [], 'online'))
     }
 

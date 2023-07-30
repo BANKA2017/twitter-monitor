@@ -1,5 +1,5 @@
 import { getTranslate } from '../../../../libs/core/Core.fetch.mjs'
-import { VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
+import { Log, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
 import { Translate } from '../../../../libs/core/Core.translate.mjs'
 import { apiTemplate } from '../../../../libs/share/Constant.mjs'
 
@@ -74,7 +74,7 @@ const ApiOfficialTranslate = async (req, env) => {
             return env.json(apiTemplate(500, 'Unable to get translate content', {}, 'translate'))
         }
     } catch (e) {
-        console.error(e)
+        Log(false, 'error', e)
         return env.json(apiTemplate(500, 'Unable to get translate content', {}, 'translate'))
     }
 }

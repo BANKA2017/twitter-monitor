@@ -3,7 +3,7 @@ import { Op } from 'sequelize'
 import { QueryTypes } from 'sequelize'
 import { GoogleBrowserTranslate } from '@kdwnil/translator-utils'
 import dbHandle from '../../../../libs/core/Core.db.mjs'
-import { VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
+import { Log, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
 import AccountInfo from '../../../../libs/model/tmv1/account_info.js'
 import TwitterData from '../../../../libs/model/tmv1/twitter_data.js'
 import TwitterTweets from '../../../../libs/model/tmv1/twitter_tweets.js'
@@ -19,7 +19,22 @@ const ApiLegacyInfo = async (req, res) => {
     let baseInfo = null
     try {
         baseInfo = await AccountInfo.findOne({
-            attributes: ['uid', 'name', 'display_name', 'header', 'banner', 'following', 'followers', 'description', 'lang', 'statuses_count', 'top', 'locked', 'deleted', 'verified'],
+            attributes: [
+                [dbHandle.tmv1.options.dialect === 'sqlite' ? dbHandle.tmv1.literal('CAST(uid AS text)') : 'uid', 'uid'],
+                'name',
+                'display_name',
+                'header',
+                'banner',
+                'following',
+                'followers',
+                'description',
+                'lang',
+                'statuses_count',
+                [dbHandle.tmv1.options.dialect === 'sqlite' ? dbHandle.tmv1.literal('CAST(top AS text)') : 'top', 'top'],
+                'locked',
+                'deleted',
+                'verified'
+            ],
             where: {
                 uid
             },
@@ -109,7 +124,7 @@ const ApiLegacyTweets = async (req, res) => {
     let tweets = null
     try {
         tweets = await TwitterTweets.findAll({
-            attributes: ['tweet_id', 'name', 'display_name', 'media', 'full_text', 'full_text_origin', 'retweet_from', 'time', 'translate'],
+            attributes: [[dbHandle.tmv1.options.dialect === 'sqlite' ? dbHandle.tmv1.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'], 'name', 'display_name', 'media', 'full_text', 'full_text_origin', 'retweet_from', 'time', 'translate'],
             where: queryArray,
             limit: 11,
             order: [['tweet_id', 'DESC']],
@@ -182,9 +197,13 @@ const ApiLegacyTag = async (req, res) => {
     let tweets = null
     try {
         tweets = await dbHandle.tmv1.query(
-            'SELECT `tweet_id`, `name`, `display_name`, `media`, `full_text`, `full_text_origin`, `retweet_from`, `time`, `translate` FROM `twitter_tweets` WHERE `tweet_id` = ANY(SELECT `tweet_id` FROM (SELECT `tweet_id` FROM `twitter_tags` WHERE `tag` = :hash AND `tweet_id` ' +
-                (tweetId === '0' ? '>' : '<') +
-                " :tweet_id AND `hidden` = '0' ORDER BY `tweet_id` DESC LIMIT 11) AS t) ORDER BY `tweet_id` DESC",
+            dbHandle.tmv1.options.dialect === 'sqlite'
+                ? 'SELECT CAST(tweet_id AS text) AS `tweet_id`, `name`, `display_name`, `media`, `full_text`, `full_text_origin`, `retweet_from`, `time`, `translate` FROM `twitter_tweets` WHERE `tweet_id` IN (SELECT `tweet_id` FROM `twitter_tags` WHERE `tag` = :hash AND `tweet_id` ' +
+                      (tweetId === '0' ? '>' : '<') +
+                      " :tweet_id AND `hidden` = '0' ORDER BY `tweet_id` DESC LIMIT 11) ORDER BY `tweet_id` DESC"
+                : 'SELECT `tweet_id`, `name`, `display_name`, `media`, `full_text`, `full_text_origin`, `retweet_from`, `time`, `translate` FROM `twitter_tweets` WHERE `tweet_id` = ANY(SELECT `tweet_id` FROM (SELECT `tweet_id` FROM `twitter_tags` WHERE `tag` = :hash AND `tweet_id` ' +
+                      (tweetId === '0' ? '>' : '<') +
+                      " :tweet_id AND `hidden` = '0' ORDER BY `tweet_id` DESC LIMIT 11) AS t) ORDER BY `tweet_id` DESC",
             {
                 replacements: {
                     hash,
@@ -215,7 +234,7 @@ const ApiLegacySearch = async (req, res) => {
     let tweets = null
     try {
         tweets = await TwitterTweets.findAll({
-            attributes: ['tweet_id', 'name', 'display_name', 'media', 'full_text', 'full_text_origin', 'retweet_from', 'time', 'translate'],
+            attributes: [[dbHandle.tmv1.options.dialect === 'sqlite' ? dbHandle.tmv1.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'], 'name', 'display_name', 'media', 'full_text', 'full_text_origin', 'retweet_from', 'time', 'translate'],
             where: {
                 [Op.or]: keyWords,
                 hidden: 0,
@@ -286,7 +305,7 @@ const ApiLegacyTranslate = async (req, res) => {
             try {
                 trInfo.translate = await GoogleBrowserTranslate(trInfo.full_text_origin.replaceAll(/https:\/\/t.co\/[\w]+/gm, ''), 'auto', target, false)
             } catch (e) {
-                console.error(e)
+                Log(false, 'error', e)
                 //TODO do nothing
                 res.json(apiTemplate(1, 'No translate text', trInfo, 'v1'))
             }

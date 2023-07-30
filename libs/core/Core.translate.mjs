@@ -1,6 +1,6 @@
 //Translator
 import Translator, { IsChs, IsCht } from '@kdwnil/translator-utils'
-import { GetEntitiesFromText } from './Core.function.mjs'
+import { Log, GetEntitiesFromText } from './Core.function.mjs'
 
 const translatorPlatform = {
     google: 'Google Translate',
@@ -141,7 +141,7 @@ const Translate = async (trInfo = null, target = 'en', platform = 'google') => {
 
         return { message: null, content: trInfo }
     } catch (e) {
-        console.error(e)
+        Log(false, 'error', e)
         return { message: 'Unable to get translate content', content: trInfo }
     }
 }

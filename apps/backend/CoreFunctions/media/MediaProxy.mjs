@@ -1,5 +1,5 @@
 import { getImage } from '../../../../libs/core/Core.fetch.mjs'
-import { PathInfo, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
+import { Log, PathInfo, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
 import { GetMime } from '../../../../libs/share/Mime.mjs'
 
 const MediaProxy = async (req, env) => {
@@ -16,7 +16,7 @@ const MediaProxy = async (req, env) => {
     try {
         mediaLinkArray = PathInfo(link)
     } catch (e) {
-        console.error(`#MediaProxy ${e}`)
+        Log(false, 'error', `#MediaProxy ${e}`)
         return env.ResponseWrapper(null, 403, {})
     }
     if (format !== '' && name !== '') {
@@ -94,7 +94,7 @@ const MediaProxy = async (req, env) => {
                         }
                     } catch (e) {
                         //TODO solve sometimes 500
-                        console.error('Media PROXY', realLink, e)
+                        Log(false, 'error', 'Media PROXY', realLink, e)
                         return env.ResponseWrapper(null, 500, responseHeaders)
                     }
                 }

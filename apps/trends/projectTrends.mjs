@@ -16,6 +16,7 @@ import V2TwitterEntities from '../../libs/model/twitter_monitor/v2_twitter_entit
 import { Op } from 'sequelize'
 import { TGPush } from '../../libs/core/Core.push.mjs'
 import { basePath } from '../../libs/share/NodeConstant.mjs'
+import { Log } from '../../libs/core/Core.function.mjs'
 
 let trendsConfig = []
 if (existsSync(basePath + '/../libs/assets/trends/trends_config.json')) {
@@ -41,7 +42,7 @@ for (const config of trendsConfig) {
     const range = { start: parseInt(globalStart / 1000), end: parseInt(parseInt(globalStart / 1000) + 24 * 60 * 60 * 7) }
 
     if (range.end - range.start < 604799) {
-        console.log(`${config.prefix}: Not now`)
+        Log(false, 'log', `${config.prefix}: Not now`)
         process.exit()
     }
 
@@ -102,7 +103,7 @@ for (const config of trendsConfig) {
 
     for (const member of memberList) {
         const startTime = new Date()
-        console.log(member.name)
+        Log(false, 'log', member.name)
         let userData = dataTemplate()
         //自带数据
         userData.name_cn = member.name_cn
@@ -145,7 +146,15 @@ for (const config of trendsConfig) {
 
         //tweets && tweetsCount
         const sqlTweetsData = await V2TwitterTweets.findAll({
-            attributes: ['tweet_id', 'card', 'quote_status', 'media', 'video', 'retweet_from', 'time'],
+            attributes: [
+                [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'],
+                'card',
+                [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(quote_status AS text)') : 'quote_status', 'quote_status'],
+                'media',
+                'video',
+                'retweet_from',
+                'time'
+            ],
             where: {
                 time: { [Op.gte]: range.start, [Op.lte]: range.end },
                 uid: userData.uid
@@ -231,7 +240,7 @@ for (const config of trendsConfig) {
         writeFileSync(`${to}/${globalStart.getFullYear()}-${String(globalStart.getMonth() + 1).padStart(2, '0')}-${String(globalStart.getDate()).padStart(2, '0')}.json`, JSON.stringify(generateData))
         pushText += `${config.prefix}: ${member.name_cn} cost: ${(new Date() - startTime) / 1000}\n`
 
-        console.log(`cost: ` + (new Date() - startTime) / 1000)
+        Log(false, 'log', `cost: ` + (new Date() - startTime) / 1000)
     }
 
     let dateInfo = []

@@ -2,6 +2,7 @@ import { writeFileSync } from 'fs'
 import { basePath } from '../../libs/share/NodeConstant.mjs'
 import axiosFetch from 'axios-helper'
 import { PregMatchAll } from '../../libs/share/MockFuntions.mjs'
+import { Log } from '../../libs/core/Core.function.mjs'
 
 let link = 'https://twitter.com/explore'
 
@@ -10,7 +11,7 @@ if (process.argv[2]) {
         new URL(process.argv[2])
         link = process.argv[2]
     } catch (e) {
-        console.log(`tmv3: Invalid link`)
+        Log(false, 'log', `tmv3: Invalid link`)
     }
 }
 
@@ -23,12 +24,12 @@ const updateIdList = (content, type = 'main') => {
         if (match.index === pattern.lastIndex) {
             pattern.lastIndex++
         }
-        //console.log(match)
+        //Log(false, 'log', match)
         let tmpData = {}
         try {
             tmpData = Function(`return ${match[1] || match[3]}`)()
         } catch (e) {
-            //console.log(e)
+            //Log(false, 'log', e)
         }
         let tmpName = tmpData?.operationName || tmpData?.name || false
         if (!tmpName) {
@@ -45,11 +46,11 @@ const updateIdList = (content, type = 'main') => {
         if (tmpData.metadata?.features && !tmpData.metadata?.featureSwitches) {
             tmpData.metadata.featureSwitches = JSON.parse(JSON.stringify(tmpData.metadata?.features))
             delete tmpData.metadata?.features
-            //console.log(tmpData)
+            //Log(false, 'log', tmpData)
         }
         queryIdList[tmpName] = tmpData
         //features
-        //console.log(queryIdList[tmpName])
+        //Log(false, 'log', queryIdList[tmpName])
         if (queryIdList[tmpName]?.metadata?.featureSwitches) {
             queryIdList[tmpName].features = Object.fromEntries((queryIdList[tmpName].metadata.featureSwitches || {}).map((feature) => [feature, featuresValueList[feature]]))
         }
@@ -63,7 +64,7 @@ const updateIdList = (content, type = 'main') => {
                 .map((key) => `"${key}": _${key}`)
                 .join(',')} }\nexport default graphqlQueryIdList\nexport {${Object.keys(queryIdList).map((key) => `_${key}`)}}\n`
     )
-    console.log(`tmv3: graphqlQueryIdList (${type}) success`)
+    Log(false, 'log', `tmv3: graphqlQueryIdList (${type}) success`)
 }
 
 let match
@@ -115,7 +116,7 @@ axiosFetch()
                     if (data) {
                         updateIdList(data, tmpValue[0])
                     } else {
-                        console.log(`tmv3: graphqlQueryIdList ${tmpValue[0]} error`)
+                        Log(false, 'log', `tmv3: graphqlQueryIdList ${tmpValue[0]} error`)
                     }
                 }
 
@@ -130,15 +131,15 @@ axiosFetch()
                 //}
                 process.exit()
             } catch (e) {
-                console.log(e)
+                Log(false, 'log', e)
                 process.exit()
             }
         } else {
-            console.log(`tmv3: no such file`)
+            Log(false, 'log', `tmv3: no such file`)
             process.exit()
         }
     })
     .catch((e) => {
-        console.log(e)
+        Log(false, 'log', e)
         process.exit()
     })

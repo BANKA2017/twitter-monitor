@@ -9,6 +9,7 @@ import { ApiUserInfo } from '../backend/CoreFunctions/online/OnlineUserInfo.mjs'
 import { ApiAudioSpace, ApiBroadcast, ApiMedia, ApiPoll, ApiSearch, ApiTweets } from '../backend/CoreFunctions/online/OnlineTweet.mjs'
 import { MediaProxy } from '../backend/CoreFunctions/media/MediaProxy.mjs'
 import { ApiLoginFlow, ApiLogout } from '../backend/CoreFunctions/online/OnlineLogin.mjs'
+import { Log } from '../../libs/core/Core.function.mjs'
 
 const workersApi = Router()
 
@@ -173,7 +174,7 @@ export default {
                 return res
             })
             .catch((e) => {
-                console.log(e)
+                Log(false, 'log', e)
                 return new Response(JSON.stringify(apiTemplate(500, 'Unknown error', {}, 'global_api')), { status: 500 })
             })
 }

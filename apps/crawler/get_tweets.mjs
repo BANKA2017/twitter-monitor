@@ -25,7 +25,7 @@ import V2TwitterCardApp from '../../libs/model/twitter_monitor/v2_twitter_card_a
 import V2TwitterQuote from '../../libs/model/twitter_monitor/v2_twitter_quote.js'
 import V2TwitterTweets from '../../libs/model/twitter_monitor/v2_twitter_tweets.js'
 
-import { GuestToken, setGlobalServerInfo, Sleep } from '../../libs/core/Core.function.mjs'
+import { Log, GuestToken, setGlobalServerInfo, Sleep } from '../../libs/core/Core.function.mjs'
 import path2array from '../../libs/core/Core.apiPath.mjs'
 import { Tweet, TweetsInfo } from '../../libs/core/Core.tweet.mjs'
 import dbHandle from '../../libs/core/Core.db.mjs'
@@ -35,20 +35,25 @@ import { ConfigFile } from '../../libs/share/UpdateConfig.mjs'
 import { basePath } from '../../libs/share/NodeConstant.mjs'
 import { CYCLE_SECONDS } from '../../libs/assets/setting.mjs'
 
-const GRAPHQL_MODE = true
+let GRAPHQL_MODE = true
+
+// Use WAL in sqlite
+if (dbHandle.twitter_monitor.options.dialect === 'sqlite') {
+    dbHandle.twitter_monitor.query('PRAGMA journal_mode=WAL;')
+}
 
 /* https://stackoverflow.com/questions/73266169/pm2-is-catching-errors-before-they-reach-uncaught-exception-in-node-js */
 process.on('uncaughtException', async (err, origin) => {
-    console.error(`tmv3: Restarting(Exception)...`, err)
+    Log(false, 'error', `tmv3: Restarting(Exception)...`, err)
     process.exit(0)
 })
 
 process.on('unhandledRejection', async (reason, promise) => {
     if (typeof reason === 'object' && reason?.success !== undefined && reason?.token !== undefined) {
         //guest token error
-        console.error(`tmv3: Restarting(guest_token)...`, reason)
+        Log(false, 'error', `tmv3: Restarting(guest_token)...`, reason)
         const sleepTime = 15 * 60 * 1000
-        console.error(`tmv3: #429 and wait ${sleepTime}ms`)
+        Log(false, 'error', `tmv3: #429 and wait ${sleepTime}ms`)
         await Sleep(sleepTime)
         process.exit(0)
     }
@@ -65,7 +70,7 @@ const cycleMilliseconds = CYCLE_SECONDS * 1000
 while (true) {
     if (!once) {
         let now = Date.now()
-        console.log(`tmv3: Wait for ${cycleMilliseconds - (now % cycleMilliseconds)} ms`)
+        Log(false, 'log', `tmv3: Wait for ${cycleMilliseconds - (now % cycleMilliseconds)} ms`)
         await Sleep(cycleMilliseconds - (now % cycleMilliseconds))
     }
 
@@ -75,7 +80,7 @@ while (true) {
     const server_info = new setGlobalServerInfo()
     if (global.guest_token.token.nextActiveTime) {
         await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
-        console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
+        Log(false, 'error', `[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
         await Sleep(global.guest_token.token.nextActiveTime - Date.now())
         await global.guest_token.updateGuestToken(4)
         server_info.updateValue('total_req_times') //for init guest token
@@ -100,7 +105,7 @@ while (true) {
     // remove locked accounts because locked account will continue return account info
     const breakAccountList = config.users.filter((user) => !user.name || user.deleted).map((account) => account.display_name || account.name || account.uid)
     if (breakAccountList.length) {
-        console.log(`tmv3: #AutoBreak ` + breakAccountList.join(', '))
+        Log(false, 'log', `tmv3: #AutoBreak ` + breakAccountList.join(', '))
     }
 
     // updateable list
@@ -135,8 +140,8 @@ while (true) {
             server_info.updateValue('total_req_times')
             if (global.guest_token.token.nextActiveTime) {
                 await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
-                console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
-                break //只处理现有的
+                Log(false, 'error', `[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
+                break // existing
             }
         }
     }
@@ -146,7 +151,7 @@ while (true) {
     for (const index in allInfoForAccount) {
         const accountInfo = allInfoForAccount[index]
         //TODO accountInfo.code === 336 means feature issue
-        console.log(refreshableList[index][0].display_name, `(${refreshableList[index][0].name})`, refreshableList[index][1], index)
+        Log(false, 'log', refreshableList[index][0].display_name, `(${refreshableList[index][0].name})`, refreshableList[index][1], index)
         server_info.updateValue('total_req_times')
         if (
             accountInfo.status !== 'fulfilled' ||
@@ -157,9 +162,9 @@ while (true) {
             accountInfo.value?.data?.user?.result?.has_graduated_access
         ) {
             if (accountInfo.status !== 'fulfilled') {
-                console.log('tmv3: #Autobreak' + refreshableList[index][0].display_name + ' -' + accountInfo.status)
+                Log(false, 'log', 'tmv3: #Autobreak' + refreshableList[index][0].display_name + ' -' + accountInfo.status)
             } else {
-                console.log('tmv3: #Autobreak' + refreshableList[index][0].display_name + ' -' + (accountInfo.value?.data?.errors?.[0]?.message || accountInfo?.value?.data?.user?.result?.reason || 'Unknown error'))
+                Log(false, 'log', 'tmv3: #Autobreak' + refreshableList[index][0].display_name + ' -' + (accountInfo.value?.data?.errors?.[0]?.message || accountInfo?.value?.data?.user?.result?.reason || 'Unknown error'))
                 updateNameList = true
 
                 // not continue
@@ -174,8 +179,8 @@ while (true) {
                         TGPush(`tmv3: #Locked Account ${refreshableList[index][0].name} was protected`)
                     }
                 } else if ([50, 63].includes(accountInfo.value?.data?.errors?.[0]?.code)) {
-                    //deleted 用于在twitter删除帐户的用户 #50
-                    //suspended 用于被封禁帐户的用户 #63
+                    //deleted #50
+                    //suspended #63
                     config.users[refreshableList[index][1]].deleted = true
                     await V2AccountInfo.update({ deleted: 1 }, { where: { name: refreshableList[index][0].name } })
                     TGPush(`tmv3: #Deleted Account ${refreshableList[index][0].name} was deleted`)
@@ -211,7 +216,7 @@ while (true) {
         })
 
         if (!GeneralAccountData.uid) {
-            //console.error(accountInfo, accountInfo.value?.data)
+            //Log(false, 'error', accountInfo, accountInfo.value?.data)
             userInfoErrorsForPush += refreshableList[index][0].name + ' wrong data #accont_info \n'
             continue
         }
@@ -224,24 +229,23 @@ while (true) {
             config.users[refreshableList[index][1]].uid = GeneralAccountData.uid
         }
 
-        //处理id
-        //一般人都不会改名, 但是谁知道会不会真遇上呢
+        // screen_name
+        // most people will not change their screen_name, but who knows...
         if (GeneralAccountData.name && refreshableList[index][0]?.name !== GeneralAccountData.name) {
             updateNameList = true
             config.users[refreshableList[index][1]].name = GeneralAccountData.name
         }
 
-        //TODO 毕竟现在用不上, 以后再添加
-        //处理display_name
-        //警告: 若取消注释则会强制同步display_name为该账户的twitter名称且无法使用自定义display_name
+        //TODO Use display name
+        // display_name (name)
+        // Notice: this is a PHP code, do not uncomment them
         //if ($user_info["name"] && $account["display_name"] != $user_info["name"]) {
         //    $update_names = true;
         //    $config["users"][$account_s]["display_name"] = $user_info["name"];
         //}
 
-        //TODO 一万倍数检测
+        //TODO /10k followers monitor
         //monitor data
-        //同时满足时才会插入监控项目
         if (!(refreshableList[index][0]?.not_analytics ?? false)) {
             monitorDataList.push(monitorDataInfo)
             //await TwitterData.create(monitorDataInfo)
@@ -249,21 +253,36 @@ while (true) {
             monitorDataInfo.visible = !(refreshableList[index][0].hidden || refreshableList[index][0].deleted || refreshableList[index][0].organization)
             await TmpTwitterData.upsert(monitorDataInfo, { transaction: accountTransaction })
         } else if (refreshableList[index][0]?.not_analytics ?? false) {
-            console.log(refreshableList[index][0]?.name + ' - not collect')
+            Log(false, 'log', refreshableList[index][0]?.name + ' - not collect')
         } else {
             await TGPush(`tmv3: ${refreshableList[index][0]?.name} broken data #twitter_data`)
         }
 
         //check from database by uid
-        //由于早期设计失误, new字段0时为新帐号, 为1时是完成首次爬取的帐号
+        //new->0 means new account, new->1 existing account
         let verifyInfo = await V2AccountInfo.findOne({
-            attributes: ['uid', 'name', 'display_name', 'header', 'banner', 'description_origin', 'top', 'statuses_count', 'hidden', 'locked', 'deleted', 'new', 'cursor', 'last_cursor'],
+            attributes: [
+                [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(uid AS text)') : 'uid', 'uid'],
+                'name',
+                'display_name',
+                'header',
+                'banner',
+                'description_origin',
+                [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(top AS text)') : 'top', 'top'],
+                'statuses_count',
+                'hidden',
+                'locked',
+                'deleted',
+                'new',
+                'cursor',
+                [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(last_cursor AS text)') : 'last_cursor', 'last_cursor']
+            ],
             where: {
                 uid: GeneralAccountData.uid
             }
         })
         if (verifyInfo === null) {
-            console.log('tmv3: new account')
+            Log(false, 'log', 'tmv3: new account')
             nameCount.push({
                 name: GeneralAccountData.name,
                 display_name: GeneralAccountData.display_name,
@@ -276,13 +295,13 @@ while (true) {
             })
             GeneralAccountData.last_cursor = 0
             GeneralAccountData.new = 1
-            await V2AccountInfo.create(GeneralAccountData)
+            await V2AccountInfo.create(GeneralAccountData, { transaction: accountTransaction })
         } else {
-            console.log('tmv3: update account information')
+            Log(false, 'log', 'tmv3: update account information')
 
             //verify
             if (verifyInfo.new === 1 && verifyInfo.statuses_count !== GeneralAccountData.statuses_count) {
-                console.log('tmv3: need update')
+                Log(false, 'log', 'tmv3: need update')
                 nameCount.push({
                     name: GeneralAccountData.name,
                     display_name: verifyInfo.display_name,
@@ -294,9 +313,9 @@ while (true) {
                     locked: GeneralAccountData.locked
                 })
             } else {
-                console.log('tmv3: locked')
+                Log(false, 'log', 'tmv3: locked')
             }
-            await V2AccountInfo.update(GeneralAccountData, { where: { uid: GeneralAccountData.uid } })
+            await V2AccountInfo.update(GeneralAccountData, { where: { uid: GeneralAccountData.uid }, transaction: accountTransaction })
         }
     }
 
@@ -316,12 +335,14 @@ while (true) {
     }
 
     if (nameCount.length) {
-        console.log('tmv3: now crawling tweets')
+        Log(false, 'log', 'tmv3: now crawling tweets')
+        //Log(false, 'log', `tmv3: set GRAPHQL_MODE false`)
+        //GRAPHQL_MODE = false
         server_info.updateValue('total_users', nameCount.length)
         //TODO split nameCount if nameCount.length > 1000
         for (const accountInfo of nameCount) {
             if (accountInfo.locked) {
-                console.log(`tmv3: account ${accountInfo.display_name}(@${accountInfo.name}) is protected`)
+                Log(false, 'log', `tmv3: account ${accountInfo.display_name}(@${accountInfo.name}) is protected`)
                 continue
             }
             let insert = {
@@ -335,51 +356,63 @@ while (true) {
             }
 
             //const saveTweetsPromise = []
-            //x-rate-limit-limit: 180
-            //x-rate-limit-remaining: 179
-            //x-rate-limit-reset: 1567401449
-            //请求限制改成了180
-
-            //这个rate-limit是靠csrf token判断的, 后面那堆吐槽不用看了//你以为真的是180？骗你的, 只要暂停请求又是新一轮180//但还是开着吧,谁知道会有什么影响呢//要取消限制只需要将下行   的 99 改成大的数字即可
-
-            //更多关于请求限制的信息请参阅 https://developer.twitter.com/en/docs/developer-utilities/rate-limit-status/api-reference/get-application-rate_limit_status
-            //太长不看: 1000/guestToken -->这是旧的//180req/15min
-            //graphql只需要在999更换即可
+            // To know more about rate limit, please use our another script https://github.com/BANKA2017/twitter-monitor/tree/node/apps/rate_limit_checker
 
             await global.guest_token.updateGuestToken(4)
             server_info.updateValue('total_req_times')
             if (global.guest_token.token.nextActiveTime) {
                 await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
-                console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
-                break //只处理现有的
+                Log(false, 'error', `[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
+                break //existing
             }
 
-            console.log(`tmv3: ${accountInfo.display_name} (@${accountInfo.name}) #${String(accountInfo.uid)} ${accountInfo.last_cursor ? '- new' : ''}`)
+            Log(false, 'log', `tmv3: ${accountInfo.display_name} (@${accountInfo.name}) #${String(accountInfo.uid)} ${accountInfo.last_cursor ? '- new' : ''}`)
+
+            /* Notice
+            To use the search endpoint(NOT A GOOD CHOICE) to the crawler, you might have to make some change:
+
+            GRAPHQL_MODE = false
+            await getTweets({
+                queryString:`from:${accountInfo.name} ${accountInfo.last_cursor ? 'since_id:' + accountInfo.last_cursor : ''}`,
+                guest_token: global.guest_token.token,
+                count: 100,
+                online: false,
+                graphqlMode: GRAPHQL_MODE,
+                searchMode: true,
+                withReply: false,
+                web: true
+            })
+            global.guest_token.updateRateLimit('Search')
+            */
             const tweets = await getTweets({
-                queryString: accountInfo.uid,
+                queryString: accountInfo.uid, //`from:${accountInfo.name} ${accountInfo.last_cursor ? 'since_id:' + accountInfo.last_cursor : ''}`, //
                 cursor: accountInfo.cursor,
                 guest_token: global.guest_token.token,
-                count: false,
+                count: 100,
                 online: false,
-                graphqlMode: GRAPHQL_MODE
+                graphqlMode: GRAPHQL_MODE,
+                searchMode: false,
+                withReply: true,
+                web: false
             })
+            //global.guest_token.updateRateLimit('Search')
             global.guest_token.updateRateLimit('UserTweets')
             server_info.updateValue('total_req_times')
             const tmpTweetsInfo = TweetsInfo(tweets.data, GRAPHQL_MODE)
             if (tmpTweetsInfo.errors.code !== 0) {
-                console.log(`tmv3: error #${tmpTweetsInfo.errors.code} , ${tmpTweetsInfo.errors.message}`)
+                Log(false, 'log', `tmv3: error #${tmpTweetsInfo.errors.code} , ${tmpTweetsInfo.errors.message}`)
                 TGPush(`tmv3: error #${tmpTweetsInfo.errors.code} , ${tmpTweetsInfo.errors.message}`)
                 continue
             }
 
             server_info.updateValue('total_req_tweets', tmpTweetsInfo.contentLength)
             let singleAccountTweetsCount = 0
-            console.log(`tmv3: cursor -->${tmpTweetsInfo.cursor.top}<-- (${tmpTweetsInfo.contentLength})`)
+            Log(false, 'log', `tmv3: cursor -->${tmpTweetsInfo.cursor.top || `max_id:${tmpTweetsInfo.tweetRange.max}`}<-- (${tmpTweetsInfo.contentLength})`)
 
             for (const content of tmpTweetsInfo.contents) {
                 //判断非推文//graphql only
-                if (GRAPHQL_MODE && (content.content.entryType !== 'TimelineTimelineItem' || !content)) {
-                    console.log('tmv3: Not tweet, break')
+                if (GRAPHQL_MODE && ((content.content.entryType !== 'TimelineTimelineItem' && content.content.__typename !== 'TimelineTimelineItem') || !content)) {
+                    Log(false, 'log', 'tmv3: Not tweet, break')
                     continue
                 }
 
@@ -391,21 +424,12 @@ while (true) {
                     const generatedTweetData = Tweet(content, {}, [], {}, GRAPHQL_MODE, accountInfo.hidden || false ? 1 : 0, false)
                     const inSql = generatedTweetData.GeneralTweetData
                     if (inSql.card && !generatedTweetData.cardMessage.supported) {
-                        console.log(`tmv3: Not supported card ${generatedTweetData.cardMessage.card_name}`)
+                        Log(false, 'log', `tmv3: Not supported card ${generatedTweetData.cardMessage.card_name}`)
                         TGPush(generatedTweetData.cardMessage.message)
                     }
 
                     //writeFileSync(`../../savetweets/${inSql.tweet_id}.json`, JSON.stringify(generatedTweetData))
-                    //翻译
-                    //暂时用不上了
-                    //$in_sql["translate_source"] = '';
-                    //dbHandle
-                    //来人, 把这个置顶给老子干掉
-                    //丢弃策略必须重写19-6-18
-
-                    //丢弃策略重写, 非置顶均放行, 请自行处理重复问题, 内容锁运行正常
-
-                    //再次重写, 全部都检查, 只要重复就丢弃
+                    // throw duplicate tweets
                     if (
                         accountInfo.last_cursor &&
                         (await V2TwitterTweets.findOne({
@@ -415,7 +439,7 @@ while (true) {
                             }
                         }))
                     ) {
-                        console.log(`tmv3: throw #${++singleAccountTweetsCount} -> ${inSql.tweet_id} (duplicate)`)
+                        Log(false, 'log', `tmv3: throw #${++singleAccountTweetsCount} -> ${inSql.tweet_id} (duplicate)`)
                         server_info.updateValue('total_throw_tweets')
                     } else {
                         server_info.updateValue('total_tweets')
@@ -459,17 +483,19 @@ while (true) {
 
                         //v2_twitter_tweets
                         insert.v2_twitter_tweets.push(inSql)
-                        console.log(`tmv3: #${++singleAccountTweetsCount} Success -> ${inSql.tweet_id}`)
+                        Log(false, 'log', `tmv3: #${++singleAccountTweetsCount} Success -> ${inSql.tweet_id}`)
                     }
                 } else {
                     server_info.updateValue('total_throw_tweets')
-                    console.log(`tmv3: throw ` + path2array('tweet_id', content) + ' (not account post)')
+                    Log(false, 'log', `tmv3: throw ` + path2array('tweet_id', content) + ' (not account post)')
                 }
             }
 
             //insert
             const t = await dbHandle.twitter_monitor.transaction()
             try {
+                //for sqlite full text index
+                //INSERT INTO v2_fts (tweet_id, full_text_origin) VALUES (0, "TwitterMonitorTest")
                 await V2TwitterTweets.bulkCreate(insert.v2_twitter_tweets, { transaction: t })
                 await V2TwitterMedia.bulkCreate(insert.v2_twitter_media, { transaction: t })
                 await V2TwitterEntities.bulkCreate(insert.v2_twitter_entities, { transaction: t })
@@ -482,8 +508,6 @@ while (true) {
                     await V2TwitterQuote.upsert(quote, { transaction: t })
                 }
 
-                //一个号解决
-                //差点整死我
                 //echo $cursor . "\n";
                 if (tmpTweetsInfo.tweetRange.max !== '0' && tmpTweetsInfo.cursor?.top) {
                     await V2AccountInfo.update(
@@ -506,19 +530,19 @@ while (true) {
                 await t.commit()
             } catch (e) {
                 await t.rollback()
-                console.log(e)
+                Log(false, 'log', e)
             }
         }
-        console.log(`tmv3: task complete`)
+        Log(false, 'log', `tmv3: task complete`)
     } else {
-        console.log('tmv3: no tweets')
+        Log(false, 'log', 'tmv3: no tweets')
     }
 
     server_info.updateValue('total_time_cost', new Date() / 1000 - server_info.getValue('microtime'))
 
     const serverInfo = server_info.value
     await V2ServerInfo.create(serverInfo)
-    console.log(`tmv3: Time cost ${serverInfo.total_time_cost} ms`) //TODO remove
+    Log(false, 'log', `tmv3: Time cost ${serverInfo.total_time_cost} ms`) //TODO remove
 
     if (once) {
         process.exit()

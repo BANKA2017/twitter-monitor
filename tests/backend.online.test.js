@@ -177,7 +177,6 @@ describe('Audiospace', async () => {
         const { data } = mock.globalResponseCtx.body
         expect(data.id).toEqual('1djGXldPqNyGZ')
         if (data.state === 'running' || (data.state === 'ended' && data.is_available_for_replay)) {
-            console.log(data.playback)
             expect(data.playback).toMatch(/^https:\/\/[^\.]+\.video\.pscp\.tv\/.+?\.m3u8$/gm)
         }
     })

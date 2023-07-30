@@ -4,11 +4,12 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { getImage } from '../../libs/core/Core.fetch.mjs'
+import { Log } from '../../libs/core/Core.function.mjs'
 
 const basePath = './twitter_archiver' // ./twitter_archiver
 
 if (!existsSync(basePath + '/twitter_monitor_media_failed_list.json')) {
-    console.log('archiver: need not retry')
+    Log(false, 'log', 'archiver: need not retry')
 }
 let getMediaFailedList = []
 let statusCount = { success: 0, error: 0 }
@@ -35,7 +36,7 @@ for (let mediaIndex = 0; mediaIndex < mediaList.length; ) {
                 if (imageReaponse.status === 'fulfilled' && imageReaponse.value.imageBuffer) {
                     writeFileSync(basePath + `/savemedia/${imageReaponse.value.meta.basename}`, imageReaponse.value.imageBuffer)
                     statusCount.success++
-                    console.log(`${imageReaponse.value.meta.url}\tsuccess: ${statusCount.success}, error: ${statusCount.error}, ${statusCount.success + statusCount.error} / ${mediaList.length}`)
+                    Log(false, 'log', `${imageReaponse.value.meta.url}\tsuccess: ${statusCount.success}, error: ${statusCount.error}, ${statusCount.success + statusCount.error} / ${mediaList.length}`)
                 } else {
                     getMediaFailedList.push({
                         url: imageReaponse.reason.meta.url,
@@ -43,12 +44,12 @@ for (let mediaIndex = 0; mediaIndex < mediaList.length; ) {
                     })
                     writeFileSync(basePath + '/retry_twitter_monitor_media_failed_list.json', JSON.stringify(getMediaFailedList))
                     statusCount.error++
-                    console.log(`archiver: image ${imageReaponse.reason.meta.url}\tsuccess: ${statusCount.success}, error: ${statusCount.error}, ${statusCount.success + statusCount.error} / ${mediaList.length}`)
+                    Log(false, 'log', `archiver: image ${imageReaponse.reason.meta.url}\tsuccess: ${statusCount.success}, error: ${statusCount.error}, ${statusCount.success + statusCount.error} / ${mediaList.length}`)
                 }
             })
         })
         .catch((e) => {
-            console.log(e)
+            Log(false, 'log', e)
         })
     mediaIndex += 100
     writeFileSync(basePath + '/retry_twitter_monitor_media_index', String(mediaIndex))

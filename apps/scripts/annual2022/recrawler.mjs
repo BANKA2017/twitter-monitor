@@ -5,6 +5,7 @@ import { getConversation } from '../../../libs/core/Core.fetch.mjs'
 import { Tweet, TweetsInfo } from '../../../libs/core/Core.tweet.mjs'
 import V2TwitterTweets from '../../../libs/model/twitter_monitor/v2_twitter_tweets.js'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { Log } from '../../../libs/core/Core.function.mjs'
 
 const limit = 499
 let offset = 0
@@ -28,17 +29,17 @@ let _count = { success: tweetList.length, error: errorList.length }
 do {
     list = await V2TwitterTweets.findAll({
         attributes: [
-            'tweet_id',
-            'origin_tweet_id',
-            'conversation_id_str',
-            'uid',
+            [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'],
+            [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(origin_tweet_id AS text)') : 'origin_tweet_id', 'origin_tweet_id'],
+            [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(conversation_id_str AS text)') : 'conversation_id_str', 'conversation_id_str'],
+            [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(uid AS text)') : 'uid', 'uid'],
             'name',
             'display_name',
             'media',
             'video',
             'card',
             'poll',
-            'quote_status',
+            [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(quote_status AS text)') : 'quote_status', 'quote_status'],
             'source',
             'full_text',
             'full_text_origin',
@@ -137,15 +138,15 @@ do {
 
     let tmpTweetIdList = list.map((x) => String(x.tweet_id))
     let tweetDataList = await getConversation({ tweet_id: tmpTweetIdList })
-    //console.log(tweetDataList)
+    //Log(false, 'log', tweetDataList)
     //generate data
     tweetDataList.forEach((x, index) => {
         if (x.status === 'fulfilled') {
             const tweetsInfo = TweetsInfo(x.value.data, true)
-            //console.log(tweetsInfo.contents.filter(tweet => String(tweet?.content?.itemContent?.tweet_results?.result?.rest_id || '0') === tmpTweetIdList[index])[0])
+            //Log(false, 'log', tweetsInfo.contents.filter(tweet => String(tweet?.content?.itemContent?.tweet_results?.result?.rest_id || '0') === tmpTweetIdList[index])[0])
 
             if (!tweetsInfo.contents.find((tweet) => String(tweet?.content?.itemContent?.tweet_results?.result?.rest_id || '0') === tmpTweetIdList[index])) {
-                console.log(`error: ${tmpTweetIdList[index]}`)
+                Log(false, 'log', `error: ${tmpTweetIdList[index]}`)
                 errorList.push(tmpTweetIdList[index])
                 writeFileSync('./errorList.json', JSON.stringify(errorList))
                 _count.error++
@@ -164,7 +165,7 @@ do {
                     isRetweet: tweetData.isRetweet,
                     deletedStatus: false
                 })
-                console.log({
+                Log(false, 'log', {
                     tweet_id: String(tweetData.GeneralTweetData.tweet_id),
                     uid: String(tweetData.GeneralTweetData.uid),
                     name: tweetData.GeneralTweetData.name,
@@ -177,17 +178,17 @@ do {
                 })
                 writeFileSync('./tweetList.json', JSON.stringify(tweetList))
             } else {
-                console.log(String(tweetData.tweet_id) + ' is exist!')
+                Log(false, 'log', String(tweetData.tweet_id) + ' is exist!')
             }
             _count.success++
         } else {
-            console.log(`error: ${tmpTweetIdList[index]}`)
+            Log(false, 'log', `error: ${tmpTweetIdList[index]}`)
             errorList.push(tmpTweetIdList[index])
             writeFileSync('./errorList.json', JSON.stringify(errorList))
             _count.error++
         }
     })
-    console.log(_count)
+    Log(false, 'log', _count)
     offset += limit
     writeFileSync('./offset.txt', String(offset))
 } while (list.length > 0)

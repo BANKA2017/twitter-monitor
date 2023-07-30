@@ -1,5 +1,5 @@
 import { SupportedCardNameList } from '../share/Constant.mjs'
-import { GetEntitiesFromText, PathInfo } from './Core.function.mjs'
+import { Log, GetEntitiesFromText, PathInfo } from './Core.function.mjs'
 import { GetMime } from '../share/Mime.mjs'
 import { GenerateAccountInfo, GenerateCommunityInfo } from './Core.info.mjs'
 import path2array from './Core.apiPath.mjs'
@@ -273,7 +273,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
                 //find tweet content from contentList
                 content = contentList.find((contentItem) => contentItem.id_str === content.retweeted_status_id_str)
                 if (!content) {
-                    console.log('tmv3: no retweet content')
+                    Log(false, 'log', 'tmv3: no retweet content')
                     return { error: { code: 1003, message: 'No retweet content' } }
                 }
                 tmpInfo = users[content.user_id_str]
@@ -350,7 +350,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
             quoteMedia = quoteObject.quoteMedia
             media = media.concat(quoteMedia)
         } else if (quoteContent.tombstone) {
-            console.log(`tmv3: Quote deleted (from #${GeneralTweetData.tweet_id})`)
+            Log(false, 'log', `tmv3: Quote deleted (from #${GeneralTweetData.tweet_id})`)
         }
     }
 
@@ -557,7 +557,7 @@ const GetQuote = (content = {}, users = {}, uid = '0', tweetId = '0', graphqlMod
     }
     // tombstone means deleted
     if (content.tombstone) {
-        console.log(`tmv3: Quote deleted`)
+        Log(false, 'log', `tmv3: Quote deleted`)
         return {
             inSqlQuote: {
                 tweet_id: '',
@@ -599,7 +599,7 @@ const GetQuote = (content = {}, users = {}, uid = '0', tweetId = '0', graphqlMod
         inSqlQuote.display_name = path2array('graphql_user_result', content)?.legacy?.name ?? ''
         inSqlQuote.name = path2array('graphql_user_result', content)?.legacy?.screen_name ?? ''
         if (!inSqlQuote.name && !inSqlQuote.display_name) {
-            console.log(`tmv2: warning, no display name [${inSqlQuote.tweet_id}]`)
+            Log(false, 'log', `tmv2: warning, no display name [${inSqlQuote.tweet_id}]`)
         }
     } else {
         inSqlQuote.display_name = content?.user?.name ?? users[content.user_id_str]?.name ?? ''

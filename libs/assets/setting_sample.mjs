@@ -9,11 +9,8 @@ import { basePath } from '../share/NodeConstant.mjs'
 */
 const SQL_CONFIG = [
     {
-        servername: '127.0.0.1',
-        username: 'root',
-        password: '', //password
-        dbname: 'tmv3',
-        dbtype: 'mysql', // mariadb
+        path: '/path/to/sqlie.sqlite3', // or .sqlite/.db/...
+        dbtype: 'sqlite', // mysql //mariadb
         service: 'twitter_monitor'
     },
     {

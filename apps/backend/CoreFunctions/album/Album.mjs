@@ -1,5 +1,5 @@
 import { getConversation, getTweets } from '../../../../libs/core/Core.fetch.mjs'
-import { VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
+import { Log, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
 import { apiTemplate } from '../../../../libs/share/Constant.mjs'
 import { GenerateData } from '../online/OnlineTweet.mjs'
 
@@ -54,7 +54,7 @@ const AlbumSearch = async (req, env) => {
             await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'Search')
         }
     } catch (e) {
-        console.error(`[${new Date()}]: #Album #${e.code} ${e.message}`)
+        Log(false, 'error', `[${new Date()}]: #Album #${e.code} ${e.message}`)
         return env.json(apiTemplate(e.code, e.message, {}, 'album'))
     }
 

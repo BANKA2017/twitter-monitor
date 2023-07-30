@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 
 import { getAudioSpace, getBroadcast, getFollowingOrFollowers, getImage, getLiveVideoStream, getPollResult, getTweets, AxiosFetch } from '../../libs/core/Core.fetch.mjs'
 
-import { GuestToken, PathInfo, Sleep } from '../../libs/core/Core.function.mjs'
+import { Log, GuestToken, PathInfo, Sleep } from '../../libs/core/Core.function.mjs'
 import path2array from '../../libs/core/Core.apiPath.mjs'
 //import { TGPush } from '../../libs/core/Core.push.mjs'
 import { GenerateAccountInfo } from '../../libs/core/Core.info.mjs'
@@ -25,27 +25,27 @@ let activeFlags = {
 }
 const argvList = {
     '--all': () => {
-        console.log(`archiver: All data`)
+        Log(false, 'log', `archiver: All data`)
         activeFlags = Object.fromEntries(Object.entries(activeFlags).map((flag) => [flag[0], true]))
     },
     '--followers': () => {
-        console.log(`archiver: Add Followers`)
+        Log(false, 'log', `archiver: Add Followers`)
         activeFlags.followers = true
     },
     '--following': () => {
-        console.log(`archiver: Add Following`)
+        Log(false, 'log', `archiver: Add Following`)
         activeFlags.following = true
     },
     '--media': () => {
-        console.log(`archiver: Add Media`)
+        Log(false, 'log', `archiver: Add Media`)
         activeFlags.media = true
     },
     '--broadcast': () => {
-        console.log(`archiver: Add Broadcasts`)
+        Log(false, 'log', `archiver: Add Broadcasts`)
         activeFlags.broadcast = true
     },
     '--space': () => {
-        console.log(`archiver: Add Spaces`)
+        Log(false, 'log', `archiver: Add Spaces`)
         activeFlags.space = true
     }
 }
@@ -63,7 +63,7 @@ for (const argvContent of argv.slice(2)) {
         //TODO any better idea?
         activeFlags[argvContent.replace('--skip_', '')] = false
     } else if (argvContent === '--timeline') {
-        console.log(`archiver: force use timeline api to update tweets`)
+        Log(false, 'log', `archiver: force use timeline api to update tweets`)
         forceTimelineForUpdate = true
     } else if (argvContent.startsWith('--name=')) {
         name = argvContent.replace('--name=', '')
@@ -73,14 +73,14 @@ for (const argvContent of argv.slice(2)) {
 }
 
 if (!name) {
-    console.log(`archiver: No active screen name!`)
+    Log(false, 'log', `archiver: No active screen name!`)
     process.exit()
 }
 
 let basePath = `./${name}` // ./twitter_archiver
 
 if (existsSync(basePath) && !update) {
-    console.log(`Path" ${basePath} "already exists, please rename or remove it.`)
+    Log(false, 'log', `Path" ${basePath} "already exists, please rename or remove it.`)
     process.exit()
 } else if (!update) {
     try {
@@ -90,7 +90,7 @@ if (existsSync(basePath) && !update) {
         mkdirSync(basePath + '/savemedia')
         mkdirSync(basePath + '/scripts')
     } catch (e) {
-        console.error(`archiver: `, e)
+        Log(false, 'error', `archiver: `, e)
         process.exit()
     }
 }
@@ -104,10 +104,10 @@ if (existsSync(basePath) && !update) {
 
 //check base path
 if (!existsSync(basePath)) {
-    console.error(`archiver: path -->${basePath}<-- is NOT EXIST!`)
+    Log(false, 'error', `archiver: path -->${basePath}<-- is NOT EXIST!`)
     process.exit()
 } else {
-    console.log(`archive: init...`)
+    Log(false, 'log', `archive: init...`)
 }
 
 //save date
@@ -152,7 +152,7 @@ await global.legacy_guest_token.updateGuestToken(0)
 
 if (global.guest_token.token.nextActiveTime) {
     //await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
-    console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
+    Log(false, 'error', `[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
     await Sleep(global.guest_token.token.nextActiveTime - Date.now())
     await global.guest_token.updateGuestToken(4)
     if (!global.guest_token.token.success) {
@@ -179,13 +179,13 @@ try {
         cursor = tmpCursor
     }
 } catch (e) {
-    console.log(`archiver: Invalid cursor file`)
+    Log(false, 'log', `archiver: Invalid cursor file`)
 }
 
 //userinfo and tweets
 if (activeFlags.tweet) {
     if (cursor.tweets.cursor === '') {
-        console.log(`archiver: new account`)
+        Log(false, 'log', `archiver: new account`)
     } else if (cursor.tweets.cursor === 'complete') {
         cursor.tweets.cursor = ''
         if (cursor.tweets.maxId && cursor.tweets.maxId !== 0) {
@@ -193,21 +193,21 @@ if (activeFlags.tweet) {
             cursor.tweets.maxId = ''
         }
     }
-    console.log('archiver: tweets...')
+    Log(false, 'log', 'archiver: tweets...')
     if (!cursor.tweets.tmpId || !uid) {
-        console.log(`archiver: new task is unable to use timeline api`)
+        Log(false, 'log', `archiver: new task is unable to use timeline api`)
         forceTimelineForUpdate = false
     }
     if (cursor.tweets.cursor !== 'complete') {
         //TODO query string
         //TODO wait for retweets
         const query = [`from:${name}`, 'include:replies', 'include:nativeretweets', 'include:retweets', 'include:quote', `since_id:${cursor.tweets.tmpId ? cursor.tweets.tmpId : 0}`].join(' ')
-        console.log(`archiver: query string -->${query}<--`)
+        Log(false, 'log', `archiver: query string -->${query}<--`)
         do {
             await global.guest_token.updateGuestToken(4)
             if (global.guest_token.token.nextActiveTime) {
                 //await TGPush(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
-                console.error(`[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
+                Log(false, 'error', `[${new Date()}]: #Crawler #GuestToken #429 Wait until ${global.guest_token.token.nextActiveTime}`)
                 break //只处理现有的
             }
             let tweets = null
@@ -223,10 +223,10 @@ if (activeFlags.tweet) {
                     withReply: true
                 })
                 global.guest_token.updateRateLimit('Search')
-                console.log(JSON.stringify(tweets.data))
+                Log(false, 'log', JSON.stringify(tweets.data))
             } catch (e) {
                 //try again
-                console.log('archiver: first retry...')
+                Log(false, 'log', 'archiver: first retry...')
                 try {
                     tweets = await getTweets({
                         queryString: forceTimelineForUpdate ? uid : query,
@@ -240,24 +240,24 @@ if (activeFlags.tweet) {
                     })
                     global.guest_token.updateRateLimit('Search')
                 } catch (e1) {
-                    console.log('archiver: retry failed...')
-                    console.error(e1)
+                    Log(false, 'log', 'archiver: retry failed...')
+                    Log(false, 'error', e1)
                     process.exit()
                 }
             }
             if (tweets === null) {
-                console.error(`archiver: empty response`)
+                Log(false, 'error', `archiver: empty response`)
                 process.exit()
             }
 
             //const tmpTweetsInfo = TweetsInfo(tweets.data, true)
             const tmpTweetsInfo = GenerateData(tweets, false, '', forceTimelineForUpdate)
             if (tmpTweetsInfo.tweetsInfo.errors.code !== 0) {
-                console.log(`archiver: error #${tmpTweetsInfo.tweetsInfo.errors.code} , ${tmpTweetsInfo.tweetsInfo.errors.message}`)
+                Log(false, 'log', `archiver: error #${tmpTweetsInfo.tweetsInfo.errors.code} , ${tmpTweetsInfo.tweetsInfo.errors.message}`)
                 //TGPush(`archiver: error #${tmpTweetsInfo.tweetsInfo.errors.code} , ${tmpTweetsInfo.tweetsInfo.errors.message}`)
                 continue
             }
-            console.log(`archiver: cursor -->${tmpTweetsInfo.tweetsInfo.cursor?.bottom || 'end'}<-- (${tmpTweetsInfo.tweetsInfo.contentLength})`)
+            Log(false, 'log', `archiver: cursor -->${tmpTweetsInfo.tweetsInfo.cursor?.bottom || 'end'}<-- (${tmpTweetsInfo.tweetsInfo.contentLength})`)
             writeFileSync(basePath + `/rawdata/${forceTimelineForUpdate ? 'timeline_' : ''}${tmpTweetsInfo.tweetsInfo.tweetRange.max}_${tmpTweetsInfo.tweetsInfo.tweetRange.min}.json`, JSON.stringify(tweets.data))
 
             //get account info
@@ -269,11 +269,11 @@ if (activeFlags.tweet) {
                     uid = ((user) => user?.rest_id || user?.id_str || null)(Object.values(tmpTweetsInfo.tweetsInfo.users).find((user) => (user?.legacy?.screen_name || user.screen_name || '').toLocaleLowerCase() === name.toLocaleLowerCase()))
 
                     if (!uid) {
-                        console.error(`archiver: no such account!!!`)
+                        Log(false, 'error', `archiver: no such account!!!`)
                         process.exit()
                     }
                 } catch (e) {
-                    console.error(e)
+                    Log(false, 'error', e)
                     process.exit()
                 }
             }
@@ -310,7 +310,7 @@ if (activeFlags.tweet) {
                     }
 
                     UserData.tweets[tweet.tweet_id] = tweet
-                    console.log(`archiver: #${++singleAccountTweetsCount} Success -> ${tweet.tweet_id}`)
+                    Log(false, 'log', `archiver: #${++singleAccountTweetsCount} Success -> ${tweet.tweet_id}`)
                 }
 
                 writeFileSync(basePath + '/rawdata/tweet.json', JSON.stringify(rawTweetData))
@@ -331,13 +331,13 @@ if (activeFlags.tweet) {
                 writeFileSync(basePath + '/twitter_archive_cursor.json', JSON.stringify(cursor))
                 writeFileSync(basePath + '/range.json', JSON.stringify(range))
             } catch (e) {
-                console.error(e)
+                Log(false, 'error', e)
                 process.exit()
             }
         } while (cursor.tweets.cursor && !forceTimelineForUpdate)
         cursor.tweets.cursor = 'complete'
         writeFileSync(basePath + '/twitter_archive_cursor.json', JSON.stringify(cursor))
-        console.log(`archiver: tweets complete, cost ${new Date() - now} ms`)
+        Log(false, 'log', `archiver: tweets complete, cost ${new Date() - now} ms`)
     }
     //TODO moment
 
@@ -352,7 +352,7 @@ if (activeFlags.tweet) {
     }
     let pollsList = Object.values(UserData.tweets).filter((tweet) => tweet.polls && !tweet.polls[0].count)
 
-    console.log(`archiver: polls... (${pollsList.length})`)
+    Log(false, 'log', `archiver: polls... (${pollsList.length})`)
 
     for (; pollsIndex < pollsList.length; pollsIndex++) {
         if (now / 1000 > pollsList[pollsIndex].polls[0].end_datetime && rawTweetData[pollsList[pollsIndex].tweet_id]) {
@@ -364,27 +364,27 @@ if (activeFlags.tweet) {
                         break
                     }
                     pollsList[pollsIndex].polls[x - 1].count = tmpPollKV['choice' + x + '_count'].string_value
-                    console.log(`${pollsList[pollsIndex].tweet_id}: #${x} > ${pollsList[pollsIndex].polls[x - 1].count}`)
+                    Log(false, 'log', `${pollsList[pollsIndex].tweet_id}: #${x} > ${pollsList[pollsIndex].polls[x - 1].count}`)
                 }
             } else {
                 getPollsFailedList.push(pollsList[pollsIndex].tweet_id)
                 writeFileSync(basePath + '/twitter_monitor_polls_failed_list.json', JSON.stringify(getPollsFailedList))
-                console.log(`archiver: NO POLLS CONTENT (${pollsList[pollsIndex].tweet_id}) #errorpoll`)
+                Log(false, 'log', `archiver: NO POLLS CONTENT (${pollsList[pollsIndex].tweet_id}) #errorpoll`)
             }
         } else {
             const pollData = await getPollResult({ tweet_id: pollsList[pollsIndex].tweet_id })
             if (pollData.code !== 200) {
                 getPollsFailedList.push(pollsList[pollsIndex].tweet_id)
                 writeFileSync(basePath + '/twitter_monitor_polls_failed_list.json', JSON.stringify(getPollsFailedList))
-                console.log(`archiver: ${pollData.message} (${pollsList[pollsIndex].tweet_id}) #errorpoll`)
+                Log(false, 'log', `archiver: ${pollData.message} (${pollsList[pollsIndex].tweet_id}) #errorpoll`)
             } else {
                 for (const pollDataIndex in pollData.data) {
                     pollsList[pollsIndex].polls[pollDataIndex].count = pollData.data[pollDataIndex]
-                    console.log(`${pollsList[pollsIndex].tweet_id}: #${Number(pollDataIndex) + 1} > ${pollsList[pollsIndex].polls[pollDataIndex].count}`)
+                    Log(false, 'log', `${pollsList[pollsIndex].tweet_id}: #${Number(pollDataIndex) + 1} > ${pollsList[pollsIndex].polls[pollDataIndex].count}`)
                 }
             }
         }
-        console.log(`archiver: ${pollsIndex + 1} / ${pollsList.length}`)
+        Log(false, 'log', `archiver: ${pollsIndex + 1} / ${pollsList.length}`)
         writeFileSync(basePath + '/twitter_monitor_polls_index', String(pollsIndex))
     }
 
@@ -392,7 +392,7 @@ if (activeFlags.tweet) {
         UserData.tweets[pollTweetItem.tweet_id] = pollTweetItem
     })
     writeFileSync(basePath + '/savedata/data.json', JSON.stringify(UserData))
-    //console.log(getPollsFailedList)
+    //Log(false, 'log', getPollsFailedList)
 }
 
 // to save broadcasts and spaces, you have to install ffmpeg and place another GPLv2 script named `broadcast.mjs`/`audiospace.mjs` in same path with this script or just place them in savedata/
@@ -417,10 +417,10 @@ if (activeFlags.broadcast) {
         } catch (e) {}
     }
     if (broadcastsCards.length <= 0) {
-        console.log(`archiver: no broadcast (0)`)
+        Log(false, 'log', `archiver: no broadcast (0)`)
     } else {
         while (broadcastsCards.length > 0) {
-            console.log(`archiver: broadcast (${broadcastsCards.length})`)
+            Log(false, 'log', `archiver: broadcast (${broadcastsCards.length})`)
 
             const tmpCardsList = broadcastsCards.splice(0, 100)
             await global.guest_token.updateGuestToken(4)
@@ -452,22 +452,22 @@ if (activeFlags.broadcast) {
                                         m3u8Url = urlPrefix + m3u8Parser.manifest.playlists.sort((a, b) => b.attributes.BANDWIDTH - a.attributes.BANDWIDTH)[0].uri
                                     }
                                 } catch (e) {
-                                    console.error(e)
-                                    console.log(`archiver: Unable to parse playlists from '${m3u8Url}', fallback.`)
+                                    Log(false, 'error', e)
+                                    Log(false, 'log', `archiver: Unable to parse playlists from '${m3u8Url}', fallback.`)
                                 }
 
                                 tmpBroadcastResponseData.playback = m3u8Url.replaceAll('?type=replay', '').replaceAll('?type=live', '')
                             }
                         } catch (e) {
-                            console.error(e)
+                            Log(false, 'error', e)
                         }
                     }
-                    console.log(`archiver: broadcast -->${tmpBroadcastResponseData.id}<--`)
+                    Log(false, 'log', `archiver: broadcast -->${tmpBroadcastResponseData.id}<--`)
                     broadcastRawList[tmpBroadcastResponseData.id] = { info: broadcastResponse.value.data, source: tmpBroadcastLink?.data }
                     UserData.tweets[tmpCardsList[index].tweet_id].broadcastObject = tmpBroadcastResponseData
                 } else {
                     broadcastErrorList.push(tmpCardsList[index])
-                    console.log(`archiver: broadcast error -->${tmpCardsList[index].tweet_id}<--`)
+                    Log(false, 'log', `archiver: broadcast error -->${tmpCardsList[index].tweet_id}<--`)
                 }
             }
             writeFileSync(basePath + '/savedata/data.json', JSON.stringify(UserData))
@@ -489,7 +489,7 @@ if (activeFlags.broadcast) {
         )
     ]) {
         if (!broadcastItem[0].playback) {
-            console.log(`archiver: Broadcast is not exist`)
+            Log(false, 'log', `archiver: Broadcast is not exist`)
             continue
         }
         broadcastScript += `ffmpeg -y -i "${broadcastItem[0].playback}" -c copy -bsf:a aac_adtstoasc ../savemedia/broadcast_${broadcastItem[0].id}.mp4\n`
@@ -524,10 +524,10 @@ if (activeFlags.space) {
         } catch (e) {}
     }
     if (audiospacesCards.length <= 0) {
-        console.log(`archiver: no audiospace (0)`)
+        Log(false, 'log', `archiver: no audiospace (0)`)
     } else {
         while (audiospacesCards.length > 0) {
-            console.log(`archiver: audiospace (${audiospacesCards.length})`)
+            Log(false, 'log', `archiver: audiospace (${audiospacesCards.length})`)
 
             const tmpCardsList = audiospacesCards.splice(0, 100)
             await global.guest_token.updateGuestToken(4)
@@ -548,16 +548,16 @@ if (activeFlags.space) {
                                 tmpAudioSpace.playback = tmpAudioSpaceLink.data?.source?.noRedirectPlaybackUrl.replaceAll('?type=replay', '').replaceAll('?type=live', '')
                             }
                         } catch (e) {
-                            console.error(e)
+                            Log(false, 'error', e)
                         }
                     }
 
-                    console.log(`archiver: audiospace -->${tmpAudioSpace.id}<--`)
+                    Log(false, 'log', `archiver: audiospace -->${tmpAudioSpace.id}<--`)
                     audiospaceRawList[tmpAudioSpace.id] = { info: audiospaceResponse.value.data, source: tmpAudioSpaceLink?.data }
                     UserData.tweets[tmpCardsList[index].tweet_id].audiospaceObject = tmpAudioSpace
                 } else {
                     audiospaceErrorList.push(tmpCardsList[index])
-                    console.log(`archiver: audiospace error -->${tmpCardsList[index].tweet_id}<--`)
+                    Log(false, 'log', `archiver: audiospace error -->${tmpCardsList[index].tweet_id}<--`)
                 }
             }
             writeFileSync(basePath + '/savedata/data.json', JSON.stringify(UserData))
@@ -570,7 +570,7 @@ if (activeFlags.space) {
     for (const audiospaceItem of Object.entries(audiospaceRawList || {})) {
         //ffmpeg -i "" -c copy radio.aac
         if (!audiospaceItem[1]?.source) {
-            console.log(`archiver: Space is not exist`)
+            Log(false, 'log', `archiver: Space is not exist`)
             continue
         }
         audioSpaceScript += `ffmpeg -y -i "${audiospaceItem[1].source.source?.noRedirectPlaybackUrl || audiospaceItem[1].source.source?.location}" -c copy ../savemedia/audiospace_${audiospaceItem[0]}.aac\n`
@@ -595,7 +595,7 @@ if (activeFlags.media) {
     }
     //profile
 
-    console.log(`archive: avatar and headers (${Object.keys(UserData.account_list).length})`)
+    Log(false, 'log', `archive: avatar and headers (${Object.keys(UserData.account_list).length})`)
     for (const avatar_header_uid in UserData.account_list) {
         const account = UserData.account_list[avatar_header_uid]
         let avatarLinkInfo = PathInfo(`https://` + account.header)
@@ -603,13 +603,13 @@ if (activeFlags.media) {
             try {
                 const avatarBuffer = await getImage(`https://` + account.header)
                 writeFileSync(basePath + `/savemedia/avatar_${account.uid_str}.${avatarLinkInfo.extension}`, avatarBuffer.data)
-                console.log(`archiver: saved avatar @${account.name}(${account.uid_str})`)
+                Log(false, 'log', `archiver: saved avatar @${account.name}(${account.uid_str})`)
             } catch (e) {
                 getMediaFailedList.push({
                     url: `https://` + account.header,
                     basename: `avatar_${account.uid}.${avatarLinkInfo.extension}`
                 })
-                console.log(`archiver: unable to save avatar @${account.name}(${account.uid_str})`)
+                Log(false, 'log', `archiver: unable to save avatar @${account.name}(${account.uid_str})`)
             }
         }
 
@@ -617,13 +617,13 @@ if (activeFlags.media) {
             try {
                 const bannerBuffer = await getImage(`https://pbs.twimg.com/profile_banners/${account.uid_str}/${account.banner}`)
                 writeFileSync(basePath + `/savemedia/banner_${account.uid_str}.jpg`, bannerBuffer.data)
-                console.log(`archiver: saved banner @${account.name}(${account.uid_str})`)
+                Log(false, 'log', `archiver: saved banner @${account.name}(${account.uid_str})`)
             } catch (e) {
                 getMediaFailedList.push({
                     url: `https://pbs.twimg.com/profile_banners/${account.uid_str}/${account.banner}`,
                     basename: `banner_${account.uid_str}.jpg`
                 })
-                console.log(`archiver: unable to save banner @${account.name}(${account.uid_str})`)
+                Log(false, 'log', `archiver: unable to save banner @${account.name}(${account.uid_str})`)
             }
         }
     }
@@ -650,7 +650,7 @@ if (activeFlags.media) {
         const tmpLength = tmpMediaList.length
         //precheck
         tmpMediaList = tmpMediaList.filter((media) => !existsSync(basePath + `/savemedia/${media.filename}.${media.extension}`))
-        console.log(`archiver: ${tmpLength - tmpMediaList.length} media skipped`)
+        Log(false, 'log', `archiver: ${tmpLength - tmpMediaList.length} media skipped`)
         statusCount.success += tmpLength - tmpMediaList.length
         await Promise.allSettled(
             tmpMediaList.map(
@@ -671,7 +671,7 @@ if (activeFlags.media) {
                     if (imageReaponse.status === 'fulfilled' && imageReaponse.value.imageBuffer) {
                         writeFileSync(basePath + `/savemedia/${imageReaponse.value.meta.filename}.${imageReaponse.value.meta.extension}`, imageReaponse.value.imageBuffer)
                         statusCount.success++
-                        console.log(`${imageReaponse.value.meta.url}\tsuccess: ${statusCount.success}, error: ${statusCount.error}, ${statusCount.success + statusCount.error} / ${mediaList.length}`)
+                        Log(false, 'log', `${imageReaponse.value.meta.url}\tsuccess: ${statusCount.success}, error: ${statusCount.error}, ${statusCount.success + statusCount.error} / ${mediaList.length}`)
                     } else {
                         getMediaFailedList.push({
                             url: imageReaponse.reason.meta.url,
@@ -679,12 +679,12 @@ if (activeFlags.media) {
                         })
                         writeFileSync(basePath + '/twitter_monitor_media_failed_list.json', JSON.stringify(getMediaFailedList))
                         statusCount.error++
-                        console.log(`archiver: image ${imageReaponse.reason.meta.url}\tsuccess: ${statusCount.success}, error: ${statusCount.error}, ${statusCount.success + statusCount.error} / ${mediaList.length}`)
+                        Log(false, 'log', `archiver: image ${imageReaponse.reason.meta.url}\tsuccess: ${statusCount.success}, error: ${statusCount.error}, ${statusCount.success + statusCount.error} / ${mediaList.length}`)
                     }
                 })
             })
             .catch((e) => {
-                console.log(e)
+                Log(false, 'log', e)
             })
         mediaIndex += 100
         writeFileSync(basePath + '/twitter_monitor_media_index', String(mediaIndex))
@@ -692,7 +692,7 @@ if (activeFlags.media) {
 
     range.time.end = Date.now()
     writeFileSync(basePath + '/range.json', JSON.stringify(range))
-    console.log(`archiver: online tasks complete`)
+    Log(false, 'log', `archiver: online tasks complete`)
 
     //TODO broadcasts via ffmpeg
 }
@@ -703,7 +703,7 @@ if (activeFlags.media) {
 //TODO follower and following with cookie
 //cookie.auth_token && cookie.ct0
 if (true) {
-    console.log(`archiver: Following and Followers...`)
+    Log(false, 'log', `archiver: Following and Followers...`)
     const screen_name = UserData.account_info?.name
     let cookieRequestsRateLimit = 0
 
@@ -746,7 +746,7 @@ if (true) {
                     following_count++
                     rawFollowingData[tmpUserInfo['id_str']] = tmpUserInfo
                     FollowingData[tmpUserInfo['id_str']] = GenerateAccountInfo(tmpUserInfo).GeneralAccountData
-                    console.log(`archiver: Following\t${tmpUserInfo['id_str']}\t[${FollowingData[tmpUserInfo['id_str']]['display_name']}](@${FollowingData[tmpUserInfo['id_str']]['name']})\t${following_count}`)
+                    Log(false, 'log', `archiver: Following\t${tmpUserInfo['id_str']}\t[${FollowingData[tmpUserInfo['id_str']]['display_name']}](@${FollowingData[tmpUserInfo['id_str']]['name']})\t${following_count}`)
                 }
 
                 //save raw data
@@ -760,7 +760,7 @@ if (true) {
             } while (cursor.following.cursor)
             cursor.following.cursor = 'complete'
             writeFileSync(basePath + '/twitter_archive_cursor.json', JSON.stringify(cursor))
-            console.log(`archiver: Following complete, cost ${new Date() - now} ms`)
+            Log(false, 'log', `archiver: Following complete, cost ${new Date() - now} ms`)
             range.time.end = Date.now()
             writeFileSync(basePath + '/range.json', JSON.stringify(range))
         }
@@ -803,7 +803,7 @@ if (true) {
                     followers_count++
                     rawFollowersData[tmpUserInfo['id_str']] = tmpUserInfo
                     FollowersData[tmpUserInfo['id_str']] = GenerateAccountInfo(tmpUserInfo).GeneralAccountData
-                    console.log(`archiver: Follower\t${tmpUserInfo['id_str']}\t[${FollowersData[tmpUserInfo['id_str']]['display_name']}](@${FollowersData[tmpUserInfo['id_str']]['name']})\t${followers_count}`)
+                    Log(false, 'log', `archiver: Follower\t${tmpUserInfo['id_str']}\t[${FollowersData[tmpUserInfo['id_str']]['display_name']}](@${FollowersData[tmpUserInfo['id_str']]['name']})\t${followers_count}`)
                 }
 
                 //save raw data
@@ -817,19 +817,19 @@ if (true) {
             } while (cursor.followers.cursor)
             cursor.followers.cursor = 'complete'
             writeFileSync(basePath + '/twitter_archive_cursor.json', JSON.stringify(cursor))
-            console.log(`archiver: Followers complete, cost ${new Date() - now} ms`)
+            Log(false, 'log', `archiver: Followers complete, cost ${new Date() - now} ms`)
             range.time.end = Date.now()
             writeFileSync(basePath + '/range.json', JSON.stringify(range))
         }
     }
 } else {
-    console.log(`archiver: To archive following and followers, you have to provide 'auth_token' and 'ct0' in variable 'cookie'`)
+    Log(false, 'log', `archiver: To archive following and followers, you have to provide 'auth_token' and 'ct0' in variable 'cookie'`)
 }
 
-console.log(`archiver: Time cost ${new Date() - now} ms`) //TODO remove
+Log(false, 'log', `archiver: Time cost ${new Date() - now} ms`) //TODO remove
 
 if (broadcastAndAudiospaceScriptMessage) {
-    console.log(`archiver: Archiver() have been created some scripts in folder ./${name}/scripts/, so you can exec command below:\n\ncd ${name}/scripts/\n${broadcastAndAudiospaceScriptMessage}\n`)
+    Log(false, 'log', `archiver: Archiver() have been created some scripts in folder ./${name}/scripts/, so you can exec command below:\n\ncd ${name}/scripts/\n${broadcastAndAudiospaceScriptMessage}\n`)
 }
 
 process.exit()

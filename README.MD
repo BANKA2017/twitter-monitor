@@ -1,4 +1,5 @@
-Twitter Monitor v3 monorepo (DEV)
+# Twitter Monitor v3 monorepo (DEV)
+
 ---
 
 ## ⚠ WARNING / 警告
@@ -18,7 +19,7 @@ This repository included `core/crawler/api/scripts`, frontend repository is [her
 * x86_64/arm64
 * Node.js 18+
 * Nginx
-* MySQL 8.0 / MariaDB (some function is not supported MariaDB, like function `ANY_VALUE()`, parser `ngram`)
+* MySQL 8.0 / MariaDB (some function is not supported MariaDB, like function `ANY_VALUE()`, parser `ngram`) / SQLite
 
 ## Download
 
@@ -40,6 +41,7 @@ We use GitHub Actions to build some scripts, you can find them in [BANKA2017/twi
 ### Graphql
 
 **IF POSSIBLE, DO NOT EXECUTE THOSE SCRIPTS**
+
 * execute `node apps/scripts/updateQueryIdList.mjs` to update `queryId`
 * execute `node apps/scripts/checkGraphqlFeaturesStatus.mjs` for check after updating `queryId`
 
@@ -89,10 +91,25 @@ We use GitHub Actions to build some scripts, you can find them in [BANKA2017/twi
 
 * supported album api, online api, media proxy and translator api
 * to deploy it is easy
-  - *read https://developers.cloudflare.com/workers/wrangler/workers-kv/#create-a-kv-namespace-with-wrangler 
-  - create kv space named 'twitter-monitor-workers-kv' in <https://dash.cloudflare.com/> or executed `npx wrangler kv:namespace create kv`
-  - copy the value of 'id' into 'kv_namespaces[0].id'
-  - execute `npx wrangler publish`
+  * *read <https://developers.cloudflare.com/workers/wrangler/workers-kv/#create-a-kv-namespace-with-wrangler> 
+  * create kv space named 'twitter-monitor-workers-kv' in <https://dash.cloudflare.com/> or executed `npx wrangler kv:namespace create kv`
+  * copy the value of 'id' into 'kv_namespaces[0].id'
+  * execute `npx wrangler publish`
+
+### Rate limit checker
+
+* set env `android_guest_account` likes
+  
+  ```javascript
+  {
+        "authorization": "Bearer AAAAAAAAAAAAAAAAAAAAAFXzAwAAAAAAMHCxpeSDG1gLNLghVe8d74hl6k4%3DRUMF4xAQLsbeBhTSRrCiQpJtxoGWeyHrDb5te2jpGskWDFW82F",
+        "oauth_token": "...",
+        "oauth_token_secret": "..."
+    }
+  ```
+
+* then execute `node apps/rate_limit_checker/run.mjs`
+* Read more in [rate-limit-checker/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/rate-limit-checker)
 
 ## Supported Cards
 
@@ -141,8 +158,8 @@ We use GitHub Actions to build some scripts, you can find them in [BANKA2017/twi
 
 ## Sub packages
 
-- `FastText` for language identity, [Read more](https://github.com/BANKA2017/twitter-monitor/tree/node/packages/fasttext)
-- `AxiosHelper` used to fix the issue that CloudFlare Workers unable to use axios, [Read more](https://github.com/BANKA2017/twitter-monitor/tree/node/packages/axios-helper)
+* `FastText` for language identity, [Read more](https://github.com/BANKA2017/twitter-monitor/tree/node/packages/fasttext)
+* `AxiosHelper` used to fix the issue that CloudFlare Workers unable to use axios, [Read more](https://github.com/BANKA2017/twitter-monitor/tree/node/packages/axios-helper)
 
 ## Thanks
 
@@ -163,7 +180,7 @@ Those are Chinese articles
 * x86_64/arm64 (理论上是全平台支持的)
 * Node.js 18+
 * Nginx
-* MySQL 8.0 (使用MariaDB等基于 MySQL 5.x 的发行版可能不能支持函数 `ANY_VALUE()`, 解析器 `ngram`，会导致部分api不可用，若不使用api可忽略此处)
+* MySQL 8.0 (使用MariaDB等基于 MySQL 5.x 的发行版可能不能支持函数 `ANY_VALUE()`, 解析器 `ngram`，会导致部分api不可用，若不使用api可忽略此处) / SQLite
 
 ## 使用方法
 
@@ -181,6 +198,7 @@ Those are Chinese articles
 ### Graphql
 
 **如无必要，请不要跑这些脚本**
+
 * 运行 `node apps/scripts/updateQueryIdList.mjs` 以更新 `queryId`
 * 更新 `queryId` 后运行 `node apps/scripts/checkGraphqlFeaturesStatus.mjs` 进行检查（不通过怎么办？可以来提issue）
 
@@ -229,63 +247,77 @@ Those are Chinese articles
 
 * 支持 album api, online api, media proxy 以及 翻译 api
 * 部署只需要简单的几步
-  - *（可跳过）阅读 https://developers.cloudflare.com/workers/wrangler/workers-kv/#create-a-kv-namespace-with-wrangler 
-  - 在 <https://dash.cloudflare.com/> 创建一个叫 'twitter-monitor-workers-kv' 的 kv 命名空间，或者直接执行 `npx wrangler kv:namespace create kv`
-  - 将返回的 'id' 的值拷贝到 'kv_namespaces[0].id'
-  - 执行 `npx wrangler publish`
+  * *（可跳过）阅读 <https://developers.cloudflare.com/workers/wrangler/workers-kv/#create-a-kv-namespace-with-wrangler> 
+  * 在 <https://dash.cloudflare.com/> 创建一个叫 'twitter-monitor-workers-kv' 的 kv 命名空间，或者直接执行 `npx wrangler kv:namespace create kv`
+  * 将返回的 'id' 的值拷贝到 'kv_namespaces[0].id'
+  * 执行 `npx wrangler publish`
 
+### Rate limit checker
+
+* 设置环境变量 `android_guest_account`
+  
+  ```javascript
+  {
+        "authorization": "Bearer AAAAAAAAAAAAAAAAAAAAAFXzAwAAAAAAMHCxpeSDG1gLNLghVe8d74hl6k4%3DRUMF4xAQLsbeBhTSRrCiQpJtxoGWeyHrDb5te2jpGskWDFW82F",
+        "oauth_token": "...",
+        "oauth_token_secret": "..."
+    }
+  ```
+
+* 然后执行 `node apps/rate_limit_checker/run.mjs`
+* 了解更多 [rate-limit-checker/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/rate-limit-checker)
 
 ## 支持的卡片类型
 
 * 支持的卡片类型 (```*``` 表示使用小图, ```**``` 表示使用小图且图片在卡片右侧)
 
-    * summary*
-    * summary_large_image
-    * promo_image_convo
-    * promo_video_convo
-    * promo_website
-    * audio*
-    * player
-    * periscope_broadcast
-    * broadcast
-    * promo_video_website
-    * promo_image_app
-    * app
-    * direct_store_link_app
-    * live_event
-    * moment**
-    * poll2choice_text_only
-    * poll3choice_text_only
-    * poll4choice_text_only
-    * poll2choice_image
-    * poll3choice_image
-    * poll4choice_image
-    * appplayer
-    * audiospace
-    * unified_card
-        * image_website
-        * video_website
-        * image_carousel_website
-        * video_carousel_website
-        * image_app
-        * video_app
-        * image_carousel_app
-        * video_carousel_app
-        * image_multi_dest_carousel_website
-        * video_multi_dest_carousel_website
-        * mixed_media_multi_dest_carousel_website
-        * mixed_media_single_dest_carousel_website
-        * mixed_media_single_dest_carousel_app
-        * image_collection_website
-        * twitter_list_details
-        * media_with_details_horizontal (for topic ?)
-        * twitter_article
-        * community_details
+  * summary*
+  * summary_large_image
+  * promo_image_convo
+  * promo_video_convo
+  * promo_website
+  * audio*
+  * player
+  * periscope_broadcast
+  * broadcast
+  * promo_video_website
+  * promo_image_app
+  * app
+  * direct_store_link_app
+  * live_event
+  * moment**
+  * poll2choice_text_only
+  * poll3choice_text_only
+  * poll4choice_text_only
+  * poll2choice_image
+  * poll3choice_image
+  * poll4choice_image
+  * appplayer
+  * audiospace
+  * unified_card
+    * image_website
+    * video_website
+    * image_carousel_website
+    * video_carousel_website
+    * image_app
+    * video_app
+    * image_carousel_app
+    * video_carousel_app
+    * image_multi_dest_carousel_website
+    * video_multi_dest_carousel_website
+    * mixed_media_multi_dest_carousel_website
+    * mixed_media_single_dest_carousel_website
+    * mixed_media_single_dest_carousel_app
+    * image_collection_website
+    * twitter_list_details
+    * media_with_details_horizontal (for topic ?)
+    * twitter_article
+    * community_details
 
 ## 子包
 
-- `FastText` 用于识别语言, [阅读更多](https://github.com/BANKA2017/twitter-monitor/tree/node/packages/fasttext)
-- `AxiosHelper` 用于处理解决 Workers 无法使用 axios 的问题, [阅读更多](https://github.com/BANKA2017/twitter-monitor/tree/node/packages/axios-helper)
+* `FastText` 用于识别语言, [阅读更多](https://github.com/BANKA2017/twitter-monitor/tree/node/packages/fasttext)
+* `AxiosHelper` 用于处理解决 Workers 无法使用 axios 的问题, [阅读更多](https://github.com/BANKA2017/twitter-monitor/tree/node/packages/axios-helper)
 
 ## 出处 & 感谢
 

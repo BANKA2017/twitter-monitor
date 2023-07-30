@@ -1,5 +1,5 @@
 import { getRecommendations } from '../../libs/core/Core.fetch.mjs'
-import { GuestToken, Sleep } from '../../libs/core/Core.function.mjs'
+import { Log, GuestToken, Sleep } from '../../libs/core/Core.function.mjs'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import dbHandle from '../../libs/core/Core.db.mjs'
 import AnalyticsAccountList from '../../libs/model/analytics/analytics_account_list.js'
@@ -24,10 +24,10 @@ await global.guest_token.updateGuestToken(1)
 let guestTokenCount = 1
 let count = 0
 let throwCount = 0
-console.log(AccountList.size, CheckedList.size, count, throwCount)
+Log(false, 'log', AccountList.size, CheckedList.size, count, throwCount)
 while (AccountList.size) {
     if (guestTokenCount % 1500 === 0) {
-        console.log(`tmv3_analytics: guest token refresh count is upto ${guestTokenCount}, sleep for 30 mins`)
+        Log(false, 'log', `tmv3_analytics: guest token refresh count is upto ${guestTokenCount}, sleep for 30 mins`)
         await Sleep(1000 * 60 * 30)
     }
     let tmpCount = AccountList.size > onceCount ? onceCount : AccountList.size
@@ -40,13 +40,13 @@ while (AccountList.size) {
         await global.guest_token.updateGuestToken(1)
         guestTokenCount++
     }
-    console.log(tmpAccount)
+    Log(false, 'log', tmpAccount)
     const tmpList = await getRecommendations({ user: tmpAccount, guest_token: global.guest_token.token, count: 999 })
-    //console.log(tmpList)
+    //Log(false, 'log', tmpList)
     const t = await dbHandle.analytics.transaction()
     for (const listIndex in tmpList) {
         if (tmpList[listIndex].status === 'fulfilled') {
-            //console.log(tmpList[listIndex].value.data)
+            //Log(false, 'log', tmpList[listIndex].value.data)
             await AnalyticsAccountList.bulkCreate(
                 tmpList[listIndex].value.data.map((account) => ({
                     uid: account.user.id_str,
@@ -66,7 +66,7 @@ while (AccountList.size) {
             AccountList.delete(tmpAccount[listIndex])
             CheckedList.add(tmpAccount[listIndex])
         } else {
-            console.log(tmpList[listIndex])
+            Log(false, 'log', tmpList[listIndex])
             throwCount++
         }
         count++
@@ -75,7 +75,7 @@ while (AccountList.size) {
     try {
         await t.commit()
     } catch (e) {
-        console.log(e)
+        Log(false, 'error', e)
     }
     writeFileSync(
         basePath + '/../libs/assets/analytics/account.json',
@@ -85,6 +85,6 @@ while (AccountList.size) {
         })
     )
     //process.exit()
-    console.log(AccountList.size, CheckedList.size, count, throwCount)
+    Log(false, 'log', AccountList.size, CheckedList.size, count, throwCount)
 }
 process.exit()

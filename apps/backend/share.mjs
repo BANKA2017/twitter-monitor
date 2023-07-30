@@ -1,5 +1,6 @@
 import { existsSync, writeFileSync } from 'fs'
 import { basePath } from '../../libs/share/NodeConstant.mjs'
+import { Log } from '../../libs/core/Core.function.mjs'
 
 const json = (data, status = 200) => ({
     status,
@@ -34,7 +35,7 @@ const mediaCacheSave = (buffer, name) => {
     try {
         writeFileSync(`${basePath}/../apps/backend/cache/${name}`, buffer)
     } catch (e) {
-        console.error(`MediaProxy: #MediaProxy error`, e)
+        Log(false, 'error', `MediaProxy: #MediaProxy error`, e)
     }
 }
 

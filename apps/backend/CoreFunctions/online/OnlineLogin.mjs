@@ -1,5 +1,5 @@
 import { postLogout } from '../../../../libs/core/Core.fetch.mjs'
-import { Login, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
+import { Log, Login, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
 import { apiTemplate } from '../../../../libs/share/Constant.mjs'
 import { GenerateAccountInfo } from '../../../../libs/core/Core.info.mjs'
 
@@ -27,7 +27,7 @@ const ApiLoginFlow = async (req, env) => {
     // X-Rate-Limit-Limit: 187
     // X-Rate-Limit-Remaining: 185
     let tmpResponse, loginFlow
-    //console.log({att, _twitter_sess, flow_token, subtask_id, _2fa, acid})
+    //Log(false, 'log', {att, _twitter_sess, flow_token, subtask_id, _2fa, acid})
     if (att && _twitter_sess && flow_token && subtask_id && (_2fa || acid)) {
         // part 2
         loginFlow = new Login({}, { att, _twitter_sess }, flow_token)
@@ -122,7 +122,7 @@ const ApiLoginFlow = async (req, env) => {
             responseHeaders
         )
     } catch (e) {
-        //console.error(e)
+        //Log(false, 'error', e)
         return env.ResponseWrapper(
             apiTemplate(
                 500,
@@ -140,7 +140,7 @@ const ApiLoginFlow = async (req, env) => {
 }
 
 const ApiLogout = async (req, env) => {
-    //console.log(req.rawHeaders, req?.cookies)
+    //Log(false, 'log', req.rawHeaders, req?.cookies)
     let responseHeaders = new Headers()
     if (!(req?.cookies?.ct0 && req?.cookies?.auth_token)) {
         return env.ResponseWrapper(apiTemplate(403, 'Invalid cookies', {}, 'account'), 200, responseHeaders)
@@ -154,7 +154,7 @@ const ApiLogout = async (req, env) => {
         responseHeaders.append('Set-Cookie', `ct0=; Max-Age=0; Path=/; Secure`)
         return env.ResponseWrapper(apiTemplate(200, 'OK', tmpResponse.data, 'account'), 200, responseHeaders)
     } catch (e) {
-        // console.log(e)
+        // Log(false, 'log', e)
         return env.ResponseWrapper(apiTemplate(e.code || 500, e.message || 'Unknown error', {}, 'account'), 200, responseHeaders)
     }
 }

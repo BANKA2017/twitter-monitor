@@ -10,6 +10,7 @@ import { Op } from 'sequelize'
 import V2TwitterTweets from '../../libs/model/twitter_monitor/v2_twitter_tweets.js'
 import V2TwitterEntities from '../../libs/model/twitter_monitor/v2_twitter_entities.js'
 import { TGPush } from '../../libs/core/Core.push.mjs'
+import { Log } from '../../libs/core/Core.function.mjs'
 
 //GMT+9 Asia/Tokyo, Sunday is the first day
 
@@ -55,7 +56,7 @@ for (const member of member_list) {
     }
     let range = { start: savedData.range.end, end: parseInt(new Date() / 1000) }
 
-    console.log(`${member.display_name}`)
+    Log(false, 'log', `${member.display_name}`)
     let userData = savedData.data
 
     //自带数据
@@ -101,7 +102,15 @@ for (const member of member_list) {
     }
     //tweets && tweetsCount
     const sqlTweetsData = await V2TwitterTweets.findAll({
-        attributes: ['tweet_id', 'card', 'quote_status', 'media', 'video', 'retweet_from', 'time'],
+        attributes: [
+            [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'],
+            'card',
+            [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(quote_status AS text)') : 'quote_status', 'quote_status'],
+            'media',
+            'video',
+            'retweet_from',
+            'time'
+        ],
         where: {
             time: { [Op.gte]: range.start, [Op.lte]: range.end },
             uid: userData.uid
@@ -220,7 +229,7 @@ for (const member of member_list) {
     savedData.range = { start: range.start, end: range.end }
     writeFileSync(`${to}/${userData.name}.json`, JSON.stringify(savedData))
     pushText += `TM Trends: ${member.display_name} cost: ${(new Date() - startTime) / 1000}\n`
-    console.log(`cost: ${(new Date() - startTime) / 1000}`)
+    Log(false, 'log', `cost: ${(new Date() - startTime) / 1000}`)
 }
 
 //await TGPush(pushText + ` #tm_trends `);

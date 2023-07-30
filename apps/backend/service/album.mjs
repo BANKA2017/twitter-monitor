@@ -4,6 +4,7 @@ import { ApiUserInfo } from '../CoreFunctions/online/OnlineUserInfo.mjs'
 import { ApiTweets } from '../CoreFunctions/online/OnlineTweet.mjs'
 import { AlbumSearch } from '../CoreFunctions/album/Album.mjs'
 import { apiTemplate } from '../../../libs/share/Constant.mjs'
+import { Log } from '../../../libs/core/Core.function.mjs'
 
 const album = express()
 
@@ -14,7 +15,7 @@ album.use(async (req, res, next) => {
     }
     await req.env.guest_token2_handle.updateGuestToken(4)
     if (req.env.guest_token2_handle.token.nextActiveTime) {
-        console.error(`[${new Date()}]: #Album #GuestToken #429 Wait until ${req.env.guest_token2_handle.token.nextActiveTime}`)
+        Log(false, 'error', `[${new Date()}]: #Album #GuestToken #429 Wait until ${req.env.guest_token2_handle.token.nextActiveTime}`)
         res.json(apiTemplate(429, `Wait until ${req.env.guest_token2_handle.token.nextActiveTime}`), {}, 'album')
     } else {
         req.env.guest_token2 = req.env.guest_token2_handle.token

@@ -52,10 +52,10 @@ export class GuestToken {
         this.open_account = {}
     }
     async openAccountInit(openAccount = null) {
-        console.log(`[${new Date()}]: #GuestToken Update open account`)
+        Log(false, 'log', `[${new Date()}]: #GuestToken Update open account`)
         if (openAccount && openAccount?.authorization && openAccount?.oauth_token && openAccount.oauth_token_secret) {
             this.open_account = openAccount
-            await this.updateGuestToken(this.open_account.authorization)
+            await this.updateGuestToken(this.open_account.authorization, true)
         } else {
             try {
                 //TODO error
@@ -69,15 +69,15 @@ export class GuestToken {
                     this.open_account.oauth_token_secret = OpenAccount.subtasks[0].open_account.oauth_token_secret
                     this.open_account.user = OpenAccount.subtasks[0].open_account.user
                     this.#guest_token.open_account = this.open_account
-                    console.log(`[${new Date()}]: #GuestToken Successful get account @${this.open_account.user.screen_name}`)
+                    ConsoleLo(false, 'log', `[${new Date()}]: #GuestToken Successful get account @${this.open_account.user.screen_name}`)
                 }
             } catch (e) {
-                console.error(e)
+                Log(false, 'error', e)
             }
         }
         return this
     }
-    async updateGuestToken(authorizationMode = 0) {
+    async updateGuestToken(authorizationMode = 0, rateLimitOnly = false) {
         // init authorizationMode not string
         if (['android', 'android_bearer'].includes(this.type) && typeof authorizationMode !== 'string') {
             await this.openAccountInit()
@@ -88,18 +88,18 @@ export class GuestToken {
             (!this.#guest_token.nextActiveTime || (this.#guest_token.nextActiveTime && this.#guest_token.nextActiveTime < now)) &&
             (Object.keys(this.#guest_token).length === 0 || Object.values(this.#guest_token.rate_limit).some((value) => value <= 0) || this.#guest_token.expire < now || now - this.heartBeat > 1700000)
         ) {
-            console.log(`[${new Date()}]: #GuestToken Update guest token #${authorizationMode}`)
+            Log(false, 'log', `[${new Date()}]: #GuestToken Update guest token #${authorizationMode}`)
             do {
-                this.#guest_token = await getToken(authorizationMode)
+                this.#guest_token = await getToken(authorizationMode, [1, 4].includes(authorizationMode) ? 'web' : 'api', rateLimitOnly)
                 this.errorCount--
                 if (!this.#guest_token.success) {
-                    console.error(`[${new Date()}]: #GuestToken Unable to get guest token, remain ${this.errorCount}`)
+                    Log(false, 'error', `[${new Date()}]: #GuestToken Unable to get guest token, remain ${this.errorCount}`)
                 }
             } while (!this.#guest_token.success && this.errorCount > 0)
             if (!this.#guest_token.success && this.errorCount <= 0) {
                 //force stop 31 minutes
                 this.#guest_token.nextActiveTime = now + 1860000
-                console.error(`[${new Date()}]: #GuestToken Force delay, next active date is -->${this.#guest_token.nextActiveTime}<--`)
+                Log(false, 'error', `[${new Date()}]: #GuestToken Force delay, next active date is -->${this.#guest_token.nextActiveTime}<--`)
             } else {
                 this.heartBeat = now
                 this.errorCount = 10
@@ -108,7 +108,7 @@ export class GuestToken {
         if (this.type === 'android') {
             this.#guest_token.open_account = this.open_account
         }
-        //console.log({...this.#guest_token.rate_limit, ...{expire: this.#guest_token.expire}})
+        //Log(false, 'log', {...this.#guest_token.rate_limit, ...{expire: this.#guest_token.expire}})
         return this
     }
     updateRateLimit(key = '', value = 1) {
@@ -159,7 +159,7 @@ export class Login {
         }
     }
     updateItems(flowData = {}) {
-        //console.log(flowData)
+        //Log(false, 'log', flowData)
         if (flowData.flow_data?.flow_token) {
             this.flow_token = flowData.flow_data.flow_token
         }
@@ -403,7 +403,7 @@ const GetEntitiesFromText = (text = '', type = 'description') => {
         if (match[2] === undefined && match[4] !== undefined) {
             const prefix = match[3]
             const hashtagText = match[4]
-            //console.log([originText.slice(lastEnd).split(`#${hashtagText}`), originText.slice(lastEnd).split(`#${hashtagText}`).length])
+            //Log(false, 'log', [originText.slice(lastEnd).split(`#${hashtagText}`), originText.slice(lastEnd).split(`#${hashtagText}`).length])
             const beforeLength = [...[...originText].slice(lastEnd).join('').split(`${prefix}${hashtagText}`)[0]].length + lastEnd
             lastEnd = beforeLength + [...match[4]].length + 1
             tmpList.push({
@@ -446,4 +446,17 @@ const VerifyQueryString = (value, defaultValue) => {
     return value
 }
 
-export { Sleep, PathInfo, GetEntitiesFromText, VerifyQueryString }
+const Log = (color = false, type = 'log', ...content) => {
+    // TODO chalk color/handle
+    let isLog = false
+    if (globalThis.mute === false || globalThis.mute === undefined || globalThis.mute === null) {
+        isLog = true
+    } else if (Array.isArray(globalThis.mute)) {
+        isLog = !globalThis.mute.includes(type)
+    }
+    if (isLog) {
+        console[type](...content)
+    }
+}
+
+export { Sleep, PathInfo, GetEntitiesFromText, VerifyQueryString, Log }

@@ -45,6 +45,7 @@ import { parse } from 'acorn'
 import { getOauthAuthorization } from './Core.android.mjs'
 import { _ConversationTimelineV2, _SearchTimeline, _TranslateProfileQuery, _TranslateTweetQuery, _UserWithProfileTweetsAndRepliesQueryV2, _UserWithProfileTweetsQueryV2 } from '../assets/graphql/androidQueryIdList.js'
 import cryptoHandle from 'crypto-helper'
+import { Log } from './Core.function.mjs'
 
 const generateCsrfToken = () => cryptoHandle.randomUUID().replaceAll('-', '')
 
@@ -153,14 +154,14 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
             data: body ? body : undefined
         })
             .then((response) => {
-                //console.log(response, JSON.stringify(response.data))
+                //Log(false, 'log', response, JSON.stringify(response.data))
                 if (!response.data) {
                     reject({ code: -1000, message: 'empty data' })
                 }
                 resolve(response)
             })
             .catch((e) => {
-                console.log(e)
+                Log(false, 'log', e)
                 if (!e.response) {
                     reject({ code: -1000, message: e.code, e })
                 } else if (e.response?.status === 429) {
@@ -176,12 +177,13 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
 }
 
 // ANONYMOUS
-const getToken = async (authorization = 0) => {
+// source -> api, web(only 1`TnA` and 4`QCF`)
+const getToken = async (authorization = 0, source = 'api', rateLimitOnly = false) => {
     let tmpResponse = {
         success: false,
         token: '',
         code: -1000,
-        cookies: {},
+        cookies: [],
         rate_limit: {
             UserByRestId: 495, //500
             UserByScreenName: 495, //500
@@ -204,33 +206,70 @@ const getToken = async (authorization = 0) => {
         authorization: typeof authorization === 'string' ? authorization : Authorization[authorization]
     }
 
+    if (rateLimitOnly) {
+        tmpResponse.success = true
+        tmpResponse.code = 200
+        tmpResponse.token = 'RATE_LIMIT_ONLY'
+        tmpResponse.cookies = []
+        return Promise.resolve(tmpResponse)
+    }
     const ct0 = generateCsrfToken()
 
     return await new Promise((resolve, reject) => {
         //2000 per 30 min i guess
-        axios
-            .post(TW_WEBAPI_PREFIX + '/1.1/guest/activate.json', '', {
+        if (source === 'web' && [TW_AUTHORIZATION2, TWEETDECK_AUTHORIZATION2].includes(tmpResponse.authorization)) {
+            axios(tmpResponse.authorization === 1 ? 'https://twitter.com' : 'https://tweetdeck.twitter.com', {
+                headers: {
+                    cookie: 'guest_id=v1:0;'
+                }
+            })
+                .then((response) => {
+                    let cookies = response.data.match(/>document\.cookie\=([^<]+)</gm)
+                    if (cookies) {
+                        tmpResponse.code = 200
+                        tmpResponse.success = true
+                        tmpResponse.cookies = cookies[0]
+                            .slice(1, -1)
+                            .split('document.cookie=')
+                            .slice(1)
+                            .map((cookie) => cookie.slice(1, -2))
+                            .map((cookie) => cookie.split(';')[0])
+                        tmpResponse.token = tmpResponse.cookies.find((cookie) => cookie.startsWith('gt=')).replace('gt=', '')
+                    } else {
+                        e.token = 'No token'
+                        reject(tmpResponse)
+                    }
+                    resolve(tmpResponse)
+                })
+                .catch((e) => {
+                    tmpResponse.token = e.message
+                    reject(tmpResponse)
+                })
+        } else {
+            axios(TW_WEBAPI_PREFIX + '/1.1/guest/activate.json', {
                 headers: {
                     authorization: tmpResponse.authorization,
                     'x-csrf-token': ct0,
                     cookie: 'ct0=' + ct0
-                }
+                },
+                method: 'POST'
             })
-            .then((response) => {
-                if (response.status === 200 && response.data.guest_token) {
-                    tmpResponse.code = 200
-                    tmpResponse.token = response.data.guest_token
-                    tmpResponse.success = true
-                    tmpResponse.cookies = (response.headers instanceof Map ? [...response.headers].filter((header) => header[0] === 'set-cookie').map((header) => header[1]) ?? [] : response.headers?.['set-cookie'] ?? []).map(
-                        (cookie) => cookie.split(';')[0]
-                    )
-                }
-                resolve(tmpResponse)
-            })
-            .catch((e) => {
-                tmpResponse.token = e.message
-                reject(tmpResponse)
-            })
+                .then((response) => {
+                    if (response.status === 200 && response.data.guest_token) {
+                        tmpResponse.code = 200
+                        tmpResponse.token = response.data.guest_token
+                        tmpResponse.success = true
+                        tmpResponse.cookies = (response.headers instanceof Map ? [...response.headers].filter((header) => header[0] === 'set-cookie').map((header) => header[1]) ?? [] : response.headers?.['set-cookie'] ?? []).map(
+                            (cookie) => cookie.split(';')[0]
+                        )
+                    }
+                    resolve(tmpResponse)
+                })
+                .catch((e) => {
+                    tmpResponse.token = e.message
+                    reject(tmpResponse)
+                })
+        }
     })
 }
 
@@ -271,7 +310,7 @@ const getUserInfo = async (ctx = { user: '', guest_token: {}, graphqlMode: true,
 
             if (isGraphql) {
                 let graphqlVariables = { withSuperFollowsUserFields: true, withSafetyModeUserFields: true }
-                if (autoUser === -1 || (autoUser === -2 && !isNaN(user))) {
+                if (autoUser === -2 || (autoUser === -1 && !isNaN(user))) {
                     graphqlVariables['userId'] = user
                     return (
                         TW_WEBAPI_PREFIX +
@@ -655,7 +694,7 @@ const getTweets = async (
     } else if (searchMode) {
         //https://api.twitter.com/1.1/search/universal.json?q=twitter%20&count=40&modules=status&result_type=recent&pc=false&ui_lang=en-US&cards_platform=Web-13&include_entities=1&include_user_entities=1&include_cards=1&send_error_codes=1&tweet_mode=extended&include_ext_alt_text=true&include_reply_count=true
         let tmpQueryObject = {
-            q: queryString.trim(),
+            q: queryString.trim() + (withReply ? '' : ' -filter:replies'),
             count,
             modules: 'status',
             result_type: 'recent',
@@ -752,6 +791,8 @@ const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMod
             graphqlVariables.cursor = cursor
         }
 
+        // new web endpoint
+        // TweetResultByRestId {"tweetId":<TWEET_ID>,"withCommunity":false,"includePromotedContent":false,"withVoice":false}
         return await new Promise((resolve, reject) => {
             coreFetch(
                 TW_WEBAPI_PREFIX +
@@ -1047,13 +1088,14 @@ const getListMember = async (ctx = { id: '', count: 20, cursor: '', guest_token:
     })
 }
 
-const getListTimeLine = async (ctx = { id: '', count: 20, cursor: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
-    let { id, count, cursor, guest_token, cookie, authorization } = preCheckCtx(ctx, {
+const getListTimeLine = async (ctx = { id: '', count: 20, cursor: '', guest_token: {}, cookie: {}, authorization: 1, graphqlMode: true }, env = {}) => {
+    let { id, count, cursor, guest_token, cookie, authorization, graphqlMode } = preCheckCtx(ctx, {
         id: '',
         count: 20,
         cursor: '',
         guest_token: {},
         cookie: {},
+        graphqlMode: true,
         authorization: 1
     })
     if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
@@ -1073,13 +1115,22 @@ const getListTimeLine = async (ctx = { id: '', count: 20, cursor: '', guest_toke
     return await new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX +
-                '/graphql/' +
-                _ListLatestTweetsTimeline.queryId +
-                '/ListLatestTweetsTimeline?' +
-                new URLSearchParams({
-                    variables: JSON.stringify(graphqlVariables),
-                    features: JSON.stringify(_ListLatestTweetsTimeline.features)
-                }).toString(),
+                (graphqlMode
+                    ? '/graphql/' +
+                      _ListLatestTweetsTimeline.queryId +
+                      '/ListLatestTweetsTimeline?' +
+                      new URLSearchParams({
+                          variables: JSON.stringify(graphqlVariables),
+                          features: JSON.stringify(_ListLatestTweetsTimeline.features)
+                      }).toString()
+                    : '/1.1/lists/statuses.json?' +
+                      new URLSearchParams({
+                          tweet_mode: 'extended',
+                          list_id: id,
+                          count,
+                          cursor: cursor ? cursor : ''
+                      }).toString()),
+
             guest_token,
             cookie,
             authorization
@@ -1307,7 +1358,7 @@ const getImage = async (path = '', headers = {}) => {
     if (path === '') {
         return ''
     }
-    return axios.get(path, {
+    return axios(path, {
         responseType: typeof process === 'undefined' || (process?.browser ?? false) ? 'arrayBuffer' : 'arraybuffer',
         headers
         //timeout: 10000
@@ -1621,7 +1672,7 @@ const getJsInstData = async (ctx = { jsInstrumentationLink: 'https://twitter.com
         globalThis.document = new MockDocument()
     }
     try {
-        const jsInstData = await axios.get(jsInstrumentationLink, {
+        const jsInstData = await axios(jsInstrumentationLink, {
             headers: {
                 cookie
             }

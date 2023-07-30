@@ -1,6 +1,6 @@
 import { GenerateAccountInfo, GenerateCommunityInfo } from '../../../../libs/core/Core.info.mjs'
 import { getCommunityInfo, getCommunitySearch, getListInfo, getListMember, getTypeahead } from '../../../../libs/core/Core.fetch.mjs'
-import { GetEntitiesFromText, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
+import { Log, GetEntitiesFromText, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
 import { TweetsInfo } from '../../../../libs/core/Core.tweet.mjs'
 import { apiTemplate } from '../../../../libs/share/Constant.mjs'
 
@@ -16,8 +16,8 @@ const ApiTypeahead = async (req, env) => {
         tmpTypeahead.topics = tmpTypeaheadResponse.data.topics
         tmpTypeahead.users = tmpTypeaheadResponse.data.users.map((user) => GenerateAccountInfo(user).GeneralAccountData)
     } catch (e) {
-        console.log(e)
-        console.error(`[${new Date()}]: #OnlineTypeahead #${text} #${e.code} ${e.message}`)
+        Log(false, 'log', e)
+        Log(false, 'error', `[${new Date()}]: #OnlineTypeahead #${text} #${e.code} ${e.message}`)
         return env.json(apiTemplate(500, 'Something wrong', { users: [], topics: [] }, 'online'))
     }
 
@@ -80,8 +80,8 @@ const ApiListInfo = async (req, env) => {
 
         return env.json(apiTemplate(200, 'OK', responseData, 'online'))
     } catch (e) {
-        console.log(e)
-        console.error(`[${new Date()}]: #OnlineListInfo ${listId ? '#' + listId : '[@' + screenName + '](' + listSlug + ')'} #${e.code} ${e.message}`)
+        Log(false, 'log', e)
+        Log(false, 'error', `[${new Date()}]: #OnlineListInfo ${listId ? '#' + listId : '[@' + screenName + '](' + listSlug + ')'} #${e.code} ${e.message}`)
         return env.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
     }
 }
@@ -133,8 +133,8 @@ const ApiListMemberList = async (req, env) => {
             )
         )
     } catch (e) {
-        console.log(e)
-        console.error(`[${new Date()}]: #OnlineListMemberList #${listId} #${e.code} ${e.message}`)
+        Log(false, 'log', e)
+        Log(false, 'error', `[${new Date()}]: #OnlineListMemberList #${listId} #${e.code} ${e.message}`)
         return env.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
     }
 }
@@ -163,8 +163,8 @@ const ApiCommunityInfo = async (req, env) => {
 
         return env.json(apiTemplate(200, 'OK', responseData, 'online'))
     } catch (e) {
-        console.log(e)
-        console.error(`[${new Date()}]: #OnlineCommunityInfo ${'#' + communityId} #${e.code} ${e.message}`)
+        Log(false, 'log', e)
+        Log(false, 'error', `[${new Date()}]: #OnlineCommunityInfo ${'#' + communityId} #${e.code} ${e.message}`)
         return env.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
     }
 }
@@ -217,8 +217,8 @@ const ApiCommunitySearch = async (req, env) => {
             )
         )
     } catch (e) {
-        console.error(e)
-        console.error(`[${new Date()}]: #OnlineCommunitySearch ${queryString} #${e.code} ${e.message}`)
+        Log(false, 'error', e)
+        Log(false, 'error', `[${new Date()}]: #OnlineCommunitySearch ${queryString} #${e.code} ${e.message}`)
         return env.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
     }
 }

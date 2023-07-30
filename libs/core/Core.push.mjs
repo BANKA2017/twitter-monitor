@@ -1,5 +1,6 @@
 import { ALERT_TOKEN, ALERT_PUSH_TO } from '../../libs/assets/setting.mjs'
 import axiosFetch from 'axios-helper'
+import { Log } from './Core.function.mjs'
 
 const TGPush = async (text = '') => {
     if (ALERT_TOKEN.length) {
@@ -14,13 +15,13 @@ const TGPush = async (text = '') => {
                 })
                 .then((response) => {
                     if (response.data?.ok) {
-                        console.log(`TGPush: Successful to push log #part${tmpPartIndex} to chat ->${ALERT_PUSH_TO}<-`)
+                        Log(false, 'log', `TGPush: Successful to push log #part${tmpPartIndex} to chat ->${ALERT_PUSH_TO}<-`)
                     } else {
-                        console.log(`TGPush: Error #part${response.data?.description}`)
+                        Log(false, 'log', `TGPush: Error #part${response.data?.description}`)
                     }
                 })
                 .catch((e) => {
-                    console.log(e)
+                    Log(false, 'log', e)
                 })
         }
     }

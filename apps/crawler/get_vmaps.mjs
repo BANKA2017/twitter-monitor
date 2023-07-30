@@ -8,7 +8,7 @@
 
 import { Op } from 'sequelize'
 import V2TwitterMedia from '../../libs/model/twitter_monitor/v2_twitter_media.js'
-import { PathInfo } from '../../libs/core/Core.function.mjs'
+import { Log, PathInfo } from '../../libs/core/Core.function.mjs'
 import { readFileSync } from 'fs'
 import dbHandle from '../../libs/core/Core.db.mjs'
 import { TWEETS_SAVE_PATH } from '../../libs/assets/setting.mjs'
@@ -31,7 +31,7 @@ let media = await V2TwitterMedia.findAll({
 const list = []
 let errorList = []
 for (const index in media) {
-    console.log(`${Number(index) + 1} / ${media.length}`)
+    Log(false, 'log', `${Number(index) + 1} / ${media.length}`)
     const x = media[index]
     let tmpMediaInfo = media.find((mediaObject) => x.tweet_id === mediaObject.tweet_id)
     //fix mediaInfo
@@ -51,7 +51,7 @@ for (const index in media) {
     try {
         tmpVmap = await axiosFetch().get(tmpLink)
     } catch (e) {
-        console.error(e)
+        Log(false, 'error', e)
     }
     if (!tmpVmap.data) {
         errorList.push(x)
@@ -86,7 +86,7 @@ for (const index in media) {
 }
 
 if (list.length + errorList.length !== media.length) {
-    console.log(`Not enough records, ${JSON.stringify({ media: media.length, list: list.length, error: errorList.length })}`)
+    Log(false, 'log', `Not enough records, ${JSON.stringify({ media: media.length, list: list.length, error: errorList.length })}`)
 }
 const t = await dbHandle.twitter_monitor.transaction()
 
@@ -104,9 +104,9 @@ try {
     await t.commit()
 } catch (e) {
     await t.rollback()
-    console.log(e)
+    Log(false, 'log', e)
 }
-console.log(`done, total ${media.length}`)
+Log(false, 'log', `done, total ${media.length}`)
 //writeFileSync('errorList.json', JSON.stringify(errorList, null, 2))
 //writeFileSync('list.json', JSON.stringify(list, null, 2))
 

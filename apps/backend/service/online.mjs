@@ -6,6 +6,7 @@ import { ApiTrends } from '../CoreFunctions/online/OnlineTrends.mjs'
 import { ApiCommunityInfo, ApiCommunitySearch, ApiListInfo, ApiListMemberList, ApiTypeahead } from '../CoreFunctions/online/OnlineMisc.mjs'
 import { ApiLoginFlow, ApiLogout } from '../CoreFunctions/online/OnlineLogin.mjs'
 import cookieParser from 'cookie-parser'
+import { Log } from '../../../libs/core/Core.function.mjs'
 
 const online = express()
 online.use(cookieParser())
@@ -17,11 +18,11 @@ online.use(async (req, res, next) => {
     //await global.guest_token2.updateGuestToken(0)
     await req.env.guest_token2_handle.updateGuestToken(4)
     //if (global.guest_token2.token.nextActiveTime) {
-    //    console.error(`[${new Date()}]: #Online #GuestToken #429 Wait until ${global.guest_token2.token.nextActiveTime}`)
+    //    Log(false, 'error', `[${new Date()}]: #Online #GuestToken #429 Wait until ${global.guest_token2.token.nextActiveTime}`)
     //    res.json(apiTemplate(429, `Wait until ${global.guest_token2.token.nextActiveTime}`))
     //} else
     if (req.env.guest_token2_handle.token.nextActiveTime) {
-        console.error(`[${new Date()}]: #Online #GuestToken #429 Wait until ${req.env.guest_token2_handle.token.nextActiveTime}`)
+        Log(false, 'error', `[${new Date()}]: #Online #GuestToken #429 Wait until ${req.env.guest_token2_handle.token.nextActiveTime}`)
         res.json(apiTemplate(429, `Wait until ${req.env.guest_token2_handle.token.nextActiveTime}`))
     } else {
         req.env.guest_token2 = req.env.guest_token2_handle.token
@@ -107,7 +108,7 @@ online.get('/data/communitysearch/', async (req, res) => {
 
 online.post('/account/taskflow/', async (req, res) => {
     req.postBody = new Map(Object.entries(req.body))
-    //console.log(req.body)
+    //Log(false, 'log', req.body)
     const _res = await ApiLoginFlow(req, req.env)
     for (const header of [..._res.headers]) {
         res.append(header[0], header[1])

@@ -1,5 +1,5 @@
 import express from 'express'
-import { GuestToken } from '../../libs/core/Core.function.mjs'
+import { Log, GuestToken } from '../../libs/core/Core.function.mjs'
 import { apiTemplate } from '../../libs/share/Constant.mjs'
 import { basePath } from '../../libs/share/NodeConstant.mjs'
 //import { LanguageIdentification } from '../../packages/fasttext/language.mjs'
@@ -91,7 +91,7 @@ app.use('/media', media)
 
 //LanguageIdentification
 //global.LanguageIdentification = new LanguageIdentification
-//console.log('tmv3: Enabled language identification service')
+//Log(false, 'log', 'tmv3: Enabled language identification service')
 
 //media proxy
 media.use(
@@ -102,6 +102,13 @@ media.use(
         }
     })
 )
+
+//global static file
+// TODO static path
+//if (STATIC_PATH) {
+//    app.use('/static', express.static(STATIC_PATH))
+//}
+
 media.get(/(proxy)\/(.*)/, async (req, res) => {
     req.params.link = req.params?.[1] || ''
     const _res = await MediaProxy(req, req.env)
@@ -151,9 +158,9 @@ app.all('*', (req, res) => {
     res.status(403).json(apiTemplate(403, 'Invalid Request', {}, 'global_api'))
 })
 app.use((err, req, res, next) => {
-    console.error(new Date(), err)
+    Log(false, 'error', new Date(), err)
     res.status(500).json(apiTemplate(500, 'Unknown error', {}, 'global_api'))
 })
 app.listen(port, () => {
-    console.log(`V3Api listening on port ${port}`)
+    Log(false, 'log', `V3Api listening on port ${port}`)
 })

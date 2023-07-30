@@ -140,7 +140,7 @@ const attributes = {
   last_check: {
     type: DataTypes.DATE,
     allowNull: false,
-    defaultValue: dbHandle.twitter_monitor.fn('current_timestamp'),
+    defaultValue: dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.fn('datetime') : dbHandle.twitter_monitor.fn('current_timestamp'),
     primaryKey: false,
     autoIncrement: false,
     comment: '',

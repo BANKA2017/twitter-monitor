@@ -4,14 +4,18 @@ import { Op } from 'sequelize'
 import { Time2SnowFlake } from '../../libs/core/Core.tweet.mjs'
 import dbHandle from '../../libs/core/Core.db.mjs'
 import { getAudioSpace, getPollResult, getToken } from '../../libs/core/Core.fetch.mjs'
-import { GuestToken } from '../../libs/core/Core.function.mjs'
+import { Log, GuestToken } from '../../libs/core/Core.function.mjs'
 //import { TGPush } from '../../libs/core/Core.push.mjs'
 
 const now = Math.floor(Date.now() / 1000) - 300
 
 // POLLS
 const polls = await V2TwitterPolls.findAll({
-    attributes: ['origin_tweet_id', 'poll_order', 'uid'],
+    attributes: [
+        [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(origin_tweet_id AS text)') : 'origin_tweet_id', 'origin_tweet_id'],
+        'poll_order',
+        [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(uid AS text)') : 'uid', 'uid']
+    ],
     where: {
         end_datetime: { [Op.lt]: now },
         count: 0,
@@ -26,7 +30,7 @@ const tweetIdList = [...new Set(polls.map((poll) => poll.origin_tweet_id))]
 let get_token = new GuestToken() // await getToken()
 await get_token.updateGuestToken(4)
 if (!get_token.token.success) {
-    console.log('tmv3: no token #noToken #polls')
+    Log(false, 'log', 'tmv3: no token #noToken #polls')
     process.exit()
 }
 
@@ -35,14 +39,14 @@ for (const idIndex in tweetIdList) {
     if (idIndex % get_token.token.rate_limit.TweetDetail === 0) {
         await get_token.updateGuestToken(4)
         if (!get_token.token.success) {
-            console.log('tmv3: no token #noToken #polls')
+            Log(false, 'log', 'tmv3: no token #noToken #polls')
             process.exit()
         }
     }
-    console.log(`-->${tweetIdList[idIndex]}<--`)
+    Log(false, 'log', `-->${tweetIdList[idIndex]}<--`)
     const pollData = await getPollResult({ tweet_id: tweetIdList[idIndex], guest_token: get_token.token })
     if (pollData.code !== 200) {
-        console.log(`tmv3: ${pollData.message} (${tweetIdList[idIndex]}) #errorpoll`)
+        Log(false, 'log', `tmv3: ${pollData.message} (${tweetIdList[idIndex]}) #errorpoll`)
         //TGPush(`tmv3: ${pollData.message} (${tweetIdList[idIndex]}) #errorpoll`)
         await V2TwitterPolls.update(
             { count: 0, checked: 1 },
@@ -55,7 +59,7 @@ for (const idIndex in tweetIdList) {
         )
     } else {
         for (const pollDataIndex in pollData.data) {
-            console.log(`${tweetIdList[idIndex]}: #${Number(pollDataIndex) + 1} > ${pollData.data[pollDataIndex]}`)
+            Log(false, 'log', `${tweetIdList[idIndex]}: #${Number(pollDataIndex) + 1} > ${pollData.data[pollDataIndex]}`)
             await V2TwitterPolls.update(
                 {
                     count: pollData.data[pollDataIndex],
@@ -91,7 +95,7 @@ for (const idIndex in audioSpaceList) {
     if (idIndex % get_token.token.rate_limit.AudioSpaceById === 0) {
         await get_token.updateGuestToken(4)
         if (!get_token.token.success) {
-            console.log('tmv3: no token #noToken #polls')
+            Log(false, 'log', 'tmv3: no token #noToken #polls')
             process.exit()
         }
     }
@@ -107,7 +111,7 @@ for (const idIndex in audioSpaceList) {
                 transaction: t
             }
         )
-        console.log(`tmv3: ->${audioSpaceId}<- success '${tmpAudioSpaceResult.data.data.audioSpace?.metadata?.title}'`)
+        Log(false, 'log', `tmv3: ->${audioSpaceId}<- success '${tmpAudioSpaceResult.data.data.audioSpace?.metadata?.title}'`)
     } else {
         await V2TwitterCards.update(
             {
@@ -118,7 +122,7 @@ for (const idIndex in audioSpaceList) {
                 transaction: t
             }
         )
-        console.log(`tmv3: ->${audioSpaceId}<- not exist`)
+        Log(false, 'log', `tmv3: ->${audioSpaceId}<- not exist`)
     }
 }
 
