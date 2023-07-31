@@ -109,7 +109,7 @@ We use GitHub Actions to build some scripts, you can find them in [BANKA2017/twi
   ```
 
 * then execute `node apps/rate_limit_checker/run.mjs`
-* Read more in [rate-limit-checker/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/rate-limit-checker)
+* Read more in [rate-limit-checker/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/rate_limit_checker)
 
 ## Supported Cards
 
@@ -265,7 +265,7 @@ Those are Chinese articles
   ```
 
 * 然后执行 `node apps/rate_limit_checker/run.mjs`
-* 了解更多 [rate-limit-checker/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/rate-limit-checker)
+* 了解更多 [rate-limit-checker/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/rate_limit_checker)
 
 ## 支持的卡片类型
 

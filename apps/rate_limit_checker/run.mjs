@@ -55,6 +55,7 @@ const getStatusResponse = async (_function, guest_token, label = '_') => {
     let tmpRes = null
     let code = '200'
     let message = '_'
+    const requestDate = Date.now()
     try {
         tmpRes = await _function
         code = tmpRes.status
@@ -73,7 +74,7 @@ const getStatusResponse = async (_function, guest_token, label = '_') => {
         code,
         message,
         rate_limit: Number(tmpRes.headers['x-rate-limit-limit']) || '_',
-        rate_limit_reset: tmpRes.headers['x-rate-limit-reset'] ? Number(tmpRes.headers['x-rate-limit-reset']) - Math.ceil(Date.now() / 1000) : '_',
+        rate_limit_reset: tmpRes.headers['x-rate-limit-reset'] ? Number(tmpRes.headers['x-rate-limit-reset']) - Math.ceil(requestDate / 1000) : '_',
         status: code === 200 && tmpRes.data ? v : x,
         url: tmpRes.config.url,
         method: tmpRes?.config?.method?.toUpperCase() || 'GET',
@@ -218,7 +219,7 @@ for (const index in restfulList[0]) {
     //Log(false, 'log', tmpText)
 }
 //onsole.log(globalMarkdown)
-globalMarkdown += '\n><https://github.com/BANKA2017/twitter-monitor/tree/node/apps/rate-limit-checker>\n'
+globalMarkdown += '\n><https://github.com/BANKA2017/twitter-monitor/tree/node/apps/rate_limit_checker>\n'
 
 writeFileSync(markdownPath, globalMarkdown)
 
