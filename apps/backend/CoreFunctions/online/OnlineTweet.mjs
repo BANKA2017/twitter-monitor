@@ -445,6 +445,15 @@ const ApiMedia = async (req, env) => {
             return env.json(
                 apiTemplate(200, 'OK', {
                     video: !(Array.isArray(tweetData.video) && tweetData.video.length === 0),
+                    card_info: (card => {
+                        if (['broadcast', 'periscope_broadcast', 'audiospace'].includes(card?.type)) {
+                            return {
+                                type: card.type,
+                                id: card.url
+                            }
+                        }
+                        return undefined
+                    })(tweetData.card),
                     video_info: tweetData.video,
                     media_info: tweetData.media
                         .filter((media) => media.source !== 'cover')
