@@ -31,7 +31,7 @@ const SQL_CONFIG = [
     }
 ]
 
-const ACTIVE_SERVICE = SQL_CONFIG.filter((x) => x.password && ['twitter_monitor', 'tmv1', 'analytics'].includes(x.service)).map((x) => x.service)
+const ACTIVE_SERVICE = SQL_CONFIG.filter((x) => ((x.dbtype === 'sqlite' && x.path) || (x.dbtype !== 'sqlite' && x.password)) && ['twitter_monitor', 'tmv1', 'analytics'].includes(x.service)).map((x) => x.service)
 
 const CONFIG_ID = 1 //just for multiple config
 

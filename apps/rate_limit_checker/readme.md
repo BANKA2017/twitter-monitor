@@ -34,6 +34,7 @@ View data: <https://github.com/BANKA2017/twitter-rate-limit-status>
 
 ```javascript
 // Get url, method, data and authorization from the `rate_limit_status.json`
+// Get guest_token from https://api.twitter.com/1.1/guest/activate.json via POST method
 // Not easy to get Android Guest Account, you can comment it in the script
 
 fetch(url, {
@@ -41,6 +42,8 @@ fetch(url, {
     headers: {
         Authorization: authorization,
         'Content-Type': 'application/json',
+        'x-guest-token': guest_token,
+        cookie: `gt=${guest_token};`
     },
     body: data
 })
