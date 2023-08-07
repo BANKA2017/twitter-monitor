@@ -32,8 +32,8 @@ const updateToken = async (req, env) => {
     }
 }
 
-workersApi.all('*', (req, env) => {
-    updateToken(req, env)
+workersApi.all('*', async (req, env) => {
+    await updateToken(req, env)
     env.json = json
     env.xml = xml
     env.updateGuestToken = updateGuestToken
