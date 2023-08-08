@@ -21,6 +21,7 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
     }
 
     const isTweetDeckSearch = globalObjects.modules && Array.isArray(globalObjects.modules)
+    const isV1_1Timeline = globalObjects?.twitter_objects?.tweets && globalObjects?.twitter_objects?.users
 
     if (globalObjects.errors && !graphqlMode) {
         objectForReturn.errors.code = globalObjects[0].code
@@ -104,35 +105,45 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
                 }
             }
         } else {
-            objectForReturn.users =
-                globalObjects?.globalObjects?.users || isTweetDeckSearch
-                    ? Object.fromEntries(
-                          tmpTweets
-                              .map((tweet) => tweet?.status?.data?.user)
-                              .filter((tweet) => tweet)
-                              .map((user) => [user.id_str, user])
-                      )
-                    : []
+            if (isV1_1Timeline) {
+                objectForReturn.users = globalObjects?.twitter_objects?.users || []
+            } else {
+                objectForReturn.users =
+                    globalObjects?.globalObjects?.users || isTweetDeckSearch
+                        ? Object.fromEntries(
+                              tmpTweets
+                                  .map((tweet) => tweet?.status?.data?.user)
+                                  .filter((tweet) => tweet)
+                                  .map((user) => [user.id_str, user])
+                          )
+                        : []
+            }
+
             objectForReturn.contents = isTweetDeckSearch ? tmpTweets.map((tweet) => tweet?.status?.data).filter((tweet) => tweet) : Object.values(tmpTweets)
             objectForReturn.contentLength = objectForReturn.contents.length
             const tmpContentKeys = isTweetDeckSearch ? tmpTweets.map((tweet) => tweet?.status?.data?.id_str).filter((tweet_id) => tweet_id) : Object.keys(tmpTweets).sort((a, b) => b - a)
             objectForReturn.tweetRange.max = tmpContentKeys[0]
             objectForReturn.tweetRange.min = tmpContentKeys.slice(-1)[0]
 
-            for (const first_instructions of globalObjects?.timeline?.instructions || []) {
-                for (const second_instructions_value of Object.values(first_instructions)) {
-                    if (second_instructions_value.entry) {
-                        if (second_instructions_value.entryIdToReplace.endsWith('cursor-top')) {
-                            objectForReturn.cursor.top = second_instructions_value.entry.content.operation.cursor.value
-                        } else if (second_instructions_value.entryIdToReplace.endsWith('cursor-bottom')) {
-                            objectForReturn.cursor.bottom = second_instructions_value.entry.content.operation.cursor.value
-                        }
-                    } else {
-                        for (const third_entries_value of second_instructions_value.entries) {
-                            if (third_entries_value.entryId.endsWith('cursor-top') || third_entries_value?.content?.operation?.cursor?.cursorType === 'Top') {
-                                objectForReturn.cursor.top = third_entries_value.content.operation.cursor.value
-                            } else if (third_entries_value.entryId.endsWith('cursor-bottom') || third_entries_value?.content?.operation?.cursor?.cursorType === 'Bottom') {
-                                objectForReturn.cursor.bottom = third_entries_value.content.operation.cursor.value
+            if (isV1_1Timeline && globalObjects?.response?.cursor) {
+                objectForReturn.cursor.top = globalObjects.response.cursor.top
+                objectForReturn.cursor.bottom = globalObjects.response.cursor.bottom
+            } else {
+                for (const first_instructions of globalObjects?.timeline?.instructions || []) {
+                    for (const second_instructions_value of Object.values(first_instructions)) {
+                        if (second_instructions_value.entry) {
+                            if (second_instructions_value.entryIdToReplace.endsWith('cursor-top')) {
+                                objectForReturn.cursor.top = second_instructions_value.entry.content.operation.cursor.value
+                            } else if (second_instructions_value.entryIdToReplace.endsWith('cursor-bottom')) {
+                                objectForReturn.cursor.bottom = second_instructions_value.entry.content.operation.cursor.value
+                            }
+                        } else {
+                            for (const third_entries_value of second_instructions_value.entries) {
+                                if (third_entries_value.entryId.endsWith('cursor-top') || third_entries_value?.content?.operation?.cursor?.cursorType === 'Top') {
+                                    objectForReturn.cursor.top = third_entries_value.content.operation.cursor.value
+                                } else if (third_entries_value.entryId.endsWith('cursor-bottom') || third_entries_value?.content?.operation?.cursor?.cursorType === 'Bottom') {
+                                    objectForReturn.cursor.bottom = third_entries_value.content.operation.cursor.value
+                                }
                             }
                         }
                     }
@@ -271,12 +282,12 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
             if (recrawlMode) {
             } else {
                 //find tweet content from contentList
-                content = contentList.find((contentItem) => contentItem.id_str === content.retweeted_status_id_str)
+                content = contentList.find((contentItem) => contentItem.id_str === path2array('retweet_rest_id', content))
                 if (!content) {
                     Log(false, 'log', 'tmv3: no retweet content')
                     return { error: { code: 1003, message: 'No retweet content' } }
                 }
-                tmpInfo = users[content.user_id_str]
+                tmpInfo = users[content.user_id_str || content?.user?.id_str]
                 if (tmpInfo && tmpInfo.screen_name) {
                     const tmpRetweetInfoHandle = GenerateAccountInfo(tmpInfo)
                     retweetUserInfo = tmpRetweetInfoHandle.GeneralAccountData
@@ -602,8 +613,8 @@ const GetQuote = (content = {}, users = {}, uid = '0', tweetId = '0', graphqlMod
             Log(false, 'log', `tmv2: warning, no display name [${inSqlQuote.tweet_id}]`)
         }
     } else {
-        inSqlQuote.display_name = content?.user?.name ?? users[content.user_id_str]?.name ?? ''
-        inSqlQuote.name = content?.user?.screen_name ?? users[content.user_id_str]?.screen_name ?? ''
+        inSqlQuote.display_name = content?.user?.name ?? users[content.user_id_str || content?.user?.id_str]?.name ?? ''
+        inSqlQuote.name = content?.user?.screen_name ?? users[content.user_id_str || content?.user?.id_str]?.screen_name ?? ''
     }
 
     //full_text

@@ -7,6 +7,7 @@ const apiPathList = {
     user_info_legacy: ['data.user.result.legacy', 'viewer.user_results.result.legacy', 'legacy', ''],
     tweets_instructions: [
         'globalObjects.tweets',
+        'twitter_objects.tweets',
         'data.user.result.timeline_v2.timeline.instructions',
         'data.user.result.timeline.timeline.instructions',
         'data.threaded_conversation_with_injections_v2.instructions',
@@ -24,6 +25,7 @@ const apiPathList = {
     ],
     tweets_contents: [
         'globalObjects.tweets',
+        'twitter_objects.tweets',
         'data.user.result.timeline_v2.timeline.instructions[1].entries',
         'data.user.result.timeline_v2.timeline.instructions[0].entries',
         'data.user.result.timeline.timeline.instructions[1].entries',
@@ -78,7 +80,7 @@ const apiPathList = {
     tweet_media_path: ['legacy.extended_entities.media', 'extended_entities.media'],
     tweet_card_name: ['name', 'legacy.name'],
     tweet_card_path: ['tweet_card.legacy', 'card.legacy', 'card'],
-    retweet_rest_id: ['retweeted_status_id_str', 'legacy.retweeted_status.rest_id', 'legacy.retweeted_status_result.result.rest_id'],
+    retweet_rest_id: ['retweeted_status_id_str', 'retweeted_status.id_str', 'legacy.retweeted_status.rest_id', 'legacy.retweeted_status_result.result.rest_id'],
     retweet_graphql_path: ['legacy.retweeted_status', 'legacy.retweeted_status_result.result'],
     quote_tweet_id: ['quoted_status_id_str', 'legacy.quoted_status_id_str'],
     quote_graphql_path: ['quoted_status_result.result', 'quoted_status'],

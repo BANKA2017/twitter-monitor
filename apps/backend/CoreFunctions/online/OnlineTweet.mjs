@@ -12,6 +12,7 @@ const ApiTweets = async (req, env) => {
     const count = queryCount ? (queryCount > 100 ? 100 : queryCount < 1 ? 1 : queryCount) : isRssMode ? 20 : 10
     const tweet_id = VerifyQueryString(req.query.tweet_id, 0)
     const cursor = String(req.query.cursor ?? req.query.tweet_id ?? '0') //TODO Notice, VerifyQueryString()
+    const refresh = (req.query.refresh || '0') !== '0'
 
     const name = VerifyQueryString(req.query.name, '')
     const uid = VerifyQueryString(req.query.uid, 0)
@@ -129,48 +130,51 @@ const ApiTweets = async (req, env) => {
         //}
 
         try {
-            if (displayType === 'include_reply') {
-                tweets = await getTweets({
-                    queryString: uid,
-                    cursor: cursor === '0' ? '' : cursor,
-                    guest_token: env.guest_token2,
-                    count,
-                    online: true,
-                    graphqlMode,
-                    searchMode,
-                    withReply: displayType === 'include_reply',
-                    cookie: req.cookies
-                })
-                //tweets = await getTweets(queryArray.join(' '), '', global.guest_token2.token, count, true, false, true)
+            //if (displayType === 'include_reply') {
+            graphqlMode = displayType === 'include_reply'
+            tweets = await getTweets({
+                queryString: uid,
+                cursor: cursor === '0' ? '' : cursor,
+                bottomCursor: !refresh,
+                guest_token: env.guest_token2,
+                count,
+                online: true,
+                web: displayType !== 'include_reply',
+                graphqlMode: displayType === 'include_reply',
+                searchMode: false,
+                withReply: displayType === 'include_reply',
+                cookie: req.cookies
+            })
+            //tweets = await getTweets(queryArray.join(' '), '', global.guest_token2.token, count, true, false, true)
 
-                //updateGuestToken
-                await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'UserTweets')
-            } else {
-                graphqlMode = false
-                searchMode = true
-                tweets = await getTweets({
-                    queryString: `from:${name} ${tweet_id ? (req.query.refresh !== '0' ? 'since_id:' + tweet_id : 'max_id:' + (BigInt(tweet_id) - BigInt(1)).toString()) : ''}`, //uid,
-                    //cursor: cursor === '0' ? '' : cursor,
-                    guest_token: env.guest_token2,
-                    count,
-                    online: true,
-                    graphqlMode,
-                    searchMode,
-                    withReply: false, //displayType === 'include_reply',
-                    cookie: req.cookies
-                })
-                //tweets = await getTweets(queryArray.join(' '), '', global.guest_token2.token, count, true, false, true)
-
-                //updateGuestToken
-                await env.updateGuestToken(env, 'guest_token2', 4, false, 'Search')
-            }
+            //updateGuestToken
+            await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'UserTweets')
+            //}
+            //else {
+            //    graphqlMode = false
+            //    searchMode = true
+            //    tweets = await getTweets({
+            //        queryString: `from:${name} ${tweet_id ? (req.query.refresh !== '0' ? 'since_id:' + tweet_id : 'max_id:' + (BigInt(tweet_id) - BigInt(1)).toString()) : ''}`, //uid,
+            //        //cursor: cursor === '0' ? '' : cursor,
+            //        guest_token: env.guest_token2,
+            //        count,
+            //        online: true,
+            //        graphqlMode,
+            //        searchMode,
+            //        withReply: false, //displayType === 'include_reply',
+            //        cookie: req.cookies
+            //    })
+            //    //tweets = await getTweets(queryArray.join(' '), '', global.guest_token2.token, count, true, false, true)
+            //    //updateGuestToken
+            //    await env.updateGuestToken(env, 'guest_token2', 4, false, 'Search')
+            //}
         } catch (e) {
             Log(false, 'error', `[${new Date()}]: #OnlineTweetsTimeline #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
             return env.json(apiTemplate(e.code, e.message))
         }
     }
 
-    const { tweetsInfo, tweetsContent, rssContent } = GenerateData(tweets, isConversation, '' /* loadConversation || listId || communityId || displayType === 'include_reply' ? '' : uid */, graphqlMode, req)
+    const { tweetsInfo, tweetsContent, rssContent } = GenerateData(tweets, isConversation, loadConversation || listId || communityId || displayType === 'include_reply' ? '' : uid, graphqlMode, req)
     if (tweetsInfo.errors.code !== 0) {
         return env.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
     } else if (isRssMode) {
@@ -445,7 +449,7 @@ const ApiMedia = async (req, env) => {
             return env.json(
                 apiTemplate(200, 'OK', {
                     video: !(Array.isArray(tweetData.video) && tweetData.video.length === 0),
-                    card_info: (card => {
+                    card_info: ((card) => {
                         if (['broadcast', 'periscope_broadcast', 'audiospace'].includes(card?.type)) {
                             return {
                                 type: card.type,
@@ -509,7 +513,7 @@ const TweetsData = (content = {}, users = {}, contents = [], precheckUid = '', g
         exportTweet.GeneralTweetData.is_top = true
     }
     //check poster
-    if (isConversation || precheckUid === '' || precheckUid === exportTweet.GeneralTweetData.id_str) {
+    if (isConversation || precheckUid === '' || precheckUid === exportTweet.GeneralTweetData.uid) {
         return {
             code: 200,
             userInfo: exportTweet.userInfo,
