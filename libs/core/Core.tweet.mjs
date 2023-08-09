@@ -120,6 +120,9 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
             }
 
             objectForReturn.contents = isTweetDeckSearch ? tmpTweets.map((tweet) => tweet?.status?.data).filter((tweet) => tweet) : Object.values(tmpTweets)
+            if (isV1_1Timeline) {
+                objectForReturn.contents = objectForReturn.contents.sort((a, b) => b.id_str - a.id_str)
+            }
             objectForReturn.contentLength = objectForReturn.contents.length
             const tmpContentKeys = isTweetDeckSearch ? tmpTweets.map((tweet) => tweet?.status?.data?.id_str).filter((tweet_id) => tweet_id) : Object.keys(tmpTweets).sort((a, b) => b - a)
             objectForReturn.tweetRange.max = tmpContentKeys[0]
