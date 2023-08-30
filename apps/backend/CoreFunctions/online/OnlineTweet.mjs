@@ -334,7 +334,13 @@ const ApiAudioSpace = async (req, env) => {
     if (!id) {
         return env.json(apiTemplate())
     }
-    const tmpAudioSpaceData = await getAudioSpace({ id, guest_token: env.guest_token2, cookie: req.cookies })
+    let tmpAudioSpaceData = null
+    try {
+        tmpAudioSpaceData = await getAudioSpace({ id, guest_token: env.guest_token2, cookie: req.cookies })
+    } catch (e) {
+        Log(false, 'error', `[${new Date()}]: #OnlineAudioSpace #${id} #500 Unkonwn Error`, e)
+        return env.json(apiTemplate())
+    }
 
     //updateGuestToken
     await env.updateGuestToken(env, 'guest_token2', 4, tmpAudioSpaceData.headers.get('x-rate-limit-remaining') < 1, 'AudioSpaceById')

@@ -55,6 +55,6 @@ export default [
     ...buildConfig('apps/backend/app_online.mjs', 'dist/backend/app_online.mjs', 'esm', false, false), // online mode
     ...buildConfig('apps/archiver/archive.mjs', 'dist/archiver/archive_node.mjs', 'esm', false, false),
     ...buildConfig('apps/archiver/archive_lite.mjs', 'dist/archiver/archive_browser.js', 'esm', true, true)
-    //...buildConfig('apps/open_account/crawler/get_open_account.mjs', 'dist/open_account/crawler/get_open_account.mjs', 'esm', true, false)
+    //...buildConfig('apps/open_account/scripts/get_and_upload_guest_account.mjs', 'dist/open_account/scripts/get_and_upload_guest_account.mjs', 'esm', true, false)
     //...buildConfig('apps/rate_limit_checker/run.mjs', 'dist/rate_limit_checker/rate_limit_checker.mjs', 'esm', true, false)
 ]
