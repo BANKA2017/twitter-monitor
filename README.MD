@@ -51,7 +51,7 @@ We use GitHub Actions to build some scripts, you can find them in [BANKA2017/twi
 * execute `yarn run init` or `npm run init`
 * open `config.html` by browser to edit and save config file `config.json` as `libs/assets/config.json`
 
-  [Online editor](https://banka2017.github.io/twitter-monitor/apps/config_page/)
+  [Online editor](https://banka2017.github.io/twitter-monitor/apps/online_tools/config.html)
 
 * [PM2](https://pm2.keymetrics.io/) is a good choice for you, you also can use screen or nohup
 
@@ -110,6 +110,10 @@ We use GitHub Actions to build some scripts, you can find them in [BANKA2017/twi
 
 * then execute `node apps/rate_limit_checker/run.mjs`
 * Read more in [rate-limit-checker/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/rate_limit_checker)
+
+### OAuth open account pool
+
+* Read more in [open_account/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/open_account)
 
 ## Supported Cards
 
@@ -207,7 +211,7 @@ Those are Chinese articles
 * 编辑 `SQL_CONFIG` 以启用本服务
 * 运行 `yarn run init` 或 `npm run init` 以导入数据表以及在路径 `libs/assets/config.json` 创建配置文件
 
-  [在线编辑器](https://banka2017.github.io/twitter-monitor/apps/config_page/)
+  [在线编辑器](https://banka2017.github.io/twitter-monitor/apps/online_tools/config.html)
 
 * 我推荐使用 [PM2](https://pm2.keymetrics.io/)，但 nohup 和 screen 也不是不行
 
@@ -266,6 +270,10 @@ Those are Chinese articles
 
 * 然后执行 `node apps/rate_limit_checker/run.mjs`
 * 了解更多 [rate-limit-checker/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/rate_limit_checker)
+
+### OAuth 帐号池
+
+* 了解更多 [open_account/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/open_account)
 
 ## 支持的卡片类型
 

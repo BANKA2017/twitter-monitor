@@ -2,7 +2,7 @@
 
 ---
 
-## What is open accounts
+## What is open account
 
 Open Account is the account used for OAuth requests, which can come from Twitter official clients or third-party clients.
 
@@ -15,7 +15,6 @@ Some accounts do not need to log in, we call them **guest accounts**.
 - `get_guest_token.js` is used to obtain and print the guest account on the console, for `Node.js/Deno...`.
 - `get_and_upload_guest_account.mjs` is used to obtain guest accounts and upload them to the guest account pool.
 - `get_open_account_info.mjs` is used to obtain the information of the account.
-- TODO real account pool...
 
 ## Backend (Cloudflare Workers)
 
@@ -47,11 +46,13 @@ const key = '<SECRET_TOKEN>' // <- same with SECRET_WORKERS_KEY
 const endpoint = 'https://example.prefix.workers.dev/upload/account' // <- you can find it from cloudflare dashboard
 ```
 
-## Proxies
+## Proxy (WIP)
 
-Building a guest account pool requires a large number of proxies
+Building a guest account pool requires a large number of proxy servers.
 
-TODO
+## Tools
+
+- [OAuth signature builder](https://banka2017.github.io/twitter-monitor/apps/online_tools/oauth_signature_builder.html)
 
 ## Compatible with Nitter
 
@@ -112,3 +113,4 @@ console.log(JSON.stringify(guest_accounts))
 - [x] Will be compatible with the format of the guest account pool used by nitter
 - [ ] Building a pool of guest accounts also requires a large number of proxy servers
 - [ ] Native backend
+- [ ] Scripts for real account

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="robots" content="nofollow">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="author" content="Banka2017 (https://bangdream.fun)">
+    <meta name="description" content="Twitter OAuth Signature Builder">
+    <title>Twitter OAuth Signature Builder</title>
+    <!-- CSS only -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css"
+        crossorigin="anonymous">
+</head>
+
+<body>
+    <div id="app">
+        <nav class="navbar navbar-expand-lg navbar-light text-center bg-light px-2">
+            <span class="navbar-brand mb-0 h1">Twitter Monitor Tools</span>
+        </nav>
+        <div class="my-4"></div>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8">
+                    <h4>OAuth tools</h4>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="oauth_consumer_key">oauth_consumer_key</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="oauth_consumer_key"
+                                v-model="oauth_consumer_key">
+                        </div>
+                        <div class="form-text" id="form-text-oauth_consumer_key">From Android Client</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="oauth_consumer_secret">oauth_consumer_secret</label>
+                        <div class="input-group">
+                            <input id="oauth_consumer_secret" type="text" class="form-control"
+                                v-model="oauth_consumer_secret">
+                        </div>
+                        <div class="form-text" id="form-text-oauth_consumer_secret">From Android Client</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="oauth_token">oauth_token</label>
+                        <div class="input-group">
+                            <input id="oauth_token" type="text" class="form-control" v-model="oauth_token">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="oauth_token_secret">oauth_token_secret</label>
+                        <div class="input-group">
+                            <input id="oauth_token_secret" type="text" class="form-control"
+                                v-model="oauth_token_secret">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="method">method</label>
+                        <div class="input-group">
+                            <select id="method" class="form-select" v-model="method">
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                                <option value="PUT">PUT</option>
+                                <option value="DELETE">DELETE</option>
+                                <option value="OPTIONS">OPTIONS</option>
+                                <option value="HEAD">HEAD</option>
+                                <option value="CONNECT">CONNECT</option>
+                                <option value="TRACE">TRACE</option>
+                                <option value="PATCH">PATCH</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="url">url</label>
+                        <div class="input-group">
+                            <textarea id="url" class="form-control" rows="5" v-model="url"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="body">body</label>
+                        <div class="input-group">
+                            <textarea id="body" class="form-control" rows="5" v-model="body"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="timestamp">timestamp</label>
+                        <div class="input-group">
+                            <input id="timestamp" type="number" class="form-control" v-model="timestamp">
+                            <button :class="{btn: true, 'btn-outline-danger': !stop, 'btn-danger': stop}" type="button"
+                                id="button-timestamp" @click="stop = !stop">Stop</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" id="oauth_nonce">oauth_nonce</label>
+                        <div class="input-group">
+                            <input id="oauth_nonce" type="text" class="form-control" v-model="oauth_nonce">
+                            <button class="btn btn-outline-secondary" type="button" id="button-oauth_nonce"
+                                @click="oauth_nonce = updateOauthNonce()">Random</button>
+                        </div>
+                        <div class="form-text" id="form-text-oauth_consumer_secret">The <code>oauth_nonce</code>
+                            parameter is a unique token your application should generate for each unique request.
+                            Twitter will use this value to determine whether a request has been submitted multiple
+                            times. The value for this request was generated by base64 encoding 32 bytes of random data,
+                            and stripping out all non-word characters, but any approach which produces a relatively
+                            random alphanumeric string should be OK here.</div>
+                    </div>
+
+                    <hr />
+                </div>
+                <div class="col-md-4">
+                    <h3>Authorization</h3>
+                    <button :class="{btn: true, 'btn-sm': true, 'btn-outline-danger': !stop, 'btn-danger': stop, 'mb-1': true}"
+                        type="button" @click="stop = !stop">Stop auto timestamp</button>
+                    <div id="authorization" class="p-2 mb-3 rounded"
+                        style="background-color: rgb(247, 247, 247); user-select: all;">
+                        <code>{{ `OAuth realm="http://api.twitter.com/", oauth_version="1.0", oauth_token="${signature.oauth_token}", oauth_nonce="${signature.oauth_nonce}", oauth_timestamp="${signature.timestamp}", oauth_signature="${encodeURIComponent(signature.sign)}", oauth_consumer_key="${signature.oauth_consumer_key}", oauth_signature_method="HMAC-SHA1"` }}</code>
+                    </div>
+
+                    <h3>All data</h3>
+                    <div id="all-data" class="p-2 mb-3 rounded"
+                        style="background-color: rgb(247, 247, 247); user-select: all;">
+                        <code><pre>{{ JSON.stringify(signature, null, 4) }}</pre></code>
+                    </div>
+
+                    <h3>More...</h3>
+                    <div id="all-data" class="p-2 rounded" style="background-color: rgb(247, 247, 247);">
+                        <ul>
+                            <li><a href="https://developer.twitter.com/en/docs/authentication/oauth-1-0a/creating-a-signature"
+                                    target="_blank">Creating a signature</a></li>
+                            <li><a href="https://blog.nest.moe/posts/how-to-crawl-twitter-with-android#%E5%88%9B%E5%BB%BA-oauth-%E7%AD%BE%E5%90%8D"
+                                    target="_blank">创建 OAuth 签名</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="text-center my-2">
+            >_ Twitter Monitor
+        </div>
+    </div>
+    <!--load css and js-->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.js"></script>
+    <script>
+        'use strict';
+        const TW_CONSUMER_KEY = '3nVuSoBZnx6U4vzUxf5w'
+        const TW_CONSUMER_SECRET = 'Bcs59EFbbsdF6Sl9Ng71smgStWEGwXXKSjYvPVt7qys'
+        new Vue({
+            el: "#app",
+            data: {
+                oauth_consumer_key: TW_CONSUMER_KEY,
+                oauth_consumer_secret: TW_CONSUMER_SECRET,
+                oauth_token: "370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb",
+                oauth_token_secret: "LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE",
+                method: "GET",
+                url: "https://api.twitter.com/1.1/statuses/update.json?include_entities=true",
+                body: "status=Hello%20Ladies%20%2b%20Gentlemen%2c%20a%20signed%20OAuth%20request%21",
+                timestamp: "0",
+                oauth_nonce: "0",
+                stop: false,
+            },
+            computed: {
+                signature: function () {
+                    return this.getOauthAuthorization(this.oauth_token, this.oauth_token_secret, this.method, this.url, this.body, this.timestamp, this.oauth_nonce)
+                }
+            },
+            watch: {
+                "now": function () {
+                    this.timestamp = this.now
+                }
+            },
+            mounted: function () {
+                this.updateNow()
+                this.oauth_nonce = this.updateOauthNonce()
+            },
+            methods: {
+                updateNow: function () {
+                    if (!this.stop) {
+                        this.timestamp = Math.floor(Date.now() / 1000)
+                    }
+
+                    setTimeout(this.updateNow, 500);
+                },
+                updateOauthNonce: function () {
+                    if (typeof crypto.randomUUID === "undefined") {
+                        return btoa(new Array(2).fill(Math.random().toString()).join('').slice(4)).replaceAll('+', '').replaceAll('/', '').replaceAll('=', '')
+                    } else {
+                        return btoa(crypto.randomUUID().replaceAll('-', '')).replaceAll('+', '').replaceAll('/', '').replaceAll('=', '')
+                    }
+                },
+                getOauthAuthorization: function (oauth_token, oauth_token_secret, method = 'GET', url = '', body = '', timestamp = Math.floor(Date.now() / 1000), oauth_nonce = this.updateOauthNonce()) {
+                    if (!url) {
+                        return ''
+                    }
+                    method = method.toUpperCase()
+                    const parseUrl = new URL(url)
+                    const link = parseUrl.origin + parseUrl.pathname
+                    const payload = [...parseUrl.searchParams.entries()]
+                    if (body) {
+                        payload.push(...new URLSearchParams(body).entries())
+                    }
+                    payload.push(['oauth_version', '1.0'])
+                    payload.push(['oauth_signature_method', 'HMAC-SHA1'])
+                    payload.push(['oauth_consumer_key', TW_CONSUMER_KEY])
+                    payload.push(['oauth_token', oauth_token])
+                    payload.push(['oauth_nonce', oauth_nonce])
+                    payload.push(['oauth_timestamp', String(timestamp)])
+
+                    const forSign = method + '&' + encodeURIComponent(link) + '&' + new URLSearchParams(payload.sort((a, b) => (a[0] > b[0] ? 1 : a[0] < b[0] ? -1 : 0))).toString().replaceAll('+', '%20').replaceAll('%', '%25').replaceAll('=', '%3D').replaceAll('&', '%26')
+                    return {
+                        method,
+                        url,
+                        parse_url: parseUrl,
+                        timestamp,
+                        oauth_nonce,
+                        oauth_token,
+                        oauth_token_secret,
+                        oauth_consumer_key: this.oauth_consumer_key,
+                        oauth_consumer_secret: this.oauth_consumer_secret,
+                        payload,
+                        forSign,
+                        sign: CryptoJS.HmacSHA1(forSign, TW_CONSUMER_SECRET + '&' + (oauth_token_secret ? oauth_token_secret : '')).toString(CryptoJS.enc.Base64)
+                    }
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>
