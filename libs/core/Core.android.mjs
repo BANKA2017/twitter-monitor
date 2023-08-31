@@ -190,7 +190,15 @@ const postOpenAccount = async (ctx = { guest_token: {}, authorization: '', flow_
     )
 }
 
-const getOauthAuthorization = (oauth_token, oauth_token_secret, method = 'GET', url = '', body = '', timestamp = Math.floor(Date.now() / 1000), oauth_nonce = new Array(3).fill(String(Date.now())).join('')) => {
+const getOauthAuthorization = (
+    oauth_token,
+    oauth_token_secret,
+    method = 'GET',
+    url = '',
+    body = '',
+    timestamp = Math.floor(Date.now() / 1000),
+    oauth_nonce = new Array(2).fill(Math.random().toString()).join('').slice(4).toString(Base64).replaceAll('+', '').replaceAll('/', '').replaceAll('=', '')
+) => {
     if (!url) {
         return ''
     }

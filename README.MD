@@ -173,11 +173,9 @@ We use GitHub Actions to build some scripts, you can find them in [BANKA2017/twi
 
 ## How it works
 
-Those are Chinese articles
-
-[怎么爬twitter](https://blog.nest.moe/how-to-crawl-twitter/)
-
-[怎么爬twitter Graphql](https://blog.nest.moe/how-to-crawl-twitter-with-graphql/)
+- [怎么爬twitter(zh-Hans)](https://blog.nest.moe/posts/how-to-crawl-twitter/)
+- [怎么爬twitter Graphql(zh-Hans)](https://blog.nest.moe/posts/how-to-crawl-twitter-with-graphql/)
+- [怎么爬 Twitter（Android）(zh-Hans)](https://blog.nest.moe/posts/how-to-crawl-twitter-with-android/)
 
 ## 环境要求
 
@@ -335,9 +333,9 @@ Those are Chinese articles
 
 ## 资料
 
-[怎么爬twitter](https://blog.nest.moe/how-to-crawl-twitter/)
-
-[怎么爬twitter Graphql](https://blog.nest.moe/how-to-crawl-twitter-with-graphql/)
+- [怎么爬twitter(zh-Hans)](https://blog.nest.moe/posts/how-to-crawl-twitter/)
+- [怎么爬twitter Graphql(zh-Hans)](https://blog.nest.moe/posts/how-to-crawl-twitter-with-graphql/)
+- [怎么爬 Twitter（Android）(zh-Hans)](https://blog.nest.moe/posts/how-to-crawl-twitter-with-android/)
 
 ## About v2
 
