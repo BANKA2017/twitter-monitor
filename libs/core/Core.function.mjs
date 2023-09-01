@@ -51,7 +51,7 @@ export class GuestToken {
         this.type = type
         this.open_account = {}
     }
-    async openAccountInit(openAccount = null) {
+    async openAccountInit(openAccount = null, env = {}) {
         Log(false, 'log', `[${new Date()}]: #GuestToken Update open account`)
         if (openAccount && openAccount?.authorization && openAccount?.oauth_token && openAccount.oauth_token_secret) {
             this.open_account = openAccount
@@ -60,16 +60,16 @@ export class GuestToken {
             try {
                 //TODO error
                 this.open_account.authorization = getBearerToken() //((token) => token.data?.token_type + ' ' + token.data?.access_token)(await getBearerToken())
-                await this.updateGuestToken(this.open_account.authorization)
+                await this.updateGuestToken(this.open_account.authorization, false, env)
                 if (this.type === 'android') {
-                    const onboardingResponse = (await postOpenAccountInit({ guest_token: this.#guest_token, authorization: this.open_account.authorization })).data
+                    const onboardingResponse = (await postOpenAccountInit({ guest_token: this.#guest_token, authorization: this.open_account.authorization }, env)).data
                     let flowToken = onboardingResponse.flow_token
-                    const OpenAccount = (await postOpenAccount({ guest_token: this.#guest_token, authorization: this.open_account.authorization, flow_token: flowToken })).data
+                    const OpenAccount = (await postOpenAccount({ guest_token: this.#guest_token, authorization: this.open_account.authorization, flow_token: flowToken }, env)).data
                     this.open_account.oauth_token = OpenAccount.subtasks[0].open_account.oauth_token
                     this.open_account.oauth_token_secret = OpenAccount.subtasks[0].open_account.oauth_token_secret
                     this.open_account.user = OpenAccount.subtasks[0].open_account.user
                     this.#guest_token.open_account = this.open_account
-                    ConsoleLo(false, 'log', `[${new Date()}]: #GuestToken Successful get account @${this.open_account.user.screen_name}`)
+                    Log(false, 'log', `[${new Date()}]: #GuestToken Successful get account @${this.open_account.user.screen_name}`)
                 }
             } catch (e) {
                 Log(false, 'error', e)
@@ -77,10 +77,10 @@ export class GuestToken {
         }
         return this
     }
-    async updateGuestToken(authorizationMode = 0, rateLimitOnly = false) {
+    async updateGuestToken(authorizationMode = 0, rateLimitOnly = false, env = {}) {
         // init authorizationMode not string
         if (['android', 'android_bearer'].includes(this.type) && typeof authorizationMode !== 'string') {
-            await this.openAccountInit()
+            await this.openAccountInit(null, env)
             return this
         }
         const now = Date.now()
@@ -90,7 +90,7 @@ export class GuestToken {
         ) {
             Log(false, 'log', `[${new Date()}]: #GuestToken Update guest token #${authorizationMode}`)
             do {
-                this.#guest_token = await getToken(authorizationMode, [1, 4].includes(authorizationMode) ? 'web' : 'api', rateLimitOnly)
+                this.#guest_token = await getToken(authorizationMode, [1, 4].includes(authorizationMode) ? 'web' : 'api', rateLimitOnly, env)
                 this.errorCount--
                 if (!this.#guest_token.success) {
                     Log(false, 'error', `[${new Date()}]: #GuestToken Unable to get guest token, remain ${this.errorCount}`)

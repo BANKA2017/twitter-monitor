@@ -92,10 +92,12 @@ const authorizationList = [
     //[await getGuestTokenHandle(Authorization[2]), '? web'],
     [await getGuestTokenHandle(Authorization[3]), 'tweetdeck legacy'],
     [await getGuestTokenHandle(Authorization[4]), 'tweetdeck preview'],
-    [await getGuestTokenHandle(getBearerToken(), true), 'android'],
-    //TODO Add guest account
-    [await getGuestTokenHandle(null, true, androidGuestAccount), 'guest account']
+    [await getGuestTokenHandle(getBearerToken(), true), 'android']
 ]
+
+if (androidGuestAccount.oauth_token && androidGuestAccount.oauth_token_secret) {
+    authorizationList.push([await getGuestTokenHandle(null, true, androidGuestAccount), 'guest account'])
+}
 
 let globalList = {}
 

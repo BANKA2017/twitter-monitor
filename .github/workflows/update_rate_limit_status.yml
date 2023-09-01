@@ -33,5 +33,5 @@ jobs:
                   FOLDER: apps/rate_limit_checker/data/
                   COMMIT_NAME: ${{ secrets.COMMIT_NAME }}
                   COMMIT_EMAIL: ${{ secrets.COMMIT_EMAIL }}
-                  MESSAGE: 'Daily Run - {sha}'
+                  MESSAGE: 'Run - {sha}'
                   SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}

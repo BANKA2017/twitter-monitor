@@ -68,7 +68,7 @@ const Authorization = [TW_AUTHORIZATION, TW_AUTHORIZATION2, TW_AUTHORIZATION3, T
 
 const axios = axiosFetch()
 
-const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization = 0, headers = {}, body = undefined) => {
+const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization = 0, headers = {}, body = undefined, env = {}) => {
     /* 
   To use some online service, you have to provide some cookie and headers
   cookie: auth_token, ct0 # ct0 is not always need
@@ -145,7 +145,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
     }
 
     return await new Promise((resolve, reject) => {
-        axios(url, {
+        axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY })(url, {
             headers: {
                 ...tmpHeaders,
                 ...headers
@@ -178,7 +178,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
 
 // ANONYMOUS
 // source -> api, web(only 1`TnA` and 4`QCF`)
-const getToken = async (authorization = 0, source = 'api', rateLimitOnly = false) => {
+const getToken = async (authorization = 0, source = 'api', rateLimitOnly = false, env = {}) => {
     let tmpResponse = {
         success: false,
         token: '',
@@ -218,7 +218,7 @@ const getToken = async (authorization = 0, source = 'api', rateLimitOnly = false
     return await new Promise((resolve, reject) => {
         //2000 per 30 min i guess
         if (source === 'web' && [TW_AUTHORIZATION2, TWEETDECK_AUTHORIZATION2].includes(tmpResponse.authorization)) {
-            axios(tmpResponse.authorization === 1 ? 'https://twitter.com' : 'https://tweetdeck.twitter.com', {
+            axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY })(tmpResponse.authorization === 1 ? 'https://twitter.com' : 'https://tweetdeck.twitter.com', {
                 headers: {
                     cookie: 'guest_id=v1:0;'
                 }
@@ -246,7 +246,7 @@ const getToken = async (authorization = 0, source = 'api', rateLimitOnly = false
                     reject(tmpResponse)
                 })
         } else {
-            axios(TW_WEBAPI_PREFIX + '/1.1/guest/activate.json', {
+            axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY })(TW_WEBAPI_PREFIX + '/1.1/guest/activate.json', {
                 headers: {
                     authorization: tmpResponse.authorization,
                     'x-csrf-token': ct0,
@@ -1396,7 +1396,7 @@ const getImage = async (path = '', headers = {}) => {
     if (path === '') {
         return ''
     }
-    return axios(path, {
+    return axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY })(path, {
         responseType: typeof process === 'undefined' || (process?.browser ?? false) ? 'arrayBuffer' : 'arraybuffer',
         headers
         //timeout: 10000
@@ -1710,7 +1710,7 @@ const getJsInstData = async (ctx = { jsInstrumentationLink: 'https://twitter.com
         globalThis.document = new MockDocument()
     }
     try {
-        const jsInstData = await axios(jsInstrumentationLink, {
+        const jsInstData = await axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY })(jsInstrumentationLink, {
             headers: {
                 cookie
             }

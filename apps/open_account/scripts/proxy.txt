@@ -1,0 +1,5 @@
+# if one line is not starts with `http`, script will ignore it
+# <- ignore
+# https://192.168.1.100:7890 <- ignore
+# http://127.0.0.1:7890 <- ignore
+# http://user1:password@192.168.1.101:7890 <- ignore

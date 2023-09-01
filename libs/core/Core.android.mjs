@@ -106,6 +106,10 @@ const postOpenAccountInit = async (ctx = { guest_token: {}, authorization: '' },
                 location_permission_prompt: 2,
                 notifications_permission_prompt: 4
             }
+        },
+        {
+            HTTPS_PROXY: env?.HTTPS_PROXY,
+            HTTP_PROXY: env?.HTTP_PROXY,
         }
     )
 }
@@ -186,6 +190,10 @@ const postOpenAccount = async (ctx = { guest_token: {}, authorization: '', flow_
                 location_permission_prompt: 2,
                 notifications_permission_prompt: 4
             }
+        },
+        {
+            HTTPS_PROXY: env?.HTTPS_PROXY,
+            HTTP_PROXY: env?.HTTP_PROXY,
         }
     )
 }

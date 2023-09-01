@@ -115,9 +115,12 @@
                     <hr />
                 </div>
                 <div class="col-md-4">
-                    <h3>Authorization</h3>
-                    <button :class="{btn: true, 'btn-sm': true, 'btn-outline-danger': !stop, 'btn-danger': stop, 'mb-1': true}"
+                    <button
+                        :class="{btn: true, 'btn-sm': true, 'btn-outline-danger': !stop, 'btn-danger': stop, 'mb-1': true}"
                         type="button" @click="stop = !stop">Stop auto timestamp</button>
+
+                    <hr />
+                    <h3>Authorization</h3>
                     <div id="authorization" class="p-2 mb-3 rounded"
                         style="background-color: rgb(247, 247, 247); user-select: all;">
                         <code>{{ `OAuth realm="http://api.twitter.com/", oauth_version="1.0", oauth_token="${signature.oauth_token}", oauth_nonce="${signature.oauth_nonce}", oauth_timestamp="${signature.timestamp}", oauth_signature="${encodeURIComponent(signature.sign)}", oauth_consumer_key="${signature.oauth_consumer_key}", oauth_signature_method="HMAC-SHA1"` }}</code>
@@ -125,7 +128,7 @@
 
                     <h3>All data</h3>
                     <div id="all-data" class="p-2 mb-3 rounded"
-                        style="background-color: rgb(247, 247, 247); user-select: all;">
+                        style="background-color: rgb(247, 247, 247);">
                         <code><pre>{{ JSON.stringify(signature, null, 4) }}</pre></code>
                     </div>
 
@@ -159,7 +162,7 @@
                 oauth_consumer_secret: TW_CONSUMER_SECRET,
                 oauth_token: "370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb",
                 oauth_token_secret: "LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE",
-                method: "GET",
+                method: "POST",
                 url: "https://api.twitter.com/1.1/statuses/update.json?include_entities=true",
                 body: "status=Hello%20Ladies%20%2b%20Gentlemen%2c%20a%20signed%20OAuth%20request%21",
                 timestamp: "0",
