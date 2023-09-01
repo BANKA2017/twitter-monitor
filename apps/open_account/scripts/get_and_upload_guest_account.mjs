@@ -20,7 +20,9 @@ if (existsSync('./proxy.txt')) {
 }
 
 // add no proxy (use your real ip address)
-//proxyList.push(null)
+if (proxyList.length === 0) {
+    proxyList.push(null)
+}
 
 for (const proxy of proxyList) {
     while (true) {

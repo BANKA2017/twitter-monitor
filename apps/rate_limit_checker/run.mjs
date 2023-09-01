@@ -158,9 +158,9 @@ for (const index in authorizationList) {
     await getStatusResponse(getTrends({ initial_tab_id: 'trends', guest_token: guest_token.token, authorization: guest_token.token.authorization }), guest_token, 'restful:trends')
 
     // Translate
-    await getStatusResponse(getTranslate({ id: '783214', type: 'profile', target: 'zh-tw', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: true }), guest_token, 'graphql:translate_bio')
+    await getStatusResponse(getTranslate({ id: '1683696495198089217', type: 'profile', target: 'zh-tw', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: true }), guest_token, 'graphql:translate_bio')
     await getStatusResponse(getTranslate({ id: '1623411536243965954', type: 'tweets', target: 'zh-tw', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: true }), guest_token, 'graphql:translate_tweet')
-    await getStatusResponse(getTranslate({ id: '783214', type: 'profile', target: 'zh-tw', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: false }), guest_token, 'restful:translate_bio')
+    await getStatusResponse(getTranslate({ id: '1683696495198089217', type: 'profile', target: 'zh-tw', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: false }), guest_token, 'restful:translate_bio')
     await getStatusResponse(getTranslate({ id: '1623411536243965954', type: 'tweets', target: 'zh-tw', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: false }), guest_token, 'restful:translate_tweet')
 
     // ListInfo
@@ -199,6 +199,8 @@ globalList = Object.values(globalList)
 writeFileSync(savePath, JSON.stringify(globalList, null, 4))
 
 let globalMarkdown = '# Rate limit checker\n\n---\n'
+
+globalMarkdown += '\n- The number is the number of rate limit, and `_` means response headers have no field `x-rate-limit-limit`\n- ❌ means the endpoint is unavailable\n'
 
 let labels = globalList.map((x) => x.label)
 const title = '|' + new Array(30).fill(' ').join('') + ' | ' + labels.map((x) => x.padStart(18, ' ')).join(' | ') + '|'
