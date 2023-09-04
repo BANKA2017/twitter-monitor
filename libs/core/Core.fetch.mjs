@@ -1404,7 +1404,7 @@ const getPollResult = async (ctx = { tweet_id: '', guest_token: {}, cookie: {}, 
     }
 }
 
-const getImage = async (path = '', headers = {}) => {
+const getImage = async (path = '', headers = {}, env = {}) => {
     if (path === '') {
         return ''
     }
