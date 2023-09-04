@@ -139,8 +139,8 @@ const ApiTweets = async (req, env) => {
                 guest_token: env.guest_token2,
                 count,
                 online: true,
-                web: displayType !== 'include_reply',
-                graphqlMode: displayType === 'include_reply',
+                web: false, //displayType !== 'include_reply',
+                graphqlMode: true, //displayType === 'include_reply',
                 searchMode: false,
                 withReply: displayType === 'include_reply',
                 cookie: req.cookies
@@ -440,7 +440,8 @@ const ApiMedia = async (req, env) => {
             guest_token: env.guest_token2,
             graphqlMode: true,
             authorization: authorizationMode,
-            cookie: req.cookies
+            cookie: req.cookies,
+            web: 2
         })
 
         //updateGuestToken

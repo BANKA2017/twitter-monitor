@@ -57,7 +57,8 @@ const apiPathList = {
         'content.itemContent.tweet',
         'item.itemContent.tweet_results.result',
         'item.itemContent.tweet',
-        'content.items[0].item.content.tweetResult.result'
+        'content.items[0].item.content.tweetResult.result',
+        'data.tweetResult.result'
     ],
     tweet_id: [
         'id_str',

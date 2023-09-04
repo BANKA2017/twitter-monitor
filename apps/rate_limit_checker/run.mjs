@@ -132,6 +132,7 @@ for (const index in authorizationList) {
     // Conversation
     await getStatusResponse(getConversation({ tweet_id: '1623411536243965954', guest_token: guest_token.token, authorization: guest_token.token.authorization, web: true, graphqlMode: true }), guest_token, 'graphql:conversation')
     await getStatusResponse(getConversation({ tweet_id: '1623411536243965954', guest_token: guest_token.token, authorization: guest_token.token.authorization, web: false, graphqlMode: true }), guest_token, 'graphql:conversation_v2')
+    await getStatusResponse(getConversation({ tweet_id: '1623411536243965954', guest_token: guest_token.token, authorization: guest_token.token.authorization, web: 2, graphqlMode: true }), guest_token, 'graphql:tweet_result_by_id')
     await getStatusResponse(getConversation({ tweet_id: '1623411536243965954', guest_token: guest_token.token, authorization: guest_token.token.authorization, web: true, graphqlMode: false }), guest_token, 'restful:conversation')
 
     // Search

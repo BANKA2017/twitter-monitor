@@ -37,7 +37,7 @@ const AlbumSearch = async (req, env) => {
     try {
         if (isPhotos) {
             //TODO fix tokens
-            tweets = await getConversation({ tweet_id: tweetId, guest_token: env.guest_token2, graphqlMode: true })
+            tweets = await getConversation({ tweet_id: tweetId, guest_token: env.guest_token2, graphqlMode: true, web: 2 })
             //updateGuestToken
             await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
         } else {

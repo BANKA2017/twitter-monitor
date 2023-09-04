@@ -137,22 +137,23 @@ do {
     })
 
     let tmpTweetIdList = list.map((x) => String(x.tweet_id))
-    let tweetDataList = await getConversation({ tweet_id: tmpTweetIdList })
+    let tweetDataList = await getConversation({ tweet_id: tmpTweetIdList, web: 2 })
     //Log(false, 'log', tweetDataList)
     //generate data
+    // TODO check errors
     tweetDataList.forEach((x, index) => {
         if (x.status === 'fulfilled') {
-            const tweetsInfo = TweetsInfo(x.value.data, true)
+            //const tweetsInfo = TweetsInfo(x.value.data, true)
             //Log(false, 'log', tweetsInfo.contents.filter(tweet => String(tweet?.content?.itemContent?.tweet_results?.result?.rest_id || '0') === tmpTweetIdList[index])[0])
-
-            if (!tweetsInfo.contents.find((tweet) => String(tweet?.content?.itemContent?.tweet_results?.result?.rest_id || '0') === tmpTweetIdList[index])) {
+            const tweetInfo = path2array('tweet_content', x.value.data)
+            if (!tweetInfo) {// tweetsInfo.contents.find((tweet) => String(tweet?.content?.itemContent?.tweet_results?.result?.rest_id || '0') === tmpTweetIdList[index])
                 Log(false, 'log', `error: ${tmpTweetIdList[index]}`)
                 errorList.push(tmpTweetIdList[index])
                 writeFileSync('./errorList.json', JSON.stringify(errorList))
                 _count.error++
                 return
             }
-            const tweetData = Tweet(tweetsInfo.contents.filter((tweet) => String(tweet?.content?.itemContent?.tweet_results?.result?.rest_id || '0') === tmpTweetIdList[index])[0], {}, [], {}, true, false, true)
+            const tweetData = Tweet(tweetInfo, {}, [], {}, true, false, true)
             if (tweetList.filter((x) => x.tweet_id === String(tweetData.tweet_id)).length === 0) {
                 tweetList.push({
                     tweet_id: String(tweetData.GeneralTweetData.tweet_id),

@@ -22,18 +22,41 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
 
     const isTweetDeckSearch = globalObjects.modules && Array.isArray(globalObjects.modules)
     const isV1_1Timeline = globalObjects?.twitter_objects?.tweets && globalObjects?.twitter_objects?.users
+    const isSingleGraphqlTweet = globalObjects?.data?.tweetResult
 
     if (globalObjects.errors && !graphqlMode) {
         objectForReturn.errors.code = globalObjects[0].code
         objectForReturn.errors.message = globalObjects[0].message
-    } else if (!path2array('tweets_instructions', globalObjects) && graphqlMode) {
+    } else if ((!path2array('tweets_instructions', globalObjects) && graphqlMode && !isSingleGraphqlTweet) || (isSingleGraphqlTweet && !isSingleGraphqlTweet.result)) {
         objectForReturn.errors.code = 1002
         objectForReturn.errors.message = globalObjects?.data?.user?.result?.__typename ?? 'Nothing here'
     }
     if (objectForReturn.errors.code === 0) {
         const tmpTweets = path2array('tweets_instructions', globalObjects)
         let cursorList = []
-        if (graphqlMode) {
+        if (isSingleGraphqlTweet) {
+            const tmpTweet = path2array('tweet_content', globalObjects)
+            objectForReturn.contents.push(tmpTweet)
+            objectForReturn.contentLength = 1
+            objectForReturn.tweetRange.max = tmpTweet?.rest_id || '0'
+            objectForReturn.tweetRange.min = tmpTweet?.rest_id || '0'
+            const tmpContent = path2array('graphql_user_result', tmpTweet)
+            const tmpEntities = []
+            // users
+            if (tmpContent) {
+                tmpEntities.push([tmpContent.rest_id, tmpContent])
+                const tmpRetweetContent = path2array('graphql_user_result', path2array('retweet_graphql_path', tmpTweet))
+                const tmpQuoteContent = path2array('graphql_user_result', path2array('quote_graphql_path', tmpTweet))
+
+                if (tmpRetweetContent) {
+                    tmpEntities.push([tmpRetweetContent.rest_id, tmpRetweetContent])
+                }
+                if (tmpQuoteContent) {
+                    tmpEntities.push([tmpQuoteContent.rest_id, tmpQuoteContent])
+                }
+            }
+            objectForReturn.users = Object.fromEntries(tmpEntities)
+        } else if (graphqlMode) {
             for (const tmpTweet of tmpTweets) {
                 if (tmpTweet.type === 'TimelineAddEntries' || tmpTweet.__typename === 'TimelineAddEntries') {
                     cursorList = tmpTweet.entries.filter((content) => content.entryId.startsWith('cursor-'))
@@ -229,7 +252,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
         if (content?.content?.itemContent?.socialContext) {
             socialContext = content.content.itemContent.socialContext
         }
-        content = path2array('tweet_content', content)
+        content = path2array('tweet_content', content) || content
     }
     GeneralTweetData.tweet_id = path2array('tweet_id', content)
     GeneralTweetData.origin_tweet_id = GeneralTweetData.tweet_id

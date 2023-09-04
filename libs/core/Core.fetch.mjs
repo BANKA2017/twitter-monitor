@@ -28,6 +28,7 @@ import {
     _TweetActivityQuery,
     _TweetDetail,
     _TweetEditHistory,
+    _TweetResultByRestId,
     _TwitterArticleByRestId,
     _UnfavoriteTweet,
     _UserByRestId,
@@ -796,7 +797,14 @@ const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMod
     }
     if (graphqlMode) {
         let graphqlVariables = {}
-        if (web) {
+        if (web === 2) {
+            graphqlVariables = {
+                tweetId: tweet_id,
+                withCommunity: false,
+                includePromotedContent: false,
+                withVoice: false
+            }
+        } else if (web) {
             graphqlVariables = {
                 focalTweetId: tweet_id,
                 with_rux_injections: false,
@@ -835,8 +843,8 @@ const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMod
             coreFetch(
                 TW_WEBAPI_PREFIX +
                     '/graphql/' +
-                    (web ? _TweetDetail.queryId + '/TweetDetail?' : _ConversationTimelineV2.queryId + '/ConversationTimelineV2?') +
-                    new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(web ? _TweetDetail.features : _ConversationTimelineV2.features) }).toString(),
+                    (web ? (web === 2 ? _TweetResultByRestId.queryId + '/TweetResultByRestId?' : _TweetDetail.queryId + '/TweetDetail?') : _ConversationTimelineV2.queryId + '/ConversationTimelineV2?') +
+                    new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(web ? (web === 2 ? _TweetResultByRestId.features : _TweetDetail.features) : _ConversationTimelineV2.features) }).toString(),
                 guest_token,
                 cookie,
                 authorization
@@ -1367,15 +1375,19 @@ const getPollResult = async (ctx = { tweet_id: '', guest_token: {}, cookie: {}, 
     if (!tweet_id) {
         return { code: 403, message: 'Invalid tweet id', data: [], headers: new Map() }
     }
-    let tmpTweet = await getConversation({ tweet_id, guest_token, graphqlMode: true, cookie, authorization })
+    let tmpTweet = await getConversation({ tweet_id, guest_token, graphqlMode: true, cookie, authorization, web: 2 })
     const tmpHeaders = tmpTweet.headers
 
-    tmpTweet = path2array('tweets_contents', tmpTweet.data)
-    if (!tmpTweet) {
-        return { code: 404, message: 'No tweets', data: [], headers: tmpHeaders }
-    }
+    // tmpTweet = path2array('tweets_contents', tmpTweet.data)
+    // if (!tmpTweet) {
+    //     return { code: 404, message: 'No tweets', data: [], headers: tmpHeaders }
+    // }
 
-    const tweetItem = path2array('tweet_content', tmpTweet.find((tmpTweetItem) => tmpTweetItem.entryId === 'tweet-' + tweet_id) ?? [])
+    const tweetItem = path2array('tweet_content', tmpTweet.data)//tmpTweet.find((tmpTweetItem) => tmpTweetItem.entryId === 'tweet-' + tweet_id) ?? []
+    if (!tweetItem) {
+        return { code: 404, message: 'No such tweet', data: [], headers: tmpHeaders }
+    }
+    
     const cardInfo = path2array('tweet_card_path', tweetItem)
     if (cardInfo && String(path2array('tweet_card_name', cardInfo)).startsWith('poll')) {
         const data = []
