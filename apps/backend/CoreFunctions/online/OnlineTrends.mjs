@@ -5,10 +5,10 @@ import { apiTemplate } from '../../../../libs/share/Constant.mjs'
 const ApiTrends = async (req, env) => {
     let tmpTrends = []
     try {
-        const tmpTrendsRequest = await getTrends({ initial_tab_id: 'trends', count: 20, guest_token: env.guest_token2, cookie: req.cookies })
-
+        const tmpTrendsRequest = await getTrends({ initial_tab_id: 'trends', count: 20, guest_token: env.guest_token3, cookie: req.cookies })
+        //TODO update guest_account status
         //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 4, tmpTrendsRequest.headers.get('x-rate-limit-remaining') < 1, 'Trending')
+        //await env.updateGuestToken(env, 'guest_token2', 4, tmpTrendsRequest.headers.get('x-rate-limit-remaining') < 1, 'Trending')
 
         tmpTrends = tmpTrendsRequest.data.timeline.instructions[1].addEntries.entries
             .find((entity) => entity.entryId === 'trends')

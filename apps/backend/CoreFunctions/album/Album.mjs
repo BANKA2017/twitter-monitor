@@ -44,14 +44,15 @@ const AlbumSearch = async (req, env) => {
             tweets = await getTweets({
                 queryString: queryArray.join(' '),
                 cursor: '',
-                guest_token: env.guest_token2,
+                guest_token: env.guest_token3,
                 count: 20,
                 online: true,
                 graphqlMode: false,
                 searchMode: true
             })
+            //TODO update guest_account status
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'Search')
+            //await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'Search')
         }
     } catch (e) {
         Log(false, 'error', `[${new Date()}]: #Album #${e.code} ${e.message}`)

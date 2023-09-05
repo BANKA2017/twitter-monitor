@@ -18,10 +18,10 @@ const xml = (data, status = 200) =>
     })
 
 //Type is useless in cfworkers api
-const updateGuestToken = async (env, k, tokenType = 0, update = true, type = '') => {
+const updateGuestToken = async (env, k, tokenType = 4, update = true, type = '') => {
     if (update) {
         const handle = new GuestToken()
-        await handle.updateGuestToken(4)
+        await handle.updateGuestToken(tokenType)
         const tmpToken = handle.token //  await getToken()
         if (tmpToken.success) {
             await env.kv.put(k, JSON.stringify(tmpToken), { expiration: Math.floor(tmpToken.expire / 1000) })

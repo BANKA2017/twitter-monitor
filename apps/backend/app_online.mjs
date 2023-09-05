@@ -19,6 +19,8 @@ let settingsFile = basePath + '/assets/setting.mjs'
 let EXPRESS_PORT = 3000
 let EXPRESS_ALLOW_ORIGIN = ['*']
 let ACTIVE_SERVICE = []
+let GUEST_ACCOUNTS = []
+let AUDIO_SPACE_CACHE = {}
 
 for (const argvContent of process.argv.slice(2)) {
     if (argvContent.startsWith('--config=')) {
@@ -33,6 +35,25 @@ if (settingsFile && existsSync(settingsFile)) {
     EXPRESS_PORT = settings.EXPRESS_PORT
     EXPRESS_ALLOW_ORIGIN = settings.EXPRESS_ALLOW_ORIGIN
     ACTIVE_SERVICE = settings.ACTIVE_SERVICE
+    if (settings.GUEST_ACCOUNTS && Array.isArray(settings.GUEST_ACCOUNTS) && settings.GUEST_ACCOUNTS.length > 0) {
+        GUEST_ACCOUNTS = settings.GUEST_ACCOUNTS
+    }
+}
+
+// guest accounts
+if (existsSync(basePath + '/../guest_accounts.json')) {
+    GUEST_ACCOUNTS = GUEST_ACCOUNTS.concat(JSON.parse(readFileSync(basePath + '/../guest_accounts.json').toString()))
+} else if (existsSync(resolve('.') + '/guest_accounts.json')) {
+    GUEST_ACCOUNTS = GUEST_ACCOUNTS.concat(JSON.parse(readFileSync(resolve('.') + '/guest_accounts.json').toString()))
+}
+
+// audio space cache
+if (existsSync(`${basePath}/../apps/backend/cache/_audio_apsce_cache.json`)) {
+    try {
+        AUDIO_SPACE_CACHE = JSON.parse(readFileSync(`${basePath}/../apps/backend/cache/_audio_apsce_cache.json`).toString())
+    } catch(e) {
+        Log(false, 'log', `tmv3: Unable to read audio space cache`)
+    }
 }
 
 const app = express()
@@ -43,8 +64,12 @@ app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 
 //get init token
-global.guest_token = new GuestToken()
-//global.guest_token3 = new GuestToken('android')
+
+// userinfo, tweet_result_by_id, broadcast, live_stream, following, followers, onbroading
+global.guest_token = new GuestToken(4)
+
+// others
+global.guest_token3 = new GuestToken('android')
 
 app.use((req, res, next) => {
     req.env = {
@@ -55,9 +80,11 @@ app.use((req, res, next) => {
         mediaExistPreCheck,
         mediaCacheSave,
         guest_token2_handle: global.guest_token,
-        guest_token2: {}
-        //guest_token3_handle: global.guest_token3,
-        //guest_token3: {},
+        guest_token2: {},
+        guest_token3_handle: global.guest_token3,
+        guest_token3: {},
+        guest_accounts: GUEST_ACCOUNTS,
+        audio_apsce_cache: AUDIO_SPACE_CACHE
     }
 
     res.setHeader('X-Powered-By', 'Twitter Monitor Api')

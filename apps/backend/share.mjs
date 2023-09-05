@@ -31,11 +31,11 @@ const ResponseWrapper = (data, status = 403, headers = new Headers()) => ({
 
 const mediaExistPreCheck = (name = '') => existsSync(`${basePath}/../apps/backend/cache/${name}`)
 
-const mediaCacheSave = (buffer, name) => {
+const mediaCacheSave = (data, name) => {
     try {
-        writeFileSync(`${basePath}/../apps/backend/cache/${name}`, buffer)
+        writeFileSync(`${basePath}/../apps/backend/cache/${name}`, data)
     } catch (e) {
-        Log(false, 'error', `MediaProxy: #MediaProxy error`, e)
+        Log(false, 'error', `Cache: #Cache error`, e)
     }
 }
 

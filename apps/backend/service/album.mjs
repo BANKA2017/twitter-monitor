@@ -14,11 +14,13 @@ album.use(async (req, res, next) => {
         return
     }
     await req.env.guest_token2_handle.updateGuestToken(4)
+    await req.env.guest_token3_handle.openAccountInit(req.env.guest_accounts[Math.floor(Math.random()*req.env.guest_accounts.length)])
     if (req.env.guest_token2_handle.token.nextActiveTime) {
         Log(false, 'error', `[${new Date()}]: #Album #GuestToken #429 Wait until ${req.env.guest_token2_handle.token.nextActiveTime}`)
         res.json(apiTemplate(429, `Wait until ${req.env.guest_token2_handle.token.nextActiveTime}`), {}, 'album')
     } else {
         req.env.guest_token2 = req.env.guest_token2_handle.token
+        req.env.guest_token3 = req.env.guest_token3_handle.token
         next()
     }
 })

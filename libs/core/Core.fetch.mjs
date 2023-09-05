@@ -802,7 +802,7 @@ const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMod
                 tweetId: tweet_id,
                 withCommunity: false,
                 includePromotedContent: false,
-                withVoice: false
+                withVoice: true
             }
         } else if (web) {
             graphqlVariables = {

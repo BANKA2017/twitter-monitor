@@ -11,7 +11,8 @@ const ApiTypeahead = async (req, env) => {
         topics: []
     }
     try {
-        const tmpTypeaheadResponse = await getTypeahead({ text, guest_token: env.guest_token2 })
+        const tmpTypeaheadResponse = await getTypeahead({ text, guest_token: env.guest_token3 })
+        //TODO update guest_account status
         //no rate limit
         tmpTypeahead.topics = tmpTypeaheadResponse.data.topics
         tmpTypeahead.users = tmpTypeaheadResponse.data.users.map((user) => GenerateAccountInfo(user).GeneralAccountData)
@@ -35,9 +36,10 @@ const ApiListInfo = async (req, env) => {
     }
 
     try {
-        let listInfoResponse = await getListInfo({ id: listId ? listId : '', screenName, listSlug, guest_token: env.guest_token2, authorization: 1, cookie: req.cookies })
+        let listInfoResponse = await getListInfo({ id: listId ? listId : '', screenName, listSlug, guest_token: env.guest_token3, authorization: 1, cookie: req.cookies })
+        //TODO update guest_account status
         //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 4, listInfoResponse.headers.get('x-rate-limit-remaining') < 1, 'ListInfo')
+        //await env.updateGuestToken(env, 'guest_token2', 4, listInfoResponse.headers.get('x-rate-limit-remaining') < 1, 'ListInfo')
 
         if (!listInfoResponse.data) {
             return env.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
@@ -96,9 +98,10 @@ const ApiListMemberList = async (req, env) => {
     }
 
     try {
-        let listMemberResponse = await getListMember({ id: listId, cursor, count, guest_token: env.guest_token2, authorization: 1, cookie: req.cookies })
+        let listMemberResponse = await getListMember({ id: listId, cursor, count, guest_token: env.guest_token3, authorization: 1, cookie: req.cookies })
+        //TODO update guest_account status
         //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 4, listMemberResponse.headers.get('x-rate-limit-remaining') < 1, 'ListMember')
+        //await env.updateGuestToken(env, 'guest_token2', 4, listMemberResponse.headers.get('x-rate-limit-remaining') < 1, 'ListMember')
 
         if (!listMemberResponse.data) {
             return env.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
@@ -148,9 +151,10 @@ const ApiCommunityInfo = async (req, env) => {
     }
 
     try {
-        let communityInfoResponse = await getCommunityInfo({ id: communityId, guest_token: env.guest_token2, authorization: 1 })
+        let communityInfoResponse = await getCommunityInfo({ id: communityId, guest_token: env.guest_token3, authorization: 1 })
+        //TODO update guest_account status
         //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 4, communityInfoResponse.headers.get('x-rate-limit-remaining') < 1, 'CommunityInfo')
+        //await env.updateGuestToken(env, 'guest_token2', 4, communityInfoResponse.headers.get('x-rate-limit-remaining') < 1, 'CommunityInfo')
 
         if (!communityInfoResponse.data) {
             return env.json(apiTemplate(500, 'Songthing wrong', {}, 'online'))
@@ -179,7 +183,8 @@ const ApiCommunitySearch = async (req, env) => {
         return env.json(apiTemplate(403, 'Invalid Request', {}, 'online'))
     }
     try {
-        const tmpCommunitySearchResponse = await getCommunitySearch({ queryString, cursor, count, guest_token: env.guest_token2, authorization: 1 })
+        const tmpCommunitySearchResponse = await getCommunitySearch({ queryString, cursor, count, guest_token: env.guest_token3, authorization: 1 })
+        //TODO update guest_account status
 
         const communitiesList = []
         // community

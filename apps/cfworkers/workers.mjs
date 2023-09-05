@@ -9,7 +9,7 @@ import { ApiUserInfo } from '../backend/CoreFunctions/online/OnlineUserInfo.mjs'
 import { ApiAudioSpace, ApiBroadcast, ApiMedia, ApiPoll, ApiSearch, ApiTweets } from '../backend/CoreFunctions/online/OnlineTweet.mjs'
 import { MediaProxy } from '../backend/CoreFunctions/media/MediaProxy.mjs'
 import { ApiLoginFlow, ApiLogout } from '../backend/CoreFunctions/online/OnlineLogin.mjs'
-import { Log } from '../../libs/core/Core.function.mjs'
+import { GuestToken, Log } from '../../libs/core/Core.function.mjs'
 
 const workersApi = Router()
 
@@ -21,13 +21,12 @@ const updateToken = async (req, env) => {
     } else if (parseRequest.pathname.startsWith('/media/') || parseRequest.pathname.startsWith('/amplify_video/') || parseRequest.pathname.startsWith('/ext_tw_video/')) {
         return
     } else {
-        //req.guest_token = JSON.parse((await env.kv.get('guest_token'))??'{}')// { token: {} }//new GuestToken
         env.guest_token2 = JSON.parse((await env.kv.get('guest_token2')) ?? '{}') //new GuestToken
-        //if (!req.guest_token?.token || req.guest_token.expire < Date.now) {
-        //    req.guest_token = await updateGuestToken(env, 'guest_token', 0, true)
-        //}
+        env.guest_accounts = JSON.parse((await env.kv.get('guest_accounts')) ?? '[]') //GuestAccount list
+
+        env.guest_token3 = (new GuestToken('android')).openAccountInit(env.guest_accounts[Math.floor(Math.random()*env.guest_accounts.length)]).token
         if (!env.guest_token2?.token || env.guest_token2.expire < Date.now) {
-            env.guest_token2 = await updateGuestToken(env, 'guest_token2', 1, true)
+            env.guest_token2 = await updateGuestToken(env, 'guest_token2', 4, true)
         }
     }
 }
@@ -41,6 +40,7 @@ workersApi.all('*', async (req, env) => {
     env.mediaExistPreCheck = mediaExistPreCheck
     env.mediaCacheSave = mediaCacheSave
     env.PostBodyParser = PostBodyParser
+    env.audio_apsce_cache = {}
     req.cookies = Object.fromEntries(
         (req.headers.get('cookie') || '')
             .split(';')

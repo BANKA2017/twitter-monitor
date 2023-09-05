@@ -43,14 +43,15 @@ const ApiTweets = async (req, env) => {
             tweets = await getListTimeLine({
                 id: listId,
                 count,
-                guest_token: env.guest_token2,
+                guest_token: env.guest_token3,
                 authorization: 1,
                 graphqlMode,
                 cursor: isNaN(cursor) ? (cursor ? cursor : '') : '',
                 cookie: req.cookies
             })
+            //TODO update guest_account status
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'ListTimeLime')
+            //await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'ListTimeLime')
         } catch (e) {
             Log(false, 'log', e)
             Log(false, 'error', `[${new Date()}]: #OnlineListTimeline #${tweet_id} #${e.code} ${e.message}`)
@@ -61,14 +62,15 @@ const ApiTweets = async (req, env) => {
             tweets = await getCommunityTweetsTimeline({
                 id: communityId,
                 count,
-                guest_token: env.guest_token2,
+                guest_token: env.guest_token3,
                 authorization: 1,
                 graphqlMode,
                 cursor: isNaN(cursor) ? (cursor ? cursor : '') : '',
                 cookie: req.cookies
             })
+            //TODO update guest_account status
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'CommunityTimeLime')
+            //await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'CommunityTimeLime')
         } catch (e) {
             Log(false, 'log', e)
             Log(false, 'error', `[${new Date()}]: #OnlineCommunityTimeline #${tweet_id} #${e.code} ${e.message}`)
@@ -76,7 +78,8 @@ const ApiTweets = async (req, env) => {
         }
     } else if (isConversation) {
         try {
-            tweets = await getConversation({ tweet_id, guest_token: env.guest_token2, graphqlMode, cursor: isNaN(cursor) ? cursor : '', cookie: req.cookies })
+            tweets = await getConversation({ tweet_id, guest_token: env.guest_token2, graphqlMode, cursor: isNaN(cursor) ? cursor : '', cookie: req.cookies, web: 2 })
+            //TODO mix mode, tweet and replies
             //updateGuestToken
             await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
         } catch (e) {
@@ -131,24 +134,25 @@ const ApiTweets = async (req, env) => {
 
         try {
             //if (displayType === 'include_reply') {
-            graphqlMode = displayType === 'include_reply'
+            graphqlMode = true//displayType === 'include_reply'
             tweets = await getTweets({
                 queryString: uid,
                 cursor: cursor === '0' ? '' : cursor,
                 bottomCursor: !refresh,
-                guest_token: env.guest_token2,
+                guest_token: env.guest_token3,
                 count,
                 online: true,
                 web: false, //displayType !== 'include_reply',
-                graphqlMode: true, //displayType === 'include_reply',
+                graphqlMode: graphqlMode, //displayType === 'include_reply',
                 searchMode: false,
                 withReply: displayType === 'include_reply',
                 cookie: req.cookies
             })
             //tweets = await getTweets(queryArray.join(' '), '', global.guest_token2.token, count, true, false, true)
 
+            //TODO update guest_account status
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'UserTweets')
+            //await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'UserTweets')
             //}
             //else {
             //    graphqlMode = false
@@ -276,15 +280,16 @@ const ApiSearch = async (req, env) => {
         tweets = await getTweets({
             queryString: queryArray.join(' '),
             cursor: '',
-            guest_token: env.guest_token2,
+            guest_token: env.guest_token3,
             count: queryCount,
             online: true,
             graphqlMode: false,
             searchMode: true,
             cookie: req.cookies
         })
+        //TODO update guest_account status
         //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'Search')
+        //await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'Search')
     } catch (e) {
         Log(false, 'error', `[${new Date()}]: #OnlineTweetsSearch #'${queryArray.join(' ')}' #${e.code} ${e.message}`)
         return env.json(apiTemplate(e.code, e.message))
@@ -336,14 +341,25 @@ const ApiAudioSpace = async (req, env) => {
     }
     let tmpAudioSpaceData = null
     try {
-        tmpAudioSpaceData = await getAudioSpace({ id, guest_token: env.guest_token2, cookie: req.cookies })
+        //TODO fix cache response
+        if (env.audio_apsce_cache[id]) {
+            tmpAudioSpaceData = {data: env.audio_apsce_cache[id]}
+        } else {
+            tmpAudioSpaceData = await getAudioSpace({ id, guest_token: env.guest_token3, cookie: req.cookies })
+        }
+        //cache response
+        if (!env.audio_apsce_cache[id]) {
+            env.audio_apsce_cache[id] = tmpAudioSpaceData.data
+            env.mediaCacheSave(JSON.stringify(env.audio_apsce_cache), '_audio_apsce_cache.json')
+        }
     } catch (e) {
         Log(false, 'error', `[${new Date()}]: #OnlineAudioSpace #${id} #500 Unkonwn Error`, e)
         return env.json(apiTemplate())
     }
 
+    //TODO update guest_account status
     //updateGuestToken
-    await env.updateGuestToken(env, 'guest_token2', 4, tmpAudioSpaceData.headers.get('x-rate-limit-remaining') < 1, 'AudioSpaceById')
+    //await env.updateGuestToken(env, 'guest_token2', 4, tmpAudioSpaceData.headers.get('x-rate-limit-remaining') < 1, 'AudioSpaceById')
     if (tmpAudioSpaceData.data?.data?.audioSpace || false) {
         let tmpAudioSpace = AudioSpace(tmpAudioSpaceData.data)
         //get link

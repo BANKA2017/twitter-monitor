@@ -68,12 +68,14 @@ We use GitHub Actions to build some scripts, you can find them in [BANKA2017/twi
   ```
 
 * you can set `TWEETS_SAVE_PATH` to save tweet content as json in that path
-* we use another **bearer authorization token** to crawl more tweets, but this token is not supported some new feature like mix media, you can replace it by the latest token (then not support **nsfw** content)
+* ~~we use another **bearer authorization token** to crawl more tweets, but this token is not supported some new feature like mix media, you can replace it by the latest token (then not support **nsfw** content)~~
+* Account pools are not yet supported. In the future, you will need to prepare a large number of accounts to build account pools.
 
 ### Api
 
 * execute `yarn run dbapi` to enable the api only used databases (tmv1, twitter monitor)
 * execute `yarn run api` to enable full version api (dbapi and album api, online api, media proxy)
+* You need to prepare a large number of accounts to build an account pool. To learn more about account pool, please read [open_account/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/open_account). Then copy the `guest_accounts.json` created by the script to the project root directory/the same directory as the `app.mjs`/`app_online.mjs`, or paste its content into the variable `GUEST_ACCOUNTS` of `libs/assets/setting.mjs`
 * *you can create a better api than mine
 
 ### Watch dog
@@ -90,6 +92,7 @@ We use GitHub Actions to build some scripts, you can find them in [BANKA2017/twi
 ### CloudFlare Workers
 
 * supported album api, online api, media proxy and translator api
+* You need to prepare a large number of accounts to build an account pool. To learn more about account pool, please read [open_account/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/open_account). Then save the content as `guest_accounts` to kv
 * to deploy it is easy
   * *read <https://developers.cloudflare.com/workers/wrangler/workers-kv/#create-a-kv-namespace-with-wrangler> 
   * create kv space named 'twitter-monitor-workers-kv' in <https://dash.cloudflare.com/> or executed `npx wrangler kv:namespace create kv`
@@ -226,12 +229,14 @@ We use GitHub Actions to build some scripts, you can find them in [BANKA2017/twi
   ```
 
 * 设定 `TWEETS_SAVE_PATH` 可以将推文内容保存为json文件
-* 我们使用旧版**bearer authorization token**以获得更多的推文，但这个token并不支持一些新版的特性，比如混合媒体，你可以用新的token替换之（然后不支持 **NSFW** 内容）
+* ~~我们使用旧版**bearer authorization token**以获得更多的推文，但这个token并不支持一些新版的特性，比如混合媒体，你可以用新的token替换之（然后不支持 **NSFW** 内容）~~
+* 目前还不支持帐号池，未来需要自行准备大量帐号构建帐号池
 
 ### Api
 
 * 运行 `yarn run dbapi` 启用仅使用数据库的api （tmv1，twitter monitor）
 * 运行 `yarn run api` 启用全部 api （上一项的全部以及 album api，online api，media proxy）
+* 需要自行准备大量帐号构建帐号池，关于帐号池请查看 [open_account/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/open_account)。然后将脚本创建的 `guest_accounts.json` 拷贝到 项目根目录/执行脚本相同目录，或者将其内容粘贴到 `libs/assets/setting.mjs` 的变量 `GUEST_ACCOUNTS` 中
 * *欢迎自行开发一个更好的api
 
 ### 看门狗
@@ -248,6 +253,7 @@ We use GitHub Actions to build some scripts, you can find them in [BANKA2017/twi
 ### CloudFlare Workers
 
 * 支持 album api, online api, media proxy 以及 翻译 api
+* 需要自行准备大量帐号构建帐号池，关于帐号池请查看 [open_account/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/open_account)。然后将脚本创建的 `guest_accounts.json` 的内容命名为 `guest_accounts`，保存到 `kv`
 * 部署只需要简单的几步
   * *（可跳过）阅读 <https://developers.cloudflare.com/workers/wrangler/workers-kv/#create-a-kv-namespace-with-wrangler> 
   * 在 <https://dash.cloudflare.com/> 创建一个叫 'twitter-monitor-workers-kv' 的 kv 命名空间，或者直接执行 `npx wrangler kv:namespace create kv`
