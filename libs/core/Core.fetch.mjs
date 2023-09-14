@@ -1134,10 +1134,11 @@ const getListMember = async (ctx = { id: '', count: 20, cursor: '', guest_token:
     })
 }
 
-const getListTimeLine = async (ctx = { id: '', count: 20, cursor: '', guest_token: {}, cookie: {}, authorization: 1, graphqlMode: true }, env = {}) => {
-    let { id, count, cursor, guest_token, cookie, authorization, graphqlMode } = preCheckCtx(ctx, {
+const getListTimeLine = async (ctx = { id: '', count: 20, bottomCursor: true, cursor: '', guest_token: {}, cookie: {}, authorization: 1, graphqlMode: true }, env = {}) => {
+    let { id, count, bottomCursor, cursor, guest_token, cookie, authorization, graphqlMode } = preCheckCtx(ctx, {
         id: '',
         count: 20,
+        bottomCursor: true,
         cursor: '',
         guest_token: {},
         cookie: {},
@@ -1158,6 +1159,21 @@ const getListTimeLine = async (ctx = { id: '', count: 20, cursor: '', guest_toke
         graphqlVariables.cursor = cursor
     }
 
+    // https://developer.twitter.com/en/docs/twitter-api/v1/accounts-and-users/create-manage-lists/api-reference/get-lists-statuses
+    let tmpQueryObject = {
+        tweet_mode: 'extended',
+        list_id: id,
+        count
+    }
+
+    if (cursor) {
+        if (bottomCursor) {
+            tmpQueryObject.max_id = cursor
+        } else {
+            tmpQueryObject.since_id = cursor
+        }
+    }
+
     return await new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX +
@@ -1169,13 +1185,7 @@ const getListTimeLine = async (ctx = { id: '', count: 20, cursor: '', guest_toke
                           variables: JSON.stringify(graphqlVariables),
                           features: JSON.stringify(_ListLatestTweetsTimeline.features)
                       }).toString()
-                    : '/1.1/lists/statuses.json?' +
-                      new URLSearchParams({
-                          tweet_mode: 'extended',
-                          list_id: id,
-                          count,
-                          cursor: cursor ? cursor : ''
-                      }).toString()),
+                    : '/1.1/lists/statuses.json?' + new URLSearchParams(tmpQueryObject).toString()),
 
             guest_token,
             cookie,
@@ -1383,11 +1393,11 @@ const getPollResult = async (ctx = { tweet_id: '', guest_token: {}, cookie: {}, 
     //     return { code: 404, message: 'No tweets', data: [], headers: tmpHeaders }
     // }
 
-    const tweetItem = path2array('tweet_content', tmpTweet.data)//tmpTweet.find((tmpTweetItem) => tmpTweetItem.entryId === 'tweet-' + tweet_id) ?? []
+    const tweetItem = path2array('tweet_content', tmpTweet.data) //tmpTweet.find((tmpTweetItem) => tmpTweetItem.entryId === 'tweet-' + tweet_id) ?? []
     if (!tweetItem) {
         return { code: 404, message: 'No such tweet', data: [], headers: tmpHeaders }
     }
-    
+
     const cardInfo = path2array('tweet_card_path', tweetItem)
     if (cardInfo && String(path2array('tweet_card_name', cardInfo)).startsWith('poll')) {
         const data = []

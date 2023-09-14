@@ -22,6 +22,7 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
 
     const isTweetDeckSearch = globalObjects.modules && Array.isArray(globalObjects.modules)
     const isV1_1Timeline = globalObjects?.twitter_objects?.tweets && globalObjects?.twitter_objects?.users
+    const isV1_1ListTimeline = Array.isArray(globalObjects) && !globalObjects.some(tweet => !tweet.user)
     const isSingleGraphqlTweet = globalObjects?.data?.tweetResult
 
     if (globalObjects.errors && !graphqlMode) {
@@ -32,7 +33,12 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
         objectForReturn.errors.message = globalObjects?.data?.user?.result?.__typename ?? 'Nothing here'
     }
     if (objectForReturn.errors.code === 0) {
-        const tmpTweets = path2array('tweets_instructions', globalObjects)
+        let tmpTweets = []
+        if (isV1_1ListTimeline) {
+            tmpTweets = globalObjects
+        } else {
+            tmpTweets = path2array('tweets_instructions', globalObjects)
+        }
         let cursorList = []
         if (isSingleGraphqlTweet) {
             const tmpTweet = path2array('tweet_content', globalObjects)
@@ -130,6 +136,8 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
         } else {
             if (isV1_1Timeline) {
                 objectForReturn.users = globalObjects?.twitter_objects?.users || []
+            } else if (isV1_1ListTimeline) {
+                objectForReturn.users = (globalObjects || []).map((tweet) => tweet.user) || []
             } else {
                 objectForReturn.users =
                     globalObjects?.globalObjects?.users || isTweetDeckSearch
@@ -143,7 +151,7 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
             }
 
             objectForReturn.contents = isTweetDeckSearch ? tmpTweets.map((tweet) => tweet?.status?.data).filter((tweet) => tweet) : Object.values(tmpTweets)
-            if (isV1_1Timeline) {
+            if (isV1_1Timeline || isV1_1ListTimeline) {
                 objectForReturn.contents = objectForReturn.contents.sort((a, b) => b.id_str - a.id_str)
             }
             objectForReturn.contentLength = objectForReturn.contents.length
@@ -154,6 +162,9 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
             if (isV1_1Timeline && globalObjects?.response?.cursor) {
                 objectForReturn.cursor.top = globalObjects.response.cursor.top
                 objectForReturn.cursor.bottom = globalObjects.response.cursor.bottom
+            } else if (isV1_1ListTimeline) {
+                objectForReturn.cursor.top = globalObjects?.[0]?.id_str || ''
+                objectForReturn.cursor.bottom = globalObjects?.[(globalObjects.length ? 0 : 1) - 1]?.id_str || ''
             } else {
                 for (const first_instructions of globalObjects?.timeline?.instructions || []) {
                     for (const second_instructions_value of Object.values(first_instructions)) {
@@ -265,7 +276,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
         GeneralTweetData.name = recrawlerObject.name
         GeneralTweetData.display_name = recrawlMode.display_name
     } else {
-        tmpInfo = graphqlMode ? path2array('graphql_user_result', content) ?? {} : users[GeneralTweetData.uid] ?? {}
+        tmpInfo = graphqlMode ? path2array('graphql_user_result', content) ?? {} : users[GeneralTweetData.uid] ?? content?.user ?? {}
         if (Object.keys(tmpInfo).length && (tmpInfo?.legacy?.screen_name || tmpInfo?.screen_name)) {
             const tmpInfoHandle = GenerateAccountInfo(tmpInfo)
             userInfo = tmpInfoHandle.GeneralAccountData
