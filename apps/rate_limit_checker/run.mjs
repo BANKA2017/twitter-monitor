@@ -90,7 +90,7 @@ const authorizationList = [
     [await getGuestTokenHandle(Authorization[0]), 'old web'],
     [await getGuestTokenHandle(Authorization[1]), 'new web'],
     //[await getGuestTokenHandle(Authorization[2]), '? web'],
-    [await getGuestTokenHandle(Authorization[3]), 'tweetdeck legacy'],
+    //[await getGuestTokenHandle(Authorization[3]), 'tweetdeck legacy'],
     [await getGuestTokenHandle(Authorization[4]), 'tweetdeck preview'],
     [await getGuestTokenHandle(getBearerToken(), true), 'android']
 ]

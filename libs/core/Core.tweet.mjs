@@ -17,12 +17,13 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
         tweetRange: {
             max: '0',
             min: '0'
-        }
+        },
+        pinned: null
     }
 
     const isTweetDeckSearch = globalObjects.modules && Array.isArray(globalObjects.modules)
     const isV1_1Timeline = globalObjects?.twitter_objects?.tweets && globalObjects?.twitter_objects?.users
-    const isV1_1ListTimeline = Array.isArray(globalObjects) && !globalObjects.some(tweet => !tweet.user)
+    const isV1_1ListTimeline = Array.isArray(globalObjects) && !globalObjects.some((tweet) => !tweet.user)
     const isSingleGraphqlTweet = globalObjects?.data?.tweetResult
 
     if (globalObjects.errors && !graphqlMode) {
@@ -69,7 +70,7 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
                     objectForReturn.contents = objectForReturn.contents
                         .concat(tmpTweet.entries)
                         .filter((content) => content.entryId.startsWith('tweet-') || content.entryId.startsWith('conversationthread-') || content.entryId.startsWith('profile-conversation'))
-                    objectForReturn.tweetRange.max = (objectForReturn.contents?.[0]?.entryId || '0').replace(/.*\-(\d+)/, '$1') //path2array('tweet_id', objectForReturn.contents[0]) || 0
+                    objectForReturn.tweetRange.max = (objectForReturn.contents?.[objectForReturn.pinned ? 1 : 0]?.entryId || '0').replace(/.*\-(\d+)/, '$1') //path2array('tweet_id', objectForReturn.contents[0]) || 0
                     objectForReturn.tweetRange.min = (objectForReturn.contents.slice(-1)?.[0]?.entryId || '0').replace(/.*\-(\d+)/, '$1') //path2array('tweet_id', objectForReturn.contents.slice(-1)[0]) || 0
                     //users from tweets
                     objectForReturn.users = Object.fromEntries(
@@ -101,6 +102,7 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
                     }
                 } else if (tmpTweet.type === 'TimelinePinEntry' || tmpTweet.__typename === 'TimelinePinEntry') {
                     objectForReturn.contents.push(tmpTweet.entry)
+                    objectForReturn.pinned = path2array('tweet_id', tmpTweet.entry)
                 } else if (tmpTweet.type === 'TimelineReplaceEntry' || tmpTweet.__typename === 'TimelineReplaceEntry') {
                     if (tmpTweet.entry_id_to_replace?.startsWith('cursor-')) {
                         cursorList.push(tmpTweet.entry)
