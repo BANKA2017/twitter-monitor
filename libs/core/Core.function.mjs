@@ -53,7 +53,10 @@ export class GuestToken {
     }
     async openAccountInit(openAccount = null, env = {}) {
         Log(false, 'log', `[${new Date()}]: #GuestToken Update open account`)
-        if (openAccount && openAccount?.authorization && openAccount?.oauth_token && openAccount.oauth_token_secret) {
+        if (openAccount && openAccount?.oauth_token && openAccount.oauth_token_secret) {
+            if (!openAccount?.authorization) {
+                openAccount.authorization = getBearerToken()
+            }
             this.open_account = openAccount
             await this.updateGuestToken(this.open_account.authorization, true)
         } else {
@@ -390,7 +393,7 @@ const GetEntitiesFromText = (text = '', type = 'description') => {
     let pattern = /<a href="([^"]+)"(?: id="[^"]"+|)(?: target="_blank"|)[^>]+>([^<]+)<\/a>|(?:\s|\p{P}|\p{S}|^)(#|\$)((?:[^\s\p{P}\p{S}]|_)+)|(?:\s|\p{P}|\p{S}|^)@([\w]+)/gmu
 
     text = text.replaceAll(/(?:|\n)(?:<br>|<br \/>)(?:|\n)/gm, '\n')
-    const originText = text.replaceAll(/<a[^>]+>([^<]+)<\/a>/gm, '$1')
+    const originalText = text.replaceAll(/<a[^>]+>([^<]+)<\/a>/gm, '$1')
     let match
     const tmpList = []
     let lastEnd = 0
@@ -403,8 +406,8 @@ const GetEntitiesFromText = (text = '', type = 'description') => {
         if (match[2] === undefined && match[4] !== undefined) {
             const prefix = match[3]
             const hashtagText = match[4]
-            //Log(false, 'log', [originText.slice(lastEnd).split(`#${hashtagText}`), originText.slice(lastEnd).split(`#${hashtagText}`).length])
-            const beforeLength = [...[...originText].slice(lastEnd).join('').split(`${prefix}${hashtagText}`)[0]].length + lastEnd
+            //Log(false, 'log', [originalText.slice(lastEnd).split(`#${hashtagText}`), originalText.slice(lastEnd).split(`#${hashtagText}`).length])
+            const beforeLength = [...[...originalText].slice(lastEnd).join('').split(`${prefix}${hashtagText}`)[0]].length + lastEnd
             lastEnd = beforeLength + [...match[4]].length + 1
             tmpList.push({
                 expanded_url: '',
@@ -415,11 +418,11 @@ const GetEntitiesFromText = (text = '', type = 'description') => {
             })
         } else if (match[2] === undefined && match[5] !== undefined) {
             const userMention = match[5]
-            const beforeLength = [...[...originText].slice(lastEnd).join('').split(`@${userMention}`)[0]].length + lastEnd
+            const beforeLength = [...[...originalText].slice(lastEnd).join('').split(`@${userMention}`)[0]].length + lastEnd
             lastEnd = beforeLength + [...match[5]].length + 1
             tmpList.push({ expanded_url: '', indices_end: lastEnd, indices_start: beforeLength, text: `@${userMention}`, type: 'user_mention' })
         } else {
-            const beforeLength = [...[...originText].slice(lastEnd).join('').split(match[2])[0]].length + lastEnd // + (type === 'description' ? 0 : 1)
+            const beforeLength = [...[...originalText].slice(lastEnd).join('').split(match[2])[0]].length + lastEnd // + (type === 'description' ? 0 : 1)
             lastEnd = beforeLength + [...match[2]].length
             let type = match[1].replaceAll('//http', 'http').startsWith('https://twitter.com/') && match[2].startsWith('@') ? 'user_mention' : match[2].startsWith('#') ? 'hashtag' : match[2].startsWith('$') ? 'symbol' : 'url'
             tmpList.push({
@@ -432,7 +435,7 @@ const GetEntitiesFromText = (text = '', type = 'description') => {
         }
     }
 
-    return { originText, entities: tmpList }
+    return { originalText, entities: tmpList }
 }
 
 const VerifyQueryString = (value, defaultValue) => {

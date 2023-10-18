@@ -61,9 +61,9 @@ const ApiListInfo = async (req, env) => {
         GeneralAccountData.uid_str = String(GeneralAccountData.uid)
         //GeneralAccountData.uid = Number(GeneralAccountData.uid)
 
-        let originTextAndEntities = GetEntitiesFromText(GeneralAccountData.description)
-        GeneralAccountData.description_origin = originTextAndEntities.originText
-        GeneralAccountData.description_entities = originTextAndEntities.entities
+        let originalTextAndEntities = GetEntitiesFromText(GeneralAccountData.description)
+        GeneralAccountData.description_original = originalTextAndEntities.originalText
+        GeneralAccountData.description_entities = originalTextAndEntities.entities
         let responseData = {
             user_info: GeneralAccountData,
             name: listInfoResponse.name ?? '',
@@ -125,9 +125,9 @@ const ApiListMemberList = async (req, env) => {
                         GeneralAccountData.uid_str = String(GeneralAccountData.uid)
                         //GeneralAccountData.uid = Number(GeneralAccountData.uid)
 
-                        let originTextAndEntities = GetEntitiesFromText(GeneralAccountData.description)
-                        GeneralAccountData.description_origin = originTextAndEntities.originText
-                        GeneralAccountData.description_entities = originTextAndEntities.entities
+                        let originalTextAndEntities = GetEntitiesFromText(GeneralAccountData.description)
+                        GeneralAccountData.description_original = originalTextAndEntities.originalText
+                        GeneralAccountData.description_entities = originalTextAndEntities.entities
                         return GeneralAccountData
                     }),
                     cursor: ParseList.cursor

@@ -42,8 +42,8 @@ await V2TwitterTweets.sync()
 Log(false, 'log', 'tmv3_init: sync database table')
 
 if (twitterMonitorSettings.dbtype === 'mysql') {
-    await dbHandle.twitter_monitor.query(`ALTER TABLE \`${twitterMonitorSettings.dbname}\`.\`v2_twitter_tweets\` DROP INDEX \`full_text_origin\`;`)
-    await dbHandle.twitter_monitor.query(`ALTER TABLE \`${twitterMonitorSettings.dbname}\`.\`v2_twitter_tweets\` ADD FULLTEXT(\`full_text_origin\`) WITH parser ngram;`)
+    await dbHandle.twitter_monitor.query(`ALTER TABLE \`${twitterMonitorSettings.dbname}\`.\`v2_twitter_tweets\` DROP INDEX \`full_text_original\`;`)
+    await dbHandle.twitter_monitor.query(`ALTER TABLE \`${twitterMonitorSettings.dbname}\`.\`v2_twitter_tweets\` ADD FULLTEXT(\`full_text_original\`) WITH parser ngram;`)
     Log(false, 'log', 'tmv3_init: sync database table for mysql')
 }
 

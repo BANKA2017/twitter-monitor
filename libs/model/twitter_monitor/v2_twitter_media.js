@@ -91,29 +91,29 @@ const attributes = {
     comment: '',
     field: 'bitrate'
   },
-  origin_type: {
+  original_type: {
     type: DataTypes.TEXT,
     allowNull: false,
     primaryKey: false,
     autoIncrement: false,
     comment: '',
-    field: 'origin_type'
+    field: 'original_type'
   },
-  origin_info_width: {
+  original_info_width: {
     type: DataTypes.INTEGER,
     allowNull: false,
     primaryKey: false,
     autoIncrement: false,
     comment: '',
-    field: 'origin_info_width'
+    field: 'original_info_width'
   },
-  origin_info_height: {
+  original_info_height: {
     type: DataTypes.INTEGER,
     allowNull: false,
     primaryKey: false,
     autoIncrement: false,
     comment: '',
-    field: 'origin_info_height'
+    field: 'original_info_height'
   },
   title: {
     type: DataTypes.TEXT,

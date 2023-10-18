@@ -12,7 +12,7 @@ const path2array = (pathName = '', source = {}) => {
         "tweet_conversation_id_str": () => source?.conversation_id_str ?? source?.legacy?.conversation_id_str ?? false,
         "tweet_created_at": () => source?.created_at ?? source?.legacy?.created_at ?? false,
         "tweet_source": () => source?.source ?? source?.legacy?.source ?? false,
-        "tweet_full_text": () => source?.note_tweet?.note_tweet_results?.result?.text ?? source?.full_text ?? source?.legacy?.full_text ?? false,
+        "tweet_full_text": () => source?.note_tweet?.note_tweet_results?.result?.text ?? source?.full_text ?? source?.legacy?.full_text ?? source?.text ?? false,
         "tweet_entities": () => source?.note_tweet?.note_tweet_results?.result?.entity_set ?? source?.entities ?? source?.legacy?.entities ?? false,
         "tweet_card_url": () => source?.url ?? source?.rest_id ?? false,
         "tweet_quote_url": () => source?.quoted_status_permalink?.url ?? source?.legacy?.quoted_status_permalink?.url ?? false,

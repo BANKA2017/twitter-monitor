@@ -50,7 +50,7 @@ const ConfigFile = async (config, accountList, force = false) => {
         newAccountInfo.projects = [...newAccountInfo.projects]
         V2Config.upsert({
             id: CONFIG_ID,
-            data_origin: stringConfig,
+            data_original: stringConfig,
             data_output: JSON.stringify(newAccountInfo),
             md5: configMD5,
             timestamp: Math.floor(new Date() / 1000)

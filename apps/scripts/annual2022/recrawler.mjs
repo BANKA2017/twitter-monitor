@@ -30,7 +30,7 @@ do {
     list = await V2TwitterTweets.findAll({
         attributes: [
             [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'],
-            [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(origin_tweet_id AS text)') : 'origin_tweet_id', 'origin_tweet_id'],
+            [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(original_tweet_id AS text)') : 'original_tweet_id', 'original_tweet_id'],
             [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(conversation_id_str AS text)') : 'conversation_id_str', 'conversation_id_str'],
             [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(uid AS text)') : 'uid', 'uid'],
             'name',
@@ -42,7 +42,7 @@ do {
             [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(quote_status AS text)') : 'quote_status', 'quote_status'],
             'source',
             'full_text',
-            'full_text_origin',
+            'full_text_original',
             'retweet_from',
             'retweet_from_name',
             'dispute',

@@ -26,14 +26,14 @@ const attributes = {
     field: 'tweet_id',
     unique: 'tweet_id'
   },
-  origin_tweet_id: {
+  original_tweet_id: {
     type: DataTypes.BIGINT,
     allowNull: false,
     defaultValue: '0',
     primaryKey: false,
     autoIncrement: false,
     comment: '',
-    field: 'origin_tweet_id'
+    field: 'original_tweet_id'
   },
   conversation_id_str: {
     type: DataTypes.BIGINT,
@@ -131,13 +131,13 @@ const attributes = {
     comment: '',
     field: 'full_text'
   },
-  full_text_origin: {
+  full_text_original: {
     type: DataTypes.TEXT,
     allowNull: false,
     primaryKey: false,
     autoIncrement: false,
     comment: '',
-    field: 'full_text_origin'
+    field: 'full_text_original'
   },
   retweet_from: {
     type: DataTypes.TEXT,
@@ -218,15 +218,15 @@ const options = {
     using: 'BTREE',
     fields: ['conversation_id_str']
   }, {
-    name: 'origin_tweet_id',
+    name: 'original_tweet_id',
     unique: false,
     using: 'BTREE',
-    fields: ['origin_tweet_id']
+    fields: ['original_tweet_id']
   }, {
-    name: 'full_text_origin',
+    name: 'full_text_original',
     unique: false,
     type: 'FULLTEXT',
-    fields: ['full_text_origin']
+    fields: ['full_text_original']
   }]
 };
 V2TwitterTweets.init(attributes, options);

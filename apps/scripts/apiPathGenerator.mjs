@@ -74,7 +74,7 @@ const apiPathList = {
     tweet_conversation_id_str: ['conversation_id_str', 'legacy.conversation_id_str'],
     tweet_created_at: ['created_at', 'legacy.created_at'],
     tweet_source: ['source', 'legacy.source'],
-    tweet_full_text: ['note_tweet.note_tweet_results.result.text', 'full_text', 'legacy.full_text'],
+    tweet_full_text: ['note_tweet.note_tweet_results.result.text', 'full_text', 'legacy.full_text', 'text'],
     tweet_entities: ['note_tweet.note_tweet_results.result.entity_set', 'entities', 'legacy.entities'],
     tweet_card_url: ['url', 'rest_id'],
     tweet_quote_url: ['quoted_status_permalink.url', 'legacy.quoted_status_permalink.url'],

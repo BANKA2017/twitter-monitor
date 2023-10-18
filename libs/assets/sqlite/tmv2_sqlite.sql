@@ -15,7 +15,7 @@ DROP TABLE IF EXISTS "v2_twitter_tweets";
 CREATE TABLE IF NOT EXISTS "v2_twitter_tweets" (
 	"id"	integer NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
 	"tweet_id"	integer NOT NULL UNIQUE,
-	"origin_tweet_id"	integer NOT NULL DEFAULT '0',
+	"original_tweet_id"	integer NOT NULL DEFAULT '0',
 	"conversation_id_str"	integer NOT NULL DEFAULT '0',
 	"uid"	integer NOT NULL DEFAULT '0',
 	"name"	text NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS "v2_twitter_tweets" (
 	"quote_status"	integer NOT NULL DEFAULT '0',
 	"source"	text COLLATE BINARY,
 	"full_text"	longtext NOT NULL,
-	"full_text_origin"	longtext NOT NULL,
+	"full_text_original"	longtext NOT NULL,
 	"retweet_from"	text COLLATE BINARY,
 	"retweet_from_name"	text COLLATE BINARY,
 	"translate"	longtext COLLATE BINARY,
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS "v2_twitter_quote" (
 	"name"	text COLLATE BINARY,
 	"display_name"	text COLLATE BINARY,
 	"full_text"	text COLLATE BINARY,
-	"full_text_origin"	text COLLATE BINARY,
+	"full_text_original"	text COLLATE BINARY,
 	"time"	integer NOT NULL DEFAULT '0',
 	"media"	integer NOT NULL DEFAULT '0',
 	"video"	integer NOT NULL DEFAULT '0'
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS "v2_twitter_polls" (
 	"id"	integer NOT NULL PRIMARY KEY AUTOINCREMENT,
 	"uid"	integer NOT NULL DEFAULT '0',
 	"tweet_id"	integer NOT NULL DEFAULT '0',
-	"origin_tweet_id"	integer NOT NULL DEFAULT '0',
+	"original_tweet_id"	integer NOT NULL DEFAULT '0',
 	"choice_label"	text NOT NULL,
 	"poll_order"	integer NOT NULL,
 	"end_datetime"	integer NOT NULL,
@@ -74,9 +74,9 @@ CREATE TABLE IF NOT EXISTS "v2_twitter_media" (
 	"extension"	text NOT NULL,
 	"content_type"	text NOT NULL,
 	"bitrate"	integer NOT NULL,
-	"origin_type"	text NOT NULL,
-	"origin_info_width"	integer NOT NULL,
-	"origin_info_height"	integer NOT NULL,
+	"original_type"	text NOT NULL,
+	"original_info_width"	integer NOT NULL,
+	"original_info_height"	integer NOT NULL,
 	"title"	text COLLATE BINARY,
 	"description"	text COLLATE BINARY,
 	"media_key"	text COLLATE BINARY,
@@ -153,7 +153,7 @@ CREATE TABLE IF NOT EXISTS "v2_error_log" (
 DROP TABLE IF EXISTS "v2_config";
 CREATE TABLE IF NOT EXISTS "v2_config" (
 	"id"	integer NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-	"data_origin"	longtext NOT NULL,
+	"data_original"	longtext NOT NULL,
 	"data_output"	longtext NOT NULL,
 	"md5"	char(32) NOT NULL,
 	"timestamp"	integer NOT NULL
@@ -171,7 +171,7 @@ CREATE TABLE IF NOT EXISTS "v2_account_info" (
 	"media_count"	integer NOT NULL DEFAULT '0',
 	"created_at"	integer NOT NULL,
 	"description"	longtext NOT NULL,
-	"description_origin"	longtext NOT NULL,
+	"description_original"	longtext NOT NULL,
 	"verified"	integer NOT NULL DEFAULT '0',
 	"organization"	integer NOT NULL DEFAULT '0',
 	"top"	integer NOT NULL DEFAULT '0',
@@ -197,13 +197,13 @@ CREATE TABLE IF NOT EXISTS "tmp_twitter_data" (
 	"visible"	integer NOT NULL DEFAULT '1',
 	PRIMARY KEY("uid")
 );
-DROP INDEX IF EXISTS "idx_v2_twitter_tweets_full_text_origin";
-CREATE INDEX IF NOT EXISTS "idx_v2_twitter_tweets_full_text_origin" ON "v2_twitter_tweets" (
+DROP INDEX IF EXISTS "idx_v2_twitter_tweets_full_text_original";
+CREATE INDEX IF NOT EXISTS "idx_v2_twitter_tweets_full_text_original" ON "v2_twitter_tweets" (
 	"full_text_origin"
 );
-DROP INDEX IF EXISTS "idx_v2_twitter_tweets_origin_tweet_id";
-CREATE INDEX IF NOT EXISTS "idx_v2_twitter_tweets_origin_tweet_id" ON "v2_twitter_tweets" (
-	"origin_tweet_id"
+DROP INDEX IF EXISTS "idx_v2_twitter_tweets_original_tweet_id";
+CREATE INDEX IF NOT EXISTS "idx_v2_twitter_tweets_original_tweet_id" ON "v2_twitter_tweets" (
+	"original_tweet_id"
 );
 DROP INDEX IF EXISTS "idx_v2_twitter_tweets_conversation_id_str";
 CREATE INDEX IF NOT EXISTS "idx_v2_twitter_tweets_conversation_id_str" ON "v2_twitter_tweets" (
@@ -292,19 +292,19 @@ CREATE INDEX IF NOT EXISTS "idx_v2_twitter_cards_uid" ON "v2_twitter_cards" (
 
 DROP TABLE IF EXISTS "v2_fts";
 ;
-create virtual table v2_fts using FTS5(tweet_id, full_text_origin, uid, time, retweet_from, media UNINDEXED, hidden UNINDEXED, content="v2_twitter_tweets", content_rowid="tweet_id");
+create virtual table v2_fts using FTS5(tweet_id, full_text_original, uid, time, retweet_from, media UNINDEXED, hidden UNINDEXED, content="v2_twitter_tweets", content_rowid="tweet_id");
 
 DROP TRIGGER IF EXISTS "v2_fts_update";
 CREATE TRIGGER v2_fts_update AFTER UPDATE ON v2_twitter_tweets BEGIN
-  INSERT INTO v2_fts(v2_fts, rowid, full_text_origin, uid, time, retweet_from, media, hidden) VALUES('delete', old.tweet_id, old.full_text_origin, old.uid, old.time, old.retweet_from, old.media, old.hidden);
-  INSERT INTO v2_fts(rowid, full_text_origin, uid, time, retweet_from, media, hidden) VALUES (new.tweet_id, new.full_text_origin, new.uid, new.time, new.retweet_from, new.media, new.hidden);
+  INSERT INTO v2_fts(v2_fts, rowid, full_text_original, uid, time, retweet_from, media, hidden) VALUES('delete', old.tweet_id, old.full_text_original, old.uid, old.time, old.retweet_from, old.media, old.hidden);
+  INSERT INTO v2_fts(rowid, full_text_original, uid, time, retweet_from, media, hidden) VALUES (new.tweet_id, new.full_text_original, new.uid, new.time, new.retweet_from, new.media, new.hidden);
 END;
 DROP TRIGGER IF EXISTS "v2_fts_del";
 CREATE TRIGGER v2_fts_del AFTER DELETE ON v2_twitter_tweets BEGIN
-  INSERT INTO v2_fts(v2_fts, rowid, full_text_origin, uid, time, retweet_from, media, hidden) VALUES('delete', old.tweet_id, old.full_text_origin, old.uid, old.time, old.retweet_from, old.media, old.hidden);
+  INSERT INTO v2_fts(v2_fts, rowid, full_text_original, uid, time, retweet_from, media, hidden) VALUES('delete', old.tweet_id, old.full_text_original, old.uid, old.time, old.retweet_from, old.media, old.hidden);
 END;
 DROP TRIGGER IF EXISTS "v2_fts_add";
 CREATE TRIGGER v2_fts_add AFTER INSERT ON v2_twitter_tweets BEGIN
-  INSERT INTO v2_fts(rowid, full_text_origin, uid, time, retweet_from, media, hidden) VALUES (new.tweet_id, new.full_text_origin, new.uid, new.time, new.retweet_from, new.media, new.hidden);
+  INSERT INTO v2_fts(rowid, full_text_original, uid, time, retweet_from, media, hidden) VALUES (new.tweet_id, new.full_text_original, new.uid, new.time, new.retweet_from, new.media, new.hidden);
 END;
 COMMIT;

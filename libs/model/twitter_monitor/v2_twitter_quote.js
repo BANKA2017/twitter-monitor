@@ -61,14 +61,14 @@ const attributes = {
     comment: '',
     field: 'full_text'
   },
-  full_text_origin: {
+  full_text_original: {
     type: DataTypes.TEXT,
     allowNull: true,
     defaultValue: null,
     primaryKey: false,
     autoIncrement: false,
     comment: '',
-    field: 'full_text_origin'
+    field: 'full_text_original'
   },
   time: {
     type: DataTypes.INTEGER,

@@ -12,7 +12,7 @@ const now = Math.floor(Date.now() / 1000) - 300
 // POLLS
 const polls = await V2TwitterPolls.findAll({
     attributes: [
-        [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(origin_tweet_id AS text)') : 'origin_tweet_id', 'origin_tweet_id'],
+        [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(original_tweet_id AS text)') : 'original_tweet_id', 'original_tweet_id'],
         'poll_order',
         [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(uid AS text)') : 'uid', 'uid']
     ],
@@ -20,12 +20,12 @@ const polls = await V2TwitterPolls.findAll({
         end_datetime: { [Op.lt]: now },
         count: 0,
         checked: 0,
-        origin_tweet_id: { [Op.ne]: 0 }
+        original_tweet_id: { [Op.ne]: 0 }
     },
-    order: ['origin_tweet_id']
+    order: ['original_tweet_id']
 })
 
-const tweetIdList = [...new Set(polls.map((poll) => poll.origin_tweet_id))]
+const tweetIdList = [...new Set(polls.map((poll) => poll.original_tweet_id))]
 
 let get_token = new GuestToken() // await getToken()
 await get_token.updateGuestToken(4)
@@ -52,7 +52,7 @@ for (const idIndex in tweetIdList) {
             { count: 0, checked: 1 },
             {
                 where: {
-                    origin_tweet_id: tweetIdList[idIndex]
+                    original_tweet_id: tweetIdList[idIndex]
                 },
                 transaction: t
             }
@@ -67,7 +67,7 @@ for (const idIndex in tweetIdList) {
                 },
                 {
                     where: {
-                        origin_tweet_id: tweetIdList[idIndex],
+                        original_tweet_id: tweetIdList[idIndex],
                         poll_order: Number(pollDataIndex) + 1
                     },
                     transaction: t

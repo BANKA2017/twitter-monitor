@@ -13,7 +13,7 @@ const GenerateAccountInfo = (accountDataOriginal, extAccountData = {}) => {
         media_count: 0,
         created_at: 0,
         description: '',
-        description_origin: '',
+        description_original: '',
         verified: '',
         top: '0',
         statuses_count: 0 //推文计数
@@ -67,7 +67,7 @@ const GenerateAccountInfo = (accountDataOriginal, extAccountData = {}) => {
     GeneralAccountData.top = accountData.pinned_tweet_ids_str?.length ? accountData.pinned_tweet_ids_str[0] : '0'
 
     let description = accountData.description
-    GeneralAccountData.description_origin = description
+    GeneralAccountData.description_original = description
     if (accountData.entities?.description.urls) {
         for (const entity of accountData.entities.description.urls) {
             description = description.replaceAll(entity.url, '<a href="' + entity.expanded_url + '" target="_blank">' + entity.display_url + '</a>')

@@ -17,13 +17,13 @@ const attributes = {
     field: 'id',
     unique: 'id'
   },
-  data_origin: {
+  data_original: {
     type: DataTypes.TEXT,
     allowNull: false,
     primaryKey: false,
     autoIncrement: false,
     comment: '',
-    field: 'data_origin'
+    field: 'data_original'
   },
   data_output: {
     type: DataTypes.TEXT,

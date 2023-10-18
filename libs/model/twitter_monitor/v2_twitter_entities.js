@@ -63,7 +63,7 @@ const attributes = {
     allowNull: false,
     primaryKey: false,
     autoIncrement: false,
-    comment: 'origin twitter short url',
+    comment: 'original twitter short url',
     field: 'url'
   },
   indices_start: {

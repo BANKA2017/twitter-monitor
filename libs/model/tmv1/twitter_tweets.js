@@ -65,13 +65,13 @@ const attributes = {
     comment: '',
     field: 'full_text'
   },
-  full_text_origin: {
+  full_text_original: {
     type: DataTypes.TEXT,
     allowNull: false,
     primaryKey: false,
     autoIncrement: false,
     comment: '',
-    field: 'full_text_origin'
+    field: 'full_text_original'
   },
   retweet_from: {
     type: DataTypes.TEXT,
@@ -139,10 +139,10 @@ const options = {
     using: 'BTREE',
     fields: ['time']
   }, {
-    name: 'full_text_origin',
+    name: 'full_text_original',
     unique: false,
     type: 'FULLTEXT',
-    fields: ['full_text_origin']
+    fields: ['full_text_original']
   }]
 };
 TwitterTweets.init(attributes, options);

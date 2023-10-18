@@ -59,7 +59,7 @@ for (const config of trendsConfig) {
             media: 0, //[0, 0, 0, 0],
             video_count: 0,
             count: 0,
-            origin: 0,
+            original: 0,
             retweet: 0,
             quote_status_count: 0,
             card: [],
@@ -78,13 +78,13 @@ for (const config of trendsConfig) {
     const globalList = JSON.parse(
         (
             await V2Config.findOne({
-                attributes: ['data_origin'],
+                attributes: ['data_original'],
                 where: {
                     id: 1
                 },
                 raw: true
             })
-        ).data_origin
+        ).data_original
     ).users
 
     let globalListCount = globalList.filter((x) => x.name).length
@@ -168,7 +168,7 @@ for (const config of trendsConfig) {
             if (sqlTweetsDataP.retweet_from) {
                 userData.tweets.retweet++
             } else {
-                userData.tweets.origin++
+                userData.tweets.original++
             }
             if (sqlTweetsDataP.card) {
                 if (userData.tweets.card[sqlTweetsDataP.card]) {

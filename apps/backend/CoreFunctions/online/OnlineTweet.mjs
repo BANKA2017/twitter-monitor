@@ -343,7 +343,7 @@ const ApiAudioSpace = async (req, env) => {
     try {
         //TODO fix cache response
         if (env.audio_apsce_cache[id]) {
-            tmpAudioSpaceData = {data: env.audio_apsce_cache[id]}
+            tmpAudioSpaceData = { data: env.audio_apsce_cache[id] }
         } else {
             tmpAudioSpaceData = await getAudioSpace({ id, guest_token: env.guest_token3, cookie: req.cookies })
         }
@@ -502,11 +502,11 @@ const ApiMedia = async (req, env) => {
 
 const TweetsData = (content = {}, users = {}, contents = [], precheckUid = '', graphqlMode = true, isConversation = false) => {
     let exportTweet = Tweet(content, users, contents, {}, graphqlMode, false, true)
-    exportTweet.GeneralTweetData.favorite_count = exportTweet.interactiveData.favorite_count
-    exportTweet.GeneralTweetData.retweet_count = exportTweet.interactiveData.retweet_count
-    exportTweet.GeneralTweetData.quote_count = exportTweet.interactiveData.quote_count
-    exportTweet.GeneralTweetData.reply_count = exportTweet.interactiveData.reply_count
-    exportTweet.GeneralTweetData.view_count = exportTweet.interactiveData.view_count //TODO only supported graphql now
+    exportTweet.GeneralTweetData.favorite_count = exportTweet.interactiveData?.favorite_count || 0
+    exportTweet.GeneralTweetData.retweet_count = exportTweet.interactiveData?.retweet_count || 0
+    exportTweet.GeneralTweetData.quote_count = exportTweet.interactiveData?.quote_count || 0
+    exportTweet.GeneralTweetData.reply_count = exportTweet.interactiveData?.reply_count || 0
+    exportTweet.GeneralTweetData.view_count = exportTweet.interactiveData?.view_count || 0 //TODO only supported graphql now
     //rtl
     exportTweet.GeneralTweetData.rtl = exportTweet.isRtl
     // display text range
@@ -554,7 +554,7 @@ const returnDataForTweets = (tweet = {}, historyMode = false, tweetEntities = []
         //处理history模式
         tweet['entities'] = tweetEntities
     }
-    //$tweet["full_text_origin"] = preg_replace('/ https:\/\/t.co\/[\w]+/', '', $tweet["full_text_origin"]);//TODO for history mode
+    //$tweet["full_text_original"] = preg_replace('/ https:\/\/t.co\/[\w]+/', '', $tweet["full_text_original"]);//TODO for history mode
 
     //处理投票
     tweet.pollObject = {}
@@ -589,8 +589,8 @@ const returnDataForTweets = (tweet = {}, historyMode = false, tweetEntities = []
         tweet.quoteObject.tweet_id = tweet.quoteObject.tweet_id
         tweet.quote_status_str = tweet.quoteObject.id_str
 
-        const { originText, entities } = GetEntitiesFromText(tweet.quoteObject.full_text, 'quote')
-        tweet.quoteObject.full_text = originText
+        const { originalText, entities } = GetEntitiesFromText(tweet.quoteObject.full_text, 'quote')
+        tweet.quoteObject.full_text = originalText
         tweet.quoteObject.entities = entities
     }
 
@@ -740,7 +740,7 @@ const GenerateData = (tweets, isConversation = false, precheckUid = '', graphqlM
             })
             .join(' ')
         rss.item({
-            title: { text: tweetsContent[x].full_text_origin, cdata: true },
+            title: { text: tweetsContent[x].full_text_original, cdata: true },
             description: {
                 text: tweetsContent[x].full_text.replaceAll(/<a href="([^"]+)" id="([^"]+)"(| target="_blank")>([^<]+)<\/a>/gm, (...match) => (match[2] === 'url' ? match[1] : match[4])) + ' ' + tmpImageText,
                 cdata: true

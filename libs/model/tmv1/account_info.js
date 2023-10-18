@@ -98,13 +98,13 @@ const attributes = {
     comment: '',
     field: 'description'
   },
-  description_origin: {
+  description_original: {
     type: DataTypes.TEXT,
     allowNull: false,
     primaryKey: false,
     autoIncrement: false,
     comment: '',
-    field: 'description_origin'
+    field: 'description_original'
   },
   verified: {
     type: DataTypes.INTEGER,

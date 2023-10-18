@@ -267,7 +267,7 @@ while (true) {
                 'display_name',
                 'header',
                 'banner',
-                'description_origin',
+                'description_original',
                 [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(top AS text)') : 'top', 'top'],
                 'statuses_count',
                 'hidden',
@@ -461,7 +461,7 @@ while (true) {
                         if (inSql.poll) {
                             insert.v2_twitter_polls = insert.v2_twitter_polls.concat(
                                 generatedTweetData.polls.map((poll) => {
-                                    poll.origin_tweet_id = inSql.origin_tweet_id
+                                    poll.original_tweet_id = inSql.original_tweet_id
                                     poll.count = 0
                                     return poll
                                 })
@@ -495,7 +495,7 @@ while (true) {
             const t = await dbHandle.twitter_monitor.transaction()
             try {
                 //for sqlite full text index
-                //INSERT INTO v2_fts (tweet_id, full_text_origin) VALUES (0, "TwitterMonitorTest")
+                //INSERT INTO v2_fts (tweet_id, full_text_original) VALUES (0, "TwitterMonitorTest")
                 await V2TwitterTweets.bulkCreate(insert.v2_twitter_tweets, { transaction: t })
                 await V2TwitterMedia.bulkCreate(insert.v2_twitter_media, { transaction: t })
                 await V2TwitterEntities.bulkCreate(insert.v2_twitter_entities, { transaction: t })

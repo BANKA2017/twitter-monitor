@@ -34,7 +34,7 @@ const tweetsDataTemplate = () => ({
     media: 0, //[0, 0, 0, 0],
     video_count: 0,
     count: 0,
-    origin: 0,
+    original: 0,
     retweet: 0,
     quote_status_count: 0,
     card: [],
@@ -130,7 +130,7 @@ for (const member of member_list) {
         if (sqlTweetsDataP.retweet_from !== '') {
             userData.tweets_daily[dayRange].retweet++
         } else {
-            userData.tweets_daily[dayRange].origin++
+            userData.tweets_daily[dayRange].original++
         }
 
         if (sqlTweetsDataP.card !== '') {

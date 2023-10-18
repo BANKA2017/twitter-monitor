@@ -124,7 +124,7 @@ const ApiLegacyTweets = async (req, res) => {
     let tweets = null
     try {
         tweets = await TwitterTweets.findAll({
-            attributes: [[dbHandle.tmv1.options.dialect === 'sqlite' ? dbHandle.tmv1.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'], 'name', 'display_name', 'media', 'full_text', 'full_text_origin', 'retweet_from', 'time', 'translate'],
+            attributes: [[dbHandle.tmv1.options.dialect === 'sqlite' ? dbHandle.tmv1.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'], 'name', 'display_name', 'media', 'full_text', 'full_text_original', 'retweet_from', 'time', 'translate'],
             where: queryArray,
             limit: 11,
             order: [['tweet_id', 'DESC']],
@@ -198,10 +198,10 @@ const ApiLegacyTag = async (req, res) => {
     try {
         tweets = await dbHandle.tmv1.query(
             dbHandle.tmv1.options.dialect === 'sqlite'
-                ? 'SELECT CAST(tweet_id AS text) AS `tweet_id`, `name`, `display_name`, `media`, `full_text`, `full_text_origin`, `retweet_from`, `time`, `translate` FROM `twitter_tweets` WHERE `tweet_id` IN (SELECT `tweet_id` FROM `twitter_tags` WHERE `tag` = :hash AND `tweet_id` ' +
+                ? 'SELECT CAST(tweet_id AS text) AS `tweet_id`, `name`, `display_name`, `media`, `full_text`, `full_text_original`, `retweet_from`, `time`, `translate` FROM `twitter_tweets` WHERE `tweet_id` IN (SELECT `tweet_id` FROM `twitter_tags` WHERE `tag` = :hash AND `tweet_id` ' +
                       (tweetId === '0' ? '>' : '<') +
                       " :tweet_id AND `hidden` = '0' ORDER BY `tweet_id` DESC LIMIT 11) ORDER BY `tweet_id` DESC"
-                : 'SELECT `tweet_id`, `name`, `display_name`, `media`, `full_text`, `full_text_origin`, `retweet_from`, `time`, `translate` FROM `twitter_tweets` WHERE `tweet_id` = ANY(SELECT `tweet_id` FROM (SELECT `tweet_id` FROM `twitter_tags` WHERE `tag` = :hash AND `tweet_id` ' +
+                : 'SELECT `tweet_id`, `name`, `display_name`, `media`, `full_text`, `full_text_original`, `retweet_from`, `time`, `translate` FROM `twitter_tweets` WHERE `tweet_id` = ANY(SELECT `tweet_id` FROM (SELECT `tweet_id` FROM `twitter_tags` WHERE `tag` = :hash AND `tweet_id` ' +
                       (tweetId === '0' ? '>' : '<') +
                       " :tweet_id AND `hidden` = '0' ORDER BY `tweet_id` DESC LIMIT 11) AS t) ORDER BY `tweet_id` DESC",
             {
@@ -234,7 +234,7 @@ const ApiLegacySearch = async (req, res) => {
     let tweets = null
     try {
         tweets = await TwitterTweets.findAll({
-            attributes: [[dbHandle.tmv1.options.dialect === 'sqlite' ? dbHandle.tmv1.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'], 'name', 'display_name', 'media', 'full_text', 'full_text_origin', 'retweet_from', 'time', 'translate'],
+            attributes: [[dbHandle.tmv1.options.dialect === 'sqlite' ? dbHandle.tmv1.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'], 'name', 'display_name', 'media', 'full_text', 'full_text_original', 'retweet_from', 'time', 'translate'],
             where: {
                 [Op.or]: keyWords,
                 hidden: 0,
@@ -268,7 +268,7 @@ const ApiLegacyTranslate = async (req, res) => {
             case 'tweets':
                 try {
                     trInfo = await TwitterTweets.findOne({
-                        attributes: ['translate', 'full_text_origin', 'translate_source'],
+                        attributes: ['translate', 'full_text_original', 'translate_source'],
                         where: { tweet_id: tweetId },
                         raw: true
                     })
@@ -295,7 +295,7 @@ const ApiLegacyTranslate = async (req, res) => {
             return
         } else if (!trInfo.translate) {
             if (translateType === 'profile') {
-                trInfo.full_text_origin = trInfo.description.replaceAll(/<a[^>]+>([^<]+)<\/a>/gm, '$1')
+                trInfo.full_text_original = trInfo.description.replaceAll(/<a[^>]+>([^<]+)<\/a>/gm, '$1')
                 delete trInfo.description
             }
             trInfo.cache = false
@@ -303,7 +303,7 @@ const ApiLegacyTranslate = async (req, res) => {
             trInfo.translate_source = 'Google Translate'
             trInfo.translate = ''
             try {
-                trInfo.translate = await GoogleBrowserTranslate(trInfo.full_text_origin.replaceAll(/https:\/\/t.co\/[\w]+/gm, ''), 'auto', target, false)
+                trInfo.translate = await GoogleBrowserTranslate(trInfo.full_text_original.replaceAll(/https:\/\/t.co\/[\w]+/gm, ''), 'auto', target, false)
             } catch (e) {
                 Log(false, 'error', e)
                 //TODO do nothing
@@ -315,7 +315,7 @@ const ApiLegacyTranslate = async (req, res) => {
         } else if (trInfo.translate && translateType === 'tweets') {
             trInfo.cache = true
             trInfo.target = target
-            trInfo.full_text_origin = trInfo.full_text_origin.replaceAll(/https:\/\/t.co\/[\w]+/gm, '')
+            trInfo.full_text_original = trInfo.full_text_original.replaceAll(/https:\/\/t.co\/[\w]+/gm, '')
             trInfo.translate_raw = trInfo.translate
             trInfo.translate = trInfo.translate.replaceAll('\n', '<br />\n')
             res.json(apiTemplate(0, 'OK', trInfo, 'v1'))
@@ -329,14 +329,14 @@ const ApiLegacyTranslate = async (req, res) => {
 const getUid = (query) => {
     let name = VerifyQueryString(query.name, '').toLocaleLowerCase()
     let uid = String(VerifyQueryString(query.uid, 0))
-    const data_origin = JSON.parse(readFileSync(basePath + '/../libs/assets/tmv1/account_info_n.json'))
+    const data_original = JSON.parse(readFileSync(basePath + '/../libs/assets/tmv1/account_info_n.json'))
     if (name === '' && uid === '0') {
         return { name: '', uid: '0' }
     }
-    if (data_origin[uid]) {
-        return { name: data_origin[uid].name, uid }
-    } else if (data_origin[name]) {
-        return { name, uid: data_origin[name].uid }
+    if (data_original[uid]) {
+        return { name: data_original[uid].name, uid }
+    } else if (data_original[name]) {
+        return { name, uid: data_original[name].uid }
     } else {
         return { name: '', uid: '0' }
     }
@@ -365,8 +365,8 @@ const returnData = (tweets = [], count = 0) => {
         tweet.type = 'tweet'
         tweet.media = JSON.parse(tweet.media)
         //find out video
-        tweet.hasgif = tweet.media.some((media) => media.origin.origin_type === 'animated_gif')
-        tweet.hasvideo = tweet.media.some((media) => media.origin.origin_type !== 'photo')
+        tweet.hasgif = tweet.media.some((media) => media.original.original_type === 'animated_gif')
+        tweet.hasvideo = tweet.media.some((media) => media.original.original_type !== 'photo')
         tweet.top = false
         tweetId = tweet.tweet_id
     })

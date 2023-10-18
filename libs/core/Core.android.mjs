@@ -109,7 +109,7 @@ const postOpenAccountInit = async (ctx = { guest_token: {}, authorization: '' },
         },
         {
             HTTPS_PROXY: env?.HTTPS_PROXY,
-            HTTP_PROXY: env?.HTTP_PROXY,
+            HTTP_PROXY: env?.HTTP_PROXY
         }
     )
 }
@@ -193,7 +193,7 @@ const postOpenAccount = async (ctx = { guest_token: {}, authorization: '', flow_
         },
         {
             HTTPS_PROXY: env?.HTTPS_PROXY,
-            HTTP_PROXY: env?.HTTP_PROXY,
+            HTTP_PROXY: env?.HTTP_PROXY
         }
     )
 }
@@ -215,7 +215,14 @@ const getOauthAuthorization = (
     const link = parseUrl.origin + parseUrl.pathname
     const payload = [...parseUrl.searchParams.entries()]
     if (body) {
-        payload.push(...new URLSearchParams(body).entries())
+        let isJson = false
+        try {
+            JSON.parse(body)
+            isJson = true
+        } catch (e) {}
+        if (!isJson) {
+            payload.push(...new URLSearchParams(body).entries())
+        }
     }
     payload.push(['oauth_version', '1.0'])
     payload.push(['oauth_signature_method', 'HMAC-SHA1'])

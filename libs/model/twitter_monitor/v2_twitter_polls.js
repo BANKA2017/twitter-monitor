@@ -34,14 +34,14 @@ const attributes = {
     comment: '',
     field: 'tweet_id'
   },
-  origin_tweet_id: {
+  original_tweet_id: {
     type: DataTypes.BIGINT,
     allowNull: false,
     defaultValue: '0',
     primaryKey: false,
     autoIncrement: false,
     comment: '',
-    field: 'origin_tweet_id'
+    field: 'original_tweet_id'
   },
   choice_label: {
     type: DataTypes.TEXT,

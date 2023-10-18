@@ -74,14 +74,14 @@ const ApiLocalUserInfo = async (req, res) => {
         tmpData.uid_str = String(tmpData.uid)
         tmpData.top = tmpData.top || '0'
         tmpData.description = tmpData.description.replaceAll('\n', '<br>\n')
-        const originTextAndEntities = GetEntitiesFromText(tmpData.description)
+        const originalTextAndEntities = GetEntitiesFromText(tmpData.description)
         res.json(
             apiTemplate(
                 200,
                 'OK',
                 Object.assign({}, tmpData, {
-                    description_origin: originTextAndEntities.originText,
-                    description_entities: originTextAndEntities.entities
+                    description_original: originalTextAndEntities.originalText,
+                    description_entities: originalTextAndEntities.entities
                 }),
                 'v3'
             )
@@ -197,7 +197,7 @@ const ApiLocalTweets = async (req, res) => {
                             topTweet = await V2TwitterTweets.findOne({
                                 attributes: [
                                     [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'],
-                                    [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(origin_tweet_id AS text)') : 'origin_tweet_id', 'origin_tweet_id'],
+                                    [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(original_tweet_id AS text)') : 'original_tweet_id', 'original_tweet_id'],
                                     [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(conversation_id_str AS text)') : 'conversation_id_str', 'conversation_id_str'],
                                     [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(uid AS text)') : 'uid', 'uid'],
                                     'name',
@@ -209,7 +209,7 @@ const ApiLocalTweets = async (req, res) => {
                                     [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(quote_status AS text)') : 'quote_status', 'quote_status'],
                                     'source',
                                     'full_text',
-                                    'full_text_origin',
+                                    'full_text_original',
                                     'retweet_from',
                                     'retweet_from_name',
                                     'dispute',
@@ -226,6 +226,8 @@ const ApiLocalTweets = async (req, res) => {
                         }
                         if (topTweet !== null) {
                             tmpTweets.push(topTweet)
+                        } else {
+                            queryForTop = false
                         }
                     }
                 }
@@ -237,7 +239,7 @@ const ApiLocalTweets = async (req, res) => {
                 tweetList = await V2TwitterTweets.findAll({
                     attributes: [
                         [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'],
-                        [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(origin_tweet_id AS text)') : 'origin_tweet_id', 'origin_tweet_id'],
+                        [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(original_tweet_id AS text)') : 'original_tweet_id', 'original_tweet_id'],
                         [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(conversation_id_str AS text)') : 'conversation_id_str', 'conversation_id_str'],
                         [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(uid AS text)') : 'uid', 'uid'],
                         'name',
@@ -249,14 +251,14 @@ const ApiLocalTweets = async (req, res) => {
                         [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(quote_status AS text)') : 'quote_status', 'quote_status'],
                         'source',
                         'full_text',
-                        'full_text_origin',
+                        'full_text_original',
                         'retweet_from',
                         'retweet_from_name',
                         'dispute',
                         'time'
                     ],
                     where: { [Op.and]: queryObject },
-                    limit: count + (top !== '0' ? 0 : 1),
+                    limit: count + (queryForTop ? 0 : 1),
                     order: [['tweet_id', 'DESC']],
                     raw: true
                 })
@@ -280,7 +282,7 @@ const ApiLocalTweets = async (req, res) => {
                 conversationList = await V2TwitterTweets.findAll({
                     attributes: [
                         [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'],
-                        [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(origin_tweet_id AS text)') : 'origin_tweet_id', 'origin_tweet_id'],
+                        [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(original_tweet_id AS text)') : 'original_tweet_id', 'original_tweet_id'],
                         [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(conversation_id_str AS text)') : 'conversation_id_str', 'conversation_id_str'],
                         [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(uid AS text)') : 'uid', 'uid'],
                         'name',
@@ -292,7 +294,7 @@ const ApiLocalTweets = async (req, res) => {
                         [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(quote_status AS text)') : 'quote_status', 'quote_status'],
                         'source',
                         'full_text',
-                        'full_text_origin',
+                        'full_text_original',
                         'retweet_from',
                         'retweet_from_name',
                         'dispute',
@@ -402,8 +404,8 @@ const ApiLocalSearch = async (req, res) => {
                 const tmpSql = dbHandle.twitter_monitor.literal(
                     (textNotMode ? 'Not' : '') +
                         (dbHandle.twitter_monitor.options.dialect === 'sqlite'
-                            ? dbHandle.twitter_monitor.literal(`tweet_id IN (SELECT tweet_id FROM v2_fts WHERE full_text_origin MATCH ${dbHandle.twitter_monitor.escape(word)})`)
-                            : 'MATCH(`full_text_origin`) AGAINST (' + dbHandle.twitter_monitor.twitter_monitor.escape(word) + ' IN BOOLEAN MODE)')
+                            ? dbHandle.twitter_monitor.literal(`tweet_id IN (SELECT tweet_id FROM v2_fts WHERE full_text_original MATCH ${dbHandle.twitter_monitor.escape(word)})`)
+                            : 'MATCH(`full_text_original`) AGAINST (' + dbHandle.twitter_monitor.twitter_monitor.escape(word) + ' IN BOOLEAN MODE)')
                 )
                 if (textOrMOde) {
                     queryOrArray.push(tmpSql)
@@ -449,7 +451,7 @@ const ApiLocalSearch = async (req, res) => {
             tweets = await V2TwitterTweets.findAll({
                 attributes: [
                     [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'],
-                    [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(origin_tweet_id AS text)') : 'origin_tweet_id', 'origin_tweet_id'],
+                    [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(original_tweet_id AS text)') : 'original_tweet_id', 'original_tweet_id'],
                     [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(conversation_id_str AS text)') : 'conversation_id_str', 'conversation_id_str'],
                     [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(uid AS text)') : 'uid', 'uid'],
                     'name',
@@ -461,7 +463,7 @@ const ApiLocalSearch = async (req, res) => {
                     [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(quote_status AS text)') : 'quote_status', 'quote_status'],
                     'source',
                     'full_text',
-                    'full_text_origin',
+                    'full_text_original',
                     'retweet_from',
                     'retweet_from_name',
                     'dispute',
@@ -510,14 +512,14 @@ const ApiLocalSearch = async (req, res) => {
                 if (andMode) {
                     queryArray.push(
                         dbHandle.twitter_monitor.options.dialect === 'sqlite'
-                            ? dbHandle.twitter_monitor.literal(`tweet_id IN (SELECT tweet_id FROM v2_fts WHERE full_text_origin MATCH ${dbHandle.twitter_monitor.escape(word)})`)
-                            : dbHandle.twitter_monitor.literal('MATCH(`full_text_origin`) AGAINST (' + dbHandle.twitter_monitor.escape(word) + ' IN BOOLEAN MODE)')
+                            ? dbHandle.twitter_monitor.literal(`tweet_id IN (SELECT tweet_id FROM v2_fts WHERE full_text_original MATCH ${dbHandle.twitter_monitor.escape(word)})`)
+                            : dbHandle.twitter_monitor.literal('MATCH(`full_text_original`) AGAINST (' + dbHandle.twitter_monitor.escape(word) + ' IN BOOLEAN MODE)')
                     )
                 } else {
                     queryOrArray.push(
                         dbHandle.twitter_monitor.options.dialect === 'sqlite'
-                            ? dbHandle.twitter_monitor.literal(`tweet_id IN (SELECT tweet_id FROM v2_fts WHERE full_text_origin MATCH ${dbHandle.twitter_monitor.escape(word)})`)
-                            : dbHandle.twitter_monitor.literal('MATCH(`full_text_origin`) AGAINST (' + dbHandle.twitter_monitor.escape(word) + ' IN BOOLEAN MODE)')
+                            ? dbHandle.twitter_monitor.literal(`tweet_id IN (SELECT tweet_id FROM v2_fts WHERE full_text_original MATCH ${dbHandle.twitter_monitor.escape(word)})`)
+                            : dbHandle.twitter_monitor.literal('MATCH(`full_text_original`) AGAINST (' + dbHandle.twitter_monitor.escape(word) + ' IN BOOLEAN MODE)')
                     )
                 }
             }
@@ -534,7 +536,7 @@ const ApiLocalSearch = async (req, res) => {
                 tweets = await V2TwitterTweets.findAll({
                     attributes: [
                         [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'],
-                        [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(origin_tweet_id AS text)') : 'origin_tweet_id', 'origin_tweet_id'],
+                        [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(original_tweet_id AS text)') : 'original_tweet_id', 'original_tweet_id'],
                         [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(conversation_id_str AS text)') : 'conversation_id_str', 'conversation_id_str'],
                         [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(uid AS text)') : 'uid', 'uid'],
                         'name',
@@ -546,7 +548,7 @@ const ApiLocalSearch = async (req, res) => {
                         [dbHandle.twitter_monitor.options.dialect === 'sqlite' ? dbHandle.twitter_monitor.literal('CAST(quote_status AS text)') : 'quote_status', 'quote_status'],
                         'source',
                         'full_text',
-                        'full_text_origin',
+                        'full_text_original',
                         'retweet_from',
                         'retweet_from_name',
                         'dispute',
@@ -620,8 +622,8 @@ const ApiLocalChart = async (req, res) => {
 }
 
 const ApiLocalStats = async (req, res) => {
-    const { data_origin } = await getConfigData()
-    if (!data_origin.users || !Array.isArray(data_origin.users)) {
+    const { data_original } = await getConfigData()
+    if (!data_original.users || !Array.isArray(data_original.users)) {
         res.json(apiTemplate(404, 'No config', [], 'v3'))
         return
     }
@@ -641,7 +643,7 @@ const ApiLocalStats = async (req, res) => {
         return
     }
     const returnStats = tmpStats.map((tmpPersonStats) => {
-        const tmpStatsDisplayNameAndProjects = findGroups(data_origin.users, tmpPersonStats.name)
+        const tmpStatsDisplayNameAndProjects = findGroups(data_original.users, tmpPersonStats.name)
         tmpPersonStats.display_name = tmpStatsDisplayNameAndProjects[0]
         tmpPersonStats.group = tmpStatsDisplayNameAndProjects[1]
         return tmpPersonStats
@@ -696,10 +698,10 @@ const ApiLocalTag = async (req, res) => {
     try {
         tweets = await dbHandle.twitter_monitor.query(
             dbHandle.twitter_monitor.options.dialect === 'sqlite'
-                ? 'SELECT CAST(tweet_id AS text) AS `tweet_id`, CAST(origin_tweet_id AS text) AS `origin_tweet_id`, CAST(conversation_id_str AS text) AS `conversation_id_str`, CAST(uid AS text) AS `uid`, `name`, `display_name`, `media`, `video`, `card`, `poll`, CAST(quote_status AS text) AS `quote_status`, `source`, `full_text`, `full_text_origin`, `retweet_from`, `retweet_from_name`, `dispute`, `time` FROM `v2_twitter_tweets` WHERE `tweet_id` IN (SELECT `tweet_id` FROM `v2_twitter_entities` WHERE `text` = :hash AND `tweet_id` ' +
+                ? 'SELECT CAST(tweet_id AS text) AS `tweet_id`, CAST(original_tweet_id AS text) AS `original_tweet_id`, CAST(conversation_id_str AS text) AS `conversation_id_str`, CAST(uid AS text) AS `uid`, `name`, `display_name`, `media`, `video`, `card`, `poll`, CAST(quote_status AS text) AS `quote_status`, `source`, `full_text`, `full_text_original`, `retweet_from`, `retweet_from_name`, `dispute`, `time` FROM `v2_twitter_tweets` WHERE `tweet_id` IN (SELECT `tweet_id` FROM `v2_twitter_entities` WHERE `text` = :hash AND `tweet_id` ' +
                       (refresh || tweetId === 0 ? '>' : '<') +
                       " :tweet_id AND `type` = :tag_type AND `hidden` = '0' ORDER BY `tweet_id` DESC LIMIT :count) ORDER BY `tweet_id` DESC"
-                : 'SELECT `tweet_id`, `origin_tweet_id`, `conversation_id_str`, `uid`, `name`, `display_name`, `media`, `video`, `card`, `poll`, `quote_status`, `source`,  `full_text`, `full_text_origin`, `retweet_from`, `retweet_from_name`, `dispute`, `time` FROM `v2_twitter_tweets` WHERE `tweet_id` = ANY(SELECT `tweet_id` FROM (SELECT `tweet_id` FROM `v2_twitter_entities` WHERE `text` = :hash AND `tweet_id` ' +
+                : 'SELECT `tweet_id`, `original_tweet_id`, `conversation_id_str`, `uid`, `name`, `display_name`, `media`, `video`, `card`, `poll`, `quote_status`, `source`,  `full_text`, `full_text_original`, `retweet_from`, `retweet_from_name`, `dispute`, `time` FROM `v2_twitter_tweets` WHERE `tweet_id` = ANY(SELECT `tweet_id` FROM (SELECT `tweet_id` FROM `v2_twitter_entities` WHERE `text` = :hash AND `tweet_id` ' +
                       (refresh || tweetId === 0 ? '>' : '<') +
                       " :tweet_id AND `type` = :tag_type AND `hidden` = '0' ORDER BY `tweet_id` DESC LIMIT :count) AS t) ORDER BY `tweet_id` DESC",
             {
@@ -981,12 +983,12 @@ const ApiLocalTrends = async (req, res) => {
 const GetUid = async (query) => {
     let name = VerifyQueryString(query.name, '')
     let uid = String(VerifyQueryString(query.uid, 0))
-    const { data_origin } = await getConfigData()
-    if (!data_origin.users || !Array.isArray(data_origin.users) || (name === '' && uid === '0')) {
+    const { data_original } = await getConfigData()
+    if (!data_original.users || !Array.isArray(data_original.users) || (name === '' && uid === '0')) {
         return { name: '', uid: '0' }
     }
     //uid first
-    const tmpUserList = data_origin.users.filter(
+    const tmpUserList = data_original.users.filter(
         (user) => user.name !== '' && !(user.uid === '' || user.uid === 'undefined') && ((name.toLowerCase() === (user.name || '').toLowerCase() && !isNaN(user.uid) && typeof user.uid !== 'object') || String(user.uid || '-1') === uid)
     )
     if (tmpUserList.length > 0) {
@@ -1003,18 +1005,18 @@ const getConfigData = async () => {
     let tmpConfig = null
     try {
         tmpConfig = await V2Config.findOne({
-            attributes: ['data_origin', 'data_output'],
+            attributes: ['data_original', 'data_output'],
             where: {
                 id: CONFIG_ID
             }
         })
     } catch (e) {
-        return { data_origin: {}, data_output: {} }
+        return { data_original: {}, data_output: {} }
     }
     if (tmpConfig === null) {
-        return { data_origin: {}, data_output: {} }
+        return { data_original: {}, data_output: {} }
     } else {
-        return { data_origin: JSON.parse(tmpConfig.data_origin), data_output: JSON.parse(tmpConfig.data_output) }
+        return { data_original: JSON.parse(tmpConfig.data_original), data_output: JSON.parse(tmpConfig.data_output) }
     }
 }
 
@@ -1106,11 +1108,11 @@ const getDataFromTweets = async (tweets = [], count = 0, top = '0', historyMode 
                     'url',
                     'extension',
                     'filename',
-                    'origin_type',
+                    'original_type',
                     'source',
                     'content_type',
-                    'origin_info_height',
-                    'origin_info_width',
+                    'original_info_height',
+                    'original_info_width',
                     'title',
                     'description',
                     'blurhash'
@@ -1143,7 +1145,7 @@ const getDataFromTweets = async (tweets = [], count = 0, top = '0', historyMode 
                     return entity
                 })
         }
-        //$tweets[$x]["full_text_origin"] = preg_replace('/ https:\/\/t.co\/[\w]+/', '', $tweets[$x]["full_text_origin"]);//TODO for history mode
+        //$tweets[$x]["full_text_original"] = preg_replace('/ https:\/\/t.co\/[\w]+/', '', $tweets[$x]["full_text_original"]);//TODO for history mode
 
         //for poll
         tweets[x].pollObject = []
@@ -1187,9 +1189,9 @@ const getDataFromTweets = async (tweets = [], count = 0, top = '0', historyMode 
                 tweets[x].quoteObject = tmpQuote[0]
                 tweets[x].quoteObject.id_str = String(tweets[x].quoteObject.tweet_id)
                 tweets[x].quote_status_str = String(tweets[x].quote_status)
-                const originTextAndEntities = GetEntitiesFromText(tweets[x].quoteObject.full_text, 'quote')
-                tweets[x].quoteObject.full_text = originTextAndEntities.originText
-                tweets[x].quoteObject.entities = originTextAndEntities.entities
+                const originalTextAndEntities = GetEntitiesFromText(tweets[x].quoteObject.full_text, 'quote')
+                tweets[x].quoteObject.full_text = originalTextAndEntities.originalText
+                tweets[x].quoteObject.entities = originalTextAndEntities.entities
             }
         }
 
@@ -1224,14 +1226,14 @@ const getDataFromTweets = async (tweets = [], count = 0, top = '0', historyMode 
         //just work for php version, we use <string> in nodejs versions
         //Number.MAX_SAFE_INTEGER => 9007199254740991 "9007199254740991".length => 16
         tweets[x].tweet_id_str = String(tweets[x].tweet_id)
-        tweets[x].origin_tweet_id_str = String(tweets[x].origin_tweet_id)
+        tweets[x].original_tweet_id_str = String(tweets[x].original_tweet_id)
         tweets[x].conversation_id_str = String(tweets[x].conversation_id_str)
         tweets[x].uid_str = String(tweets[x].uid)
         tweetId = tweets[x].tweet_id_str //bottom id
 
         if (isRssMode) {
             rss.item({
-                title: { text: tweets[x].full_text_origin, cdata: true },
+                title: { text: tweets[x].full_text_original, cdata: true },
                 description: {
                     text: tweets[x].full_text.replaceAll(/<a href="([^"]+)" id="([^"]+)"(| target="_blank")>([^<]+)<\/a>/gm, (...match) => (match[2] === 'url' ? match[1] : match[4])) + ' ' + tmpImageText,
                     cdata: true

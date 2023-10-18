@@ -77,7 +77,7 @@ const Translate = async (trInfo = null, target = 'en', platform = 'google') => {
     }
 
     let entitiesList = GetEntitiesFromText(trInfo.full_text, 'tweets')
-    let text = entitiesList.originText
+    let text = entitiesList.originalText
     if (!notSupportedEntities.includes(platform)) {
         entitiesList.entities.forEach((entity, index) => {
             text = text.replace(
@@ -132,7 +132,7 @@ const Translate = async (trInfo = null, target = 'en', platform = 'google') => {
                 )
             }
             entitiesList = GetEntitiesFromText(tmpTranslate, 'tweets')
-            trInfo.translate = entitiesList.originText
+            trInfo.translate = entitiesList.originalText
             trInfo.entities = entitiesList.entities
         } else {
             trInfo.translate = tmpTranslate

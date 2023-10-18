@@ -143,6 +143,9 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
                 'X-Twitter-Active-User': 'yes'
             }
         }
+        if (env.android_id) {
+            tmpHeaders["X-Twitter-Client-DeviceID"] = env.android_id
+        }
     }
 
     return await new Promise((resolve, reject) => {
