@@ -127,8 +127,7 @@
                     </div>
 
                     <h3>All data</h3>
-                    <div id="all-data" class="p-2 mb-3 rounded"
-                        style="background-color: rgb(247, 247, 247);">
+                    <div id="all-data" class="p-2 mb-3 rounded" style="background-color: rgb(247, 247, 247);">
                         <code><pre>{{ JSON.stringify(signature, null, 4) }}</pre></code>
                     </div>
 
@@ -207,7 +206,14 @@
                     const link = parseUrl.origin + parseUrl.pathname
                     const payload = [...parseUrl.searchParams.entries()]
                     if (body) {
-                        payload.push(...new URLSearchParams(body).entries())
+                        let isJson = false
+                        try {
+                            JSON.parse(body)
+                            isJson = true
+                        } catch (e) { }
+                        if (!isJson) {
+                            payload.push(...new URLSearchParams(body).entries())
+                        }
                     }
                     payload.push(['oauth_version', '1.0'])
                     payload.push(['oauth_signature_method', 'HMAC-SHA1'])
