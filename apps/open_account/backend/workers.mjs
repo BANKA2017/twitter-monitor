@@ -25,14 +25,19 @@ workersApi.post(
         if (!config?.user?.screen_name) {
             return new Response(JSON.stringify(apiTemplate(403, 'Invalid open account', {}, 'open_account_list')))
         }
-        await env.kv.put(`tm:open_account:${config.user.screen_name}`, req.postBody.get('account'), { expiration: Math.floor(Date.now() + 100 * 60 * 60 * 24 * 30) / 1000 })
+        await env.kv.put(`tm:open_account:${config.user.screen_name}`, req.postBody.get('account'), { expiration: Math.floor(Date.now() + 1000 * 60 * 60 * 24 * 30) / 1000 })
         return new Response(JSON.stringify(apiTemplate(200, 'OK', config.user, 'open_account_list')))
     }
 )
-//workersApi.get('/data/random', async (req, env) => {
-//    const list = await env.kv.list({ prefix: 'tm:open_account:_LO_', limit: 1000 })
-//    return new Response(JSON.stringify(apiTemplate(200, 'OK', list, 'open_account_list')))
-//})
+workersApi.get('/data/random', async (req, env) => {
+    const key = req.query.key
+    if (key !== env.SECRET_WORKERS_KEY) {
+        return new Response(JSON.stringify(apiTemplate(403, 'Invalid key', {}, 'open_account_list')))
+    }
+    const list = (await env.kv.list({ prefix: 'tm:open_account:_LO_', limit: 1000 })).keys.filter(key => key.expiration)
+    const randomKey = JSON.parse(await env.kv.get(list[Math.floor(list.length * Math.random())].name))
+    return new Response(JSON.stringify(apiTemplate(200, 'OK', randomKey, 'open_account_list')))
+})
 
 workersApi.all('*', () => new Response(JSON.stringify(apiTemplate(403, 'Invalid Request', {}, 'open_account_list')), { status: 403 }))
 
