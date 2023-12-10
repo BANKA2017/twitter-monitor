@@ -69,15 +69,16 @@ http://user1:password@192.168.1.101:7890
 
 ## Compatible with Nitter
 
-The account pool created by the script `get_and_upload_guest_account.mjs` is compatible with [nitter](https://github.com/zedeus/nitter/), you need to export all the values, then put them in an array, and then name it `guest_accounts.json` and save it to the project root directory
+The account pool created by the script `get_and_upload_guest_account.mjs` is compatible with [nitter](https://github.com/zedeus/nitter/wiki/Guest-Account-Branch-Deployment), you need to export all the values, then put them in an array, and then name it `guest_accounts.json` and save it to the project root directory
 
-\* You can even get the `oauth_token` and `oauth_token_secret` of the real account by capturing packets
+\* You can even get the `oauth_token` and `oauth_token_secret` of the real account by capturing packets or [some scripts](https://github.com/zedeus/nitter/issues/983#issuecomment-169002582)
 
 ```json
+// for twitter monitor
 // guest_accounts.json
 [
-    // for nitter
     {
+        "authorization": "Bearer AAAAAAAAAAAAAAAAAAAAAFXzAwAAAAAAMHCxpeSDG1gLNLghVe8d74hl6k4%3DRUMF4xAQLsbeBhTSRrCiQpJtxoGWeyHrDb5te2jpGskWDFW82F",
         "user": {
             "id": 0,
             "id_str": "0",
@@ -94,7 +95,6 @@ The account pool created by the script `get_and_upload_guest_account.mjs` is com
         "oauth_token_secret": "",
         "attribution_event": "signup"
     },
-    // for twitter monitor
     {
         "authorization": "Bearer AAAAAAAAAAAAAAAAAAAAAFXzAwAAAAAAMHCxpeSDG1gLNLghVe8d74hl6k4%3DRUMF4xAQLsbeBhTSRrCiQpJtxoGWeyHrDb5te2jpGskWDFW82F",
         "oauth_token": "0-",
@@ -108,6 +108,12 @@ The account pool created by the script `get_and_upload_guest_account.mjs` is com
         }
     }
 ]
+
+// for nitter
+// guest_accounts.jsonl
+{"user":{"id":0,"id_str":"0","name":"Open App User","screen_name":"_LO_0830","user_type":"Soft"},"next_link":{"link_type":"subtask","link_id":"next_link","subtask_id":"OpenAppFlowStartAccountSetupOpenLink"},"oauth_token":"0-","oauth_token_secret":"","attribution_event":"signup"}
+{"oauth_token":"0-","oauth_token_secret":"","user":{"id":0,"id_str":"0","name":"Open App User","screen_name":"_LO_0825","user_type":"Soft"}}
+
 ```
 
 Bearer token for Twitter Android client needs to be added manually when using `guest_accounts.json` from nitter
@@ -126,5 +132,5 @@ console.log(JSON.stringify(guest_accounts))
 - [x] Will be compatible with the format of the guest account pool used by nitter
 - [ ] Building a pool of guest accounts also requires a large number of proxy servers
 - [ ] Native backend
-- [ ] Scripts for real account
+- [x] Scripts for real account
 - [x] Proxy pool

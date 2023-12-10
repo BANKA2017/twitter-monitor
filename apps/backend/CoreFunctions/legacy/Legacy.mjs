@@ -124,7 +124,17 @@ const ApiLegacyTweets = async (req, res) => {
     let tweets = null
     try {
         tweets = await TwitterTweets.findAll({
-            attributes: [[dbHandle.tmv1.options.dialect === 'sqlite' ? dbHandle.tmv1.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'], 'name', 'display_name', 'media', 'full_text', 'full_text_original', 'retweet_from', 'time', 'translate'],
+            attributes: [
+                [dbHandle.tmv1.options.dialect === 'sqlite' ? dbHandle.tmv1.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'],
+                'name',
+                'display_name',
+                'media',
+                'full_text',
+                'full_text_original',
+                'retweet_from',
+                'time',
+                'translate'
+            ],
             where: queryArray,
             limit: 11,
             order: [['tweet_id', 'DESC']],
@@ -234,7 +244,17 @@ const ApiLegacySearch = async (req, res) => {
     let tweets = null
     try {
         tweets = await TwitterTweets.findAll({
-            attributes: [[dbHandle.tmv1.options.dialect === 'sqlite' ? dbHandle.tmv1.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'], 'name', 'display_name', 'media', 'full_text', 'full_text_original', 'retweet_from', 'time', 'translate'],
+            attributes: [
+                [dbHandle.tmv1.options.dialect === 'sqlite' ? dbHandle.tmv1.literal('CAST(tweet_id AS text)') : 'tweet_id', 'tweet_id'],
+                'name',
+                'display_name',
+                'media',
+                'full_text',
+                'full_text_original',
+                'retweet_from',
+                'time',
+                'translate'
+            ],
             where: {
                 [Op.or]: keyWords,
                 hidden: 0,

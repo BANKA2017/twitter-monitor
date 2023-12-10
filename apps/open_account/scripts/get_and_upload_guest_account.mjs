@@ -16,7 +16,10 @@ if (existsSync('./guest_accounts.json')) {
 }
 
 if (existsSync('./proxy.txt')) {
-    proxyList = readFileSync('./proxy.txt').toString().split("\n").filter(proxy => proxy && proxy.startsWith('http'))
+    proxyList = readFileSync('./proxy.txt')
+        .toString()
+        .split('\n')
+        .filter((proxy) => proxy && proxy.startsWith('http'))
 }
 
 // add no proxy (use your real ip address)

@@ -4,6 +4,7 @@ apps/scripts/t.mjs
 apps/scripts/save_spaces/
 apps/scripts/astParser/
 apps/backend/cache/*
+apps/open_account/scripts/openAccount.json
 !apps/backend/cache/.gitkeep
 
 apps/archiver/*
@@ -30,7 +31,6 @@ packages/get-mime/*
 .DS_Store
 node_modules
 .yarn
-yarn.lock
 /dist
 public/test/
 

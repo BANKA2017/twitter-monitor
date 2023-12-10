@@ -3,7 +3,7 @@ import path2array from './Core.apiPath.mjs'
 import {
     _AudioSpaceById,
     _Bookmarks,
-    _CommunitiesFetchOneQuery,
+    _CommunityQuery,
     _CommunitiesSearchQuery,
     _CommunityTweetsTimeline,
     _ConversationControlChange,
@@ -144,7 +144,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
             }
         }
         if (env.android_id) {
-            tmpHeaders["X-Twitter-Client-DeviceID"] = env.android_id
+            tmpHeaders['X-Twitter-Client-DeviceID'] = env.android_id
         }
     }
 
@@ -880,6 +880,11 @@ const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMod
     }
 }
 
+const getEmbedConversation = async (ctx = { tweet_id: '', cookie: {} }, env = {}) => {
+    //TODO
+    //https://cdn.syndication.twimg.com/tweet-result?id=1711628751082303656&token=0
+}
+
 const getEditHistory = async (ctx = { tweet_id: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
     let { tweet_id, guest_token, cookie, authorization } = preCheckCtx(ctx, { tweet_id: '', guest_token: {}, cookie: {}, authorization: 1 })
     if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
@@ -1224,11 +1229,11 @@ const getCommunityInfo = async (ctx = { id: '', guest_token: {}, cookie: {}, aut
         coreFetch(
             TW_WEBAPI_PREFIX +
                 '/graphql/' +
-                _CommunitiesFetchOneQuery.queryId +
-                '/CommunitiesFetchOneQuery?' +
+                _CommunityQuery.queryId +
+                '/CommunityQuery?' +
                 new URLSearchParams({
                     variables: JSON.stringify(graphqlVariables),
-                    features: JSON.stringify(_CommunitiesFetchOneQuery.features)
+                    features: JSON.stringify(_CommunityQuery.features)
                 }).toString(),
             guest_token,
             cookie,

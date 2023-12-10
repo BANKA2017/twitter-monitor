@@ -7,7 +7,7 @@ import { DEFAULT_CIPHERS } from 'tls'
 const axiosFetch = (config = {}) => {
     const HTTPS_PROXY = config.HTTPS_PROXY || process.env.https_proxy || process.env.HTTPS_PROXY || ''
     const HTTP_PROXY = config.HTTP_PROXY || process.env.http_proxy || process.env.HTTP_PROXY || ''
-    
+
     if (config.HTTPS_PROXY) {
         delete config.HTTPS_PROXY
     }

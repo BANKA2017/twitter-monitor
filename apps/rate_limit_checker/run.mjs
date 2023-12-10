@@ -55,7 +55,6 @@ const getStatusResponse = async (_function, guest_token, label = '_') => {
     let tmpRes = null
     let code = '200'
     let message = '_'
-    const requestDate = Date.now()
     try {
         tmpRes = await _function
         code = tmpRes.status
@@ -74,7 +73,7 @@ const getStatusResponse = async (_function, guest_token, label = '_') => {
         code,
         message,
         rate_limit: Number(tmpRes.headers['x-rate-limit-limit']) || '_',
-        rate_limit_reset: tmpRes.headers['x-rate-limit-reset'] ? Number(tmpRes.headers['x-rate-limit-reset']) - Math.ceil(requestDate / 1000) : '_',
+        rate_limit_reset: tmpRes.headers['x-rate-limit-reset'] ? Number(tmpRes.headers['x-rate-limit-reset']) - Number(new Date(tmpRes.headers['date'])) / 1000 : '_',
         status: code === 200 && tmpRes.data ? v : x,
         url: tmpRes.config.url,
         method: tmpRes?.config?.method?.toUpperCase() || 'GET',

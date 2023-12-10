@@ -57,7 +57,7 @@ if (existsSync(basePath + '/../guest_accounts.json')) {
 if (existsSync(`${basePath}/../apps/backend/cache/_audio_apsce_cache.json`)) {
     try {
         AUDIO_SPACE_CACHE = JSON.parse(readFileSync(`${basePath}/../apps/backend/cache/_audio_apsce_cache.json`).toString())
-    } catch(e) {
+    } catch (e) {
         Log(false, 'log', `tmv3: Unable to read audio space cache`)
     }
 }

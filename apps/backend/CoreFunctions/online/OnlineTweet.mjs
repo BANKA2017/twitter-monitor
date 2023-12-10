@@ -134,7 +134,7 @@ const ApiTweets = async (req, env) => {
 
         try {
             //if (displayType === 'include_reply') {
-            graphqlMode = true//displayType === 'include_reply'
+            graphqlMode = true //displayType === 'include_reply'
             tweets = await getTweets({
                 queryString: uid,
                 cursor: cursor === '0' ? '' : cursor,

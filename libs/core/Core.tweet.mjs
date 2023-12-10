@@ -339,7 +339,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
                 } else {
                     tmpInfo = users[content.user_id_str || content?.user?.id_str]
                 }
-                
+
                 if (tmpInfo && tmpInfo.screen_name) {
                     const tmpRetweetInfoHandle = GenerateAccountInfo(tmpInfo)
                     retweetUserInfo = tmpRetweetInfoHandle.GeneralAccountData
@@ -824,7 +824,7 @@ const Media = (media = {}, uid = '0', tweetId = '0', hidden = false, source = 't
                 title: '',
                 description: '',
                 original_info_width: media?.original_info?.width || media?.sizes?.large?.w || 0,
-                original_info_height: media?.original_info?.height || media?.sizes?.large?.h || 0,
+                original_info_height: media?.original_info?.height || media?.sizes?.large?.h || 0
             }
             pathInfo = PathInfo(media.media_url_https)
             coverInfo.filename = pathInfo.filename
