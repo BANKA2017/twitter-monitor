@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="robots" content="nofollow">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="author" content="Banka2017 (https://nest.moe)">
+    <meta name="description" content="Autopush Tools">
+    <title>Autopush Tools</title>
+    <!-- CSS only -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+</head>
+
+<body>
+    <div id="app">
+        <nav class="navbar navbar-expand-lg navbar-light text-center bg-light px-2">
+            <span class="navbar-brand mb-0 h1">Autopush</span>
+        </nav>
+        <div class="container">
+            <div class="my-4 card mb-3">
+                <div class="card-body">
+                    <details open>
+                        <summary>Config List</summary>
+                        <div class="row" v-if="configList.length">
+                            <div class="col-md-6 order-md-2 my-2">
+                                <label for="upload-webpush-data">Import</label>
+                                <input type="file" class="form-control" id="upload-webpush-data" lang="zh"
+                                    @change="(e)=>{addWebPushData(e, 'upload-webpush-data')}" accept="application/json">
+                                <label class="form-text" for="upload-webpush-data">webpush_export.json</label>
+                                <hr />
+                                <label class="form-label" for="auth">Config name</label>
+                                <div class="input-group">
+                                    <input id="auth" type="text" class="form-control"
+                                        v-model="configList[configListIndex].name">
+                                </div>
+                                <div class="form-text" id="form-text-auth">Name of config</div>
+                                <hr />
+                                <div class="my-4"></div>
+                                <button class="btn btn-sm btn-primary me-1"
+                                    @click="download('webpush_export.json', JSON.stringify(configList[configListIndex]))">Export</button>
+                                <button class="btn btn-sm btn-outline-danger me-1" type="button" @click="deleteKeyPair">
+                                    ⚠ Delete
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger me-1" type="button" @click="initKeyPair">
+                                    ⚠ New
+                                </button>
+                            </div>
+                            <div class="col-md-6 order-md-1 my-2">
+                                <ul class="list-group" v-if="configList.length">
+                                    <li :class="{'list-group-item': true, active: keyIndex === configListIndex}"
+                                        v-for="(key, keyIndex) in configList"
+                                        :key="key.auth+key.jwk.d+key.jwk.x+key.jwk.y"
+                                        @click="configListIndex = keyIndex">{{key.name}}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </details>
+
+                </div>
+            </div>
+            <div class="row" v-if="configList[configListIndex]">
+                <div class="col-md-6">
+                    <h3>ECDH key & Auth</h3>
+                    <div class="d-flex justify-content-between">
+                        <div class="btn-group" role="group">
+                            <button
+                                :class="{btn: true, 'btn-sm': true, 'btn-primary': keyDataEncoded === 'jwk', 'btn-outline-primary': keyDataEncoded !== 'jwk'}"
+                                type="button" @click="keyDataEncoded='jwk'">
+                                JWK
+                            </button>
+                            <button
+                                :class="{btn: true, 'btn-sm': true, 'btn-primary': keyDataEncoded === 'base64', 'btn-outline-primary': keyDataEncoded !== 'base64'}"
+                                type="button" @click="keyDataEncoded='base64'">
+                                Base64
+                            </button>
+                            <button
+                                :class="{btn: true, 'btn-sm': true, 'btn-primary': keyDataEncoded === 'base64url', 'btn-outline-primary': keyDataEncoded !== 'base64url'}"
+                                type="button" @click="keyDataEncoded='base64url'">
+                                Base64URL
+                            </button>
+                            <button
+                                :class="{btn: true, 'btn-sm': true, 'btn-primary': keyDataEncoded === 'hex', 'btn-outline-primary': keyDataEncoded !== 'hex'}"
+                                type="button" @click="keyDataEncoded='hex'">
+                                Hex
+                            </button>
+                            <button
+                                :class="{btn: true, 'btn-sm': true, 'btn-primary': keyDataEncoded === 'buffer', 'btn-outline-primary': keyDataEncoded !== 'buffer'}"
+                                type="button" @click="keyDataEncoded='buffer'">
+                                Buffer
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="['base64', 'base64url', 'hex'].includes(keyDataEncoded)" class="mb-3 mt-2">
+                        <label class="form-label" for="public-key">PublicKey</label>
+                        <div class="input-group">
+                            <input id="public-key" type="text" class="form-control" v-model="text_input_public">
+                        </div>
+                        <label class="form-label" for="private-key">PrivateKey</label>
+                        <div class="input-group">
+                            <input id="private-key" type="text" class="form-control" v-model="text_input_private">
+                        </div>
+                    </div>
+                    <div v-else-if="keyDataEncoded === 'buffer'" class="mb-3 mt-2">
+                        Please open the Console...
+                        {{console.log({public: ecdhKeyData.public.buffer, private: ecdhKeyData.private.buffer})}}
+                    </div>
+                    <div v-else class="input-group mb-3 mt-2">
+                        <textarea class="form-control" :value="jwk_input" rows="12" v-model="jwk_input"></textarea>
+                    </div>
+                    <hr />
+                    <div class="mb-3">
+                        <label class="form-label" for="auth">Auth</label>
+                        <div class="input-group">
+                            <input id="auth" type="text" class="form-control"
+                                v-model="configList[configListIndex].auth">
+                        </div>
+                        <div class="form-text" id="form-text-auth">Random 16 bits value</div>
+                    </div>
+                    <hr />
+
+                </div>
+                <div class="col-md-6">
+                    <h3>Tools</h3>
+                    <details>
+                        <summary>Decrypt / Encrypt</summary>
+                        <div class="mb-3">
+                            <label class="form-label" for="publish_dh">dh</label>
+                            <div class="input-group">
+                                <input id="publish_dh" type="text" class="form-control" v-model="publish_dh">
+                            </div>
+                            <div class="form-text" id="form-text-uaid">Another ECDH public key (base64url)</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="publish_salt">salt</label>
+                            <div class="input-group">
+                                <input id="publish_salt" type="text" class="form-control" v-model="publish_salt">
+                            </div>
+                            <div class="form-text" id="form-text-publish_salt">Another random 16 bits value (base64url)
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="encrypted_message_input">Encrypted Data</label>
+                            <div class="input-group">
+                                <textarea class="form-control" :value="encrypted_message_input" rows="5"
+                                    v-model="encrypted_message_input"></textarea>
+                            </div>
+                            <div class="form-text" id="form-text-endpoint">From source (base64url)</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="endpoint">Decrypted Data</label>
+                            <div class="input-group">
+                                <textarea class="form-control" :value="decrypted_message_input" rows="5"
+                                    v-model="decrypted_message_input"></textarea>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="de_nonce">nonce(iv)</label>
+                            <div class="input-group">
+                                <input id="de_nonce" type="text" class="form-control" :value="de_nonce">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="de_cek">cek/contentEncryptionKey(key)</label>
+                            <div class="input-group">
+                                <input id="de_cek" type="text" class="form-control" :value="de_cek">
+                            </div>
+                        </div>
+                    </details>
+                    <details>
+                        <summary>Websocket</summary>
+                        <div>Status: <span :class="{'text-danger': wsClosed, 'text-success': !wsClosed}">{{ wsClosed ?
+                                'disconnected' : 'connected' }}</span></div>
+
+                        <button class="btn btn-sm btn-outline-primary mb-1" type="button" @click="wsSwitch">{{ wsClosed
+                            ?
+                            'Connect' : 'Disconnect' }}</button>
+                        <div v-if="!wsClosed">
+                            <button class="btn btn-sm btn-outline-danger mb-1 me-1" type="button" @click="newUaid">New
+                                Uaid</button>
+                            <button class="btn btn-sm btn-outline-danger mb-1 me-1" type="button"
+                                @click="registerChannel(crypto.randomUUID())">New Channel</button>
+                            <button class="btn btn-sm btn-danger mb-1 me-1" type="button"
+                                @click="unregisterChannel">Unregister Channel</button>
+                        </div>
+                        <br />
+                        <button class="btn btn-sm btn-danger mb-1 me-1" type="button"
+                            @click="() => {configList[configListIndex].original_messages=[];decryptedMessages=[]}">Delete
+                            all
+                            messages</button>
+                        <div class="mb-3">
+                            <label class="form-label" for="vapid">VAPID</label>
+                            <div class="input-group">
+                                <input id="vapid" type="text" class="form-control"
+                                    v-model="configList[configListIndex].firefox.vapid">
+                            </div>
+                            <div class="form-text" id="form-text-vapid">From Twitter or other subscription source</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="uaid">uaid</label>
+                            <div class="input-group">
+                                <input id="uaid" type="text" class="form-control"
+                                    v-model="configList[configListIndex].firefox.uaid">
+                            </div>
+                            <div class="form-text" id="form-text-uaid">From Autopush and very important</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="channelID">channelID</label>
+                            <div class="input-group">
+                                <input id="channelID" type="text" class="form-control"
+                                    v-model="configList[configListIndex].firefox.channelID">
+                            </div>
+                            <div class="form-text" id="form-text-channelID">From Autopush</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"
+                                for="remote_settings__monitor_changes">remote_settings/monitor_changes</label>
+                            <div class="input-group">
+                                <input id="remote_settings__monitor_changes" type="text" class="form-control"
+                                    v-model="configList[configListIndex].firefox.remote_settings__monitor_changes">
+                            </div>
+                            <div class="form-text" id="form-text-remote_settings__monitor_changes">A timestamp from
+                                Autopush
+                                and unknown what used for</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="endpoint">Endpoint</label>
+                            <div class="input-group">
+                                <textarea class="form-control" :value="configList[configListIndex].firefox.endpoint"
+                                    rows="5" v-model="configList[configListIndex].firefox.endpoint"></textarea>
+                            </div>
+                            <div class="form-text" id="form-text-endpoint">From Autopush</div>
+                        </div>
+                        <hr />
+
+                        <h3>Message</h3>
+
+                        <div class="btn-group mb-2" role="group">
+                            <button
+                                :class="{btn: true, 'btn-sm': true, 'btn-primary': messageType === 'all', 'btn-outline-primary': messageType !== 'all'}"
+                                type="button" @click="messageType='all'">
+                                All
+                            </button>
+                            <button
+                                :class="{btn: true, 'btn-sm': true, 'btn-primary': messageType === 'data', 'btn-outline-primary': messageType !== 'data'}"
+                                type="button" @click="messageType='data'">
+                                Data
+                            </button>
+                        </div>
+
+                        <div v-for="(message, index) in decryptedMessages" class="card mb-2" :key="message.tag">
+                            <div :id="`tweet-`+message.tag" class="card-body">
+                                <code
+                                    style="background-color: rgb(247, 247, 247);"><pre>{{ messageType === 'all' ? JSON.stringify(message, null, 4) : message.data}}</pre></code>
+                            </div>
+                        </div>
+                    </details>
+                    <hr />
+                    <h3>More...</h3>
+                    <div id="all-data" class="p-2 rounded" style="background-color: rgb(247, 247, 247);">
+                        <ul>
+
+                            <li><a href="https://datatracker.ietf.org/doc/html/rfc7517" target="_blank">(RFC 7517) JSON
+                                    Web Key (JWK)</a></li>
+                            <li><a href="https://datatracker.ietf.org/doc/html/rfc8188" target="_blank">(RFC 8188)
+                                    Encrypted Content-Encoding for HTTP</a></li>
+                            <li><a href="https://datatracker.ietf.org/doc/html/rfc8291" target="_blank">(RFC 8291)
+                                    Message Encryption for Web Push</a></li>
+                            <li><a href="https://web.dev/articles/push-notifications-web-push-protocol"
+                                    target="_blank">The Web Push Protocol</a></li>
+                            <li><a href="https://blog.mozilla.org/services/2016/08/23/sending-vapid-identified-webpush-notifications-via-mozillas-push-service/"
+                                    target="_blank">Sending VAPID identified WebPush Notifications via Mozilla’s Push
+                                    Service</a></li>
+                            <li><a href="https://developer.chrome.com/blog/web-push-encryption?hl=en"
+                                    target="_blank">Web Push Payload Encryption</a></li>
+                            <li><a href="https://taoshu.in/web/push.html" target="_blank">WebPush 工作原理</a></li>
+                            <li><a href="https://mozilla-services.github.io/autopush-rs/" target="_blank">Mozilla
+                                    Autopush Server</a></li>
+                            <li><a href="https://blog.nest.moe/posts/receive-the-latest-tweets-via-web-push"
+                                    target="_blank">通过 Web Push 接收最新的推文</a></li>
+                            <li><a href="https://blog.nest.moe/posts/decrypt-aesgcm-messages-from-web-push"
+                                    target="_blank">解密来自 Web Push 的 aesgcm 消息</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="text-center my-2">
+        >_ Twitter Monitor
+    </div>
+    </div>
+    <!--load css and js-->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14"></script>
+    <script>
+        'use strict'
+        window.v = new Vue({
+            el: "#app",
+            data: {
+                configList: [],
+                configListIndex: 0,
+                ecdhKeyPair: null,
+                ecdhKeyData: {},
+                decryptedMessages: [],
+
+                // page control
+                keyDataEncoded: 'jwk',// jwk, base64, base64url, hex, buffer
+                messageType: 'all',
+
+                // decrypt / encrypt
+                publish_dh: '',
+                publish_salt: '',
+                encrypted_data: '',
+                decrypted_data: '',
+                de_nonce: '',
+                de_cek: '',
+
+                // ws
+                ws: null,
+                wsClosed: true,
+                wsAutoReconnect: true,
+
+                // templates
+                configListTemplate: {
+                    name: '',
+                    auth: "",
+                    jwk: {
+                        crv: "P-256",
+                        d: "",
+                        ext: true,
+                        key_ops: ["deriveKey", "deriveBits"],
+                        kty: "EC",
+                        x: "",
+                        y: ""
+                    },
+                    firefox: {
+                        uaid: "",
+                        channelID: "",
+                        remote_settings__monitor_changes: "",
+                        endpoint: "",
+                        vapid: "",
+                    },
+                    original_messages: [],
+                },
+                vapidTemplate: "BF5oEo0xDUpgylKDTlsd8pZmxQA1leYINiY-rSscWYK_3tWAkz4VMbtf1MLE_Yyd6iII6o-e3Q9TCN5vZMzVMEs",
+            },
+            computed: {
+                jwk_input: {
+                    get: function () {
+                        if (this.configList[this.configListIndex]) {
+                            return JSON.stringify(this.configList[this.configListIndex].jwk, null, 4)
+                        } else {
+                            return '{}'
+                        }
+                    },
+                    set: async function (newValue) {
+                        if (this.configList[this.configListIndex]) {
+                            this.configList[this.configListIndex].jwk = JSON.parse(newValue)
+                            try {
+                                this.ecdhKeyPair = await this.importECDHKey(this.configList[this.configListIndex].jwk)
+                            } catch (e) { console.log(e) }
+                        }
+                    }
+                },
+                text_input_public: {
+                    get: function () {
+                        if (this.configList[this.configListIndex]) {
+                            let tmpPublicKey = this.concatBuffer((new Uint8Array(1).fill(4)).buffer, this.base64_to_buffer(this.base64url_to_base64(this.configList[this.configListIndex].jwk.x)), this.base64_to_buffer(this.base64url_to_base64(this.configList[this.configListIndex].jwk.y)))
+                            switch (this.keyDataEncoded) {
+                                case 'base64':
+                                    tmpPublicKey = this.buffer_to_base64(tmpPublicKey)
+                                    break
+                                case 'base64url':
+                                    tmpPublicKey = this.base64_to_base64url(this.buffer_to_base64(tmpPublicKey))
+                                    break
+                                case 'hex':
+                                    tmpPublicKey = this.buffer_to_hex(tmpPublicKey)
+                                    break
+                                default:
+                                    tmpPublicKey = ''
+                            }
+                            return tmpPublicKey
+                        } else {
+                            return ''
+                        }
+                    },
+                    set: async function (newValue) {
+                        let tmpPublicKey = null
+                        switch (this.keyDataEncoded) {
+                            case 'base64':
+                                tmpPublicKey = this.base64_to_buffer(newValue)
+                                break
+                            case 'base64url':
+                                tmpPublicKey = this.base64_to_buffer(this.base64url_to_base64(newValue))
+                                break
+                            case 'hex':
+                                tmpPublicKey = this.hex_to_uintarray(newValue).buffer
+                                break
+                        }
+                        if (!tmpPublicKey) {
+                            console.log('Invalid public key')
+                            return
+                        }
+                        if (this.configList[this.configListIndex]) {
+                            let tmpJwk = this.configList[this.configListIndex].jwk
+                            tmpJwk.x = this.base64_to_base64url(this.buffer_to_base64(tmpPublicKey.slice(1, 33)))
+                            tmpJwk.y = this.base64_to_base64url(this.buffer_to_base64(tmpPublicKey.slice(33, 66)))
+                            //console.log(tmpJwk)
+                            try {
+                                this.ecdhKeyPair = await this.importECDHKey(tmpJwk)
+                            } catch (e) { console.log(e) }
+                        }
+                    }
+                },
+                text_input_private: {
+                    get: function () {
+                        if (this.configList[this.configListIndex]) {
+                            let tmpPrivateKey = ''
+                            switch (this.keyDataEncoded) {
+                                case 'base64':
+                                    tmpPrivateKey = this.base64url_to_base64(this.configList[this.configListIndex].jwk.d)
+                                    break
+                                case 'base64url':
+                                    tmpPrivateKey = this.configList[this.configListIndex].jwk.d
+                                    break
+                                case 'hex':
+                                    tmpPrivateKey = this.buffer_to_hex(this.base64_to_buffer(this.base64url_to_base64(this.configList[this.configListIndex].jwk.d)))
+                                    break
+                            }
+                            return tmpPrivateKey
+                        } else {
+                            return ''
+                        }
+                    },
+                    set: async function (newValue) {
+                        let tmpPrivateKey = null
+                        switch (this.keyDataEncoded) {
+                            case 'base64':
+                                tmpPrivateKey = this.base64_to_buffer(newValue)
+                                break
+                            case 'base64url':
+                                tmpPrivateKey = this.base64_to_buffer(this.base64url_to_base64(newValue))
+                                break
+                            case 'hex':
+                                tmpPrivateKey = this.hex_to_uintarray(newValue).buffer
+                                break
+                        }
+                        if (!tmpPrivateKey) {
+                            console.log('Invalid private key')
+                            return
+                        }
+                        if (this.configList[this.configListIndex]) {
+                            let tmpJwk = this.configList[this.configListIndex].jwk
+                            tmpJwk.d = this.base64_to_base64url(this.buffer_to_base64(tmpPrivateKey))
+                            //console.log(tmpJwk)
+                            try {
+                                this.ecdhKeyPair = await this.importECDHKey(tmpJwk)
+                            } catch (e) { console.log(e) }
+                        }
+                    }
+                },
+                encrypted_message_input: {
+                    get: function () {
+                        return this.encrypted_data
+                    },
+                    set: async function (newValue) {
+                        this.encrypted_data = newValue
+
+                        if (!newValue) {
+                            return
+                        }
+                        const { nonce, cek: contentEncryptionKey } = await this.getNonceAndCekAndContent(this.publish_dh, this.publish_salt, this.ecdhKeyData, this.configList[this.configListIndex].auth)
+
+                        this.decrypted_data = new TextDecoder('utf-8').decode((await this.decrypt(nonce, contentEncryptionKey, this.base64_to_buffer(this.base64url_to_base64(newValue)))).data)
+
+                        this.de_nonce = this.base64_to_base64url(this.buffer_to_base64(nonce))
+                        this.de_cek = this.base64_to_base64url(this.buffer_to_base64(contentEncryptionKey))
+                    }
+                },
+                decrypted_message_input: {
+                    get: function () {
+                        return this.decrypted_data
+                    },
+                    set: async function (newValue) {
+                        this.decrypted_data = newValue
+
+                        if (!newValue) {
+                            return
+                        }
+                        const { nonce, cek: contentEncryptionKey } = await this.getNonceAndCekAndContent(this.publish_dh, this.publish_salt, this.ecdhKeyData, this.configList[this.configListIndex].auth)
+
+                        this.encrypted_data = this.base64_to_base64url(this.buffer_to_base64((await this.encrypt(nonce, contentEncryptionKey, new TextEncoder('utf-8').encode(newValue))).data))
+
+                        this.de_nonce = this.base64_to_base64url(this.buffer_to_base64(nonce))
+                        this.de_cek = this.base64_to_base64url(this.buffer_to_base64(contentEncryptionKey))
+                    }
+                },
+            },
+            watch: {
+                "ecdhKeyPair": async function () {
+                    if (!this.ecdhKeyPair) {
+                        return
+                    }
+                    const exportedJwk = await crypto.subtle.exportKey('jwk', this.ecdhKeyPair)
+                    const privateKey = this.base64_to_buffer(this.base64url_to_base64(exportedJwk.d))
+                    const publicKey = this.concatBuffer(new Uint8Array(1).fill(4).buffer, this.base64_to_buffer(this.base64url_to_base64(exportedJwk.x)), this.base64_to_buffer(this.base64url_to_base64(exportedJwk.y)))
+
+                    this.ecdhKeyData = {
+                        private: {
+                            base64: this.buffer_to_base64(privateKey),
+                            base64url: this.base64_to_base64url(this.buffer_to_base64(privateKey)),
+                            hex: this.buffer_to_hex(privateKey),
+                            buffer: privateKey
+                        },
+                        public: {
+                            base64: this.buffer_to_base64(publicKey),
+                            base64url: this.base64_to_base64url(this.buffer_to_base64(publicKey)),
+                            hex: this.buffer_to_hex(publicKey),
+                            buffer: publicKey
+                        },
+                        jwk: exportedJwk,
+                        key: this.ecdhKeyPair
+                    }
+                },
+                "wsClosed": function () {
+                    if (!this.wsClosed || !this.wsAutoReconnect) {
+                        return
+                    }
+                    this.wsClosed = false
+                    console.log('restart')
+                    this.initWebsocket()
+                    this.initWebsocketEvents()
+                },
+                "configListIndex": function () {
+                    if (!this.wsClosed) {
+                        this.wsAutoReconnect = false
+                        this.ws.close()
+                    }
+                },
+
+            },
+            mounted: async function () {
+                if (this.configList.length === 0) {
+                    this.initKeyPair()
+                }
+                // load data from localstorage
+                if (this.configList[this.configListIndex].jwk) {
+                    try {
+                        this.ecdhKeyPair = await this.importECDHKey(this.configList[this.configListIndex].jwk)
+                    } catch (e) { console.log(e) }
+                }
+                if (!this.ecdhKeyData) {
+                    return
+                }
+                await this.restoreOrignalMessages()
+                const tmpMessages = []
+                for (const message of this.configList[this.configListIndex].original_messages) {
+                    const tmpMessageData = await this.decryptMessage(message)
+                    //console.log(tmpMessageData)
+                    tmpMessages.push(tmpMessageData)
+                }
+                this.decryptedMessages = tmpMessages
+
+                //this.initWebsocket()
+                //this.initWebsocketEvents()
+            },
+            methods: {
+                //https://stackoverflow.com/questions/21797299/convert-base64-string-to-arraybuffer
+                base64_to_buffer: function (base64) {
+                    let binaryString = atob(base64)
+                    let bytes = new Uint8Array(binaryString.length)
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i)
+                    }
+                    return bytes.buffer
+                },
+                //https://stackoverflow.com/questions/56846930/how-to-convert-raw-representations-of-ecdh-key-pair-into-a-json-web-key
+                hex_to_uintarray: hex => {
+                    const a = []
+                    for (let i = 0, len = hex.length; i < len; i += 2) {
+                        a.push(parseInt(hex.substr(i, 2), 16))
+                    }
+                    return new Uint8Array(a)
+                },
+                buffer_to_base64: buf => {
+                    let binary = ''
+                    const bytes = new Uint8Array(buf)
+                    for (var i = 0; i < bytes.byteLength; i++) {
+                        binary += String.fromCharCode(bytes[i])
+                    }
+                    return window.btoa(binary)
+                },
+                base64_to_base64url: base64 => base64.replaceAll('/', '_').replaceAll('+', '-').replaceAll('=', ''),
+                base64url_to_base64: base64url => base64url.replaceAll('_', '/').replaceAll('-', '+'),
+                //https://stackoverflow.com/questions/40031688/javascript-arraybuffer-to-hex
+                buffer_to_hex: function (buffer) { // buffer is an ArrayBuffer
+                    return [...new Uint8Array(buffer)]
+                        .map(x => x.toString(16).padStart(2, '0'))
+                        .join('')
+                },
+                //https://gist.github.com/72lions/4528834
+                concatBuffer: function (...buffer) {
+                    const length = buffer.reduce((acc, cur) => acc + cur.byteLength, 0)
+                    let tmp = new Uint8Array(length)
+                    buffer.reduce((acc, cur) => {
+                        tmp.set(new Uint8Array(cur), acc)
+                        return acc + cur.byteLength
+                    }, 0)
+                    return tmp.buffer
+                },
+                deriveSecretKey: function (privateKey, publicKey) {
+                    return crypto.subtle.deriveKey(
+                        {
+                            name: "ECDH",
+                            public: publicKey,
+                        },
+                        privateKey,
+                        {
+                            name: "AES-GCM",
+                            length: 256,
+                        },
+                        true,
+                        ["encrypt", "decrypt"],
+                    )
+                },
+                hkdf: async function (salt, ikm, info, length) {
+                    let salt_key = await crypto.subtle.importKey("raw", salt, { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"])
+                    let key = await crypto.subtle.sign('HMAC', salt_key, ikm)
+                    let hmac_key = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"])
+                    let signature = await crypto.subtle.sign('HMAC', hmac_key, this.concatBuffer(info, new Uint8Array(1).fill(1).buffer))
+                    return signature.slice(0, length)
+                },
+                importECDHKey: function (jwk) {
+                    return crypto.subtle.importKey("jwk", jwk, {
+                        name: 'ECDH',
+                        namedCurve: jwk.crv
+                    },
+                        true,
+                        jwk.key_ops
+                    )
+                },
+                initKeyPair: async function () {
+                    this.configList.push(JSON.parse(JSON.stringify(this.configListTemplate)))
+                    const keyPair = await crypto.subtle.generateKey({
+                        name: 'ECDH',
+                        namedCurve: 'P-256'
+                    },
+                        true,
+                        ['deriveKey', 'deriveBits']
+                    )
+                    this.configListIndex = this.configList.length - 1
+                    // set name
+                    this.configList[this.configListIndex].name = 'Config ' + this.configListIndex
+                    this.configList[this.configListIndex].jwk = await crypto.subtle.exportKey('jwk', keyPair.privateKey)
+                    try {
+                        this.ecdhKeyPair = await this.importECDHKey(this.configList[this.configListIndex].jwk)
+                    } catch (e) { console.log(e) }
+                    this.configList[this.configListIndex].auth = this.base64_to_base64url(this.buffer_to_base64(crypto.getRandomValues(new Uint8Array(16)).buffer))
+
+                    // set twitter vapid
+                    this.configList[this.configListIndex].firefox.vapid = this.vapidTemplate
+                },
+                deleteKeyPair: function () {
+                    this.configList.splice(this.configListIndex, 1)
+                    if (this.configListIndex === this.configList.length && this.configListIndex !== 0) {
+                        this.configListIndex--
+                    }
+                    if (this.configList.length === 0) {
+                        this.initKeyPair()
+                    }
+                },
+                // note: ecdhKeyData is the subscriber's key object
+                getNonceAndCekAndContent: async function (publicKey, salt_, ecdhKeyData, auth) {
+                    // Convert subscription public key into a buffer.
+                    const publishPublicKey = this.base64_to_buffer(this.base64url_to_base64(publicKey))
+                    const pubDH = await crypto.subtle.importKey("raw", publishPublicKey, {
+                        name: 'ECDH',
+                        namedCurve: 'P-256'
+                    },
+                        true,
+                        []
+                    )
+                    const ecdh_secret_handle = await this.deriveSecretKey(ecdhKeyData.key, pubDH)
+                    const ecdh_secret = await crypto.subtle.exportKey('raw', ecdh_secret_handle)
+                    //console.log(ecdhKeyData, this.base64_to_buffer(this.base64url_to_base64(cryptoKey.dh)), this.buffer_to_hex(ecdh_secret))
+                    // context
+                    // https://web.dev/articles/push-notifications-web-push-protocol#context
+                    const keyLabel = new TextEncoder('utf-8').encode('P-256\0')
+
+                    const publishPublicKeyLength = new Uint8Array(2)
+                    publishPublicKeyLength[0] = 0
+                    publishPublicKeyLength[1] = publishPublicKey.byteLength
+
+                    const subscriptionPublicKeyLength = new Uint8Array(2)
+                    subscriptionPublicKeyLength[0] = 0
+                    subscriptionPublicKeyLength[1] = ecdhKeyData.public.buffer.byteLength
+
+                    const contextBuffer = this.concatBuffer(
+                        keyLabel.buffer,
+                        subscriptionPublicKeyLength.buffer,
+                        ecdhKeyData.public.buffer,
+                        publishPublicKeyLength.buffer,
+                        publishPublicKey,
+                    )
+                    const auth_secret = this.base64_to_buffer(this.base64url_to_base64(auth))
+                    const salt = this.base64_to_buffer(this.base64url_to_base64(salt_))
+
+                    const authEncBuff = new TextEncoder('utf-8').encode('Content-Encoding: auth\0')
+                    const prk = await this.hkdf(auth_secret, ecdh_secret, authEncBuff, 32)
+
+                    const nonceEncBuffer = new TextEncoder('utf-8').encode('Content-Encoding: nonce\0')
+                    const nonceInfo = this.concatBuffer(nonceEncBuffer, contextBuffer)
+
+                    const cekEncBuffer = new TextEncoder('utf-8').encode('Content-Encoding: aesgcm\0')
+                    const cekInfo = this.concatBuffer(cekEncBuffer, contextBuffer)
+
+                    // The nonce should be 12 bytes long
+                    const nonce = await this.hkdf(salt, prk, nonceInfo, 12)
+
+                    // The CEK should be 16 bytes long
+                    const contentEncryptionKey = await this.hkdf(salt, prk, cekInfo, 16)
+                    return { nonce, cek: contentEncryptionKey, content: contextBuffer }
+                },
+                // TODO padding
+                encrypt: async function (nonce, contentEncryptionKey, dataBuffer) {
+                    const cek = await crypto.subtle.importKey('raw', contentEncryptionKey, 'AES-GCM', true, ['encrypt', 'decrypt'])
+                    const data = await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, cek, this.concatBuffer(new Uint8Array(2).fill(0).buffer, dataBuffer))
+                    return { data, padding: { length: 0, data: new ArrayBuffer(0) } }
+                },
+                decrypt: async function (nonce, contentEncryptionKey, dataBuffer) {
+                    const cek = await crypto.subtle.importKey('raw', contentEncryptionKey, 'AES-GCM', true, ['encrypt', 'decrypt'])
+                    const decodedBuffer = await crypto.subtle.decrypt({ name: "AES-GCM", iv: nonce }, cek, dataBuffer)
+                    const paddingLength = new Uint8Array(decodedBuffer.slice(0, 2)).reduce((a, b) => (a + b) & 0xff, 0)
+                    const padding = decodedBuffer.slice(2, 2 + paddingLength)
+                    return { data: decodedBuffer.slice(2 + paddingLength), padding: { length: paddingLength, data: padding } }
+                },
+                decryptMessage: async function (originalMessage) {
+                    const { data: message, key: ecdhKeyData, auth } = originalMessage
+                    const cryptoKey = Object.fromEntries(message.headers.crypto_key.split(';').map(key => key.split('=')))
+                    const encryption = Object.fromEntries(message.headers.encryption.split(';').map(key => key.split('=')))
+                    const encoding = message.headers.encoding
+                    //console.log(cryptoKey, encryption, encoding)
+
+                    const { nonce, cek: contentEncryptionKey, content: contextBuffer } = await this.getNonceAndCekAndContent(cryptoKey.dh, encryption.salt, ecdhKeyData, auth)
+
+                    const text = (await this.decrypt(nonce, contentEncryptionKey, this.base64_to_buffer(this.base64url_to_base64(message.data)))).data
+
+                    return {
+                        data: new TextDecoder('utf-8').decode(text),
+                        original_data: message,
+                        key_pair: ecdhKeyData.key,
+                        key_data: ecdhKeyData,
+                        auth: auth,
+                        context: this.base64_to_base64url(this.buffer_to_base64(contextBuffer)),
+                        nonce: this.buffer_to_base64(nonce),
+                        content_encryption_key: this.buffer_to_base64(contentEncryptionKey),
+                        timestamp: Date.now()
+                    }
+                },
+                initWebsocket: function () {
+                    this.ws = new WebSocket('wss://push.services.mozilla.com/')
+                    this.wsAutoReconnect = true
+                },
+                initWebsocketEvents: function () {
+                    this.ws.onerror = console.error
+                    this.ws.onopen = async () => {
+                        console.log('open')
+                        this.ws.send(JSON.stringify({ messageType: 'hello', broadcasts: { 'remote-settings/monitor_changes': this.configList[this.configListIndex].firefox.remote_settings__monitor_changes || undefined }, use_webpush: true, uaid: this.configList[this.configListIndex].firefox.uaid }))
+                    }
+                    this.ws.onmessage = async (data) => {
+                        console.log(data)
+                        const parsedData = JSON.parse(data.data)
+
+                        switch (parsedData.messageType) {
+                            case 'hello':
+                                this.configList[this.configListIndex].firefox.uaid = parsedData.uaid
+                                if (parsedData?.broadcasts?.['remote-settings/monitor_changes']) {
+                                    this.configList[this.configListIndex].firefox.remote_settings__monitor_changes = parsedData.broadcasts['remote-settings/monitor_changes']
+                                }
+                                break
+                            case 'register':
+                                this.configList[this.configListIndex].firefox.endpoint = parsedData.pushEndpoint
+                                this.configList[this.configListIndex].firefox.channelID = parsedData.channelID
+                                break
+                            case 'unregister':
+                                if (parsedData.status === 200) {
+                                    this.configList[this.configListIndex].firefox.endpoint = ''
+                                    this.configList[this.configListIndex].firefox.channelID = ''
+                                }
+                                break
+                            case 'notification':
+                                this.ws.send(JSON.stringify({ messageType: 'ack', updates: [{ channelID: parsedData.channelID, version: parsedData.version, code: 100 }] }))
+
+                                // parse data
+
+                                //await decryptData(parsedData, subscriptionKeyCurve, auth)
+                                this.configList[this.configListIndex].original_messages.unshift({ data: parsedData, key: this.ecdhKeyData, auth: this.configList[this.configListIndex].auth })
+                                const tmpMessages = []
+                                for (const message of this.configList[this.configListIndex].original_messages) {
+                                    const tmpMessageData = await this.decryptMessage(message)
+                                    //console.log(tmpMessageData)
+                                    tmpMessages.push(tmpMessageData)
+                                }
+                                this.decryptedMessages = tmpMessages
+                                break
+                            case 'broadcast':
+                                if (parsedData?.broadcasts?.['remote-settings/monitor_changes']) {
+                                    this.configList[this.configListIndex].firefox.remote_settings__monitor_changes = parsedData.broadcasts['remote-settings/monitor_changes']
+                                }
+
+                                break
+                        }
+                    }
+
+                    this.ws.onclose = () => {
+                        console.log('closed')
+                        this.wsClosed = true
+                    }
+                },
+                registerChannel: function (channelID = crypto.randomUUID()) {
+                    this.ws.send(JSON.stringify({ channelID, messageType: 'register', key: this.vapid }))
+                },
+                unregisterChannel: function () {
+                    this.ws.send(JSON.stringify({ "messageType": "unregister", "channelID": this.configList[this.configListIndex].firefox.channelID, "status": 200 }))
+                },
+                newUaid: function () {
+                    this.configList[this.configListIndex].firefox.uaid = ''
+                    if (!this.wsClosed) {
+                        this.ws.close()
+                    }
+                },
+                wsSwitch: function () {
+                    if (this.wsClosed) {
+                        this.wsClosed = false
+                        this.initWebsocket()
+                        this.initWebsocketEvents()
+                    } else {
+                        this.wsAutoReconnect = false
+                        this.ws.close()
+                    }
+                },
+                restoreOrignalMessages: async function () {
+                    const tmpOriginalMessages = []
+                    for (const message of this.configList[this.configListIndex].original_messages) {
+                        message.key.private.buffer = this.base64_to_buffer(message.key.private.base64)
+                        message.key.public.buffer = this.base64_to_buffer(message.key.public.base64)
+                        message.key.key = await this.importECDHKey(message.key.jwk)
+                        tmpOriginalMessages.push(message)
+                    }
+                    this.configList[this.configListIndex].original_messages = tmpOriginalMessages
+                },
+                addWebPushData: function (e, id = 'uploadFile') {
+                    let oFReader = new FileReader()
+                    let oFile = document.getElementById(id).files[0]
+                    oFReader.readAsText(oFile)
+                    oFReader.onload = async (e) => {
+                        try {
+                            this.configList.push(JSON.parse(oFReader.result))
+                            this.configListIndex = this.configList.length - 1
+                            try {
+                                this.ecdhKeyPair = await this.importECDHKey(this.configList[this.configListIndex].jwk)
+                            } catch (e) { console.log(e) }
+                            this.restoreOrignalMessages()
+                            const tmpMessages = []
+                            for (const message of this.configList[this.configListIndex].original_messages) {
+                                const tmpMessageData = await this.decryptMessage(message)
+                                //console.log(tmpMessageData)
+                                tmpMessages.push(tmpMessageData)
+                            }
+                            this.decryptedMessages = tmpMessages
+                        } catch (err) {
+                            console.log(err)
+                            console.log('Unable to read json file')
+                        }
+                    }
+                },
+                download: function (filename, text) {
+                    let element = document.createElement('a')
+                    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text))
+                    element.setAttribute('download', filename)
+                    element.style.display = 'none'
+                    document.body.appendChild(element)
+                    element.click()
+                    document.body.removeChild(element)
+                },
+            }
+        })
+    </script>
+</body>
+
+</html>

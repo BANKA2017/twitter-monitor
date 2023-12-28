@@ -5,7 +5,7 @@
     <meta name="robots" content="nofollow">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="author" content="Banka2017 (https://bangdream.fun)">
+    <meta name="author" content="Banka2017 (https://nest.moe)">
     <meta name="description" content="Twitter OAuth Signature Builder">
     <title>Twitter OAuth Signature Builder</title>
     <!-- CSS only -->
@@ -149,7 +149,6 @@
     </div>
     <!--load css and js-->
     <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.js"></script>
     <script>
         'use strict';
         const TW_CONSUMER_KEY = '3nVuSoBZnx6U4vzUxf5w'
@@ -167,11 +166,7 @@
                 timestamp: "0",
                 oauth_nonce: "0",
                 stop: false,
-            },
-            computed: {
-                signature: function () {
-                    return this.getOauthAuthorization(this.oauth_token, this.oauth_token_secret, this.method, this.url, this.body, this.timestamp, this.oauth_nonce)
-                }
+                signature: ''
             },
             watch: {
                 "now": function () {
@@ -179,16 +174,17 @@
                 }
             },
             mounted: function () {
-                this.updateNow()
                 this.oauth_nonce = this.updateOauthNonce()
+                setInterval(async () => {
+                    this.updateNow()
+                    this.signature = await this.getOauthAuthorization(this.oauth_token, this.oauth_token_secret, this.method, this.url, this.body, this.timestamp, this.oauth_nonce)
+                }, 500)
             },
             methods: {
                 updateNow: function () {
                     if (!this.stop) {
                         this.timestamp = Math.floor(Date.now() / 1000)
                     }
-
-                    setTimeout(this.updateNow, 500);
                 },
                 updateOauthNonce: function () {
                     if (typeof crypto.randomUUID === "undefined") {
@@ -197,7 +193,7 @@
                         return btoa(crypto.randomUUID().replaceAll('-', '')).replaceAll('+', '').replaceAll('/', '').replaceAll('=', '')
                     }
                 },
-                getOauthAuthorization: function (oauth_token, oauth_token_secret, method = 'GET', url = '', body = '', timestamp = Math.floor(Date.now() / 1000), oauth_nonce = this.updateOauthNonce()) {
+                getOauthAuthorization: async function (oauth_token, oauth_token_secret, method = 'GET', url = '', body = '', timestamp = Math.floor(Date.now() / 1000), oauth_nonce = this.updateOauthNonce()) {
                     if (!url) {
                         return ''
                     }
@@ -223,6 +219,10 @@
                     payload.push(['oauth_timestamp', String(timestamp)])
 
                     const forSign = method + '&' + encodeURIComponent(link) + '&' + new URLSearchParams(payload.sort((a, b) => (a[0] > b[0] ? 1 : a[0] < b[0] ? -1 : 0))).toString().replaceAll('+', '%20').replaceAll('%', '%25').replaceAll('=', '%3D').replaceAll('&', '%26')
+
+                    let key = await crypto.subtle.importKey("raw", new TextEncoder('utf-8').encode(TW_CONSUMER_SECRET + '&' + (oauth_token_secret ? oauth_token_secret : '')), { name: "HMAC", hash: "SHA-1" }, false, ["sign", "verify"])
+                    let sign = await crypto.subtle.sign('HMAC', key, new TextEncoder('utf-8').encode(forSign))
+
                     return {
                         method,
                         url,
@@ -235,8 +235,16 @@
                         oauth_consumer_secret: this.oauth_consumer_secret,
                         payload,
                         forSign,
-                        sign: CryptoJS.HmacSHA1(forSign, TW_CONSUMER_SECRET + '&' + (oauth_token_secret ? oauth_token_secret : '')).toString(CryptoJS.enc.Base64)
+                        sign: this.buffer_to_base64(sign)
                     }
+                },
+                buffer_to_base64: buf => {
+                    let binary = '';
+                    const bytes = new Uint8Array(buf);
+                    for (var i = 0; i < bytes.byteLength; i++) {
+                        binary += String.fromCharCode(bytes[i]);
+                    }
+                    return btoa(binary)
                 }
             }
         })

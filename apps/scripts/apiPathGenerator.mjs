@@ -21,7 +21,8 @@ const apiPathList = {
         'data.list.tweets_timeline.timeline.instructions',
         'data.list.members_timeline.timeline.instructions',
         'data.communityResults.result.community_timeline.timeline.instructions',
-        'modules'
+        'modules',
+        'statuses'
     ],
     tweets_contents: [
         'globalObjects.tweets',
@@ -78,7 +79,7 @@ const apiPathList = {
     tweet_entities: ['note_tweet.note_tweet_results.result.entity_set', 'entities', 'legacy.entities'],
     tweet_card_url: ['url', 'rest_id'],
     tweet_quote_url: ['quoted_status_permalink.url', 'legacy.quoted_status_permalink.url'],
-    tweet_media_path: ['legacy.extended_entities.media', 'extended_entities.media'],
+    tweet_media_path: ['legacy.extended_entities.media', 'extended_entities.media', 'mediaDetails'],
     tweet_card_name: ['name', 'legacy.name'],
     tweet_card_path: ['tweet_card.legacy', 'card.legacy', 'card'],
     retweet_rest_id: ['retweeted_status_id_str', 'retweeted_status.id_str', 'legacy.retweeted_status.rest_id', 'legacy.retweeted_status_result.result.rest_id'],

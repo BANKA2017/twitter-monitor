@@ -24,7 +24,9 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
     const isTweetDeckSearch = globalObjects.modules && Array.isArray(globalObjects.modules)
     const isV1_1Timeline = globalObjects?.twitter_objects?.tweets && globalObjects?.twitter_objects?.users
     const isV1_1ArrayTimeline = Array.isArray(globalObjects) && !globalObjects.some((tweet) => !tweet.user)
+    const isV1_1SearchTimeline = globalObjects?.search_metadata && Array.isArray(globalObjects.statuses)
     const isSingleGraphqlTweet = globalObjects?.data?.tweetResult
+    //const isEmbeddedTweet = globalObjects?.__typename === 'Tweet'
 
     if (globalObjects.errors && !graphqlMode) {
         objectForReturn.errors.code = globalObjects[0].code
@@ -138,6 +140,8 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
         } else {
             if (isV1_1Timeline) {
                 objectForReturn.users = globalObjects?.twitter_objects?.users || []
+            } else if (isV1_1SearchTimeline) {
+                objectForReturn.users = (globalObjects.statuses || []).map((tweet) => tweet.user) || []
             } else if (isV1_1ArrayTimeline) {
                 objectForReturn.users = (globalObjects || []).map((tweet) => tweet.user) || []
             } else {
@@ -167,6 +171,11 @@ const TweetsInfo = (globalObjects = {}, graphqlMode = true) => {
             } else if (isV1_1ArrayTimeline) {
                 objectForReturn.cursor.top = globalObjects?.[0]?.id_str || ''
                 objectForReturn.cursor.bottom = globalObjects?.[globalObjects.length - 1]?.id_str || ''
+                objectForReturn.tweetRange.max = objectForReturn.cursor.top
+                objectForReturn.tweetRange.min = objectForReturn.cursor.bottom
+            } else if (isV1_1SearchTimeline) {
+                objectForReturn.cursor.top = globalObjects?.statuses[0]?.id_str || ''
+                objectForReturn.cursor.bottom = globalObjects?.statuses[globalObjects.statuses.length - 1]?.id_str || ''
                 objectForReturn.tweetRange.max = objectForReturn.cursor.top
                 objectForReturn.tweetRange.min = objectForReturn.cursor.bottom
             } else {
@@ -286,8 +295,8 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
             userInfo = tmpInfoHandle.GeneralAccountData
             userInfo.uid_str = GeneralTweetData.uid
             userInfo.uid = GeneralTweetData.uid
-            userInfo.description = userInfo.description.replaceAll('\n', '<br />')
-            userInfo.header = userInfo.header.replaceAll(/http:\/\/|https:\/\//gm, '')
+            userInfo.description = userInfo.description?.replaceAll('\n', '<br />')
+            userInfo.header = userInfo.header?.replaceAll(/http:\/\/|https:\/\//gm, '')
             originalTextAndEntities = GetEntitiesFromText(userInfo.description)
             userInfo.description_original = originalTextAndEntities.originalText
             userInfo.description_entities = originalTextAndEntities.entities
@@ -308,8 +317,8 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
             if (tmpInfo && (tmpInfo?.legacy?.screen_name || tmpInfo?.screen_name)) {
                 const tmpRetweetInfoHandle = GenerateAccountInfo(tmpInfo)
                 retweetUserInfo = tmpRetweetInfoHandle.GeneralAccountData
-                retweetUserInfo.description = retweetUserInfo.description.replaceAll('\n', '<br />')
-                retweetUserInfo.header = retweetUserInfo.header.replaceAll(/http:\/\/|https:\/\//gm, '')
+                retweetUserInfo.description = retweetUserInfo.description?.replaceAll('\n', '<br />')
+                retweetUserInfo.header = retweetUserInfo.header?.replaceAll(/http:\/\/|https:\/\//gm, '')
                 retweetUserInfo.uid_str = path2array('tweet_uid', content)
                 retweetUserInfo.uid = retweetUserInfo.uid_str
                 originalTextAndEntities = GetEntitiesFromText(retweetUserInfo.description)

@@ -1,10 +1,11 @@
 import { Parser } from 'm3u8-parser'
 import path2array from '../../../../libs/core/Core.apiPath.mjs'
-import { getAudioSpace, getLiveVideoStream, getConversation, getPollResult, getTweets, getBroadcast, getListTimeLine, AxiosFetch, getCommunityTweetsTimeline } from '../../../../libs/core/Core.fetch.mjs'
+import { getAudioSpace, getLiveVideoStream, getConversation, getPollResult, getTweets, getBroadcast, getListTimeLine, AxiosFetch, getCommunityTweetsTimeline, getEmbedConversation } from '../../../../libs/core/Core.fetch.mjs'
 import { Log, GetEntitiesFromText, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
 import { AudioSpace, Broadcast, Time2SnowFlake, Tweet, TweetsInfo } from '../../../../libs/core/Core.tweet.mjs'
 import { apiTemplate } from '../../../../libs/share/Constant.mjs'
 import { Rss } from '../../../../libs/core/Core.Rss.mjs'
+import { isEmpty, isObject } from 'lodash-es'
 
 const ApiTweets = async (req, env) => {
     const isRssMode = ['rss', 'xml'].includes(req.query.format)
@@ -445,53 +446,42 @@ const ApiBroadcast = async (req, env) => {
 
 const ApiMedia = async (req, env) => {
     const tweet_id = VerifyQueryString(req.query.tweet_id, 0)
-    const authorizationMode = VerifyQueryString(req.query.mode, 4)
     if (!tweet_id) {
         return env.json(apiTemplate())
     }
 
     try {
-        const tmpConversation = await getConversation({
-            tweet_id,
-            guest_token: env.guest_token2,
-            graphqlMode: true,
-            authorization: authorizationMode,
-            cookie: req.cookies,
-            web: 2
+        const tmpConversation = await getEmbedConversation({
+            tweet_id
         })
 
-        //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 4, tmpConversation.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
-        const tweetsInfo = TweetsInfo(tmpConversation.data, true)
-        if (tweetsInfo.errors.code !== 0) {
-            return env.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
-        } else if (!tweetsInfo.contents.some((tweet) => path2array('tweet_id', tweet) === tweet_id)) {
+        if (!isObject(tmpConversation.data) || isEmpty(tmpConversation.data)) {
+            Log(false, 'log', tmpConversation)
             return env.json(apiTemplate(404, 'No such tweet'))
-        } else {
-            const tweetData = Tweet(tweetsInfo.contents.filter((tweet) => path2array('tweet_id', tweet) === tweet_id)[0], {}, [], {}, true, false, true)
-            return env.json(
-                apiTemplate(200, 'OK', {
-                    video: !(Array.isArray(tweetData.video) && tweetData.video.length === 0),
-                    card_info: ((card) => {
-                        if (['broadcast', 'periscope_broadcast', 'audiospace'].includes(card?.type)) {
-                            return {
-                                type: card.type,
-                                id: card.url
-                            }
-                        }
-                        return undefined
-                    })(tweetData.card),
-                    video_info: tweetData.video,
-                    media_info: tweetData.media
-                        .filter((media) => media.source !== 'cover')
-                        .map((media) => {
-                            media.cover = media.cover.replaceAll(/(https:\/\/|http:\/\/)/gm, '')
-                            media.url = media.url.replaceAll(/(https:\/\/|http:\/\/)/gm, '')
-                            return media
-                        })
-                })
-            )
         }
+        const tweetData = Tweet(tmpConversation.data, {}, [], {}, false, false, true)
+        return env.json(
+            apiTemplate(200, 'OK', {
+                video: !(Array.isArray(tweetData.video) && tweetData.video.length === 0),
+                card_info: ((card) => {
+                    if (['broadcast', 'periscope_broadcast', 'audiospace'].includes(card?.type)) {
+                        return {
+                            type: card.type,
+                            id: card.url
+                        }
+                    }
+                    return undefined
+                })(tweetData.card),
+                video_info: tweetData.video,
+                media_info: tweetData.media
+                    .filter((media) => media.source !== 'cover')
+                    .map((media) => {
+                        media.cover = media.cover.replaceAll(/(https:\/\/|http:\/\/)/gm, '')
+                        media.url = media.url.replaceAll(/(https:\/\/|http:\/\/)/gm, '')
+                        return media
+                    })
+            })
+        )
     } catch (e) {
         Log(false, 'log', e)
         Log(false, 'error', `[${new Date()}]: #OnlineTweetMedia #${tweet_id} #${e.code} ${e.message}`)

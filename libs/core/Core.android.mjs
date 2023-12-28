@@ -1,7 +1,6 @@
 import axiosFetch from 'axios-helper'
 import { coreFetch, preCheckCtx } from './Core.fetch.mjs'
-import { HmacSHA1 } from 'crypto-es/lib/sha1.js'
-import { Base64 } from 'crypto-es/lib/enc-base64.js'
+import cryptoHandle from 'crypto-helper'
 
 // The official app installed from Google Play Store (9.95.0-release.0)
 // TW_ANDROID_BASIC_TOKEN = `Basic ${base64_encode(TW_CONSUMER_KEY+':'+TW_CONSUMER_SECRET)}`
@@ -198,14 +197,14 @@ const postOpenAccount = async (ctx = { guest_token: {}, authorization: '', flow_
     )
 }
 
-const getOauthAuthorization = (
+const getOauthAuthorization = async (
     oauth_token,
     oauth_token_secret,
     method = 'GET',
     url = '',
     body = '',
     timestamp = Math.floor(Date.now() / 1000),
-    oauth_nonce = new Array(2).fill(Math.random().toString()).join('').slice(4).toString(Base64).replaceAll('+', '').replaceAll('/', '').replaceAll('=', '')
+    oauth_nonce = btoa(new Array(2).fill(Math.random().toString()).join('').slice(4)).replaceAll('+', '').replaceAll('/', '').replaceAll('=', '')
 ) => {
     if (!url) {
         return ''
@@ -234,6 +233,10 @@ const getOauthAuthorization = (
     const forSign =
         method + '&' + encodeURIComponent(link) + '&' + new URLSearchParams(payload.sort((a, b) => (a[0] > b[0] ? 1 : a[0] < b[0] ? -1 : 0))).toString().replaceAll('+', '%20').replaceAll('%', '%25').replaceAll('=', '%3D').replaceAll('&', '%26')
     //    const forSign = method + '&' + encodeURIComponent(link) + '&' + payload.sort((a, b) => (a[0]>b[0]) ? 1 : (a[0]<b[0] ? -1 : 0)).map(x => {x[1]=encodeURIComponent(x[1]);return x.join('%3D')}).join('%26')
+    
+    let key = await cryptoHandle.subtle.importKey("raw", new TextEncoder('utf-8').encode(TW_CONSUMER_SECRET + '&' + (oauth_token_secret ? oauth_token_secret : '')), { name: "HMAC", hash: "SHA-1" }, false, ["sign", "verify"])
+    let sign = await cryptoHandle.subtle.sign('HMAC', key, new TextEncoder('utf-8').encode(forSign))
+
     return {
         method,
         url,
@@ -245,8 +248,17 @@ const getOauthAuthorization = (
         oauth_consumer_key: TW_CONSUMER_KEY,
         oauth_consumer_secret: TW_CONSUMER_SECRET,
         payload,
-        sign: HmacSHA1(forSign, TW_CONSUMER_SECRET + '&' + (oauth_token_secret ? oauth_token_secret : '')).toString(Base64)
+        sign: buffer_to_base64(sign)
     }
+}
+
+const buffer_to_base64 = buf => {
+    let binary = '';
+    const bytes = new Uint8Array(buf);
+    for (var i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary)
 }
 
 export { getBearerToken, postOpenAccountInit, postOpenAccount, getOauthAuthorization }

@@ -110,7 +110,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
     }
     if (guest_token?.open_account?.oauth_token && guest_token?.open_account?.oauth_token_secret) {
         //url = url.replace(TW_WEBAPI_PREFIX, TW_ANDROID_PREFIX)
-        const oauthSign = getOauthAuthorization(guest_token.open_account.oauth_token, guest_token.open_account.oauth_token_secret, body !== undefined ? 'POST' : 'GET', url, body)
+        const oauthSign = await getOauthAuthorization(guest_token.open_account.oauth_token, guest_token.open_account.oauth_token_secret, body !== undefined ? 'POST' : 'GET', url, body)
         authorization = `OAuth realm="http://api.twitter.com/", oauth_version="1.0", oauth_token="${oauthSign.oauth_token}", oauth_nonce="${oauthSign.oauth_nonce}", oauth_timestamp="${oauthSign.timestamp}", oauth_signature="${encodeURIComponent(
             oauthSign.sign
         )}", oauth_consumer_key="${oauthSign.oauth_consumer_key}", oauth_signature_method="HMAC-SHA1"`
@@ -880,9 +880,22 @@ const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMod
     }
 }
 
-const getEmbedConversation = async (ctx = { tweet_id: '', cookie: {} }, env = {}) => {
-    //TODO
-    //https://cdn.syndication.twimg.com/tweet-result?id=1711628751082303656&token=0
+const getEmbedConversation = async (ctx = { tweet_id: '' }, env = {}) => {
+    let { tweet_id } = preCheckCtx(ctx, {
+        tweet_id: ''
+    })
+    if (Array.isArray(tweet_id)) {
+        return await Promise.allSettled(tweet_id.map((tweetId) => getEmbedConversation({ tweet_id: tweetId })))
+    }
+    return await new Promise((resolve, reject) => {
+        coreFetch(`https://cdn.syndication.twimg.com/tweet-result?id=${tweet_id}&token=0`, {}, {}, 1)
+            .then((response) => {
+                resolve(response)
+            })
+            .catch((e) => {
+                reject(e)
+            })
+    })
 }
 
 const getEditHistory = async (ctx = { tweet_id: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
@@ -2250,6 +2263,7 @@ export {
     getMediaTimeline,
     getTweets,
     getConversation,
+    getEmbedConversation,
     getEditHistory,
     getPollResult,
     getAudioSpace,
