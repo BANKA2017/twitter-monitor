@@ -117,7 +117,7 @@
                 <div class="col-md-4">
                     <button
                         :class="{btn: true, 'btn-sm': true, 'btn-outline-danger': !stop, 'btn-danger': stop, 'mb-1': true}"
-                        type="button" @click="stop = !stop">Stop auto timestamp</button>
+                        type="button" @click="stop = !stop">Stop automatic timestamp</button>
 
                     <hr />
                     <h3>Authorization</h3>
@@ -148,14 +148,13 @@
         </div>
     </div>
     <!--load css and js-->
-    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.0"></script>
     <script>
-        'use strict';
         const TW_CONSUMER_KEY = '3nVuSoBZnx6U4vzUxf5w'
         const TW_CONSUMER_SECRET = 'Bcs59EFbbsdF6Sl9Ng71smgStWEGwXXKSjYvPVt7qys'
-        new Vue({
-            el: "#app",
-            data: {
+        const { createApp } = Vue
+        createApp({
+            data: () => ({
                 oauth_consumer_key: TW_CONSUMER_KEY,
                 oauth_consumer_secret: TW_CONSUMER_SECRET,
                 oauth_token: "370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb",
@@ -167,7 +166,7 @@
                 oauth_nonce: "0",
                 stop: false,
                 signature: ''
-            },
+            }),
             watch: {
                 "now": function () {
                     this.timestamp = this.now
@@ -247,7 +246,7 @@
                     return btoa(binary)
                 }
             }
-        })
+        }).mount('#app')
     </script>
 </body>
 

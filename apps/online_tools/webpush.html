@@ -108,7 +108,7 @@
                         {{console.log({public: ecdhKeyData.public.buffer, private: ecdhKeyData.private.buffer})}}
                     </div>
                     <div v-else class="input-group mb-3 mt-2">
-                        <textarea class="form-control" :value="jwk_input" rows="12" v-model="jwk_input"></textarea>
+                        <textarea class="form-control" rows="12" v-model="jwk_input"></textarea>
                     </div>
                     <hr />
                     <div class="mb-3">
@@ -144,16 +144,14 @@
                         <div class="mb-3">
                             <label class="form-label" for="encrypted_message_input">Encrypted Data</label>
                             <div class="input-group">
-                                <textarea class="form-control" :value="encrypted_message_input" rows="5"
-                                    v-model="encrypted_message_input"></textarea>
+                                <textarea class="form-control" rows="5" v-model="encrypted_message_input"></textarea>
                             </div>
                             <div class="form-text" id="form-text-endpoint">From source (base64url)</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label" for="endpoint">Decrypted Data</label>
                             <div class="input-group">
-                                <textarea class="form-control" :value="decrypted_message_input" rows="5"
-                                    v-model="decrypted_message_input"></textarea>
+                                <textarea class="form-control" rows="5" v-model="decrypted_message_input"></textarea>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -228,8 +226,8 @@
                         <div class="mb-3">
                             <label class="form-label" for="endpoint">Endpoint</label>
                             <div class="input-group">
-                                <textarea class="form-control" :value="configList[configListIndex].firefox.endpoint"
-                                    rows="5" v-model="configList[configListIndex].firefox.endpoint"></textarea>
+                                <textarea class="form-control" rows="5"
+                                    v-model="configList[configListIndex].firefox.endpoint"></textarea>
                             </div>
                             <div class="form-text" id="form-text-endpoint">From Autopush</div>
                         </div>
@@ -293,12 +291,11 @@
     </div>
     </div>
     <!--load css and js-->
-    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.0"></script>
     <script>
-        'use strict'
-        window.v = new Vue({
-            el: "#app",
-            data: {
+        const { createApp } = Vue
+        createApp({
+            data: () => ({
                 configList: [],
                 configListIndex: 0,
                 ecdhKeyPair: null,
@@ -345,7 +342,7 @@
                     original_messages: [],
                 },
                 vapidTemplate: "BF5oEo0xDUpgylKDTlsd8pZmxQA1leYINiY-rSscWYK_3tWAkz4VMbtf1MLE_Yyd6iII6o-e3Q9TCN5vZMzVMEs",
-            },
+            }),
             computed: {
                 jwk_input: {
                     get: function () {
@@ -886,7 +883,7 @@
                     document.body.removeChild(element)
                 },
             }
-        })
+        }).mount('#app')
     </script>
 </body>
 
