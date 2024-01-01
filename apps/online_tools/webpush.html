@@ -30,7 +30,13 @@
                                     <input id="auth" type="text" class="form-control"
                                         v-model="configList[configListIndex].name">
                                 </div>
-                                <div class="form-text" id="form-text-auth">Name of config</div>
+                                <span class="form-text" id="form-text-auth">Name of config</span>
+                                <hr />
+                                <label class="form-label" for="auth">Shared Link</label>
+                                <div class="input-group">
+                                    <input id="auth" type="text" class="form-control"
+                                        :value="shared_link">
+                                </div>
                                 <hr />
                                 <label for="upload-webpush-data">Import Config</label>
                                 <input type="file" class="form-control" id="upload-webpush-data" lang="zh"
@@ -74,7 +80,7 @@
             </div>
             <div class="row" v-if="configList[configListIndex]">
                 <div class="col-md-6">
-                    <h3>ECC key & Auth</h3>
+                    <h3>ECC & Auth</h3>
                     <div class="d-flex justify-content-between">
                         <div class="btn-group" role="group">
                             <button
@@ -136,7 +142,7 @@
                 </div>
                 <div class="col-md-6">
                     <h3>Tools</h3>
-                    <details>
+                    <details :open="open_decrypt">
                         <summary>Decrypt / Encrypt</summary>
                         <div class="mb-3">
                             <label class="form-label" for="de_encoding">Encoding</label>
@@ -203,7 +209,7 @@
                             </div>
                         </div>
                     </details>
-                    <details>
+                    <details :open="open_websocket">
                         <summary>Autopush Websocket</summary>
                         <div>Status: <span :class="{'text-danger': wsClosed, 'text-success': !wsClosed}">{{ wsClosed ?
                                 'disconnected' : 'connected' }}</span></div>
@@ -341,6 +347,9 @@
                 // page control
                 keyDataEncoded: 'jwk',// jwk, base64, base64url, hex, buffer
                 messageType: 'all',
+                /// hide config
+                open_decrypt: false,
+                open_websocket: false,
 
                 // decrypt / encrypt
                 publish_dh: '',
@@ -383,6 +392,26 @@
                 vapidTemplate: "BF5oEo0xDUpgylKDTlsd8pZmxQA1leYINiY-rSscWYK_3tWAkz4VMbtf1MLE_Yyd6iII6o-e3Q9TCN5vZMzVMEs",
             }),
             computed: {
+                shared_link: function () {
+                    return location.origin + location.pathname + '#/' + this.base64_to_base64url(btoa(JSON.stringify({ config: this.configList[this.configListIndex], ext_config: {
+                        // page control
+                        keyDataEncoded: this.keyDataEncoded,
+                        messageType: this.messageType,
+                        open_decrypt: this.open_decrypt,
+                        open_websocket: this.open_websocket,
+
+                        // decrypt / encrypt
+                        publish_dh: this.publish_dh,
+                        publish_salt: this.publish_salt,
+                        encrypted_data: this.encrypted_data,
+                        decrypted_data: this.decrypted_data,
+                        de_nonce: this.de_nonce,
+                        de_cek: this.de_cek,
+                        de_rs: this.de_rs,
+                        de_encoding: this.de_encoding,
+                        de_padding_length: this.de_padding_length,
+                    } })))
+                },
                 jwk_input: {
                     get: function () {
                         if (this.configList[this.configListIndex]) {
@@ -527,13 +556,13 @@
                             contentEncryptionKey = tmp.cek
                             //console.log(nonce, contentEncryptionKey)
 
-                            decode = await this.decrypt(nonce, contentEncryptionKey, messageData, this.de_rs, 'aes128gcm')
+                            decode = await this.decrypt(nonce, contentEncryptionKey, messageData, this.de_rs, this.de_encoding)
                         } else {
                             const tmp = await this.getAESGCMNonceAndCekAndContent(this.publish_dh, this.publish_salt, this.eccKeyData, this.configList[this.configListIndex].auth)
                             nonce = tmp.nonce
                             contentEncryptionKey = tmp.cek
 
-                            decode = await this.decrypt(nonce, contentEncryptionKey, messageData, this.de_rs, 'aesgcm')
+                            decode = await this.decrypt(nonce, contentEncryptionKey, messageData, this.de_rs, this.de_encoding)
                         }
 
                         //console.log(decode)
@@ -611,10 +640,26 @@
 
             },
             mounted: async function () {
+                // config from hash
+                if (location.hash.length > 2) {
+                    try {
+                        const decodedConfig = JSON.parse(atob(location.hash.slice(2)))
+                        //console.log(decodedConfig)
+                        // config
+                        this.configList.push(decodedConfig.config)
+                        // config_ext
+                        for (k in decodedConfig.ext_config) {
+                            if (this[k] !== undefined) {
+                                this[k] = decodedConfig.ext_config[k]
+                            }
+                        }
+                    } catch {}
+                }
+
                 if (this.configList.length === 0) {
                     this.initKeyPair()
                 }
-                // load data from localstorage
+
                 if (this.configList[this.configListIndex].jwk) {
                     try {
                         this.eccKeyHandle = await this.importECCKey(this.configList[this.configListIndex].jwk)
@@ -694,13 +739,13 @@
                         ["encrypt", "decrypt"],
                     )
                 },
-                hmac256: async function (key, data) {
+                hmac_sha_256: async function (key, data) {
                     const keyData = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"],)
                     return await crypto.subtle.sign("HMAC", keyData, data)
                 },
                 hkdf: async function (salt, ikm, info, length) {
-                    let key = await this.hmac256(salt, ikm)
-                    let signature = await this.hmac256(key, this.concatBuffer(info, new Uint8Array([1]).buffer))
+                    let key = await this.hmac_sha_256(salt, ikm)
+                    let signature = await this.hmac_sha_256(key, this.concatBuffer(info, new Uint8Array([1]).buffer))
                     return signature.slice(0, length)
                 },
                 importECCKey: function (jwk) {
@@ -743,7 +788,7 @@
                     }
                 },
                 // note: eccKeyData is the subscriber's key object
-                getAESGCMNonceAndCekAndContent: async function (publicKey, salt_, eccKeyData, auth, encoding = 'aesgcm') {
+                getAESGCMNonceAndCekAndContent: async function (publicKey, salt_, eccKeyData, auth) {
                     // Convert subscription public key into a buffer.
                     const publishPublicKey = this.base64_to_buffer(this.base64url_to_base64(publicKey))
                     const pubDH = await crypto.subtle.importKey("raw", publishPublicKey, {
@@ -816,14 +861,14 @@
                         publishPublicKey
                     )
 
-                    const PRK_key = await this.hmac256(auth_secret, ecdh_secret)
+                    const PRK_key = await this.hmac_sha_256(auth_secret, ecdh_secret)
 
-                    let IKM = await this.hmac256(PRK_key, this.concatBuffer(key_info, new Uint8Array([1]).buffer))
-                    let PRK = await this.hmac256(salt, IKM)
+                    let IKM = await this.hmac_sha_256(PRK_key, this.concatBuffer(key_info, new Uint8Array([1]).buffer))
+                    let PRK = await this.hmac_sha_256(salt, IKM)
                     let cek_info = new TextEncoder('utf-8').encode("Content-Encoding: aes128gcm\0")
-                    let contentEncryptionKey = (await this.hmac256(PRK, this.concatBuffer(cek_info, new Uint8Array([1]).buffer))).slice(0, 16)
+                    let contentEncryptionKey = (await this.hmac_sha_256(PRK, this.concatBuffer(cek_info, new Uint8Array([1]).buffer))).slice(0, 16)
                     let nonce_info = new TextEncoder('utf-8').encode("Content-Encoding: nonce\0")
-                    let nonce = (await this.hmac256(PRK, this.concatBuffer(nonce_info, new Uint8Array([1]).buffer))).slice(0, 12)
+                    let nonce = (await this.hmac_sha_256(PRK, this.concatBuffer(nonce_info, new Uint8Array([1]).buffer))).slice(0, 12)
 
                     return { nonce, cek: contentEncryptionKey, content: key_info }
                 },
@@ -874,7 +919,7 @@
                             }
                             decodedBuffer = decodedBuffer.slice(0, decodedBuffer.byteLength - paddingLength - 1)
                         } else {
-                            paddingLength = new Uint8Array(decodedBuffer.slice(0, 2)).reduce((a, b) => (a + b) & 0xff, 0)
+                            paddingLength = new DataView(decodedBuffer.slice(0, 2)).getUint8()
                             decodedBuffer = decodedBuffer.slice(2 + paddingLength)
                         }
 
@@ -896,6 +941,7 @@
                         const encryption = Object.fromEntries(message.headers.encryption.split(';').map(key => key.split('=')))
                         dh = cryptoKey.dh
                         salt = encryption.salt
+                        rs = encryption?.rs !== undefined ? encryption.rs : 0
                         messageData = this.base64_to_buffer(this.base64url_to_base64(message.data))
 
                         const tmp = await this.getAESGCMNonceAndCekAndContent(dh, salt, eccKeyData, auth)
@@ -903,7 +949,7 @@
                         contentEncryptionKey = tmp.cek
                         contextBuffer = tmp.content
 
-                        text = (await this.decrypt(nonce, contentEncryptionKey, messageData, 0, 'aesgcm')).data
+                        text = (await this.decrypt(nonce, contentEncryptionKey, messageData, rs, 'aesgcm')).data
                     } else if (encoding === 'aes128gcm') {
                         const messageDataBuffer = this.base64_to_buffer(this.base64url_to_base64(message.data))
                         salt = this.base64_to_base64url(this.buffer_to_base64(messageDataBuffer.slice(0, 16)))
