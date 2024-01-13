@@ -52,7 +52,7 @@ Building a guest account pool requires a large number of proxy servers.
 
 Create a file named `proxy.txt` in the path `scripts/` and fill in the http proxy (We don't support socks proxy yet) information:
 
-```
+```txt
 # if one line is not starts with `http`, script will ignore it
 # use `\n`, don not `\r\n` or `\r`
 # <- ignore

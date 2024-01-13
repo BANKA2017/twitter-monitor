@@ -224,6 +224,7 @@ for (const index in restfulList[0]) {
 }
 //onsole.log(globalMarkdown)
 globalMarkdown += '\n><https://github.com/BANKA2017/twitter-monitor/tree/node/apps/rate_limit_checker>\n'
+globalMarkdown += '\n\\* Now everyone can embed broadcast players directly, so the rate limit of the broadcast endpoint can be regarded as none [[original tweet](https://twitter.com/Live/status/1733197678706852095)]'
 
 writeFileSync(markdownPath, globalMarkdown)
 

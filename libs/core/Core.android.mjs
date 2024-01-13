@@ -233,8 +233,8 @@ const getOauthAuthorization = async (
     const forSign =
         method + '&' + encodeURIComponent(link) + '&' + new URLSearchParams(payload.sort((a, b) => (a[0] > b[0] ? 1 : a[0] < b[0] ? -1 : 0))).toString().replaceAll('+', '%20').replaceAll('%', '%25').replaceAll('=', '%3D').replaceAll('&', '%26')
     //    const forSign = method + '&' + encodeURIComponent(link) + '&' + payload.sort((a, b) => (a[0]>b[0]) ? 1 : (a[0]<b[0] ? -1 : 0)).map(x => {x[1]=encodeURIComponent(x[1]);return x.join('%3D')}).join('%26')
-    
-    let key = await cryptoHandle.subtle.importKey("raw", new TextEncoder('utf-8').encode(TW_CONSUMER_SECRET + '&' + (oauth_token_secret ? oauth_token_secret : '')), { name: "HMAC", hash: "SHA-1" }, false, ["sign", "verify"])
+
+    let key = await cryptoHandle.subtle.importKey('raw', new TextEncoder('utf-8').encode(TW_CONSUMER_SECRET + '&' + (oauth_token_secret ? oauth_token_secret : '')), { name: 'HMAC', hash: 'SHA-1' }, false, ['sign', 'verify'])
     let sign = await cryptoHandle.subtle.sign('HMAC', key, new TextEncoder('utf-8').encode(forSign))
 
     return {
@@ -252,11 +252,11 @@ const getOauthAuthorization = async (
     }
 }
 
-const buffer_to_base64 = buf => {
-    let binary = '';
-    const bytes = new Uint8Array(buf);
+const buffer_to_base64 = (buf) => {
+    let binary = ''
+    const bytes = new Uint8Array(buf)
     for (var i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
+        binary += String.fromCharCode(bytes[i])
     }
     return btoa(binary)
 }

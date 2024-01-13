@@ -20,6 +20,7 @@ libs/assets/config.json
 libs/assets/sagm_config.cjs
 libs/assets/analytics/account.json
 libs/assets/graphql/
+libs/assets/sqlite/
 
 libs/core/Core.apiPath.mjs
 

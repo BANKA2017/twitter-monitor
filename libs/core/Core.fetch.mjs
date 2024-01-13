@@ -160,7 +160,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
             .then((response) => {
                 //Log(false, 'log', response, JSON.stringify(response.data))
                 if (!response.data) {
-                    reject({ code: -1000, message: 'empty data' })
+                    reject({ code: -1000, message: 'empty data', e: { response } })
                 }
                 resolve(response)
             })
@@ -222,9 +222,9 @@ const getToken = async (authorization = 0, source = 'api', rateLimitOnly = false
     return await new Promise((resolve, reject) => {
         //2000 per 30 min i guess
         if (source === 'web' && [TW_AUTHORIZATION2, TWEETDECK_AUTHORIZATION2].includes(tmpResponse.authorization)) {
-            axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY })(tmpResponse.authorization === 1 ? 'https://twitter.com' : 'https://tweetdeck.twitter.com', {
+            axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY })(tmpResponse.authorization === 1 || tmpResponse.authorization === Authorization[1] ? 'https://twitter.com' : 'https://tweetdeck.twitter.com', {
                 headers: {
-                    cookie: 'guest_id=v1:0;'
+                    'sec-fetch-mode': 'navigate'
                 }
             })
                 .then((response) => {
@@ -971,18 +971,33 @@ const getAudioSpace = async (ctx = { id: '', guest_token: {}, cookie: {}, author
     })
 }
 
-const getBroadcast = async (ctx = { id: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
-    let { id, guest_token, cookie, authorization } = preCheckCtx(ctx, { id: '', guest_token: {}, cookie: {}, authorization: 1 })
+// https://twitter.com/LGE_Global/status/1742792573700440484
+const getLiveEventTimeline = async (ctx = { event_id: '', cursor: '', guest_token: {}, cookie: {}, authorization: 1, version: '1.1' }, env = {}) => {
+    // string
+    // 1.1 -> detail, tweets, but can't load more
+    // 2 -> tweets only, load more
+    let { event_id, cursor, guest_token, cookie, authorization, version } = preCheckCtx(ctx, { event_id: '', cursor: '', guest_token: {}, cookie: {}, authorization: 1, version: '1.1' })
+    if (!['1.1', '2'].includes(version)) {
+        return Promise.reject({ e: 'Invalid API version' })
+    }
     if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
         guest_token = await getToken(authorization)
     } else if (cookie?.ct0 && cookie?.auth_token) {
         guest_token = false
     }
-    if (Array.isArray(id)) {
-        return await Promise.allSettled(id.map((justId) => getBroadcast({ id: justId, guest_token, cookie, authorization })))
+    if (Array.isArray(event_id)) {
+        return await Promise.allSettled(event_id.map((justId) => getLiveEventTimeline({ event_id: justId, cursor, guest_token, cookie, authorization, version })))
     }
     return await new Promise((resolve, reject) => {
-        coreFetch(`${TW_WEBAPI_PREFIX}/1.1/broadcasts/show.json?ids=${id}&include_events=true`, guest_token, cookie, authorization)
+        coreFetch(
+            TW_WEBAPI_PREFIX +
+                (version === '1.1'
+                    ? `/1.1/live_event/1/${event_id}/timeline.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&include_ext_profile_image_shape=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=true&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_views=true&count=0&urt=true&ext=mediaColor`
+                    : `/2/live_event/timeline/${event_id}.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&include_ext_profile_image_shape=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=true&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_views=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&timeline_id=all&count=20&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2CbirdwatchPivot%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl&urt=true&get_annotations=true&cursor=${cursor}`),
+            guest_token,
+            cookie,
+            authorization
+        )
             .then((response) => {
                 resolve(response)
             })
@@ -992,18 +1007,30 @@ const getBroadcast = async (ctx = { id: '', guest_token: {}, cookie: {}, authori
     })
 }
 
-const getLiveVideoStream = async (ctx = { media_key: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
-    let { media_key, guest_token, cookie, authorization } = preCheckCtx(ctx, { media_key: '', guest_token: {}, cookie: {}, authorization: 1 })
-    if (!guest_token.success && !cookie?.ct0 && !cookie?.auth_token) {
-        guest_token = await getToken(authorization)
-    } else if (cookie?.ct0 && cookie?.auth_token) {
-        guest_token = false
-    }
-    if (Array.isArray(media_key)) {
-        return await Promise.allSettled(id.map((justId) => getLiveVideoStream({ id: justId, guest_token, cookie, authorization })))
+const getBroadcast = async (ctx = { id: '', cookie: {} }, env = {}) => {
+    let { id, cookie } = preCheckCtx(ctx, { id: '', cookie: {} })
+    if (Array.isArray(id)) {
+        return await Promise.allSettled(id.map((justId) => getBroadcast({ id: justId })))
     }
     return await new Promise((resolve, reject) => {
-        coreFetch(`${TW_WEBAPI_PREFIX}/1.1/live_video_stream/status/${media_key}?client=web&use_syndication_guest_id=false&cookie_set_host=twitter.com`, guest_token, cookie, authorization)
+        coreFetch(`${TW_WEBAPI_PREFIX}/1.1/broadcasts/show.json?ids=${id}&include_events=true`, {}, cookie, 1)
+            .then((response) => {
+                resolve(response)
+            })
+            .catch((e) => {
+                reject(e)
+            })
+    })
+}
+
+const getLiveVideoStream = async (ctx = { media_key: '', cookie: {} }, env = {}) => {
+    let { media_key, cookie } = preCheckCtx(ctx, { media_key: '', cookie: {} })
+
+    if (Array.isArray(media_key)) {
+        return await Promise.allSettled(id.map((justId) => getLiveVideoStream({ id: justId, cookie })))
+    }
+    return await new Promise((resolve, reject) => {
+        coreFetch(`${TW_WEBAPI_PREFIX}/1.1/live_video_stream/status/${media_key}?client=web&use_syndication_guest_id=false&cookie_set_host=twitter.com`, {}, cookie, 1)
             .then((response) => {
                 resolve(response)
             })
@@ -2267,6 +2294,7 @@ export {
     getEditHistory,
     getPollResult,
     getAudioSpace,
+    getLiveEventTimeline,
     getBroadcast,
     getLiveVideoStream,
     getTypeahead,

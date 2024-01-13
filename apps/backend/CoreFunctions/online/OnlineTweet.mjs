@@ -394,12 +394,9 @@ const ApiBroadcast = async (req, env) => {
         return env.json(apiTemplate())
     }
 
-    //TODO check Broadcast api rate limit
     try {
-        const tmpBroadcastData = await getBroadcast({ id, guest_token: env.guest_token2, cookie: req.cookies })
+        const tmpBroadcastData = await getBroadcast({ id, cookie: req.cookies })
 
-        //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 4, tmpBroadcastData.headers.get('x-rate-limit-remaining') < 1, 'BroadCast')
         let tmpBroadcast = Broadcast(tmpBroadcastData.data)
         //get link
         if (tmpBroadcast.is_available_for_replay || (Number(tmpBroadcast.start) <= Date.now() && tmpBroadcast.end === '0')) {
