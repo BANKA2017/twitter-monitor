@@ -28,7 +28,6 @@ apps/cfworkers/dist/
 
 !apps/crawler/savetweets/.gitkeep
 
-packages/fasttext/
 libs/model/
 
 .DS_Store

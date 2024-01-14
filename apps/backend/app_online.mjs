@@ -2,7 +2,7 @@ import express from 'express'
 import { Log, GuestToken } from '../../libs/core/Core.function.mjs'
 import { apiTemplate } from '../../libs/share/Constant.mjs'
 import { basePath } from '../../libs/share/NodeConstant.mjs'
-//import { LanguageIdentification } from '../../packages/fasttext/language.mjs'
+import { loadModule } from 'cld3-asm'
 //Online api
 import { MediaProxy } from './CoreFunctions/media/MediaProxy.mjs'
 import online from './service/online.mjs'
@@ -117,8 +117,8 @@ app.use('/media', media)
 //app.use('/bot', bot)
 
 //LanguageIdentification
-//global.LanguageIdentification = new LanguageIdentification
-//Log(false, 'log', 'tmv3: Enabled language identification service')
+global.LanguageIdentification = await loadModule()
+Log(false, 'log', 'tmv3: Enabled language identification service')
 
 //media proxy
 media.use(

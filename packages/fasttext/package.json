@@ -1,7 +1,0 @@
-{
-    "name": "fasttext",
-    "version": "0.0.1",
-    "private": true,
-    "main": "fasttext.js",
-    "type": "commonjs"
-}

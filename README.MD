@@ -165,7 +165,6 @@ We use GitHub Actions to build some scripts, you can find them in [BANKA2017/twi
 
 ## Sub packages
 
-* `FastText` for language identity, [Read more](https://github.com/BANKA2017/twitter-monitor/tree/node/packages/fasttext)
 * `AxiosHelper` used to fix the issue that CloudFlare Workers unable to use axios, [Read more](https://github.com/BANKA2017/twitter-monitor/tree/node/packages/axios-helper)
 
 ## Thanks
@@ -328,7 +327,6 @@ We use GitHub Actions to build some scripts, you can find them in [BANKA2017/twi
 
 ## 子包
 
-* `FastText` 用于识别语言, [阅读更多](https://github.com/BANKA2017/twitter-monitor/tree/node/packages/fasttext)
 * `AxiosHelper` 用于处理解决 Workers 无法使用 axios 的问题, [阅读更多](https://github.com/BANKA2017/twitter-monitor/tree/node/packages/axios-helper)
 
 ## 出处 & 感谢
