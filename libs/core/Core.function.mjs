@@ -1,5 +1,8 @@
+import { cloneDeep, shuffle } from 'lodash-es'
 import { getBearerToken, postOpenAccount, postOpenAccountInit } from './Core.android.mjs'
 import { getToken, postFlowTask, getJsInstData, getViewer } from './Core.fetch.mjs'
+import axiosFetch from 'axios-helper'
+import { SnowFlake2Time } from './Core.tweet.mjs'
 //import * as twitter_text from 'twitter-text'
 
 export class setGlobalServerInfo {
@@ -135,6 +138,80 @@ export class GuestToken {
     }
     get token() {
         return this.#guest_token
+    }
+}
+
+export class GuestAccount {
+    #guestAccountList = []
+    #pool_link = ''
+    #time = 25 * 24 * 60 * 60 * 1000
+    constructor(pool_link, accounts = []) {
+        this.#pool_link = pool_link
+        this.#guestAccountList = cloneDeep(accounts)
+    }
+    UpdatePoolLink(pool_link = '') {
+        try {
+            new URL(pool_link)
+            this.#pool_link = pool_link
+        } catch (e) {
+            Log(false, 'log', e)
+            Log(false, 'log', 'tmv3: Invalid guest account pool link // ' + pool_link)
+        }
+    }
+    AddNewAccounts(replace = false, accounts = []) {
+        if (replace) {
+            this.#guestAccountList = accounts
+        } else {
+            this.#guestAccountList.push(...accounts)
+        }
+    }
+    async GetNewAccountsByCFKV(kv, replace = false, count = 5) {
+        const list = (await kv.list({ prefix: 'tm:open_account:_LO_', limit: 1000 })).keys.filter((key) => key.expiration)
+        if (count <= 0 || Number.isNaN(count)) {
+            count = 1
+        } else if (count > 25) {
+            count = 25
+        }
+        let randomKey = []
+        const shuffledList = shuffle(list)
+        for (const tmpListItem of shuffledList.slice(0, count)) {
+            randomKey.push(JSON.parse(await kv.get(tmpListItem.name)))
+        }
+        // TODO use cache api to cache this response
+        this.AddNewAccounts(replace, randomKey)
+    }
+    async GetNewAccountsByRemote(replace = false) {
+        if (this.#pool_link) {
+            axiosFetch()
+                .get(this.#pool_link)
+                .then((accountFromAccountPool) => {
+                    if (accountFromAccountPool.data?.code === 200 && Array.isArray(accountFromAccountPool.data?.data)) {
+                        Log(false, 'log', 'tmv3: Get ' + accountFromAccountPool.data.data.length + ' guest accounts from pool')
+                        this.AddNewAccounts(replace, accountFromAccountPool.data.data)
+                    }
+                })
+                .catch((e) => {
+                    Log(false, 'log', e)
+                    Log(false, 'log', 'tmv3: Unable to get guest accounts from account pool')
+                })
+        }
+    }
+    RemoveUselessAccounts(screen_name = '') {
+        if (screen_name && this.#guestAccountList.find((account) => account.user.screen_name === screen_name)) {
+            this.#guestAccountList = this.#guestAccountList.filter((account) => account.user.screen_name !== screen_name)
+        } else {
+            const now = Date.now()
+            this.#guestAccountList = this.#guestAccountList.filter((account) => SnowFlake2Time(account.user.id_str).creation_time_milli + this.#time > now)
+        }
+    }
+    get Link() {
+        return this.#pool_link
+    }
+    get List() {
+        return this.#guestAccountList
+    }
+    get RandomItem() {
+        return this.#guestAccountList[Math.floor(Math.random() * this.#guestAccountList.length)]
     }
 }
 

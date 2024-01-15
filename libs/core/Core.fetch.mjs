@@ -134,10 +134,10 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
         tmpHeaders = {
             ...tmpHeaders,
             ...{
-                'User-Agent': 'TwitterAndroid/9.95.0-release.0 (29950000-r-0) ONEPLUS+A3010/9 (OnePlus;ONEPLUS+A3010;OnePlus;OnePlus3;0;;1;2016)',
+                'User-Agent': 'TwitterAndroid/10.21.0-release.0 (310210000-r-0) ONEPLUS+A3010/9 (OnePlus;ONEPLUS+A3010;OnePlus;OnePlus3;0;;1;2016)',
                 'X-Twitter-API-Version': 5,
                 'X-Twitter-Client': 'TwitterAndroid',
-                'X-Twitter-Client-Version': '9.95.0-release.0',
+                'X-Twitter-Client-Version': '10.21.0-release.0',
                 'OS-Version': '28',
                 'System-User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 9; ONEPLUS A3010 Build/PKQ1.181203.001)',
                 'X-Twitter-Active-User': 'yes'

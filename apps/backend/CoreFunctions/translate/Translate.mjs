@@ -68,10 +68,10 @@ const ApiLocalTranslate = async (req, res) => {
 const ApiPredict = async (req, res) => {
     const text = VerifyQueryString(req.query.text, '')
     if (!text) {
-        res.json(apiTemplate(200, 'OK', [], 'translate'))
+        res.json(apiTemplate(403, 'Empty content', {}, 'translate'))
     } else {
         if (!global.LanguageIdentification) {
-            res.json(apiTemplate(500, 'Unable to load the cld3 model', tmpLang, 'translate'))
+            res.json(apiTemplate(500, 'Unable to load the cld3 model', {}, 'translate'))
         } else {
             const identifier = global.LanguageIdentification.create(0, 1000)
             const tmpLang = identifier.findLanguage(text)

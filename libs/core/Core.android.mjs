@@ -2,7 +2,7 @@ import axiosFetch from 'axios-helper'
 import { coreFetch, preCheckCtx } from './Core.fetch.mjs'
 import cryptoHandle from 'crypto-helper'
 
-// The official app installed from Google Play Store (9.95.0-release.0)
+// The official app installed from Google Play Store (10.21.0-release.0)// (9.95.0-release.0)->todel
 // TW_ANDROID_BASIC_TOKEN = `Basic ${base64_encode(TW_CONSUMER_KEY+':'+TW_CONSUMER_SECRET)}`
 const TW_ANDROID_BASIC_TOKEN = 'Basic M25WdVNvQlpueDZVNHZ6VXhmNXc6QmNzNTlFRmJic2RGNlNsOU5nNzFzbWdTdFdFR3dYWEtTall2UFZ0N3F5cw=='
 const TW_CONSUMER_KEY = '3nVuSoBZnx6U4vzUxf5w'
@@ -45,12 +45,7 @@ const postOpenAccountInit = async (ctx = { guest_token: {}, authorization: '' },
         {},
         {
             flow_token: null,
-            input_flow_data: {
-                country_code: null,
-                flow_context: { referrer_context: { referral_details: 'utm_source=google-play&utm_medium=organic', referrer_url: '' }, start_location: { location: 'splash_screen' } },
-                requested_variant: null,
-                target_user_id: 0
-            },
+            input_flow_data: { country_code: null, flow_context: { start_location: { location: 'splash_screen' } }, requested_variant: null, target_user_id: 0 },
             subtask_versions: {
                 generic_urt: 3,
                 standard: 1,
@@ -58,6 +53,7 @@ const postOpenAccountInit = async (ctx = { guest_token: {}, authorization: '' },
                 app_locale_update: 1,
                 enter_date: 1,
                 email_verification: 3,
+                deregister_device: 1,
                 enter_password: 5,
                 enter_text: 5,
                 one_tap: 2,
@@ -69,7 +65,6 @@ const postOpenAccountInit = async (ctx = { guest_token: {}, authorization: '' },
                 fetch_temporary_password: 1,
                 menu_dialog: 1,
                 sign_up_review: 5,
-                interest_picker: 4,
                 user_recommendations_urt: 3,
                 in_app_notification: 1,
                 sign_up: 2,
@@ -142,6 +137,7 @@ const postOpenAccount = async (ctx = { guest_token: {}, authorization: '', flow_
                 app_locale_update: 1,
                 enter_date: 1,
                 email_verification: 3,
+                deregister_device: 1,
                 enter_password: 5,
                 enter_text: 5,
                 one_tap: 2,
@@ -153,7 +149,6 @@ const postOpenAccount = async (ctx = { guest_token: {}, authorization: '', flow_
                 fetch_temporary_password: 1,
                 menu_dialog: 1,
                 sign_up_review: 5,
-                interest_picker: 4,
                 user_recommendations_urt: 3,
                 in_app_notification: 1,
                 sign_up: 2,

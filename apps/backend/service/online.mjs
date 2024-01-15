@@ -17,7 +17,7 @@ online.use(async (req, res, next) => {
     }
     //await global.guest_token2.updateGuestToken(0)
     await req.env.guest_token2_handle.updateGuestToken(4)
-    await req.env.guest_token3_handle.openAccountInit(req.env.guest_accounts[Math.floor(Math.random() * req.env.guest_accounts.length)])
+    await req.env.guest_token3_handle.openAccountInit(req.env.guest_accounts.RandomItem)
     //if (global.guest_token2.token.nextActiveTime) {
     //    Log(false, 'error', `[${new Date()}]: #Online #GuestToken #429 Wait until ${global.guest_token2.token.nextActiveTime}`)
     //    res.json(apiTemplate(429, `Wait until ${global.guest_token2.token.nextActiveTime}`))

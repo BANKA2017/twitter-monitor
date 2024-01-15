@@ -8,6 +8,7 @@ import { getBearerToken } from '../../../libs/core/Core.android.mjs'
 const username = ''
 const password = ''
 const android_id = '' // Android id is a 64-bit number (as a hex string), everyone can get one from fcm
+const _2fa_code = ''
 
 let authentication = null
 
@@ -18,10 +19,10 @@ const getToken = new GuestToken()
 await getToken.updateGuestToken(Authorization)
 
 const headers = {
-    'User-Agent': 'TwitterAndroid/9.95.0-release.0 (29950000-r-0) ONEPLUS+A3010/9 (OnePlus;ONEPLUS+A3010;OnePlus;OnePlus3;0;;1;2016)',
+    'User-Agent': 'TwitterAndroid/10.21.0-release.0 (310210000-r-0) ONEPLUS+A3010/9 (OnePlus;ONEPLUS+A3010;OnePlus;OnePlus3;0;;1;2016)',
     'X-Twitter-API-Version': 5,
     'X-Twitter-Client': 'TwitterAndroid',
-    'X-Twitter-Client-Version': '9.95.0-release.0',
+    'X-Twitter-Client-Version': '10.21.0-release.0',
     'OS-Version': '28',
     'System-User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 9; ONEPLUS A3010 Build/PKQ1.181203.001)',
     'X-Twitter-Active-User': 'yes',
@@ -131,7 +132,6 @@ for (const subtask of task4.data?.subtasks || []) {
     } else if (subtask.enter_text) {
         response_text = subtask.enter_text.hint_text
         console.log(response_text)
-        const code = ''
         const task5 = axios.post(
             'https://api.twitter.com/1.1/onboarding/task.json',
             JSON.stringify({
@@ -140,7 +140,7 @@ for (const subtask of task4.data?.subtasks || []) {
                     {
                         enter_text: {
                             suggestion_id: null,
-                            text: code,
+                            text: _2fa_code,
                             link: 'next_link'
                         },
                         subtask_id: 'LoginAcid'

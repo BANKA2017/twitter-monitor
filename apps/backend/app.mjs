@@ -1,5 +1,5 @@
 import express from 'express'
-import { Log, GuestToken } from '../../libs/core/Core.function.mjs'
+import { Log, GuestToken, GuestAccount } from '../../libs/core/Core.function.mjs'
 import { apiTemplate } from '../../libs/share/Constant.mjs'
 import { basePath } from '../../libs/share/NodeConstant.mjs'
 import { loadModule } from 'cld3-asm'
@@ -22,7 +22,7 @@ let EXPRESS_PORT = 3000
 let EXPRESS_ALLOW_ORIGIN = ['*']
 let STATIC_PATH = ''
 let ACTIVE_SERVICE = []
-let GUEST_ACCOUNTS = []
+let GUEST_ACCOUNT_HANDLE = new GuestAccount()
 let AUDIO_SPACE_CACHE = {}
 
 for (const argvContent of process.argv.slice(2)) {
@@ -41,16 +41,28 @@ if (settingsFile && existsSync(settingsFile)) {
     EXPRESS_ALLOW_ORIGIN = settings.EXPRESS_ALLOW_ORIGIN
     STATIC_PATH = settings.STATIC_PATH
     ACTIVE_SERVICE = settings.ACTIVE_SERVICE
-    if (settings.GUEST_ACCOUNTS && Array.isArray(settings.GUEST_ACCOUNTS) && settings.GUEST_ACCOUNTS.length > 0) {
-        GUEST_ACCOUNTS = settings.GUEST_ACCOUNTS
+    if (settings.GUEST_ACCOUNT_HANDLE && Array.isArray(settings.GUEST_ACCOUNT_HANDLE) && settings.GUEST_ACCOUNT_HANDLE.length > 0) {
+        GUEST_ACCOUNT_HANDLE.AddNewAccounts(false, settings.GUEST_ACCOUNT_HANDLE)
+    }
+    if (settings.GUEST_ACCOUNT_POOL && settings.GUEST_ACCOUNT_POOL_TOKEN) {
+        GUEST_ACCOUNT_HANDLE.UpdatePoolLink(`${settings.GUEST_ACCOUNT_POOL}/data/random?count=5&key=${settings.GUEST_ACCOUNT_POOL_TOKEN}`)
     }
 }
 
 // guest accounts
 if (existsSync(basePath + '/../guest_accounts.json')) {
-    GUEST_ACCOUNTS = GUEST_ACCOUNTS.concat(JSON.parse(readFileSync(basePath + '/../guest_accounts.json').toString()))
+    GUEST_ACCOUNT_HANDLE.AddNewAccounts(false, JSON.parse(readFileSync(basePath + '/../guest_accounts.json').toString()))
 } else if (existsSync(resolve('.') + '/guest_accounts.json')) {
-    GUEST_ACCOUNTS = GUEST_ACCOUNTS.concat(JSON.parse(readFileSync(resolve('.') + '/guest_accounts.json').toString()))
+    GUEST_ACCOUNT_HANDLE.AddNewAccounts(false, JSON.parse(readFileSync(resolve('.') + '/guest_accounts.json').toString()))
+}
+
+// get guest account from guest account pool
+if (GUEST_ACCOUNT_HANDLE.Link) {
+    await GUEST_ACCOUNT_HANDLE.GetNewAccountsByRemote(true)
+    setInterval(async () => {
+        await GUEST_ACCOUNT_HANDLE.GetNewAccountsByRemote(true)
+        GUEST_ACCOUNT_HANDLE.RemoveUselessAccounts()
+    }, 1000 * 60 * 60) // per hour
 }
 
 // audio space cache
@@ -95,7 +107,7 @@ app.use((req, res, next) => {
         guest_token2: {},
         guest_token3_handle: global.guest_token3,
         guest_token3: {},
-        guest_accounts: GUEST_ACCOUNTS,
+        guest_accounts: GUEST_ACCOUNT_HANDLE,
         audio_apsce_cache: AUDIO_SPACE_CACHE
     }
 
