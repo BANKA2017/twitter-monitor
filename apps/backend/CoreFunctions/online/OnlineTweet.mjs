@@ -79,10 +79,10 @@ const ApiTweets = async (req, env) => {
         }
     } else if (isConversation) {
         try {
-            tweets = await getConversation({ tweet_id, guest_token: env.guest_token2, graphqlMode, cursor: isNaN(cursor) ? cursor : '', cookie: req.cookies, web: 2 })
+            tweets = await getConversation({ tweet_id, guest_token: env.guest_token3, graphqlMode, cursor: isNaN(cursor) ? cursor : '', cookie: req.cookies, web: false })
             //TODO mix mode, tweet and replies
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token2', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
+            await env.updateGuestToken(env, 'guest_token3', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
         } catch (e) {
             Log(false, 'error', `[${new Date()}]: #OnlineTweetsConversation #${tweet_id} #${e.code} ${e.message}`)
             return env.json(apiTemplate(e.code, e.message))
@@ -284,7 +284,7 @@ const ApiSearch = async (req, env) => {
             guest_token: env.guest_token3,
             count: queryCount,
             online: true,
-            graphqlMode: false,
+            graphqlMode: true,
             searchMode: true,
             cookie: req.cookies
         })
@@ -296,7 +296,7 @@ const ApiSearch = async (req, env) => {
         return env.json(apiTemplate(e.code, e.message))
     }
 
-    const { tweetsInfo, tweetsContent, rssContent } = GenerateData(tweets, false, '', false, req)
+    const { tweetsInfo, tweetsContent, rssContent } = GenerateData(tweets, false, '', true, req)
     if (tweetsInfo.errors.code !== 0) {
         return env.json(apiTemplate(tweetsInfo.errors.code, tweetsInfo.errors.message))
     } else if (isRssMode) {
@@ -465,6 +465,11 @@ const ApiMedia = async (req, env) => {
                         return {
                             type: card.type,
                             id: card.url
+                        }
+                    } else if (card?.type === 'live_event' && tweetData.original_data?.card?.binding_values?.broadcast_id?.string_value) {
+                        return {
+                            type: card.type,
+                            id: tweetData.original_data?.card?.binding_values?.broadcast_id?.string_value
                         }
                     }
                     return undefined

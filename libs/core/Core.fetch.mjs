@@ -84,7 +84,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
     }
     let loginMode = !!(cookie?.auth_token && cookie?.ct0) || (guest_token?.open_account?.oauth_token && guest_token?.open_account?.oauth_token_secret) || !guest_token
     //TODO fix rate limit
-    if (!loginMode && !guest_token.success) {
+    if (!loginMode && guest_token !== false && !guest_token?.success) {
         guest_token = await getToken(authorization)
     }
     const objectBody = typeof body === 'object' && body !== null && (!headers['content-type'] || headers['content-type'] === 'application/json')
@@ -94,7 +94,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
     //cookie
     let requestCookie = { ct0: generateCsrfToken() }
     //guest token
-    if (!loginMode) {
+    if (!loginMode && guest_token !== false) {
         requestCookie.gt = guest_token.token
         requestCookie = { ...requestCookie, ...Object.fromEntries(guest_token.cookies.map((tmpCookie) => tmpCookie.split('='))) }
     }
@@ -119,13 +119,16 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
     }
 
     let tmpHeaders = {
-        authorization: typeof authorization === 'string' ? authorization : Authorization[authorization],
-        'x-guest-token': loginMode || (typeof authorization === 'string' && authorization.startsWith('OAuth')) ? undefined : guest_token.token,
+        authorization: guest_token === false && cookie === false ? undefined : typeof authorization === 'string' ? authorization : Authorization[authorization],
+        'x-guest-token': loginMode || (typeof authorization === 'string' && authorization.startsWith('OAuth')) || guest_token === false ? undefined : guest_token.token,
         'content-type': 'application/json',
-        'x-csrf-token': requestCookie.ct0,
-        cookie: Object.entries(requestCookie)
-            .map((x) => x.join('='))
-            .join(';')
+        'x-csrf-token': guest_token === false && cookie === false ? undefined : requestCookie.ct0,
+        cookie:
+            guest_token === false && cookie === false
+                ? undefined
+                : Object.entries(requestCookie)
+                      .map((x) => x.join('='))
+                      .join(';')
     }
     if ((typeof authorization === 'string' && authorization.startsWith('OAuth')) || guest_token?.open_account) {
         if (typeof authorization === 'string' && authorization.startsWith('OAuth')) {
@@ -1013,7 +1016,7 @@ const getBroadcast = async (ctx = { id: '', cookie: {} }, env = {}) => {
         return await Promise.allSettled(id.map((justId) => getBroadcast({ id: justId })))
     }
     return await new Promise((resolve, reject) => {
-        coreFetch(`${TW_WEBAPI_PREFIX}/1.1/broadcasts/show.json?ids=${id}&include_events=true`, {}, cookie, 1)
+        coreFetch(`${TW_WEBAPI_PREFIX}/1.1/broadcasts/show.json?ids=${id}&include_events=true`, false, false, 1)
             .then((response) => {
                 resolve(response)
             })
@@ -1030,7 +1033,7 @@ const getLiveVideoStream = async (ctx = { media_key: '', cookie: {} }, env = {})
         return await Promise.allSettled(id.map((justId) => getLiveVideoStream({ id: justId, cookie })))
     }
     return await new Promise((resolve, reject) => {
-        coreFetch(`${TW_WEBAPI_PREFIX}/1.1/live_video_stream/status/${media_key}?client=web&use_syndication_guest_id=false&cookie_set_host=twitter.com`, {}, cookie, 1)
+        coreFetch(`${TW_WEBAPI_PREFIX}/1.1/live_video_stream/status/${media_key}?client=web&use_syndication_guest_id=false&cookie_set_host=twitter.com`, false, false, 1)
             .then((response) => {
                 resolve(response)
             })

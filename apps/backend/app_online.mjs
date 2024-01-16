@@ -56,7 +56,7 @@ if (GUEST_ACCOUNT_HANDLE.Link) {
     setInterval(async () => {
         await GUEST_ACCOUNT_HANDLE.GetNewAccountsByRemote(true)
         GUEST_ACCOUNT_HANDLE.RemoveUselessAccounts()
-    }, 1000 * 60 * 60) // per hour
+    }, 1000 * 60 * 60 * 8) // per 8 hours
 }
 
 // audio space cache

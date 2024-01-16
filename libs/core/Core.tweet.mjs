@@ -271,6 +271,8 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
     let socialContext = {}
     let birdwatch = {}
 
+    let original_data = {}
+
     let originalTextAndEntities
     if (graphqlMode) {
         if (content?.content?.itemContent?.socialContext) {
@@ -389,6 +391,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
     //full_text
     GeneralTweetData.full_text_original = path2array('tweet_full_text', content) //原始全文
     const tmpEntities = path2array('tweet_entities', content)
+    original_data.entities = tmpEntities
     if (Object.keys(tmpEntities).some((key) => tmpEntities[key].length > 0)) {
         tags = GenerateEntities(tmpEntities, GeneralTweetData.uid, GeneralTweetData.tweet_id, hidden)
     }
@@ -428,6 +431,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
 
     //card
     const tmpCard = path2array('tweet_card_path', content)
+    original_data.card = tmpCard
 
     if (tmpCard || content.voice_info) {
         let cardObject
@@ -544,7 +548,8 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
         vibe,
         community,
         socialContext,
-        birdwatch
+        birdwatch,
+        original_data
     }
 }
 
@@ -734,7 +739,7 @@ const GetCard = (cardContent = {}, uid = '0', tweetId = '0', cardUrl = '', graph
             returnDataCard.media = returnDataCard.media.concat(cardInfo.media)
         }
     } else {
-        returnDataCard.message = `快来研究新的卡片\n #new_card #${returnDataCard.card_name} \nid: $tweet_id\nhttps://twitter.com/i/status/$tweet_id\n${JSON.stringify(cardContent)}`
+        returnDataCard.message = `#new_card #${returnDataCard.card_name} \nid: $tweet_id\nhttps://twitter.com/i/status/$tweet_id\n${JSON.stringify(cardContent)}`
     }
 
     return returnDataCard
@@ -756,7 +761,7 @@ const Entity = (type, entity = {}, uid = 0, tweetId = 0, hidden = false) => {
         type: type.slice(0, -1)
     }
     switch (type) {
-        case 'symbols': // 上市公司代码 || 虚拟货币
+        case 'symbols': // stock symbols && cryptocurrency abbreviation
         case 'hashtags':
             entityData.text = entity.text //最终显示的文本
             break
@@ -1205,13 +1210,22 @@ const Card = (cardInfo = {}, uid = '0', tweetId = '0', hidden = false, url = '',
                 tmpWhereIsInfoFrom.description = 'event_subtitle'
                 tmpWhereIsInfoFrom.cover = 'event_thumbnail_large'
                 tmpWhereIsInfoFrom.original = 'event_thumbnail_original'
+
+                // We need more time to parse live event
+                // media_type -> image
+                // media_type -> broadcast
+                //   ->https://twitter.com/i/events/1739900690804146176
+                //   -><==>
+                //   ->https://twitter.com/i/broadcasts/1nAKEaoVEpgKL
+                // ...
+                tmpCardInfo.data.url = cardInfo?.binding_values?.event_id?.string_value || ''
                 break
             case 'moment':
                 tmpWhereIsInfoFrom.cover = 'photo_image'
                 tmpWhereIsInfoFrom.original = 'photo_image'
                 tmpCardInfo.data.url = cardInfo.binding_values.url.string_value
                 break
-            //类似clubhouse的玩意
+            //like clubhouse
             //https://help.twitter.com/en/using-twitter/spaces
             //https://twitter.com/twitterspaces
             case 'audiospace':

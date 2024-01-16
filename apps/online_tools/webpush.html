@@ -221,7 +221,7 @@
                             <button class="btn btn-sm btn-outline-danger mb-1 me-1" type="button" @click="newUaid">New
                                 Uaid</button>
                             <button class="btn btn-sm btn-outline-danger mb-1 me-1" type="button"
-                                @click="registerChannel">New Channel</button>
+                                @click="registerRandomChannel">New Channel</button>
                             <button class="btn btn-sm btn-danger mb-1 me-1" type="button"
                                 @click="unregisterChannel">Unregister Channel</button>
                         </div>
@@ -1058,6 +1058,9 @@
                         console.log('closed')
                         this.wsClosed = true
                     }
+                },
+                registerRandomChannel: function () {
+                    this.registerChannel(crypto.randomUUID())
                 },
                 registerChannel: function (channelID = crypto.randomUUID()) {
                     this.ws.send(JSON.stringify({ channelID, messageType: 'register', key: this.vapid }))
