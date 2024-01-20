@@ -189,8 +189,8 @@ for (const index in authorizationList) {
     await getStatusResponse(getCommunityTweetsTimeline({ id: '1539049437791666176', guest_token: guest_token.token, authorization: guest_token.token.authorization }), guest_token, 'graphql:community_timeline')
 
     // Following/Followers
-    await getStatusResponse(getFollowingOrFollowers({ id: '783214', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: false, type: 'Following' }), guest_token, 'restful:following')
-    await getStatusResponse(getFollowingOrFollowers({ id: '783214', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: false, type: 'Followers' }), guest_token, 'restful:followers')
+    await getStatusResponse(getFollowingOrFollowers({ id: 'xdevelopers', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: false, type: 'Following' }), guest_token, 'restful:following')
+    await getStatusResponse(getFollowingOrFollowers({ id: 'xdevelopers', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: false, type: 'Followers' }), guest_token, 'restful:followers')
 
     // Likes
     await getStatusResponse(getLikes({ id: '783214', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: false }), guest_token, 'restful:likes')
