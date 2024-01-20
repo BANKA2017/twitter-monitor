@@ -69,11 +69,17 @@ const getStatusResponse = async (_function, guest_token, label = '_') => {
         tmpRes = e.e?.response
     }
 
+    let reset = tmpRes.headers['x-rate-limit-reset'] ? Number(tmpRes.headers['x-rate-limit-reset']) - Number(new Date(tmpRes.headers['date'])) / 1000 : '_'
+    // fix jitter issue
+    if (reset !== '_' && reset > 880 && reset < 920) {
+        reset = 900
+    }
+
     globalList[guest_token.token.authorization].list[label] = {
         code,
         message,
         rate_limit: Number(tmpRes.headers['x-rate-limit-limit']) || '_',
-        rate_limit_reset: tmpRes.headers['x-rate-limit-reset'] ? Number(tmpRes.headers['x-rate-limit-reset']) - Number(new Date(tmpRes.headers['date'])) / 1000 : '_',
+        rate_limit_reset: reset,
         status: code === 200 && tmpRes.data ? v : x,
         url: tmpRes.config.url,
         method: tmpRes?.config?.method?.toUpperCase() || 'GET',

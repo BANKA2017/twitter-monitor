@@ -4,7 +4,7 @@ import axiosFetch from 'axios-helper'
 import { PregMatchAll } from '../../libs/share/MockFuntions.mjs'
 import { Log } from '../../libs/core/Core.function.mjs'
 
-let link = 'https://twitter.com/explore'
+let link = 'https://twitter.com/i/flow/login'
 
 if (process.argv[2]) {
     try {
@@ -56,7 +56,7 @@ const updateIdList = (content) => {
             //features
             //Log(false, 'log', queryIdList[tmpName])
             if (queryIdList[tmpName]?.metadata?.featureSwitches) {
-                queryIdList[tmpName].features = Object.fromEntries((queryIdList[tmpName].metadata.featureSwitches || {}).map((feature) => [feature, featuresValueList[feature]]))
+                queryIdList[tmpName].features = Object.fromEntries((queryIdList[tmpName].metadata.featureSwitches || {}).map((feature) => [feature, featuresValueList[feature] || false]))
             }
         }
     }
@@ -76,7 +76,6 @@ const updateIdList = (content) => {
     return true
 }
 
-let match
 axiosFetch()
     .get(link, {
         headers: {

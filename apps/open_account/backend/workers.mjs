@@ -26,16 +26,17 @@ workersApi.post(
         if (!config?.user?.screen_name) {
             return new Response(JSON.stringify(apiTemplate(403, 'Invalid open account', {}, 'open_account_list')))
         }
-        await env.kv.put(`tm:open_account:${config.user.screen_name}`, req.postBody.get('account'), { expiration: Math.floor(Date.now() + 1000 * 60 * 60 * 24 * 30) / 1000 })
+        await env.open_accounts.put(`tm:open_account:${config.user.screen_name}`, req.postBody.get('account'), { expiration: Math.floor(Date.now() + 1000 * 60 * 60 * 24 * 30) / 1000 })
         return new Response(JSON.stringify(apiTemplate(200, 'OK', config.user, 'open_account_list')))
     }
 )
 workersApi.get('/data/random', async (req, env) => {
     const key = req.query.key
+    const format = req.query.format === 'jsonl' ? 'jsonl' : 'json'
     if (key !== env.SECRET_WORKERS_KEY) {
         return new Response(JSON.stringify(apiTemplate(403, 'Invalid key', {}, 'open_account_list')))
     }
-    const list = (await env.kv.list({ prefix: 'tm:open_account:_LO_', limit: 1000 })).keys.filter((key) => key.expiration)
+    const list = (await env.open_accounts.list({ prefix: 'tm:open_account:_LO_', limit: 1000 })).keys.filter((key) => key.expiration)
     let count = Number(req.query.count)
     if (count <= 0 || Number.isNaN(count)) {
         count = 1
@@ -43,15 +44,15 @@ workersApi.get('/data/random', async (req, env) => {
         count = 25
     }
     let randomKey = []
-    //if (count === 1) {
-    //    randomKey = JSON.parse(await env.kv.get(list[Math.floor(list.length * Math.random())].name))
-    //} else {
     const shuffledList = shuffle(list)
     for (const tmpListItem of shuffledList.slice(0, count)) {
-        randomKey.push(JSON.parse(await env.kv.get(tmpListItem.name)))
+        randomKey.push(JSON.parse(await env.open_accounts.get(tmpListItem.name)))
     }
-    //}
-    return new Response(JSON.stringify(apiTemplate(200, 'OK', randomKey, 'open_account_list')))
+    if (format === 'jsonl') {
+        return new Response(randomKey.map((key) => JSON.stringify(key)).join('\n'))
+    } else {
+        return new Response(JSON.stringify(apiTemplate(200, 'OK', randomKey, 'open_account_list')))
+    }
 })
 
 workersApi.get('/data/account', async (req, env) => {
@@ -63,7 +64,7 @@ workersApi.get('/data/account', async (req, env) => {
     if (!name || typeof name !== 'string') {
         return new Response(JSON.stringify(apiTemplate(403, 'Invalid name', {}, 'open_account_list')))
     }
-    const account = await env.kv.get('tm:open_account:' + name)
+    const account = await env.open_accounts.get('tm:open_account:' + name)
     if (!account) {
         return new Response(JSON.stringify(apiTemplate(404, 'Account not found', {}, 'open_account_list')))
     }

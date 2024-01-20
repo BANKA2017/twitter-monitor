@@ -61,7 +61,7 @@ http://127.0.0.1:7890
 http://user1:password@192.168.1.101:7890
 ```
 
-\* Only script `get_and_upload_guest_account.mjs` supports proxy pools.
+\* Only the script `get_and_upload_guest_account.mjs` supports proxy pools.
 
 ## Tools
 
@@ -69,13 +69,14 @@ http://user1:password@192.168.1.101:7890
 
 ## Compatible with Nitter
 
-The account pool created by the script `get_and_upload_guest_account.mjs` is compatible with [nitter](https://github.com/zedeus/nitter/wiki/Guest-Account-Branch-Deployment), you need to export all the values, then put them in an array, and then name it `guest_accounts.json` and save it to the project root directory
+The account pool created by the script `get_and_upload_guest_account.mjs`/`get_and_upload_guest_account.sh` is compatible with [nitter](https://github.com/zedeus/nitter/wiki/Guest-Account-Branch-Deployment)(Note: nitter use `jsonl`), you need to export all the values, then put them into an array, then save it as `guest_accounts.json` to the project root directory
 
 \* You can even get the `oauth_token` and `oauth_token_secret` of the real account by capturing packets or [some scripts](https://github.com/zedeus/nitter/issues/983#issuecomment-169002582)
 
 ```json
 // for twitter monitor
 // guest_accounts.json
+// Note: the `authorization` is optional
 [
     {
         "authorization": "Bearer AAAAAAAAAAAAAAAAAAAAAFXzAwAAAAAAMHCxpeSDG1gLNLghVe8d74hl6k4%3DRUMF4xAQLsbeBhTSRrCiQpJtxoGWeyHrDb5te2jpGskWDFW82F",
@@ -96,7 +97,6 @@ The account pool created by the script `get_and_upload_guest_account.mjs` is com
         "attribution_event": "signup"
     },
     {
-        "authorization": "Bearer AAAAAAAAAAAAAAAAAAAAAFXzAwAAAAAAMHCxpeSDG1gLNLghVe8d74hl6k4%3DRUMF4xAQLsbeBhTSRrCiQpJtxoGWeyHrDb5te2jpGskWDFW82F",
         "oauth_token": "0-",
         "oauth_token_secret": "",
         "user": {
@@ -114,17 +114,6 @@ The account pool created by the script `get_and_upload_guest_account.mjs` is com
 {"user":{"id":0,"id_str":"0","name":"Open App User","screen_name":"_LO_0830","user_type":"Soft"},"next_link":{"link_type":"subtask","link_id":"next_link","subtask_id":"OpenAppFlowStartAccountSetupOpenLink"},"oauth_token":"0-","oauth_token_secret":"","attribution_event":"signup"}
 {"oauth_token":"0-","oauth_token_secret":"","user":{"id":0,"id_str":"0","name":"Open App User","screen_name":"_LO_0825","user_type":"Soft"}}
 
-```
-
-Bearer token for Twitter Android client needs to be added manually when using `guest_accounts.json` from nitter
-
-```javascript
-let guest_accounts = []// <- use content from guest_accounts.json to replace this empty array
-guest_accounts.forEach(account => {
-    account.authorization = "Bearer AAAAAAAAAAAAAAAAAAAAAFXzAwAAAAAAMHCxpeSDG1gLNLghVe8d74hl6k4%3DRUMF4xAQLsbeBhTSRrCiQpJtxoGWeyHrDb5te2jpGskWDFW82F"
-})
-console.log(JSON.stringify(guest_accounts))
-// then save the string
 ```
 
 ## TODO
