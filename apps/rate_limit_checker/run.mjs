@@ -19,7 +19,8 @@ import {
     getTrends,
     getTweets,
     getTypeahead,
-    getUserInfo
+    getUserInfo,
+    getViewerUser
 } from '../../libs/core/Core.fetch.mjs'
 import { Log, GuestToken } from '../../libs/core/Core.function.mjs'
 
@@ -30,28 +31,47 @@ globalThis.mute = true
 const savePath = './data/rate_limit_status.json'
 const markdownPath = './data/readme.md'
 
-const oauth_token = process.env.TWITTER_GUEST_OAUTH_TOKEN || ''
-const oauth_token_secret = process.env.TWITTER_GUEST_OAUTH_TOKEN_SECRET || ''
-
+// guest account
+const guest_oauth_token = process.env.TWITTER_GUEST_OAUTH_TOKEN || ''
+const guest_oauth_token_secret = process.env.TWITTER_GUEST_OAUTH_TOKEN_SECRET || ''
 const androidGuestAccount = {
     authorization: getBearerToken(),
-    oauth_token,
-    oauth_token_secret
+    oauth_token: guest_oauth_token,
+    oauth_token_secret: guest_oauth_token_secret
 }
 
-const getGuestTokenHandle = async (token, android = false, openAccount = null) => {
-    if (openAccount) {
+// real account
+const real_oauth_token = process.env.TWITTER_REAL_OAUTH_TOKEN || ''
+const real_oauth_token_secret = process.env.TWITTER_REAL_OAUTH_TOKEN_SECRET || ''
+const androidRealAccount = {
+    authorization: getBearerToken(),
+    oauth_token: real_oauth_token,
+    oauth_token_secret: real_oauth_token_secret
+}
+
+// cookie
+const cookie_auth_token = process.env.TWITTER_COOKIE_AUTH_TOKEN || ''
+const cookie_ct0 = process.env.TWITTER_COOKIE_CT0 || ''
+const cookie = {
+    auth_token: cookie_auth_token,
+    ct0: cookie_ct0
+}
+
+const getAuthorization = async (bearerToken, account = {}) => {
+    if (account.oauth_token && account.oauth_token_secret) {
         let guest_token = new GuestToken('android')
-        await guest_token.openAccountInit(openAccount)
-        return guest_token
+        await guest_token.openAccountInit(account)
+        return { guest_token: guest_token.token, authorization: bearerToken, cookie: {} }
+    } else if (account.auth_token && account.ct0) {
+        return { guest_token: {}, authorization: bearerToken, cookie: account }
     } else {
-        let guest_token = new GuestToken(android ? 'android' : 'browser')
-        await guest_token.updateGuestToken(token)
-        return guest_token
+        let guest_token = new GuestToken()
+        await guest_token.updateGuestToken(bearerToken)
+        return { guest_token: guest_token.token, authorization: bearerToken, cookie: {} }
     }
 }
 
-const getStatusResponse = async (_function, guest_token, label = '_') => {
+const getStatusResponse = async (_function, authorizationType, label = '_') => {
     let tmpRes = null
     let code = '200'
     let message = '_'
@@ -75,7 +95,7 @@ const getStatusResponse = async (_function, guest_token, label = '_') => {
         reset = 900
     }
 
-    globalList[guest_token.token.authorization].list[label] = {
+    globalList[authorizationType].list[label] = {
         code,
         message,
         rate_limit: Number(tmpRes.headers['x-rate-limit-limit']) || '_',
@@ -88,117 +108,129 @@ const getStatusResponse = async (_function, guest_token, label = '_') => {
     }
     writeFileSync(savePath, JSON.stringify(globalList, null, 4))
     Log(false, 'log', `[${new Date()}] rate_limit: ${label}`)
-    return globalList[guest_token.token.authorization][label]
+    return globalList[authorizationType][label]
 }
 
 const authorizationList = [
-    [await getGuestTokenHandle(Authorization[0]), 'old web'],
-    [await getGuestTokenHandle(Authorization[1]), 'new web'],
-    //[await getGuestTokenHandle(Authorization[2]), '? web'],
-    //[await getGuestTokenHandle(Authorization[3]), 'tweetdeck legacy'],
-    [await getGuestTokenHandle(Authorization[4]), 'tweetdeck preview'],
-    [await getGuestTokenHandle(getBearerToken(), true), 'android']
+    [await getAuthorization(Authorization[0]), 'old web'],
+    [await getAuthorization(Authorization[1]), 'new web'],
+    //[await getAuthorization(Authorization[2]), '? web'],
+    //[await getAuthorization(Authorization[3]), 'tweetdeck legacy'],
+    [await getAuthorization(Authorization[4]), 'tweetdeck preview'],
+    [await getAuthorization(getBearerToken()), 'android']
 ]
 
+// more...
+// guest account
 if (androidGuestAccount.oauth_token && androidGuestAccount.oauth_token_secret) {
-    authorizationList.push([await getGuestTokenHandle(null, true, androidGuestAccount), 'guest account'])
+    const tmpAuthorization = await getAuthorization(getBearerToken(), androidGuestAccount)
+    if ((await getViewerUser({ guest_token: tmpAuthorization.guest_token }))?.status === 200) {
+        authorizationList.push([tmpAuthorization, 'guest account'])
+    }
+}
+// real account
+if (androidRealAccount.oauth_token && androidRealAccount.oauth_token_secret) {
+    const tmpAuthorization = await getAuthorization(getBearerToken(), androidRealAccount)
+    if ((await getViewerUser({ guest_token: tmpAuthorization.guest_token }))?.status === 200) {
+        authorizationList.push([tmpAuthorization, 'real account'])
+    }
+}
+// cookie
+if (cookie.auth_token && cookie.ct0) {
+    const tmpAuthorization = await getAuthorization(Authorization[1], cookie)
+    if ((await getViewerUser({ cookie: tmpAuthorization.cookie }))?.status === 200) {
+        authorizationList.push([tmpAuthorization, 'cookie'])
+    }
 }
 
 let globalList = {}
 
 for (const index in authorizationList) {
-    const guest_token = authorizationList[index][0]
-    globalList[guest_token.token.authorization] = {}
-    globalList[guest_token.token.authorization].authorization = guest_token.token.authorization
-    globalList[guest_token.token.authorization].list = {}
-    globalList[guest_token.token.authorization].label = authorizationList[index][1]
+    const authorization = authorizationList[index][0]
+    const authorizationType = authorizationList[index][1]
+    globalList[authorizationType] = {}
+    globalList[authorizationType].label = authorizationList[index][1]
+    globalList[authorizationType].authorization = authorization.authorization
+    globalList[authorizationType].list = {}
 
     // Userinfo
-    await getStatusResponse(getUserInfo({ user: ['x', -3], guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: true }), guest_token, 'graphql:userinfo_screen_name')
-    await getStatusResponse(getUserInfo({ user: ['x', -3], guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: false }), guest_token, 'restful:userinfo_screen_name')
-    await getStatusResponse(getUserInfo({ user: ['783214', -2], guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: true }), guest_token, 'graphql:userinfo_uid')
-    await getStatusResponse(getUserInfo({ user: ['783214', -2], guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: false }), guest_token, 'restful:userinfo_uid')
+    await getStatusResponse(getUserInfo({ user: ['x', -3], ...authorization, graphqlMode: true }), authorizationType, 'graphql:userinfo_screen_name')
+    await getStatusResponse(getUserInfo({ user: ['x', -3], ...authorization, graphqlMode: false }), authorizationType, 'restful:userinfo_screen_name')
+    await getStatusResponse(getUserInfo({ user: ['783214', -2], ...authorization, graphqlMode: true }), authorizationType, 'graphql:userinfo_uid')
+    await getStatusResponse(getUserInfo({ user: ['783214', -2], ...authorization, graphqlMode: false }), authorizationType, 'restful:userinfo_uid')
 
     // Timeline
-    await getStatusResponse(getTweets({ queryString: '783214', guest_token: guest_token.token, authorization: guest_token.token.authorization, online: true, web: true, graphqlMode: true, withReply: false }), guest_token, 'graphql:tweets_web')
-    await getStatusResponse(
-        getTweets({ queryString: '783214', guest_token: guest_token.token, authorization: guest_token.token.authorization, online: true, web: true, graphqlMode: true, withReply: true }),
-        guest_token,
-        'graphql:tweets_with_replies_web'
-    )
-    await getStatusResponse(getTweets({ queryString: '783214', guest_token: guest_token.token, authorization: guest_token.token.authorization, online: true, web: false, graphqlMode: true, withReply: false }), guest_token, 'graphql:tweets_v2')
-    await getStatusResponse(
-        getTweets({ queryString: '783214', guest_token: guest_token.token, authorization: guest_token.token.authorization, online: true, web: false, graphqlMode: true, withReply: true }),
-        guest_token,
-        'graphql:tweets_with_replies_v2'
-    )
-    await getStatusResponse(getTweets({ queryString: '783214', guest_token: guest_token.token, authorization: guest_token.token.authorization, online: true, web: true, graphqlMode: false, withReply: false }), guest_token, 'restful:tweets')
+    await getStatusResponse(getTweets({ queryString: '783214', ...authorization, online: true, web: true, graphqlMode: true, withReply: false }), authorizationType, 'graphql:tweets_web')
+    await getStatusResponse(getTweets({ queryString: '783214', ...authorization, online: true, web: true, graphqlMode: true, withReply: true }), authorizationType, 'graphql:tweets_with_replies_web')
+    await getStatusResponse(getTweets({ queryString: '783214', ...authorization, online: true, web: false, graphqlMode: true, withReply: false }), authorizationType, 'graphql:tweets_v2')
+    await getStatusResponse(getTweets({ queryString: '783214', ...authorization, online: true, web: false, graphqlMode: true, withReply: true }), authorizationType, 'graphql:tweets_with_replies_v2')
+    await getStatusResponse(getTweets({ queryString: '783214', ...authorization, online: true, web: true, graphqlMode: false, withReply: false }), authorizationType, 'restful:tweets')
 
     // Conversation
-    await getStatusResponse(getConversation({ tweet_id: '1623411536243965954', guest_token: guest_token.token, authorization: guest_token.token.authorization, web: true, graphqlMode: true }), guest_token, 'graphql:conversation')
-    await getStatusResponse(getConversation({ tweet_id: '1623411536243965954', guest_token: guest_token.token, authorization: guest_token.token.authorization, web: false, graphqlMode: true }), guest_token, 'graphql:conversation_v2')
-    await getStatusResponse(getConversation({ tweet_id: '1623411536243965954', guest_token: guest_token.token, authorization: guest_token.token.authorization, web: 2, graphqlMode: true }), guest_token, 'graphql:tweet_result_by_id')
-    await getStatusResponse(getConversation({ tweet_id: '1623411536243965954', guest_token: guest_token.token, authorization: guest_token.token.authorization, web: true, graphqlMode: false }), guest_token, 'restful:conversation')
+    await getStatusResponse(getConversation({ tweet_id: '1623411536243965954', ...authorization, web: true, graphqlMode: true }), authorizationType, 'graphql:conversation')
+    await getStatusResponse(getConversation({ tweet_id: '1623411536243965954', ...authorization, web: false, graphqlMode: true }), authorizationType, 'graphql:conversation_v2')
+    await getStatusResponse(getConversation({ tweet_id: '1623411536243965954', ...authorization, web: 2, graphqlMode: true }), authorizationType, 'graphql:tweet_result_by_id')
+    await getStatusResponse(getConversation({ tweet_id: '1623411536243965954', ...authorization, web: true, graphqlMode: false }), authorizationType, 'restful:conversation')
 
     // Search
-    await getStatusResponse(getTweets({ queryString: '#twitter', guest_token: guest_token.token, authorization: guest_token.token.authorization, online: true, web: true, graphqlMode: true, searchMode: true }), guest_token, 'graphql:search')
-    await getStatusResponse(getTweets({ queryString: '#twitter', guest_token: guest_token.token, authorization: guest_token.token.authorization, online: true, web: false, graphqlMode: true, searchMode: true }), guest_token, 'graphql:search_client')
-    await getStatusResponse(getTweets({ queryString: '#twitter', guest_token: guest_token.token, authorization: guest_token.token.authorization, online: true, web: true, graphqlMode: false, searchMode: true }), guest_token, 'restful:search')
+    await getStatusResponse(getTweets({ queryString: '#twitter', ...authorization, online: true, web: true, graphqlMode: true, searchMode: true }), authorizationType, 'graphql:search')
+    await getStatusResponse(getTweets({ queryString: '#twitter', ...authorization, online: true, web: false, graphqlMode: true, searchMode: true }), authorizationType, 'graphql:search_client')
+    await getStatusResponse(getTweets({ queryString: '#twitter', ...authorization, online: true, web: true, graphqlMode: false, searchMode: true }), authorizationType, 'restful:search')
 
     // EditHistory
-    await getStatusResponse(getEditHistory({ tweet_id: '1623411536243965954', guest_token: guest_token.token, graphqlMode: true }), guest_token, 'graphql:edit_history')
+    await getStatusResponse(getEditHistory({ tweet_id: '1623411536243965954', guest_token: authorization.token, graphqlMode: true }), authorizationType, 'graphql:edit_history')
 
     // AudioSpace
-    await getStatusResponse(getAudioSpace({ id: '1djGXldPqNyGZ', guest_token: guest_token.token, authorization: guest_token.token.authorization }), guest_token, 'graphql:audiospace')
+    await getStatusResponse(getAudioSpace({ id: '1djGXldPqNyGZ', ...authorization }), authorizationType, 'graphql:audiospace')
 
     // Broadcast
-    await getStatusResponse(getBroadcast({ id: '1jMKgLaeYoAGL', guest_token: guest_token.token, authorization: guest_token.token.authorization }), guest_token, 'restful:broadcast')
+    await getStatusResponse(getBroadcast({ id: '1jMKgLaeYoAGL', ...authorization }), authorizationType, 'restful:broadcast')
 
     // LiveStream
-    await getStatusResponse(getLiveVideoStream({ media_key: '28_1645992664519655424', guest_token: guest_token.token, authorization: guest_token.token.authorization }), guest_token, 'restful:live_stream')
+    await getStatusResponse(getLiveVideoStream({ media_key: '28_1645992664519655424', ...authorization }), authorizationType, 'restful:live_stream')
 
     // Typeahead
-    await getStatusResponse(getTypeahead({ text: 'Twitter', guest_token: guest_token.token, authorization: guest_token.token.authorization }), guest_token, 'restful:typeahead')
+    await getStatusResponse(getTypeahead({ text: 'Twitter', ...authorization }), authorizationType, 'restful:typeahead')
 
     // Trends
-    await getStatusResponse(getTrends({ initial_tab_id: 'trends', guest_token: guest_token.token, authorization: guest_token.token.authorization }), guest_token, 'restful:trends')
+    await getStatusResponse(getTrends({ initial_tab_id: 'trends', ...authorization }), authorizationType, 'restful:trends')
 
     // Translate
-    await getStatusResponse(getTranslate({ id: '1683696495198089217', type: 'profile', target: 'zh-tw', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: true }), guest_token, 'graphql:translate_bio')
-    await getStatusResponse(getTranslate({ id: '1623411536243965954', type: 'tweets', target: 'zh-tw', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: true }), guest_token, 'graphql:translate_tweet')
-    await getStatusResponse(getTranslate({ id: '1683696495198089217', type: 'profile', target: 'zh-tw', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: false }), guest_token, 'restful:translate_bio')
-    await getStatusResponse(getTranslate({ id: '1623411536243965954', type: 'tweets', target: 'zh-tw', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: false }), guest_token, 'restful:translate_tweet')
+    await getStatusResponse(getTranslate({ id: '1683696495198089217', type: 'profile', target: 'zh-tw', ...authorization, graphqlMode: true }), authorizationType, 'graphql:translate_bio')
+    await getStatusResponse(getTranslate({ id: '1623411536243965954', type: 'tweets', target: 'zh-tw', ...authorization, graphqlMode: true }), authorizationType, 'graphql:translate_tweet')
+    await getStatusResponse(getTranslate({ id: '1683696495198089217', type: 'profile', target: 'zh-tw', ...authorization, graphqlMode: false }), authorizationType, 'restful:translate_bio')
+    await getStatusResponse(getTranslate({ id: '1623411536243965954', type: 'tweets', target: 'zh-tw', ...authorization, graphqlMode: false }), authorizationType, 'restful:translate_tweet')
 
     // ListInfo
-    await getStatusResponse(getListInfo({ id: '53645372', guest_token: guest_token.token, authorization: guest_token.token.authorization }), guest_token, 'graphql:list_info')
+    await getStatusResponse(getListInfo({ id: '53645372', ...authorization }), authorizationType, 'graphql:list_info')
 
     // ListMember
-    await getStatusResponse(getListMember({ id: '53645372', guest_token: guest_token.token, authorization: guest_token.token.authorization }), guest_token, 'graphql:list_member')
+    await getStatusResponse(getListMember({ id: '53645372', ...authorization }), authorizationType, 'graphql:list_member')
 
     // ListTimeline
-    await getStatusResponse(getListTimeLine({ id: '53645372', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: true }), guest_token, 'graphql:list_timeline')
-    await getStatusResponse(getListTimeLine({ id: '53645372', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: false }), guest_token, 'restful:list_timeline')
+    await getStatusResponse(getListTimeLine({ id: '53645372', ...authorization, graphqlMode: true }), authorizationType, 'graphql:list_timeline')
+    await getStatusResponse(getListTimeLine({ id: '53645372', ...authorization, graphqlMode: false }), authorizationType, 'restful:list_timeline')
 
     // CommunityInfo
-    await getStatusResponse(getCommunityInfo({ id: '1539049437791666176', guest_token: guest_token.token, authorization: guest_token.token.authorization }), guest_token, 'graphql:community_info')
+    await getStatusResponse(getCommunityInfo({ id: '1539049437791666176', ...authorization }), authorizationType, 'graphql:community_info')
 
     // CommunitySearch
-    await getStatusResponse(getCommunitySearch({ queryString: 'Cat Twitter', guest_token: guest_token.token, authorization: guest_token.token.authorization }), guest_token, 'graphql:community_search')
+    await getStatusResponse(getCommunitySearch({ queryString: 'Cat Twitter', ...authorization }), authorizationType, 'graphql:community_search')
 
     // CommunityTimeline
-    await getStatusResponse(getCommunityTweetsTimeline({ id: '1539049437791666176', guest_token: guest_token.token, authorization: guest_token.token.authorization }), guest_token, 'graphql:community_timeline')
+    await getStatusResponse(getCommunityTweetsTimeline({ id: '1539049437791666176', ...authorization }), authorizationType, 'graphql:community_timeline')
 
     // Following/Followers
-    await getStatusResponse(getFollowingOrFollowers({ id: 'xdevelopers', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: false, type: 'Following' }), guest_token, 'restful:following')
-    await getStatusResponse(getFollowingOrFollowers({ id: 'xdevelopers', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: false, type: 'Followers' }), guest_token, 'restful:followers')
+    await getStatusResponse(getFollowingOrFollowers({ id: 'xdevelopers', ...authorization, graphqlMode: false, type: 'Following' }), authorizationType, 'restful:following')
+    await getStatusResponse(getFollowingOrFollowers({ id: 'xdevelopers', ...authorization, graphqlMode: false, type: 'Followers' }), authorizationType, 'restful:followers')
 
     // Likes
-    await getStatusResponse(getLikes({ id: '783214', guest_token: guest_token.token, authorization: guest_token.token.authorization, graphqlMode: false }), guest_token, 'restful:likes')
+    await getStatusResponse(getLikes({ id: '783214', ...authorization, graphqlMode: false }), authorizationType, 'restful:likes')
 
     // Onbroading
-    await getStatusResponse(postOpenAccountInit({ guest_token: guest_token.token, authorization: guest_token.token.authorization }), guest_token, 'restful:onbroading')
+    await getStatusResponse(postOpenAccountInit({ ...authorization }), authorizationType, 'restful:onbroading')
 
-    globalList[guest_token.token.authorization].list = Object.values(globalList[guest_token.token.authorization].list)
+    globalList[authorizationType].list = Object.values(globalList[authorizationType].list)
 }
 globalList = Object.values(globalList)
 //Log(false, 'log', globalList)
@@ -229,8 +261,10 @@ for (const index in restfulList[0]) {
     //Log(false, 'log', tmpText)
 }
 //onsole.log(globalMarkdown)
-globalMarkdown += '\n><https://github.com/BANKA2017/twitter-monitor/tree/node/apps/rate_limit_checker>\n'
-globalMarkdown += '\n\\* Now everyone can embed broadcast players directly, so the rate limit of the broadcast endpoint can be regarded as none [[original tweet](https://twitter.com/Live/status/1733197678706852095)]'
+globalMarkdown += '\n><https://github.com/BANKA2017/twitter-monitor/tree/node/apps/rate_limit_checker>\n\n'
+globalMarkdown += '- Now everyone can embed broadcast players directly, so the rate limit of the broadcast endpoint can be regarded as none [[original tweet](https://twitter.com/Live/status/1733197678706852095)]\n'
+globalMarkdown += '- All guest accounts were expired, we have to remove them\n'
+globalMarkdown += '- The *real account* registered on 2023-06\n'
 
 writeFileSync(markdownPath, globalMarkdown)
 

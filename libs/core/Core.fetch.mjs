@@ -44,7 +44,7 @@ import GetMine from 'get-mime'
 import { MockDocument } from '../share/MockFuntions.mjs'
 import { parse } from 'acorn'
 import { getOauthAuthorization } from './Core.android.mjs'
-import { _ConversationTimelineV2, _SearchTimeline, _TranslateProfileQuery, _TranslateTweetQuery, _UserWithProfileTweetsAndRepliesQueryV2, _UserWithProfileTweetsQueryV2 } from '../assets/graphql/androidQueryIdList.js'
+import { _ConversationTimelineV2, _SearchTimeline, _TranslateProfileQuery, _TranslateTweetQuery, _UserWithProfileTweetsAndRepliesQueryV2, _UserWithProfileTweetsQueryV2, _ViewerUserQuery } from '../assets/graphql/androidQueryIdList.js'
 import cryptoHandle from 'crypto-helper'
 import { Log } from './Core.function.mjs'
 
@@ -151,7 +151,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
         }
     }
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY })(url, {
             headers: {
                 ...tmpHeaders,
@@ -181,6 +181,41 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
                 reject(e)
             })
     })
+}
+
+// entries/kv_string/full
+const getSetCookie = (headers = {}, responseType = 'entries') => {
+    let cookies = []
+    // precheck
+    const hasSetCookie = headers?.['set-cookie'] || (headers?.get && headers.get('set-cookie')) || false
+    if (hasSetCookie && headers.getSetCookie) {
+        //https://developer.mozilla.org/en-US/docs/Web/API/Headers/getSetCookie
+        cookies = headers.getSetCookie()
+    } else if (hasSetCookie && headers.getAll) {
+        //workers
+        //TypeError: getAll() can only be used with the header name "Set-Cookie".
+        cookies = headers.getAll('set-cookie')
+    } else if (hasSetCookie && headers.entries) {
+        //Deno and Node.js 18 //fetch()
+        //https://github.com/denoland/deno/pull/5100
+        cookies = [...headers.entries()].filter((header) => header[0] === 'set-cookie').map((header) => header[1])
+    } else if (hasSetCookie) {
+        // Node.js
+        cookies = headers['set-cookie'] instanceof Array ? headers['set-cookie'] : [headers['set-cookie']]
+    }
+
+    switch (responseType) {
+        case 'entries':
+            return cookies.map((cookie) => {
+                const tmpCookie = cookie.split(';')[0]
+                const firstEqual = tmpCookie.indexOf('=')
+                return [tmpCookie.slice(0, firstEqual), tmpCookie.slice(firstEqual + 1)]
+            })
+        case 'kv_string':
+            return cookies.map((cookie) => cookie.split(';')[0])
+        default:
+            return cookies
+    }
 }
 
 // ANONYMOUS
@@ -222,7 +257,7 @@ const getToken = async (authorization = 0, source = 'api', rateLimitOnly = false
     }
     const ct0 = generateCsrfToken()
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         //2000 per 30 min i guess
         if (source === 'web' && [TW_AUTHORIZATION2, TWEETDECK_AUTHORIZATION2].includes(tmpResponse.authorization)) {
             axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY })(tmpResponse.authorization === 1 || tmpResponse.authorization === Authorization[1] ? 'https://twitter.com' : 'https://tweetdeck.twitter.com', {
@@ -266,9 +301,7 @@ const getToken = async (authorization = 0, source = 'api', rateLimitOnly = false
                         tmpResponse.code = 200
                         tmpResponse.token = response.data.guest_token
                         tmpResponse.success = true
-                        tmpResponse.cookies = (response.headers instanceof Map ? [...response.headers].filter((header) => header[0] === 'set-cookie').map((header) => header[1]) ?? [] : response.headers?.['set-cookie'] ?? []).map(
-                            (cookie) => cookie.split(';')[0]
-                        )
+                        tmpResponse.cookies = getSetCookie(response.headers, 'kv_string')
                     }
                     resolve(tmpResponse)
                 })
@@ -306,7 +339,7 @@ const getUserInfo = async (ctx = { user: '', guest_token: {}, graphqlMode: true,
     if (Array.isArray(user) && !(user.length === 2 && [-1, -2, -3].includes(user[1]))) {
         //TODO while user length larger then 500 (max value for one guest token)
         //if (user.length > 500)
-        return await Promise.allSettled(user.map((userId) => getUserInfo({ user: userId, guest_token, graphqlMode, cookie, authorization })))
+        return Promise.allSettled(user.map((userId) => getUserInfo({ user: userId, guest_token, graphqlMode, cookie, authorization })))
     } else {
         const generateUrl = (user = '', isGraphql = false) => {
             let autoUser = -1 // -1->auto, -2->uid, -3->screen_name
@@ -351,7 +384,7 @@ const getUserInfo = async (ctx = { user: '', guest_token: {}, graphqlMode: true,
                 )
             }
         }
-        return await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             coreFetch(generateUrl(user, graphqlMode), guest_token, cookie, authorization)
                 .then((response) => {
                     resolve(response)
@@ -379,7 +412,7 @@ const getVerifiedAvatars = async (ctx = { uid: [], guest_token: {}, cookie: {}, 
         userIds: uid
     }
     //https://api.twitter.com/graphql/AkfLpq1RURPtDOcd56qyCg/UsersVerifiedAvatars?variables=%7B%22userIds%22%3A%5B%222392179773%22%2C%22815928932759285760%22%5D%7D&features=%7B%22responsive_web_twitter_blue_verified_badge_is_enabled%22%3Atrue%7D
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             `${TW_WEBAPI_PREFIX}/graphql/${_UsersVerifiedAvatars.queryId}/UsersVerifiedAvatars?` +
                 new URLSearchParams({
@@ -410,9 +443,9 @@ const getRecommendations = async (ctx = { user: '', guest_token: {}, count: 40, 
     if (Array.isArray(user)) {
         //TODO while user length larger then 500 (max value for one guest token)
         //if (user.length > 500)
-        return await Promise.allSettled(user.map((userId) => getRecommendations({ user: userId, guest_token, count, cookie, authorization })))
+        return Promise.allSettled(user.map((userId) => getRecommendations({ user: userId, guest_token, count, cookie, authorization })))
     } else {
-        return await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             coreFetch(
                 `${TW_WEBAPI_PREFIX}/1.1/users/recommendations.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&skip_status=1&&pc=true&display_location=profile_accounts_sidebar&limit=${count}&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CreplyvotingDownvotePerspective%2CvoiceInfo%2CbirdwatchPivot%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl%2Ccollab_control%2Cvibe&` +
                     (!isNaN(user) ? 'user_id=' : 'screen_name=') +
@@ -447,7 +480,7 @@ const getMediaTimeline = async (ctx = { uid: [], guest_token: {}, count: 20, gra
         guest_token = false
     }
     if (Array.isArray(uid)) {
-        return await Promise.allSettled(uid.map((singleUid) => getMediaTimeline({ uid: singleUid, guest_token, count, graphqlMode, cookie, authorization })))
+        return Promise.allSettled(uid.map((singleUid) => getMediaTimeline({ uid: singleUid, guest_token, count, graphqlMode, cookie, authorization })))
     }
     //if (graphqlMode) {
     let graphqlVariables = {
@@ -470,7 +503,7 @@ const getMediaTimeline = async (ctx = { uid: [], guest_token: {}, count: 20, gra
     //  graphqlVariables["cursor"] = cursor
     //}
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX +
                 '/graphql/' +
@@ -534,7 +567,7 @@ const getTweets = async (
         guest_token = false
     }
     if (Array.isArray(queryString)) {
-        return await Promise.allSettled(queryString.map((queryStringItem) => getTweets({ queryString: queryStringItem, cursor, bottomCursor, guest_token, count, online, graphqlMode, searchMode, cookie, authorization })))
+        return Promise.allSettled(queryString.map((queryStringItem) => getTweets({ queryString: queryStringItem, cursor, bottomCursor, guest_token, count, online, graphqlMode, searchMode, cookie, authorization })))
     }
     //实际上即使写了999网页api返回800-900条记录, 客户端返回约400-450条记录
     //如果是搜索就不需要写太多，反正上限为20
@@ -577,7 +610,7 @@ const getTweets = async (
             graphqlVariables['cursor'] = cursor
         }
 
-        return await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             coreFetch(
                 TW_WEBAPI_PREFIX +
                     '/graphql/' +
@@ -586,8 +619,8 @@ const getTweets = async (
                             ? _UserTweetsAndReplies.queryId + '/UserTweetsAndReplies?'
                             : _UserTweets.queryId + '/UserTweets?'
                         : withReply
-                        ? _UserWithProfileTweetsAndRepliesQueryV2.queryId + '/UserWithProfileTweetsAndRepliesQueryV2?'
-                        : _UserWithProfileTweetsQueryV2.queryId + '/UserWithProfileTweetsQueryV2?') +
+                          ? _UserWithProfileTweetsAndRepliesQueryV2.queryId + '/UserWithProfileTweetsAndRepliesQueryV2?'
+                          : _UserWithProfileTweetsQueryV2.queryId + '/UserWithProfileTweetsQueryV2?') +
                     new URLSearchParams({
                         variables: JSON.stringify(graphqlVariables),
                         features: JSON.stringify(web ? (withReply ? _UserTweetsAndReplies.features : _UserTweets.features) : withReply ? _UserWithProfileTweetsAndRepliesQueryV2.features : _UserWithProfileTweetsQueryV2.features)
@@ -673,7 +706,7 @@ const getTweets = async (
         if (cursor) {
             graphqlVariables['cursor'] = cursor
         }
-        return await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             coreFetch(
                 TW_ANDROID_PREFIX +
                     '/graphql/' +
@@ -719,7 +752,7 @@ const getTweets = async (
             include_reply_count: true
         }
 
-        return await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             coreFetch(TW_WEBAPI_PREFIX + '/1.1/search/universal.json?' + new URLSearchParams(tmpQueryObject).toString(), guest_token, cookie, authorization)
                 .then((response) => {
                     resolve(response)
@@ -729,7 +762,7 @@ const getTweets = async (
                 })
         })
     } else {
-        return await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             // https://github.com/StarryBlueSky/Twispy/blob/0d7729fc725fc718da9305ded897bce9021a3337/twispy/api.json#L91-L119
             let tmpQueryObject = {
                 id: queryString,
@@ -799,7 +832,7 @@ const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMod
         guest_token = false
     }
     if (Array.isArray(tweet_id)) {
-        return await Promise.allSettled(tweet_id.map((tweetId) => getConversation({ tweet_id: tweetId, guest_token, graphqlMode, authorization, cursor, cookie })))
+        return Promise.allSettled(tweet_id.map((tweetId) => getConversation({ tweet_id: tweetId, guest_token, graphqlMode, authorization, cursor, cookie })))
     }
     if (graphqlMode) {
         let graphqlVariables = {}
@@ -845,7 +878,7 @@ const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMod
 
         // new web endpoint
         // TweetResultByRestId {"tweetId":<TWEET_ID>,"withCommunity":false,"includePromotedContent":false,"withVoice":false}
-        return await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             coreFetch(
                 TW_WEBAPI_PREFIX +
                     '/graphql/' +
@@ -863,7 +896,7 @@ const getConversation = async (ctx = { tweet_id: '', guest_token: {}, graphqlMod
                 })
         })
     } else {
-        return await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             coreFetch(
                 TW_WEBAPI_PREFIX +
                     '/2/timeline/conversation/' +
@@ -888,9 +921,9 @@ const getEmbedConversation = async (ctx = { tweet_id: '' }, env = {}) => {
         tweet_id: ''
     })
     if (Array.isArray(tweet_id)) {
-        return await Promise.allSettled(tweet_id.map((tweetId) => getEmbedConversation({ tweet_id: tweetId })))
+        return Promise.allSettled(tweet_id.map((tweetId) => getEmbedConversation({ tweet_id: tweetId })))
     }
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(`https://cdn.syndication.twimg.com/tweet-result?id=${tweet_id}&token=0`, {}, {}, 1)
             .then((response) => {
                 resolve(response)
@@ -909,7 +942,7 @@ const getEditHistory = async (ctx = { tweet_id: '', guest_token: {}, cookie: {},
         guest_token = false
     }
     if (Array.isArray(tweet_id)) {
-        return await Promise.allSettled(tweet_id.map((tweetId) => getEditHistory({ tweet_id: tweetId, guest_token, graphqlMode, cookie, authorization })))
+        return Promise.allSettled(tweet_id.map((tweetId) => getEditHistory({ tweet_id: tweetId, guest_token, graphqlMode, cookie, authorization })))
     }
     const graphqlVariables = {
         tweetId: tweet_id,
@@ -921,7 +954,7 @@ const getEditHistory = async (ctx = { tweet_id: '', guest_token: {}, cookie: {},
         withQuickPromoteEligibilityTweetFields: true
     }
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX + '/graphql/' + _TweetEditHistory.queryId + '/TweetEditHistory?' + new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_TweetEditHistory.features) }).toString(),
             guest_token,
@@ -945,7 +978,7 @@ const getAudioSpace = async (ctx = { id: '', guest_token: {}, cookie: {}, author
         guest_token = false
     }
     if (Array.isArray(id)) {
-        return await Promise.allSettled(id.map((justId) => getAudioSpace({ id: justId, guest_token, cookie, authorization })))
+        return Promise.allSettled(id.map((justId) => getAudioSpace({ id: justId, guest_token, cookie, authorization })))
     }
     const graphqlVariables = {
         id,
@@ -958,7 +991,7 @@ const getAudioSpace = async (ctx = { id: '', guest_token: {}, cookie: {}, author
         withReplays: true
     }
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX + '/graphql/' + _AudioSpaceById.queryId + '/AudioSpaceById?' + new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_AudioSpaceById.features) }).toString(),
             guest_token,
@@ -989,9 +1022,9 @@ const getLiveEventTimeline = async (ctx = { event_id: '', cursor: '', guest_toke
         guest_token = false
     }
     if (Array.isArray(event_id)) {
-        return await Promise.allSettled(event_id.map((justId) => getLiveEventTimeline({ event_id: justId, cursor, guest_token, cookie, authorization, version })))
+        return Promise.allSettled(event_id.map((justId) => getLiveEventTimeline({ event_id: justId, cursor, guest_token, cookie, authorization, version })))
     }
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX +
                 (version === '1.1'
@@ -1013,9 +1046,9 @@ const getLiveEventTimeline = async (ctx = { event_id: '', cursor: '', guest_toke
 const getBroadcast = async (ctx = { id: '', cookie: {} }, env = {}) => {
     let { id, cookie } = preCheckCtx(ctx, { id: '', cookie: {} })
     if (Array.isArray(id)) {
-        return await Promise.allSettled(id.map((justId) => getBroadcast({ id: justId })))
+        return Promise.allSettled(id.map((justId) => getBroadcast({ id: justId })))
     }
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(`${TW_WEBAPI_PREFIX}/1.1/broadcasts/show.json?ids=${id}&include_events=true`, false, false, 1)
             .then((response) => {
                 resolve(response)
@@ -1030,9 +1063,9 @@ const getLiveVideoStream = async (ctx = { media_key: '', cookie: {} }, env = {})
     let { media_key, cookie } = preCheckCtx(ctx, { media_key: '', cookie: {} })
 
     if (Array.isArray(media_key)) {
-        return await Promise.allSettled(id.map((justId) => getLiveVideoStream({ id: justId, cookie })))
+        return Promise.allSettled(id.map((justId) => getLiveVideoStream({ id: justId, cookie })))
     }
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(`${TW_WEBAPI_PREFIX}/1.1/live_video_stream/status/${media_key}?client=web&use_syndication_guest_id=false&cookie_set_host=twitter.com`, false, false, 1)
             .then((response) => {
                 resolve(response)
@@ -1050,7 +1083,7 @@ const getTypeahead = async (ctx = { text: '', guest_token: {}, cookie: {}, autho
     } else if (cookie?.ct0 && cookie?.auth_token) {
         guest_token = false
     }
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(`${TW_WEBAPI_PREFIX}/1.1/search/typeahead.json?include_ext_is_blue_verified=1&q=${text}&src=search_box&result_type=events%2Cusers%2Ctopics`, guest_token, cookie, authorization)
             .then((response) => {
                 resolve(response)
@@ -1076,7 +1109,7 @@ const getArticle = async (ctx = { id: '', guest_token: {}, cookie: {}, authoriza
         withSuperFollowsTweetFields: true
     }
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX +
                 '/graphql/' +
@@ -1123,7 +1156,7 @@ const getListInfo = async (ctx = { id: '', screenName: '', listSlug: '', guest_t
         graphqlVariables.listId = id
     }
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX +
                 '/graphql/' +
@@ -1169,7 +1202,7 @@ const getListMember = async (ctx = { id: '', count: 20, cursor: '', guest_token:
         graphqlVariables.cursor = cursor
     }
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX + '/graphql/' + _ListMembers.queryId + '/ListMembers?' + new URLSearchParams({ variables: JSON.stringify(graphqlVariables), features: JSON.stringify(_ListMembers.features) }).toString(),
             guest_token,
@@ -1225,7 +1258,7 @@ const getListTimeLine = async (ctx = { id: '', count: 20, bottomCursor: true, cu
         }
     }
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX +
                 (graphqlMode
@@ -1268,7 +1301,7 @@ const getCommunityInfo = async (ctx = { id: '', guest_token: {}, cookie: {}, aut
         communityId: id
     }
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX +
                 '/graphql/' +
@@ -1315,7 +1348,7 @@ const getCommunityTweetsTimeline = async (ctx = { id: '', count: 20, cursor: '',
         graphqlVariables.cursor = cursor
     }
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX +
                 '/graphql/' +
@@ -1360,7 +1393,7 @@ const getCommunitySearch = async (ctx = { queryString: '', count: 20, cursor: ''
         cursor: cursor || null
     }
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX +
                 '/graphql/' +
@@ -1398,7 +1431,7 @@ const getTranslate = async (ctx = { id: '0', type: 'tweets', target: 'en', guest
     } else if (cookie?.ct0 && cookie?.auth_token) {
         guest_token = false
     }
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         const url = graphqlMode
             ? TW_WEBAPI_PREFIX +
               '/graphql/' +
@@ -1413,8 +1446,8 @@ const getTranslate = async (ctx = { id: '0', type: 'tweets', target: 'en', guest
                   })
               })
             : type === 'profile'
-            ? `${TW_WEBAPI_PREFIX}/1.1/strato/column/None/profileUserId=${id},destinationLanguage=None,translationSource=Some(Google)/translation/service/translateProfile`
-            : `${TW_WEBAPI_PREFIX}/1.1/strato/column/None/tweetId=${id},destinationLanguage=None,translationSource=Some(Google),feature=None,timeout=None,onlyCached=None/translation/service/translateTweet`
+              ? `${TW_WEBAPI_PREFIX}/1.1/strato/column/None/profileUserId=${id},destinationLanguage=None,translationSource=Some(Google)/translation/service/translateProfile`
+              : `${TW_WEBAPI_PREFIX}/1.1/strato/column/None/tweetId=${id},destinationLanguage=None,translationSource=Some(Google),feature=None,timeout=None,onlyCached=None/translation/service/translateTweet`
 
         coreFetch(url, guest_token, cookie, authorization, { 'x-twitter-client-language': target })
             .then((response) => {
@@ -1489,7 +1522,7 @@ const getTrends = async (ctx = { initial_tab_id: 'trending', count: 20, guest_to
     if (!guest_token.success) {
         guest_token = await getToken(1)
     }
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             initial_tab_id === 'trends'
                 ? `${TW_WEBAPI_PREFIX}/2/guide.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=false&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_collab_control=true&include_ext_views=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&count=${count}&candidate_source=trends&include_page_configuration=false&entity_tokens=false&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl%2Ccollab_control%2Cvibe`
@@ -1547,7 +1580,7 @@ const getFollowingOrFollowers = async (ctx = { cookie: {}, guest_token: {}, id: 
             graphqlVariables['cursor'] = cursor
         }
 
-        return await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             coreFetch(
                 TW_WEBAPI_PREFIX +
                     '/graphql/' +
@@ -1576,7 +1609,7 @@ const getFollowingOrFollowers = async (ctx = { cookie: {}, guest_token: {}, id: 
         if (cursor) {
             queryObject.cursor = cursor
         }
-        return await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             coreFetch(`${TW_WEBAPI_PREFIX}/1.1/${type === 'Followers' ? 'followers' : 'friends'}/list.json?` + new URLSearchParams(queryObject).toString(), guest_token, cookie, 0)
                 .then((response) => {
                     resolve(response)
@@ -1618,7 +1651,7 @@ const getLikes = async (ctx = { cookie: {}, guest_token: {}, id: '', count: 20, 
         if (cursor) {
             graphqlVariables.cursor = cursor
         }
-        return await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             coreFetch(
                 TW_WEBAPI_PREFIX +
                     '/graphql/' +
@@ -1647,7 +1680,7 @@ const getLikes = async (ctx = { cookie: {}, guest_token: {}, id: '', count: 20, 
         if (cursor) {
             queryObject.max_id = cursor
         }
-        return await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             coreFetch(`${TW_WEBAPI_PREFIX}/1.1/favorites/list.json?` + new URLSearchParams(queryObject).toString(), guest_token, cookie, 0)
                 .then((response) => {
                     resolve(response)
@@ -1736,7 +1769,7 @@ const postFlowTask = async (ctx = { flow_name: '', flow_token: '', sub_task: {},
             flow_data: {
                 subtask_id: tmpResponse.data?.subtasks ? tmpResponse.data.subtasks?.[0]?.subtask_id : 'Ended',
                 flow_token: tmpResponse.data.flow_token,
-                cookie: { ...cookie, ...Object.fromEntries((tmpResponse.headers['set-cookie'] || []).map((x) => x.split(';')[0].split('='))) }
+                cookie: { ...cookie, ...Object.fromEntries(getSetCookie(tmpResponse.headers, 'entries')) }
             },
             ...tmpResponse
         }
@@ -1750,7 +1783,7 @@ const getViewer = async (ctx = { cookie: {}, guest_token: {} }, env = {}) => {
     //if (!guest_token.success) {
     //    guest_token = await getToken(1)
     //}
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX +
                 '/graphql/' +
@@ -1799,7 +1832,7 @@ const getJsInstData = async (ctx = { jsInstrumentationLink: 'https://twitter.com
             message: 'OK',
             data: rawJs,
             flow_data: {
-                cookie: { ...cookie, ...Object.fromEntries(jsInstData.headers['set-cookie'].map((x) => x.split(';')[0].split('='))) },
+                cookie: { ...cookie, ...Object.fromEntries(getSetCookie(jsInstData.headers, 'entries')) },
                 js_instrumentation
             }
         }
@@ -1811,7 +1844,7 @@ const getJsInstData = async (ctx = { jsInstrumentationLink: 'https://twitter.com
 const postLogout = async (ctx = { cookie: {} }, env = {}) => {
     let { cookie } = preCheckCtx(ctx, { cookie: {} })
     // success {status: "ok"}
-    return await coreFetch(`${TW_WEBAPI_PREFIX}/1.1/account/logout.json`, false, cookie, 1, {}, null)
+    return coreFetch(`${TW_WEBAPI_PREFIX}/1.1/account/logout.json`, false, cookie, 1, {}, null)
 }
 
 // type: INIT | APPEND | FINALIZE | STATUS
@@ -1860,7 +1893,7 @@ const uploadMedia = async (ctx = { cookie: {}, media: null, type: 'INIT', media_
             case 'STATUS':
                 queryObject.append('media_id', media_id)
         }
-        return await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             coreFetch(
                 `https://upload.twitter.com/i/media/upload.json?${queryObject.toString()}`,
                 {},
@@ -1921,7 +1954,7 @@ const postTweet = async (ctx = { cookie: {}, text: '', media: [], reply_tweet_id
         graphqlVariables.conversation_control = { mode: conversation_control }
     }
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX + '/graphql/' + _CreateTweet.queryId + '/CreateTweet',
             {},
@@ -1956,7 +1989,7 @@ const postConversationControl = async (ctx = { cookie: {}, tweet_id: '', convers
     if (['ByInvitation', 'Community'].includes(conversation_control)) {
         tmpMode = conversation_control
     }
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX + '/graphql/' + (tmpMode ? _ConversationControlChange.queryId + '/ConversationControlChange' : _ConversationControlDelete.queryId + '/ConversationControlDelete'),
             {},
@@ -1984,7 +2017,7 @@ const postPinTweet = async (ctx = { cookie: {}, tweet_id: '', unpin: false }, en
     //cookie: {ct0, auth_token}
     if (!tweet_id || !cookie.ct0 || !cookie.auth_token) {
     }
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             `${TW_WEBAPI_PREFIX}/1.1/account/${unpin ? 'unpin_tweet' : 'pin_tweet'}.json`,
             {},
@@ -2021,7 +2054,7 @@ const postRetweet = async (ctx = { cookie: {}, tweet_id: '', deleteRetweet: fals
         graphqlVariables.source_tweet_id = tweet_id
     }
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX + '/graphql/' + (deleteRetweet ? _DeleteRetweet.queryId + '/DeleteRetweet' : _CreateRetweet.queryId + '/CreateRetweet'),
             {},
@@ -2050,7 +2083,7 @@ const postBookmark = async (ctx = { cookie: {}, tweet_id: '', deleteBookmark: fa
     if (!tweet_id || !cookie.ct0 || !cookie.auth_token) {
     }
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX + '/graphql/' + (deleteBookmark ? _DeleteBookmark.queryId + '/DeleteBookmark' : _CreateBookmark.queryId + '/CreateBookmark'),
             {},
@@ -2078,7 +2111,7 @@ const postDeleteTweet = async (ctx = { cookie: {}, tweet_id: '' }, env = {}) => 
     //cookie: {ct0, auth_token}
     if (!tweet_id || !cookie.ct0 || !cookie.auth_token) {
     }
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX + '/graphql/' + _DeleteTweet.queryId + '/DeleteTweet',
             {},
@@ -2119,7 +2152,7 @@ const postHomeTimeLine = async (ctx = { cookie: {}, count: 20, cursor: '', isFor
     if (isForYou) {
         graphqlVariables.withCommunity = true
     }
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX + '/graphql/' + (isForYou ? _HomeTimeline.queryId + '/HomeTimeline' : _HomeLatestTimeline.queryId + '/HomeLatestTimeline'),
             {},
@@ -2152,7 +2185,7 @@ const getBookmark = async (ctx = { cookie: {}, count: 20, cursor: '' }, env = {}
     if (cursor) {
         graphqlVariables.cursor = cursor
     }
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX +
                 '/graphql/' +
@@ -2189,7 +2222,7 @@ const getTweetAnalytics = async (ctx = { cookie: {}, tweet_id: '', time_range_fr
         requested_organic_metrics: ['DetailExpands', 'Engagements', 'Follows', 'Impressions', 'LinkClicks', 'ProfileVisits'],
         requested_promoted_metrics: ['DetailExpands', 'Engagements', 'Follows', 'Impressions', 'LinkClicks', 'ProfileVisits', 'CostPerFollower']
     }
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX +
                 '/graphql/' +
@@ -2219,7 +2252,7 @@ const postFollow = async (ctx = { cookie: {}, uid: '', follow: true }, env = {})
     if (!uid || !cookie.ct0 || !cookie.auth_token) {
     }
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX + `/1.1/friendships/${follow ? 'create' : 'destroy'}.json`,
             {},
@@ -2258,7 +2291,7 @@ const postLike = async (ctx = { cookie: {}, tweet_id: '', like: true }, env = {}
     let { cookie, tweet_id, like } = preCheckCtx(ctx, { cookie: {}, tweet_id: '', like: true })
     //cookie: {ct0, auth_token}
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         coreFetch(
             TW_WEBAPI_PREFIX + '/graphql/' + (like ? _FavoriteTweet.queryId + '/FavoriteTweet' : _UnfavoriteTweet.queryId + '/UnfavoriteTweet'),
             {},
@@ -2280,11 +2313,45 @@ const postLike = async (ctx = { cookie: {}, tweet_id: '', like: true }, env = {}
     })
 }
 
+// oauth or cookie
+const getViewerUser = async (ctx = { cookie: {}, guest_token: {} }, env = {}) => {
+    let { cookie, guest_token } = preCheckCtx(ctx, { cookie: {}, guest_token: {} })
+    return new Promise((resolve, reject) => {
+        coreFetch(
+            TW_WEBAPI_PREFIX +
+                '/graphql/' +
+                _ViewerUserQuery.queryId +
+                '/ViewerUserQuery?' +
+                new URLSearchParams({
+                    variables: JSON.stringify({
+                        includeTweetImpression: true,
+                        include_profile_info: true,
+                        includeHasBirdwatchNotes: false,
+                        includeEditPerspective: false,
+                        includeEditControl: true
+                    }),
+                    features: JSON.stringify(_ViewerUserQuery.features)
+                }).toString(),
+            guest_token,
+            cookie,
+            1,
+            {}
+        )
+            .then((response) => {
+                resolve(response)
+            })
+            .catch((e) => {
+                reject(e)
+            })
+    })
+}
+
 //ANONYMOUS
 export {
     axios as AxiosFetch,
     generateCsrfToken,
     preCheckCtx,
+    getSetCookie,
     getToken,
     coreFetch,
     getUserInfo,
@@ -2332,5 +2399,6 @@ export {
     getLikes,
     getTweetAnalytics,
     postFollow,
-    postLike
+    postLike,
+    getViewerUser
 }

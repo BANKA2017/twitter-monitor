@@ -741,7 +741,7 @@
                 },
                 hmac_sha_256: async function (key, data) {
                     const keyData = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"],)
-                    return await crypto.subtle.sign("HMAC", keyData, data)
+                    return crypto.subtle.sign("HMAC", keyData, data)
                 },
                 hkdf: async function (salt, ikm, info, length) {
                     let key = await this.hmac_sha_256(salt, ikm)

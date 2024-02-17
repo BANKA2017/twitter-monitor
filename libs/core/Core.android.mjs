@@ -37,7 +37,7 @@ const postOpenAccountInit = async (ctx = { guest_token: {}, authorization: '' },
     //    guest_token = getToken(authorization)
     //}
 
-    return await coreFetch(
+    return coreFetch(
         TW_WEBAPI_PREFIX + '/1.1/onboarding/task.json?flow_name=welcome&api_version=1&known_device_token=&sim_country_code=us',
         guest_token,
         {},
@@ -121,7 +121,7 @@ const postOpenAccount = async (ctx = { guest_token: {}, authorization: '', flow_
     //    guest_token = getToken(authorization)
     //}
 
-    return await coreFetch(
+    return coreFetch(
         TW_WEBAPI_PREFIX + '/1.1/onboarding/task.json',
         guest_token,
         {},

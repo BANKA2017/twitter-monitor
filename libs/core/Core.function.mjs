@@ -1,6 +1,6 @@
 import { cloneDeep, shuffle } from 'lodash-es'
 import { getBearerToken, postOpenAccount, postOpenAccountInit } from './Core.android.mjs'
-import { getToken, postFlowTask, getJsInstData, getViewer } from './Core.fetch.mjs'
+import { getToken, postFlowTask, getJsInstData, getViewer, getSetCookie } from './Core.fetch.mjs'
 import axiosFetch from 'axios-helper'
 import { SnowFlake2Time } from './Core.tweet.mjs'
 //import * as twitter_text from 'twitter-text'
@@ -409,7 +409,7 @@ export class Login {
     async Viewer() {
         //get ct0
         const tmpViewer = await getViewer({ cookie: this.cookie, guest_token: this.guest_token })
-        this.cookie = { ...this.cookie, ...Object.fromEntries(tmpViewer.headers['set-cookie'].map((x) => x.split(';')[0].split('='))) }
+        this.cookie = { ...this.cookie, ...Object.fromEntries(getSetCookie(tmpViewer.headers, 'entries')) }
         return { data: tmpViewer.data, cookie: this.cookie }
     }
 }

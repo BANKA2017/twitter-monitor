@@ -12,6 +12,7 @@ import album from './service/album.mjs'
 import { json, xml, updateGuestToken, ResponseWrapper, mediaExistPreCheck, mediaCacheSave } from './share.mjs'
 import { existsSync } from 'fs'
 import { ApiTranslate } from './CoreFunctions/translate/OnlineTranslate.mjs'
+import { resolve } from 'path'
 
 //settings
 let settingsFile = basePath + '/assets/setting.mjs'

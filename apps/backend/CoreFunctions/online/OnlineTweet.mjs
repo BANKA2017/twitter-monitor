@@ -79,10 +79,11 @@ const ApiTweets = async (req, env) => {
         }
     } else if (isConversation) {
         try {
-            tweets = await getConversation({ tweet_id, guest_token: env.guest_token3, graphqlMode, cursor: isNaN(cursor) ? cursor : '', cookie: req.cookies, web: false })
+            const useWeb = env.guest_token3.success
+            tweets = await getConversation({ tweet_id, guest_token: useWeb ? env.guest_token2 : env.guest_token3, graphqlMode, cursor: isNaN(cursor) ? cursor : '', cookie: req.cookies, web: useWeb ? 2 : false })
             //TODO mix mode, tweet and replies
             //updateGuestToken
-            await env.updateGuestToken(env, 'guest_token3', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
+            await env.updateGuestToken(env, useWeb ? 'guest_token2' : 'guest_token3', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
         } catch (e) {
             Log(false, 'error', `[${new Date()}]: #OnlineTweetsConversation #${tweet_id} #${e.code} ${e.message}`)
             return env.json(apiTemplate(e.code, e.message))

@@ -43,11 +43,8 @@ workersApi.get('/data/random', async (req, env) => {
     } else if (count > 25) {
         count = 25
     }
-    let randomKey = []
     const shuffledList = shuffle(list)
-    for (const tmpListItem of shuffledList.slice(0, count)) {
-        randomKey.push(JSON.parse(await env.open_accounts.get(tmpListItem.name)))
-    }
+    const randomKey = (await Promise.allSettled(shuffledList.slice(0, count).map(async (tmpListItem) => JSON.parse(await env.open_accounts.get(tmpListItem.name))))).filter((key) => key.status === 'fulfilled').map((key) => key.value)
     if (format === 'jsonl') {
         return new Response(randomKey.map((key) => JSON.stringify(key)).join('\n'))
     } else {
