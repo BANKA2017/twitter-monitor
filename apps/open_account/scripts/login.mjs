@@ -1,6 +1,8 @@
 // thanks https://github.com/zedeus/nitter/issues/983#issuecomment-169002582
+// and RSSHub https://github.com/DIYgod/RSSHub/blob/master/lib/v2/twitter/web-api/login.js
 
 import { writeFileSync } from 'fs'
+import { authenticator } from 'otplib'
 import { GuestToken } from '../../../libs/core/Core.function.mjs'
 import { AxiosFetch } from '../../../libs/core/Core.fetch.mjs'
 import { getBearerToken } from '../../../libs/core/Core.android.mjs'
@@ -8,7 +10,12 @@ import { getBearerToken } from '../../../libs/core/Core.android.mjs'
 const username = ''
 const password = ''
 const android_id = '' // Android id is a 64-bit number (as a hex string), everyone can get one from fcm
-const _2fa_code = ''
+const _2fa_secret = ''
+
+let _2fa_code = ''
+if (_2fa_secret !== '') {
+    _2fa_code = authenticator.generate(_2fa_secret)
+}
 
 let authentication = null
 
@@ -122,17 +129,14 @@ const task4 = await axios.post(
     }
 )
 
-let response_text = ''
-
-//TODO TOTP 2fa
 for (const subtask of task4.data?.subtasks || []) {
     if (subtask.open_account) {
         authentication = subtask.open_account
         break
-    } else if (subtask.enter_text) {
-        response_text = subtask.enter_text.hint_text
+    } else if (subtask.subtask_id === 'LoginAcid') {
+        const response_text = subtask.enter_text.hint_text
         console.log(response_text)
-        const task5 = axios.post(
+        const task5 = await axios.post(
             'https://api.twitter.com/1.1/onboarding/task.json',
             JSON.stringify({
                 flow_token: task4.data.flow_token,
@@ -152,6 +156,33 @@ for (const subtask of task4.data?.subtasks || []) {
             }
         )
 
+        for (const subtask of task5.data?.subtasks || []) {
+            if (subtask.open_account) {
+                authentication = subtask.open_account
+                break
+            }
+        }
+        break
+    } else if (subtask.subtask_id === 'LoginTwoFactorAuthChallenge') {
+        const task5 = await axios.post(
+            'https://api.twitter.com/1.1/onboarding/task.json',
+            JSON.stringify({
+                flow_token: task4.data.flow_token,
+                subtask_inputs: [
+                    {
+                        enter_text: {
+                            suggestion_id: null,
+                            text: _2fa_code,
+                            link: 'next_link'
+                        },
+                        subtask_id: 'LoginTwoFactorAuthChallenge'
+                    }
+                ]
+            }),
+            {
+                headers
+            }
+        )
         for (const subtask of task5.data?.subtasks || []) {
             if (subtask.open_account) {
                 authentication = subtask.open_account
