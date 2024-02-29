@@ -118,6 +118,10 @@ We use GitHub Actions to build some scripts, you can find them in [BANKA2017/twi
 
 * Read more in [open_account/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/open_account)
 
+### ↑~ Web*Push X!↓
+
+* Read more in [web_push/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/web_push)
+
 ## Supported Cards
 
     * summary*
@@ -277,6 +281,10 @@ We use GitHub Actions to build some scripts, you can find them in [BANKA2017/twi
 ### OAuth 帐号池
 
 * 了解更多 [open_account/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/open_account)
+
+### ↑~X 推*送!↓
+
+* 了解更多 [web_push/README.md](https://github.com/BANKA2017/twitter-monitor/tree/node/apps/web_push)
 
 ## 支持的卡片类型
 

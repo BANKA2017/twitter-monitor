@@ -1,0 +1,10 @@
+{
+    "name": "tmv3-web-push",
+    "version": "0.0.1",
+    "private": true,
+    "type": "module",
+    "dependencies": {
+        "otplib": "^12.0.1",
+        "ws": "^8.16.0"
+    }
+}

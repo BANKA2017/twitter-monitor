@@ -1,0 +1,20 @@
+{
+    "twitter": {
+        "screen_name": "",
+        "password": "",
+        "authentication_secret": "",
+        "retry": 5,
+        "cookies": {
+            "auth_token": "",
+            "ct0": ""
+        }
+    },
+    "auth": "",
+    "jwk": {},
+    "autopush": {
+        "uaid": "",
+        "channel_id": "",
+        "remote_settings__monitor_changes": "",
+        "endpoint": ""
+    }
+}

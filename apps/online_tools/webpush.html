@@ -908,7 +908,7 @@
                         bufferChunk.push(...this.splitData(dataBuffer, rs))
                     }
 
-                    decodedChunk = await Promise.all(bufferChunk.map(async (chunk, index) => {
+                    const decodedChunk = await Promise.all(bufferChunk.map(async (chunk, index) => {
                         let decodedBuffer = await crypto.subtle.decrypt({ name: "AES-GCM", iv: this.getNonce(nonce, index) }, cek, chunk)
                         let paddingLength = 0
                         if (encoding === 'aes128gcm') {

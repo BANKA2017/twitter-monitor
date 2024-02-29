@@ -4,6 +4,11 @@ apps/scripts/t.mjs
 apps/scripts/save_spaces/
 apps/scripts/astParser/
 apps/backend/cache/*
+apps/backend/static/aac/
+apps/backend/static/bangdream_trends/
+apps/backend/static/lovelive_trends/
+apps/backend/static/trends/
+apps/backend/static/trends2/
 apps/open_account/scripts/openAccount.json
 !apps/backend/cache/.gitkeep
 
@@ -14,6 +19,9 @@ apps/archiver/*
 !apps/archiver/init.sh
 !apps/archiver/README.md
 !apps/archiver/retryMedia.mjs
+
+apps/web_push/config.json
+apps/web_push/tweets.json
 
 libs/assets/setting.mjs
 libs/assets/config.json
