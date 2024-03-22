@@ -54,10 +54,13 @@ if (existsSync(basePath + '/../guest_accounts.json')) {
 // get guest account from guest account pool
 if (GUEST_ACCOUNT_HANDLE.Link) {
     await GUEST_ACCOUNT_HANDLE.GetNewAccountsByRemote(true)
-    setInterval(async () => {
-        await GUEST_ACCOUNT_HANDLE.GetNewAccountsByRemote(true)
-        GUEST_ACCOUNT_HANDLE.RemoveUselessAccounts()
-    }, 1000 * 60 * 60 * 8) // per 8 hours
+    setInterval(
+        async () => {
+            await GUEST_ACCOUNT_HANDLE.GetNewAccountsByRemote(true)
+            GUEST_ACCOUNT_HANDLE.RemoveUselessAccounts()
+        },
+        1000 * 60 * 60 * 8
+    ) // per 8 hours
 }
 
 // audio space cache

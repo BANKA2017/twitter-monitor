@@ -12,8 +12,6 @@ const TW_ANDROID_BEARER_TOKEN = 'Bearer AAAAAAAAAAAAAAAAAAAAAFXzAwAAAAAAMHCxpeSD
 const TW_ANDROID_PREFIX = 'https://na.albtls.t.co'
 const TW_WEBAPI_PREFIX = 'https://api.twitter.com'
 
-const axios = axiosFetch()
-
 const getBearerToken = () => {
     //const tmpTokenResponse = await axios(TW_WEBAPI_PREFIX + '/oauth2/token', {
     //    headers: {

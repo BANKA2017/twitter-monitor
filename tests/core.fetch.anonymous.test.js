@@ -1,7 +1,6 @@
 import { describe, expect, it, test } from 'vitest'
 import { GuestToken } from '../libs/core/Core.function.mjs'
 import {
-    getArticle,
     getAudioSpace,
     getBroadcast,
     getCommunityInfo,
@@ -186,13 +185,6 @@ describe('Typeahead', () => {
     })
     test.concurrent('Twitter (token 2)', async ({ expect }) => {
         expect(await getTypeahead({ text: 'Twitter', guest_token: guest_token2.token, authorization: 1 })).toHaveProperty('data')
-    })
-})
-
-describe('Article', () => {
-    //NOT SUPPORTED TOKEN 1
-    test.concurrent('notes/1585225861250355201 (token 2)', async ({ expect }) => {
-        expect(await getArticle({ id: '1585225861250355201', guest_token: guest_token2.token, authorization: 1 })).toHaveProperty('data')
     })
 })
 

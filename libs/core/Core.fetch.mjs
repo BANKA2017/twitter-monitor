@@ -29,7 +29,7 @@ import {
     _TweetDetail,
     _TweetEditHistory,
     _TweetResultByRestId,
-    _TwitterArticleByRestId,
+    // _TwitterArticleByRestId,
     _UnfavoriteTweet,
     _UserByRestId,
     _UserByScreenName,
@@ -151,8 +151,10 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
         }
     }
 
+    const _axios = env.axios === undefined ? axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY }) : env.axios
+
     return new Promise((resolve, reject) => {
-        axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY })(url, {
+        _axios(url, {
             headers: {
                 ...tmpHeaders,
                 ...headers
@@ -257,10 +259,12 @@ const getToken = async (authorization = 0, source = 'api', rateLimitOnly = false
     }
     const ct0 = generateCsrfToken()
 
+    const _axios = env.axios === undefined ? axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY }) : env.axios
+
     return new Promise((resolve, reject) => {
         //2000 per 30 min i guess
         if (source === 'web' && [TW_AUTHORIZATION2, TWEETDECK_AUTHORIZATION2].includes(tmpResponse.authorization)) {
-            axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY })(tmpResponse.authorization === 1 || tmpResponse.authorization === Authorization[1] ? 'https://twitter.com' : 'https://tweetdeck.twitter.com', {
+            _axios(tmpResponse.authorization === 1 || tmpResponse.authorization === Authorization[1] ? 'https://twitter.com' : 'https://tweetdeck.twitter.com', {
                 headers: {
                     'sec-fetch-mode': 'navigate'
                 }
@@ -288,7 +292,7 @@ const getToken = async (authorization = 0, source = 'api', rateLimitOnly = false
                     reject(tmpResponse)
                 })
         } else {
-            axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY })(TW_WEBAPI_PREFIX + '/1.1/guest/activate.json', {
+            _axios(TW_WEBAPI_PREFIX + '/1.1/guest/activate.json', {
                 headers: {
                     authorization: tmpResponse.authorization,
                     'x-csrf-token': ct0,
@@ -1095,41 +1099,41 @@ const getTypeahead = async (ctx = { text: '', guest_token: {}, cookie: {}, autho
 }
 
 const getArticle = async (ctx = { id: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
-    let { id, guest_token, cookie, authorization } = preCheckCtx(ctx, { id: '', guest_token: {}, cookie: {}, authorization: 1 })
-    if (!guest_token.success) {
-        guest_token = await getToken(1)
-    }
+    return Promise.reject({ code: 404, message: 'Endpoint getArticle is deleted!', e: {} })
 
-    const graphqlVariables = {
-        twitterArticleId: id,
-        withSuperFollowsUserFields: true,
-        withDownvotePerspective: false,
-        withReactionsMetadata: false,
-        withReactionsPerspective: false,
-        withSuperFollowsTweetFields: true
-    }
-
-    return new Promise((resolve, reject) => {
-        coreFetch(
-            TW_WEBAPI_PREFIX +
-                '/graphql/' +
-                _TwitterArticleByRestId.queryId +
-                '/TwitterArticleByRestId?' +
-                new URLSearchParams({
-                    variables: JSON.stringify(graphqlVariables),
-                    features: JSON.stringify(_TwitterArticleByRestId.features)
-                }).toString(),
-            guest_token,
-            cookie,
-            authorization
-        )
-            .then((response) => {
-                resolve(response)
-            })
-            .catch((e) => {
-                reject(e)
-            })
-    })
+    // let { id, guest_token, cookie, authorization } = preCheckCtx(ctx, { id: '', guest_token: {}, cookie: {}, authorization: 1 })
+    // if (!guest_token.success) {
+    //     guest_token = await getToken(1)
+    // }
+    // const graphqlVariables = {
+    //     twitterArticleId: id,
+    //     withSuperFollowsUserFields: true,
+    //     withDownvotePerspective: false,
+    //     withReactionsMetadata: false,
+    //     withReactionsPerspective: false,
+    //     withSuperFollowsTweetFields: true
+    // }
+    // return new Promise((resolve, reject) => {
+    //     coreFetch(
+    //         TW_WEBAPI_PREFIX +
+    //             '/graphql/' +
+    //             _TwitterArticleByRestId.queryId +
+    //             '/TwitterArticleByRestId?' +
+    //             new URLSearchParams({
+    //                 variables: JSON.stringify(graphqlVariables),
+    //                 features: JSON.stringify(_TwitterArticleByRestId.features)
+    //             }).toString(),
+    //         guest_token,
+    //         cookie,
+    //         authorization
+    //     )
+    //         .then((response) => {
+    //             resolve(response)
+    //         })
+    //         .catch((e) => {
+    //             reject(e)
+    //         })
+    // })
 }
 
 const getListInfo = async (ctx = { id: '', screenName: '', listSlug: '', guest_token: {}, cookie: {}, authorization: 1 }, env = {}) => {
@@ -1502,7 +1506,8 @@ const getImage = async (path = '', headers = {}, env = {}) => {
     if (path === '') {
         return ''
     }
-    return axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY })(path, {
+    const _axios = env.axios === undefined ? axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY }) : env.axios
+    return _axios(path, {
         responseType: typeof process === 'undefined' || (process?.browser ?? false) ? 'arrayBuffer' : 'arraybuffer',
         headers
         //timeout: 10000
@@ -1815,8 +1820,9 @@ const getJsInstData = async (ctx = { jsInstrumentationLink: 'https://twitter.com
     if (typeof globalThis.document === 'undefined') {
         globalThis.document = new MockDocument()
     }
+    const _axios = env.axios === undefined ? axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY }) : env.axios
     try {
-        const jsInstData = await axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY })(jsInstrumentationLink, {
+        const jsInstData = await _axios(jsInstrumentationLink, {
             headers: {
                 cookie
             }

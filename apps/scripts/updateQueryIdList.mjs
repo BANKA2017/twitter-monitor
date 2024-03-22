@@ -21,8 +21,13 @@ let existsList = []
 
 let counter = 0
 
+const _axios = axiosFetch({ keepAlive: true })
+
+const mockWebpackFunc = (anyV) => anyV
+mockWebpackFunc.d = (anyV) => anyV
+
 const updateIdList = (content) => {
-    const functions = Function(`const that = {__SCRIPTS_LOADED__: {vendor: {}}}; const self=that;const window=that;${content}\n;return that.webpackChunk_twitter_responsive_web`)()
+    const functions = Function(`const that = {__SCRIPTS_LOADED__: {vendor: {}}}; const self=that;const window=that;\n\n${content}\n\n;return that.webpackChunk_twitter_responsive_web`)()
 
     for (let tmpFunction of Object.entries(functions[0][1])) {
         if (existsList.includes(tmpFunction[0])) {
@@ -31,33 +36,41 @@ const updateIdList = (content) => {
         existsList.push(tmpFunction[0])
         tmpFunction = tmpFunction[1]
         //const pattern = /exports=({.+?})(;|)},|params:({.+?})};/gm //=Object\.freeze\(([\w:!,"{}]+)\)
-        if (tmpFunction?.toString().startsWith('e=>{e.exports={queryId:') || /params:\{id:"/gm.test(tmpFunction?.toString())) {
+
+        let tmpData = null
+        if (tmpFunction?.toString().startsWith('e=>{e.exports={queryId:')) {
             let e = {}
-            tmpFunction(e, e, (anyVariable) => anyVariable)
-            let tmpData = e.exports.params || e.exports //Function(`return ${tmpFunction.toString().slice(14,-1)}`)()
-            let tmpName = tmpData?.operationName || tmpData?.name || false
-            if (!tmpName) {
-                continue
-            }
-            if (tmpData.name !== undefined && !tmpData.operationName) {
-                tmpData.operationName = tmpData.name
-                delete tmpData.name
-            }
-            if (tmpData.id !== undefined && !tmpData.queryId) {
-                tmpData.queryId = tmpData.id
-                delete tmpData.id
-            }
-            if (tmpData.metadata?.features !== undefined && !tmpData.metadata?.featureSwitches !== undefined) {
-                tmpData.metadata.featureSwitches = JSON.parse(JSON.stringify(tmpData.metadata?.features))
-                delete tmpData.metadata?.features
-                //Log(false, 'log', tmpData)
-            }
-            queryIdList[tmpName] = tmpData
-            //features
-            //Log(false, 'log', queryIdList[tmpName])
-            if (queryIdList[tmpName]?.metadata?.featureSwitches) {
-                queryIdList[tmpName].features = Object.fromEntries((queryIdList[tmpName].metadata.featureSwitches || {}).map((feature) => [feature, featuresValueList[feature] || false]))
-            }
+            tmpFunction(e, e, mockWebpackFunc)
+            tmpData = e.exports
+        } else if (/,params:\{id:"/gm.test(tmpFunction?.toString())) {
+            tmpData = Function('return ' + (/,params:([^;]+)};/.exec(tmpFunction?.toString() || '')?.[1] || ''))()
+        } else {
+            //?
+            continue
+        }
+        //let tmpData = e.exports.params || e.exports //Function(`return ${tmpFunction.toString().slice(14,-1)}`)()
+        let tmpName = tmpData?.operationName || tmpData?.name || false
+        if (!tmpName) {
+            continue
+        }
+        if (tmpData.name !== undefined && !tmpData.operationName) {
+            tmpData.operationName = tmpData.name
+            delete tmpData.name
+        }
+        if (tmpData.id !== undefined && !tmpData.queryId) {
+            tmpData.queryId = tmpData.id
+            delete tmpData.id
+        }
+        if (tmpData.metadata?.features !== undefined && !tmpData.metadata?.featureSwitches !== undefined) {
+            tmpData.metadata.featureSwitches = JSON.parse(JSON.stringify(tmpData.metadata?.features))
+            delete tmpData.metadata?.features
+            //Log(false, 'log', tmpData)
+        }
+        queryIdList[tmpName] = tmpData
+        //features
+        //Log(false, 'log', queryIdList[tmpName])
+        if (queryIdList[tmpName]?.metadata?.featureSwitches) {
+            queryIdList[tmpName].features = Object.fromEntries((queryIdList[tmpName].metadata.featureSwitches || {}).map((feature) => [feature, featuresValueList[feature] || false]))
         }
     }
 
@@ -65,18 +78,18 @@ const updateIdList = (content) => {
     writeFileSync(
         basePath + '/../libs/assets/graphql/graphqlQueryIdList.js',
         Object.keys(queryIdList)
-            .map((key) => `const _${key} = ${JSON.stringify(queryIdList[key])}`)
+            .map((key) => `export const _${key} = ${JSON.stringify(queryIdList[key])}`)
             .join('\n') +
             `\nconst graphqlQueryIdList = { ${Object.keys(queryIdList)
                 .map((key) => `"${key}": _${key}`)
-                .join(',')} }\nexport default graphqlQueryIdList\nexport {${Object.keys(queryIdList).map((key) => `_${key}`)}}\n`
+                .join(',')} }\nexport default graphqlQueryIdList\n`
     )
     //json
     writeFileSync(basePath + '/../libs/assets/graphql/graphqlQueryIdList.json', JSON.stringify(queryIdList, null, 4))
     return true
 }
 
-axiosFetch()
+_axios
     .get(link, {
         headers: {
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
@@ -108,16 +121,16 @@ axiosFetch()
             writeFileSync(
                 basePath + '/../libs/assets/graphql/featuresValueList.js',
                 Object.keys(featuresValueList)
-                    .map((key) => `const _${key} = ${JSON.stringify(featuresValueList[key])}`)
+                    .map((key) => `export const _${key} = ${JSON.stringify(featuresValueList[key])}`)
                     .join('\n') +
                     `\nconst featuresValueList = { ${Object.keys(featuresValueList)
                         .map((key) => `"${key}": _${key}`)
-                        .join(',')} }\nexport default featuresValueList\nexport {${Object.keys(featuresValueList).map((key) => `_${key}`)}}\n`
+                        .join(',')} }\nexport default featuresValueList\n`
             )
             //json
             writeFileSync(basePath + '/../libs/assets/graphql/featuresValueList.json', JSON.stringify(featuresValueList, null, 4))
             try {
-                const mainId = await axiosFetch().get(mainLink)
+                const mainId = await _axios.get(mainLink)
                 if (mainId.data) {
                     updateIdList(mainId.data)
                 }
@@ -130,8 +143,8 @@ axiosFetch()
                     const jsFilesNameList = jsFileValuesEntries.slice(x, x + sliceCount).filter((item) => !item[0].startsWith('icons/') && !item[0].startsWith('i18n/') && !item[0].startsWith('react-syntax-highlighter'))
                     counter += jsFileValuesEntries.slice(x, x + sliceCount).length - jsFilesNameList.length
                     Log(false, 'log', `tmv3: graphqlQueryIdList break ${sliceCount - jsFilesNameList.length} ->[${counter}/${jsFileValuesEntries.length}]<-`)
-                    const allData = await Promise.allSettled(jsFilesNameList.map((tmpValue) => axiosFetch().get(`https://abs.twimg.com/responsive-web/client-web/${tmpValue[0]}.${tmpValue[1]}a.js`)))
-                    //readFileSync(`./js/${file}`).toString()// await axiosFetch().get(`https://abs.twimg.com/responsive-web/client-web/bundle.Communities.${jsFileValues['bundle.Communities']}a.js`)
+                    const allData = await Promise.allSettled(jsFilesNameList.map((tmpValue) => _axios.get(`https://abs.twimg.com/responsive-web/client-web/${tmpValue[0]}.${tmpValue[1]}a.js`)))
+                    //readFileSync(`./js/${file}`).toString()// await _axios.get(`https://abs.twimg.com/responsive-web/client-web/bundle.Communities.${jsFileValues['bundle.Communities']}a.js`)
 
                     for (let allDataIndex in allData) {
                         allDataIndex = Number(allDataIndex)
@@ -148,11 +161,11 @@ axiosFetch()
                 }
 
                 // for twitter monitor only
-                //const apiId = await axiosFetch().get(`https://abs.twimg.com/responsive-web/client-web/api.${jsFileValues['api']}a.js`)
+                //const apiId = await _axios.get(`https://abs.twimg.com/responsive-web/client-web/api.${jsFileValues['api']}a.js`)
                 //if (apiId.data) {
                 //    updateIdList(apiId.data, 'api')
                 //}
-                //const communityId = await axiosFetch().get(`https://abs.twimg.com/responsive-web/client-web/bundle.Communities.${jsFileValues['bundle.Communities']}a.js`)
+                //const communityId = await _axios.get(`https://abs.twimg.com/responsive-web/client-web/bundle.Communities.${jsFileValues['bundle.Communities']}a.js`)
                 //if (communityId.data) {
                 //    updateIdList(communityId.data, 'community')
                 //}
