@@ -48,7 +48,7 @@
         "blurhash": "^2.0.5",
         "cld3-asm": "^4.0.0",
         "cookie-parser": "^1.4.6",
-        "express": "^4.19.1",
+        "express": "^4.19.2",
         "hpagent": "^1.2.0",
         "itty-router": "^4.2.2",
         "jsdom": "^24.0.0",
