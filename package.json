@@ -55,7 +55,7 @@
         "lodash-es": "^4.17.21",
         "m3u8-parser": "^7.1.0",
         "mariadb": "^3.3.0",
-        "mysql2": "^3.9.4",
+        "mysql2": "^3.9.7",
         "otplib": "^12.0.1",
         "redaxios": "^0.5.1",
         "sequelize": "^6.37.2",
