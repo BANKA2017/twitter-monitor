@@ -30,15 +30,15 @@
         "@rollup/plugin-commonjs": "^25.0.7",
         "@rollup/plugin-node-resolve": "^15.2.3",
         "@rollup/plugin-terser": "^0.4.4",
-        "@types/node": "^20.12.4",
+        "@types/node": "^20.12.10",
         "nodemon": "^3.1.0",
         "pg-hstore": "^2.3.4",
         "prettier": "^3.2.5",
-        "rollup": "^4.14.0",
+        "rollup": "^4.17.2",
         "rollup-plugin-bundle-size": "^1.0.3",
         "rollup-plugin-cleanup": "^3.2.1",
-        "vitest": "^1.4.0",
-        "wrangler": "^3.47.1"
+        "vitest": "^1.6.0",
+        "wrangler": "^3.53.1"
     },
     "dependencies": {
         "@kdwnil/translator-utils": "github:BANKA2017/translator-utils#npm",
@@ -50,19 +50,19 @@
         "cookie-parser": "^1.4.6",
         "express": "^4.19.2",
         "hpagent": "^1.2.0",
-        "itty-router": "^5.0.9",
+        "itty-router": "^5.0.17",
         "jsdom": "^24.0.0",
         "lodash-es": "^4.17.21",
         "m3u8-parser": "^7.1.0",
         "mariadb": "^3.3.0",
-        "mysql2": "^3.9.4",
+        "mysql2": "^3.9.7",
         "otplib": "^12.0.1",
         "redaxios": "^0.5.1",
-        "sequelize": "^6.37.2",
+        "sequelize": "^6.37.3",
         "sharp": "^0.33.3",
         "sqlite3": "^5.1.7",
         "twemoji-parser": "^14.0.0",
-        "ws": "^8.16.0"
+        "ws": "^8.17.0"
     },
     "workspaces": [
         "packages/*"

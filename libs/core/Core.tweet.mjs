@@ -1378,20 +1378,21 @@ const Broadcast = (broadcastObject = {}) => {
     return tmpBroadcastData
 }
 
-const Time2SnowFlake = (date = new Date(), datacenter_id = 0, server_id = 0, sequence_id = 0) => {
-    let tmpSnowflake = BigInt((typeof date === 'number' || typeof date === 'bigint' ? date : Date.parse(date)) - 1288834974657) << BigInt(5)
-    if (tmpSnowflake < BigInt(0)) {
+const Time2SnowFlake = (date = new Date(), datacenter_id = 0, server_id = 0, sequence_id = 0, start = 1288834974657) => {
+    const diffDate = (typeof date === 'number' || typeof date === 'bigint' ? date : Date.parse(date)) - start
+    if (diffDate < 0) {
         return BigInt(0)
     }
-    tmpSnowflake |= BigInt(datacenter_id)
-    tmpSnowflake <<= BigInt(5)
-    tmpSnowflake |= BigInt(server_id)
-    tmpSnowflake <<= BigInt(12)
-    tmpSnowflake |= BigInt(sequence_id)
-    return tmpSnowflake
+    return (BigInt(diffDate) << BigInt(22)) | BigInt((datacenter_id << 17) | (server_id << 12) | sequence_id)
 }
-const SnowFlake2Time = (snowflake) => {
-    let tmpData = { creation_time_milli: 1288834974657, sequence_id: 0, machine_id: 0, server_id: 0, datacenter_id: 0 }
+const SnowFlake2Time = (snowflake, start = 1288834974657) => {
+    let tmpData = {
+        creation_time_milli: start,
+        sequence_id: 0,
+        machine_id: 0,
+        server_id: 0,
+        datacenter_id: 0
+    }
     if (isNaN(snowflake)) {
         return tmpData
     }
@@ -1404,16 +1405,16 @@ const SnowFlake2Time = (snowflake) => {
     }
     // Sequence number
     tmpData.sequence_id = Number(snowflake & BigInt(4095))
-    snowflake >>= BigInt(12)
+    snowflake = Number(snowflake >> BigInt(12))
 
     // Machine id
-    tmpData.machine_id = Number(snowflake & BigInt(1023))
+    tmpData.machine_id = snowflake & 1023
     tmpData.server_id = tmpData.machine_id & 31
     tmpData.datacenter_id = (tmpData.machine_id >> 5) & 31
-    snowflake >>= BigInt(10)
+    snowflake >>= 10
 
     // Time
-    tmpData.creation_time_milli += Number(snowflake & BigInt(2199023255551))
+    tmpData.creation_time_milli += snowflake & 2199023255551
     return tmpData
 }
 

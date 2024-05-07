@@ -213,6 +213,16 @@ DROP INDEX IF EXISTS "idx_v2_twitter_tweets_uid";
 CREATE INDEX IF NOT EXISTS "idx_v2_twitter_tweets_uid" ON "v2_twitter_tweets" (
 	"uid"
 );
+DROP INDEX IF EXISTS "idx_v2_twitter_tweets_tweet_id_and_uid";
+CREATE INDEX "idx_v2_twitter_tweets_tweet_id_and_uid" ON "v2_twitter_tweets" (
+	"uid",
+	"tweet_id"	DESC
+);
+DROP INDEX IF EXISTS "idx_v2_twitter_main_page";
+CREATE INDEX "idx_v2_twitter_main_page" ON "v2_twitter_tweets" (
+	"hidden",
+	"tweet_id"	DESC
+);
 DROP INDEX IF EXISTS "idx_v2_twitter_card_app_uid";
 CREATE INDEX IF NOT EXISTS "idx_v2_twitter_card_app_uid" ON "v2_twitter_card_app" (
 	"uid"

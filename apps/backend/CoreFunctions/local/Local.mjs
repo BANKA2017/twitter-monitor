@@ -305,7 +305,7 @@ const ApiLocalTweets = async (req, res) => {
                             [Op.eq]: dbHandle.twitter_monitor.literal(`(SELECT conversation_id_str FROM v2_twitter_tweets WHERE tweet_id = '${dbHandle.twitter_monitor.twitter_monitor.escape(tweetId)}')`)
                         }
                     },
-                    order: [['time']],
+                    order: [['tweet_id']],
                     raw: true
                 })
             } catch (e) {
@@ -445,7 +445,7 @@ const ApiLocalSearch = async (req, res) => {
         //tweet id
         queryArray.push({ tweet_id: { [refresh || tweetId === 0 ? Op.gt : Op.lt]: tweetId } })
 
-        const queryOrder = order ? [['time']] : [['time', 'DESC']]
+        const queryOrder = order ? [['tweet_id']] : [['tweet_id', 'DESC']]
         let tweets = null
         try {
             tweets = await V2TwitterTweets.findAll({
@@ -555,7 +555,7 @@ const ApiLocalSearch = async (req, res) => {
                         'time'
                     ],
                     where: queryArray,
-                    order: [['time', 'DESC']],
+                    order: [['tweet_id', 'DESC']],
                     limit: count,
                     raw: true
                 })
