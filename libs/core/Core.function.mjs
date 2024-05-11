@@ -105,7 +105,7 @@ export class GuestToken {
             if (!this.#guest_token.success && this.errorCount <= 0) {
                 //force stop 31 minutes
                 this.#guest_token.nextActiveTime = now + 1860000
-                Log(false, 'error', `[${new Date()}]: #GuestToken Force delay, next active date is -->${this.#guest_token.nextActiveTime}<--`)
+                Log(false, 'error', `[${new Date()}]: #GuestToken Force delay, next active timestamp is -->${this.#guest_token.nextActiveTime}<--`)
             } else {
                 this.heartBeat = now
                 this.errorCount = 10
