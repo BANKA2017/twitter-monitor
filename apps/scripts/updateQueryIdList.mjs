@@ -4,7 +4,7 @@ import axiosFetch from 'axios-helper'
 import { PregMatchAll } from '../../libs/share/MockFuntions.mjs'
 import { Log } from '../../libs/core/Core.function.mjs'
 
-let link = 'https://twitter.com/i/flow/login'
+let link = 'https://x.com/i/flow/login?mx=2'
 
 if (process.argv[2]) {
     try {

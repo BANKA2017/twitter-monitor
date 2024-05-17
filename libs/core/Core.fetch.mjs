@@ -265,7 +265,7 @@ const getToken = async (authorization = 0, source = 'api', rateLimitOnly = false
 
     return new Promise((resolve, reject) => {
         //2000 per 30 min i guess
-        if (source === 'web' && [TW_AUTHORIZATION2, TWEETDECK_AUTHORIZATION2].includes(tmpResponse.authorization)) {
+        if (false && source === 'web' && [TW_AUTHORIZATION2, TWEETDECK_AUTHORIZATION2].includes(tmpResponse.authorization)) {
             _axios(tmpResponse.authorization === 1 || tmpResponse.authorization === Authorization[1] ? 'https://twitter.com' : 'https://tweetdeck.twitter.com', {
                 headers: {
                     'sec-fetch-mode': 'navigate'
