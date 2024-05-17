@@ -698,57 +698,49 @@ const getTweets = async (
 
         return coreFetch(TW_WEBAPI_PREFIX + '/1.1/search/universal.json?' + new URLSearchParams(tmpQueryObject).toString(), guest_token, cookie, authorization)
     } else {
-        return new Promise((resolve, reject) => {
-            // https://github.com/StarryBlueSky/Twispy/blob/0d7729fc725fc718da9305ded897bce9021a3337/twispy/api.json#L91-L119
-            let tmpQueryObject = {
-                id: queryString,
-                include_profile_interstitial_type: '1',
-                include_blocking: '1',
-                include_blocked_by: '1',
-                include_followed_by: '1',
-                include_want_retweets: '1',
-                include_mute_edge: '1',
-                include_can_dm: '1',
-                include_can_media_tag: '1',
-                skip_status: '1',
-                cards_platform: 'Web-13',
-                include_cards: '1',
-                include_composer_source: 'true',
-                include_ext_alt_text: 'true',
-                include_reply_count: '1',
-                tweet_mode: 'extended',
-                include_entities: 'true',
-                include_user_entities: 'true',
-                include_ext_media_color: 'true',
-                include_ext_media_availability: 'true',
-                send_error_codes: 'true',
-                simple_quoted_tweets: 'true',
-                ext: 'mediaStats,highlightedLabel,hasNftAvatar,voiceInfo,birdwatchPivot,enrichments,superFollowMetadata,unmentionInfo,editControl,vibe',
-                count
+        // https://github.com/StarryBlueSky/Twispy/blob/0d7729fc725fc718da9305ded897bce9021a3337/twispy/api.json#L91-L119
+        let tmpQueryObject = {
+            id: queryString,
+            include_profile_interstitial_type: '1',
+            include_blocking: '1',
+            include_blocked_by: '1',
+            include_followed_by: '1',
+            include_want_retweets: '1',
+            include_mute_edge: '1',
+            include_can_dm: '1',
+            include_can_media_tag: '1',
+            skip_status: '1',
+            cards_platform: 'Web-13',
+            include_cards: '1',
+            include_composer_source: 'true',
+            include_ext_alt_text: 'true',
+            include_reply_count: '1',
+            tweet_mode: 'extended',
+            include_entities: 'true',
+            include_user_entities: 'true',
+            include_ext_media_color: 'true',
+            include_ext_media_availability: 'true',
+            send_error_codes: 'true',
+            simple_quoted_tweets: 'true',
+            ext: 'mediaStats,highlightedLabel,hasNftAvatar,voiceInfo,birdwatchPivot,enrichments,superFollowMetadata,unmentionInfo,editControl,vibe',
+            count
+        }
+        // TODO how to know up or down?
+        if (cursor) {
+            if (bottomCursor) {
+                tmpQueryObject['down_cursor'] = cursor
+            } else {
+                tmpQueryObject['up_cursor'] = cursor
             }
-            // TODO how to know up or down?
-            if (cursor) {
-                if (bottomCursor) {
-                    tmpQueryObject['down_cursor'] = cursor
-                } else {
-                    tmpQueryObject['up_cursor'] = cursor
-                }
-            }
-            coreFetch(
-                TW_WEBAPI_PREFIX + '/1.1/timeline/user.json?' + new URLSearchParams(tmpQueryObject).toString(),
-                //`${TW_WEBAPI_PREFIX}/2/timeline/profile/${queryString}.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_composer_source=true&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweets=true&ext=mediaStats%2CcameraMoment&count=` +
-                //    (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''),
-                guest_token,
-                cookie,
-                authorization
-            )
-                .then((response) => {
-                    resolve(response)
-                })
-                .catch((e) => {
-                    reject(e)
-                })
-        })
+        }
+        return coreFetch(
+            TW_WEBAPI_PREFIX + '/1.1/timeline/user.json?' + new URLSearchParams(tmpQueryObject).toString(),
+            //`${TW_WEBAPI_PREFIX}/2/timeline/profile/${queryString}.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_composer_source=true&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweets=true&ext=mediaStats%2CcameraMoment&count=` +
+            //    (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''),
+            guest_token,
+            cookie,
+            authorization
+        )
     }
 }
 
@@ -1258,26 +1250,25 @@ const getTranslate = async (ctx = { id: '0', type: 'tweets', target: 'en', guest
     if (cookie?.ct0 && cookie?.auth_token) {
         guest_token = false
     }
-    return new Promise((resolve, reject) => {
-        const url = graphqlMode
-            ? TW_WEBAPI_PREFIX +
-              '/graphql/' +
-              (type === 'profile' ? _TranslateProfileQuery.queryId + '/TranslateProfileQuery' : _TranslateTweetQuery.queryId + '/TranslateTweetQuery?') +
-              new URLSearchParams({
-                  variables: JSON.stringify({
-                      includeTweetImpression: true,
-                      includeHasBirdwatchNotes: false,
-                      includeEditPerspective: false,
-                      includeEditControl: true,
-                      ...(type === 'profile' ? { rest_id: id } : { tweet_id: id })
-                  })
-              })
-            : type === 'profile'
-              ? `${TW_WEBAPI_PREFIX}/1.1/strato/column/None/profileUserId=${id},destinationLanguage=None,translationSource=Some(Google)/translation/service/translateProfile`
-              : `${TW_WEBAPI_PREFIX}/1.1/strato/column/None/tweetId=${id},destinationLanguage=None,translationSource=Some(Google),feature=None,timeout=None,onlyCached=None/translation/service/translateTweet`
 
-        coreFetch(url, guest_token, cookie, authorization, { 'x-twitter-client-language': target })
-    })
+    const url = graphqlMode
+        ? TW_WEBAPI_PREFIX +
+          '/graphql/' +
+          (type === 'profile' ? _TranslateProfileQuery.queryId + '/TranslateProfileQuery' : _TranslateTweetQuery.queryId + '/TranslateTweetQuery?') +
+          new URLSearchParams({
+              variables: JSON.stringify({
+                  includeTweetImpression: true,
+                  includeHasBirdwatchNotes: false,
+                  includeEditPerspective: false,
+                  includeEditControl: true,
+                  ...(type === 'profile' ? { rest_id: id } : { tweet_id: id })
+              })
+          })
+        : type === 'profile'
+          ? `${TW_WEBAPI_PREFIX}/1.1/strato/column/None/profileUserId=${id},destinationLanguage=None,translationSource=Some(Google)/translation/service/translateProfile`
+          : `${TW_WEBAPI_PREFIX}/1.1/strato/column/None/tweetId=${id},destinationLanguage=None,translationSource=Some(Google),feature=None,timeout=None,onlyCached=None/translation/service/translateTweet`
+
+    return coreFetch(url, guest_token, cookie, authorization, { 'x-twitter-client-language': target })
 }
 
 //const getMmoment = async () => {
