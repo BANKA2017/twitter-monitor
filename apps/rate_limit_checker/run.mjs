@@ -101,7 +101,7 @@ const getStatusResponse = async (_function, authorizationType, label = '_') => {
         rate_limit: Number(tmpRes?.headers?.['x-rate-limit-limit']) || '_',
         rate_limit_reset: reset,
         status: code === 200 && tmpRes.data ? v : x,
-        url: tmpRes.config.url,
+        url: tmpRes?.config?.url || '',
         method: tmpRes?.config?.method?.toUpperCase() || 'GET',
         data: tmpRes?.config?.data ? tmpRes.config.data : undefined,
         label
