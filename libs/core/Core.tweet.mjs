@@ -1396,7 +1396,7 @@ const SnowFlake2Time = (snowflake, start = 1288834974657) => {
     if (isNaN(snowflake)) {
         return tmpData
     }
-    if (typeof snowflake === 'string') {
+    if (typeof snowflake === 'string' || typeof snowflake === 'number') {
         snowflake = BigInt(snowflake)
         // 0
         if (!snowflake) {
@@ -1411,10 +1411,9 @@ const SnowFlake2Time = (snowflake, start = 1288834974657) => {
     tmpData.machine_id = snowflake & 1023
     tmpData.server_id = tmpData.machine_id & 31
     tmpData.datacenter_id = (tmpData.machine_id >> 5) & 31
-    snowflake >>= 10
 
     // Time
-    tmpData.creation_time_milli += snowflake & 2199023255551
+    tmpData.creation_time_milli += Math.floor(snowflake / 1024)
     return tmpData
 }
 
