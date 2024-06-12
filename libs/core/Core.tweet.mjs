@@ -558,7 +558,7 @@ const GenerateEntities = (entities = [], uid = '0', tweetId = '0', hidden = fals
     let tags = []
 
     for (const type in entities) {
-        if (['symbols', 'hashtags', 'urls', 'user_mentions'].includes(type)) {
+        if (['symbols', 'hashtags', 'urls', 'user_mentions', 'timestamps'].includes(type)) {
             for (const entity of entities[type]) {
                 tags.push(Entity(type, entity, uid, tweetId, hidden))
             }
@@ -758,9 +758,12 @@ const Entity = (type, entity = {}, uid = 0, tweetId = 0, hidden = false) => {
         indices_start: entity.indices[0],
         indices_end: entity.indices[1],
         length: entity.indices[1] - entity.indices[0],
-        type: type.slice(0, -1)
+        type: type.slice(0, -1),
+        seconds: undefined
     }
     switch (type) {
+        case 'timestamps':
+            entityData.seconds = entity.seconds || 0
         case 'symbols': // stock symbols && cryptocurrency abbreviation
         case 'hashtags':
             entityData.text = entity.text //最终显示的文本

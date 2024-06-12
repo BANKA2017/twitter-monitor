@@ -8,6 +8,7 @@ Archiver()
 - The structure of the generated data is still being adjusted, and the current results may not be available in viewer.
 
 ## Known issues
+- **TweetsTimeline/Search/AudioSpace endpoints are unusable**, to fix this issue, you can replace guest token with some accounts (cookie/OAuth)
 - Unable to crawl most of the retweets.
 - Unable to crawl tweets marked as sensitive content (TODO login can solve).
 - Unable to crawl copyrighted media files in some region.
