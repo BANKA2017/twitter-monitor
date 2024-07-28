@@ -989,7 +989,7 @@ const GetUid = async (query) => {
     }
     //uid first
     const tmpUserList = data_original.users.filter(
-        (user) => user.name !== '' && !(user.uid === '' || user.uid === 'undefined') && ((name.toLowerCase() === (user.name || '').toLowerCase() && !isNaN(user.uid) && typeof user.uid !== 'object') || String(user.uid || '-1') === uid)
+        (user) => user.name !== '' && !(user.uid === '' || user.uid === 'undefined') && ((name.toLowerCase() === (user.name || '').toLowerCase() && /^[1-9]\d+$/gm.test(user.uid) && typeof user.uid !== 'object') || String(user.uid || '-1') === uid)
     )
     if (tmpUserList.length > 0) {
         name = tmpUserList[0].name

@@ -291,7 +291,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
         GeneralTweetData.name = recrawlerObject.name
         GeneralTweetData.display_name = recrawlMode.display_name
     } else {
-        tmpInfo = graphqlMode ? path2array('graphql_user_result', content) ?? {} : users[GeneralTweetData.uid] ?? content?.user ?? {}
+        tmpInfo = graphqlMode ? (path2array('graphql_user_result', content) ?? {}) : (users[GeneralTweetData.uid] ?? content?.user ?? {})
         if (Object.keys(tmpInfo).length && (tmpInfo?.legacy?.screen_name || tmpInfo?.screen_name)) {
             const tmpInfoHandle = GenerateAccountInfo(tmpInfo)
             userInfo = tmpInfoHandle.GeneralAccountData
@@ -374,7 +374,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
         community = GenerateCommunityInfo(content.community_results.result)
     }
 
-    //给卡片找源链接
+    //find original link for card
     cardUrl = content.card && !(path2array('tweet_card_url', content.card) || '').startsWith('card://') ? path2array('tweet_card_url', content.card) : ''
 
     //真的有quote嘛
@@ -801,7 +801,7 @@ const Media = (media = {}, uid = '0', tweetId = '0', hidden = false, source = 't
         description: media?.additional_media_info?.description ?? media?.ext_alt_text ?? '',
         uid, //account uid
         tweet_id: tweetId, //tweet id
-        original_type: cardType ? cardType : media?.type ?? '',
+        original_type: cardType ? cardType : (media?.type ?? ''),
         original_info_width: media?.original_info?.width || media?.sizes?.large?.w || 0,
         original_info_height: media?.original_info?.height || media?.sizes?.large?.h || 0,
         media_key: media.media_key ?? '' //你问我这个media_key是啥我只能说我也不知道
@@ -1396,7 +1396,7 @@ const SnowFlake2Time = (snowflake, start = 1288834974657) => {
         server_id: 0,
         datacenter_id: 0
     }
-    if (isNaN(snowflake)) {
+    if (!/^[1-9]\d+$/gm.test(snowflake)) {
         return tmpData
     }
     if (typeof snowflake === 'string' || typeof snowflake === 'number') {

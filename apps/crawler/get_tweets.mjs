@@ -119,9 +119,11 @@ while (true) {
             return [user[0]?.name, -3]
         }
     })
-    // TODO once have rete limit ban you have to stop crawler up to 30 mins
+    // TODO once have rate limit ban you have to stop crawler up to 30 mins
     let allInfoForAccount = []
     while (refreshableIdList.length) {
+        // TODO fix isNaN issue
+        // TODO screen_name can also be a pure number
         const uidCount = refreshableIdList.filter((id) => !isNaN(id)).length
         const nameCount = refreshableIdList.filter((id) => isNaN(id)).length
         if (global.guest_token.preCheck('UserByScreenName', nameCount) && global.guest_token.preCheck('UserByRestId', uidCount)) {

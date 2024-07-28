@@ -354,7 +354,7 @@ const getUserInfo = async (ctx = { user: '', guest_token: {}, graphqlMode: true,
 
             if (isGraphql) {
                 let graphqlVariables = { withSuperFollowsUserFields: true, withSafetyModeUserFields: true }
-                if (autoUser === -2 || (autoUser === -1 && !isNaN(user))) {
+                if (autoUser === -2 || (autoUser === -1 && /^[1-9]\d+$/gm.test(user))) {
                     graphqlVariables['userId'] = user
                     return (
                         TW_WEBAPI_PREFIX +
@@ -383,7 +383,7 @@ const getUserInfo = async (ctx = { user: '', guest_token: {}, graphqlMode: true,
                 return (
                     TW_WEBAPI_PREFIX +
                     '/1.1/users/show.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&skip_status=1&' +
-                    (autoUser === -1 || (autoUser === -2 && !isNaN(user)) ? 'user_id=' : 'screen_name=') +
+                    (autoUser === -1 || (autoUser === -2 && /^[1-9]\d+$/gm.test(user)) ? 'user_id=' : 'screen_name=') +
                     user
                 )
             }
@@ -431,7 +431,7 @@ const getRecommendations = async (ctx = { user: '', guest_token: {}, count: 40, 
     } else {
         return coreFetch(
             `${TW_WEBAPI_PREFIX}/1.1/users/recommendations.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&skip_status=1&&pc=true&display_location=profile_accounts_sidebar&limit=${count}&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CreplyvotingDownvotePerspective%2CvoiceInfo%2CbirdwatchPivot%2Cenrichments%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl%2Ccollab_control%2Cvibe&` +
-                (!isNaN(user) ? 'user_id=' : 'screen_name=') +
+                (/^[1-9]\d+$/gm.test(user) ? 'user_id=' : 'screen_name=') +
                 user,
             guest_token,
             cookie,
@@ -1628,7 +1628,7 @@ const uploadMedia = async (ctx = { cookie: {}, media: null, type: 'INIT', media_
     //cookie: {ct0, auth_token}
     if (!cookie.ct0 || !cookie.auth_token) {
     }
-    if ((['APPEND', 'INIT'].includes(type) && !media) || (['FINALIZE', 'STATUS', 'APPEND'].includes(type) && (!media_id || isNaN(media_id)))) {
+    if ((['APPEND', 'INIT'].includes(type) && !media) || (['FINALIZE', 'STATUS', 'APPEND'].includes(type) && (!media_id || !/^[1-9]\d+$/gm.test(media_id)))) {
         return Promise.reject({ code: -1003, message: `miss ${['FINALIZE', 'STATUS', 'APPEND'].includes(type) ? 'media id' : 'media buffer'}`, e: {} })
     } else {
         let queryObject = new URLSearchParams({

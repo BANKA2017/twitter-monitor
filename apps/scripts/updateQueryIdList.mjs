@@ -114,7 +114,7 @@ _axios
             const mainLink = /(https:\/\/abs\.twimg\.com\/responsive-web\/client-web(?:[^\/]+|)\/main\.[^.]+\.js)/gm.exec(response.data)[0]
             //api:"8684ec1"
 
-            const __INITIAL_STATE__ = Function(`return ${/window\.__INITIAL_STATE__=([^;]+);/gm.exec(response.data)[1]}`)()
+            const __INITIAL_STATE__ = Function(`return {${/window\.__INITIAL_STATE__=\{(.+?)\};/gm.exec(response.data)[1]}}`)()
             const tmpConfigKV = { ...__INITIAL_STATE__.featureSwitch.defaultConfig, ...__INITIAL_STATE__.featureSwitch.user.config }
             featuresValueList = Object.fromEntries(Object.keys(tmpConfigKV).map((key) => [key, tmpConfigKV[key].value]))
             //js

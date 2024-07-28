@@ -516,7 +516,7 @@ const GetEntitiesFromText = (text = '', type = 'description') => {
 }
 
 const VerifyQueryString = (value, defaultValue) => {
-    if (!value || typeof value === 'object' || ((typeof defaultValue === 'number' || typeof defaultValue === 'bigint') && isNaN(value))) {
+    if (!value || typeof value === 'object' || ((typeof defaultValue === 'number' || typeof defaultValue === 'bigint') && /^\d+$/gm.test(value))) {
         return defaultValue
     }
 

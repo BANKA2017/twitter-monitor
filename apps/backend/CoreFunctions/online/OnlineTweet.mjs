@@ -47,7 +47,7 @@ const ApiTweets = async (req, env) => {
                 guest_token: env.guest_token3,
                 authorization: 1,
                 graphqlMode,
-                cursor: isNaN(cursor) ? (cursor ? cursor : '') : '',
+                cursor: !/^[1-9]\d+$/gm.test(cursor) ? (cursor ? cursor : '') : '',
                 cookie: req.cookies
             })
             //TODO update guest_account status
@@ -66,7 +66,7 @@ const ApiTweets = async (req, env) => {
                 guest_token: env.guest_token3,
                 authorization: 1,
                 graphqlMode,
-                cursor: isNaN(cursor) ? (cursor ? cursor : '') : '',
+                cursor: !/^[1-9]\d+$/gm.test(cursor) ? (cursor ? cursor : '') : '',
                 cookie: req.cookies
             })
             //TODO update guest_account status
@@ -80,7 +80,7 @@ const ApiTweets = async (req, env) => {
     } else if (isConversation) {
         try {
             const useWeb = env.guest_token3.success
-            tweets = await getConversation({ tweet_id, guest_token: useWeb ? env.guest_token2 : env.guest_token3, graphqlMode, cursor: isNaN(cursor) ? cursor : '', cookie: req.cookies, web: useWeb ? 2 : false })
+            tweets = await getConversation({ tweet_id, guest_token: useWeb ? env.guest_token2 : env.guest_token3, graphqlMode, cursor: !/^[1-9]\d+$/gm.test(cursor) ? cursor : '', cookie: req.cookies, web: useWeb ? 2 : false })
             //TODO mix mode, tweet and replies
             //updateGuestToken
             await env.updateGuestToken(env, useWeb ? 'guest_token2' : 'guest_token3', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')
@@ -92,7 +92,6 @@ const ApiTweets = async (req, env) => {
     //else if (name !== '' && displayType === 'all') {
     //    try {
     //        tweets = await getTweets(name, cursor, env.guest_token2, 40, true, true, false)
-    //        //global.guest_token2.updateRateLimit('UserTweets')
     //    } catch (e) {
     //        Log(false, 'error', `[${new Date()}]: #OnlineTweetsConversation #${cursor} #${e.code} ${e.message}`)
     //        return env.json(apiTemplate(e.code, e.message))
@@ -428,7 +427,6 @@ const ApiBroadcast = async (req, env) => {
         }
         return env.json(apiTemplate(200, 'OK', tmpBroadcast))
     } catch (e) {
-        //global.guest_token2.updateRateLimit('BroadCast')
         if (!(e?.code && e?.message) && e?.errors) {
             e = e.errors[0]
         }
@@ -488,7 +486,6 @@ const ApiMedia = async (req, env) => {
     } catch (e) {
         Log(false, 'log', e)
         Log(false, 'error', `[${new Date()}]: #OnlineTweetMedia #${tweet_id} #${e.code} ${e.message}`)
-        //global.guest_token2.updateRateLimit('TweetDetail')
         return env.json(apiTemplate(e.code, e.message))
     }
 }
