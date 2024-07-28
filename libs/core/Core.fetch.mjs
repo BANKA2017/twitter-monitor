@@ -47,7 +47,7 @@ import { parse } from 'acorn'
 import { getOauthAuthorization } from './Core.android.mjs'
 import { _ConversationTimelineV2, _SearchTimeline, _TranslateProfileQuery, _TranslateTweetQuery, _UserWithProfileTweetsAndRepliesQueryV2, _UserWithProfileTweetsQueryV2, _ViewerUserQuery } from '../assets/graphql/androidQueryIdList.js'
 import cryptoHandle from 'crypto-helper'
-import { Log } from './Core.function.mjs'
+import { IsNumber, Log } from './Core.function.mjs'
 
 const generateCsrfToken = () => cryptoHandle.randomUUID().replaceAll('-', '')
 
@@ -1628,7 +1628,7 @@ const uploadMedia = async (ctx = { cookie: {}, media: null, type: 'INIT', media_
     //cookie: {ct0, auth_token}
     if (!cookie.ct0 || !cookie.auth_token) {
     }
-    if ((['APPEND', 'INIT'].includes(type) && !media) || (['FINALIZE', 'STATUS', 'APPEND'].includes(type) && (!media_id || !/^[1-9]\d+$/gm.test(media_id)))) {
+    if ((['APPEND', 'INIT'].includes(type) && !media) || (['FINALIZE', 'STATUS', 'APPEND'].includes(type) && (!media_id || IsNumber(media_id, true, true)))) {
         return Promise.reject({ code: -1003, message: `miss ${['FINALIZE', 'STATUS', 'APPEND'].includes(type) ? 'media id' : 'media buffer'}`, e: {} })
     } else {
         let queryObject = new URLSearchParams({

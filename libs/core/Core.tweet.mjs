@@ -1,5 +1,5 @@
 import { SupportedCardNameList } from '../share/Constant.mjs'
-import { Log, GetEntitiesFromText, PathInfo } from './Core.function.mjs'
+import { Log, GetEntitiesFromText, PathInfo, IsNumber } from './Core.function.mjs'
 import { GetMime } from '../share/Mime.mjs'
 import { GenerateAccountInfo, GenerateCommunityInfo } from './Core.info.mjs'
 import path2array from './Core.apiPath.mjs'
@@ -1396,7 +1396,7 @@ const SnowFlake2Time = (snowflake, start = 1288834974657) => {
         server_id: 0,
         datacenter_id: 0
     }
-    if (!/^[1-9]\d+$/gm.test(snowflake)) {
+    if (IsNumber(snowflake, true, true)) {
         return tmpData
     }
     if (typeof snowflake === 'string' || typeof snowflake === 'number') {

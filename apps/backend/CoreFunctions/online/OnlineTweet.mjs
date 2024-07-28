@@ -1,7 +1,7 @@
 import { Parser } from 'm3u8-parser'
 import path2array from '../../../../libs/core/Core.apiPath.mjs'
 import { getAudioSpace, getLiveVideoStream, getConversation, getPollResult, getTweets, getBroadcast, getListTimeLine, AxiosFetch, getCommunityTweetsTimeline, getEmbedConversation } from '../../../../libs/core/Core.fetch.mjs'
-import { Log, GetEntitiesFromText, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
+import { Log, GetEntitiesFromText, VerifyQueryString, IsNumber } from '../../../../libs/core/Core.function.mjs'
 import { AudioSpace, Broadcast, Time2SnowFlake, Tweet, TweetsInfo } from '../../../../libs/core/Core.tweet.mjs'
 import { apiTemplate } from '../../../../libs/share/Constant.mjs'
 import { Rss } from '../../../../libs/core/Core.Rss.mjs'
@@ -47,7 +47,7 @@ const ApiTweets = async (req, env) => {
                 guest_token: env.guest_token3,
                 authorization: 1,
                 graphqlMode,
-                cursor: !/^[1-9]\d+$/gm.test(cursor) ? (cursor ? cursor : '') : '',
+                cursor: !IsNumber(cursor, true, true) ? (cursor ? cursor : '') : '',
                 cookie: req.cookies
             })
             //TODO update guest_account status
@@ -66,7 +66,7 @@ const ApiTweets = async (req, env) => {
                 guest_token: env.guest_token3,
                 authorization: 1,
                 graphqlMode,
-                cursor: !/^[1-9]\d+$/gm.test(cursor) ? (cursor ? cursor : '') : '',
+                cursor: !IsNumber(cursor, true, true) ? (cursor ? cursor : '') : '',
                 cookie: req.cookies
             })
             //TODO update guest_account status
@@ -80,7 +80,7 @@ const ApiTweets = async (req, env) => {
     } else if (isConversation) {
         try {
             const useWeb = env.guest_token3.success
-            tweets = await getConversation({ tweet_id, guest_token: useWeb ? env.guest_token2 : env.guest_token3, graphqlMode, cursor: !/^[1-9]\d+$/gm.test(cursor) ? cursor : '', cookie: req.cookies, web: useWeb ? 2 : false })
+            tweets = await getConversation({ tweet_id, guest_token: useWeb ? env.guest_token2 : env.guest_token3, graphqlMode, cursor: !IsNumber(cursor, true, true) ? (cursor ? cursor : '') : '', cookie: req.cookies, web: useWeb ? 2 : false })
             //TODO mix mode, tweet and replies
             //updateGuestToken
             await env.updateGuestToken(env, useWeb ? 'guest_token2' : 'guest_token3', 4, tweets.headers.get('x-rate-limit-remaining') < 1, 'TweetDetail')

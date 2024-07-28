@@ -516,7 +516,7 @@ const GetEntitiesFromText = (text = '', type = 'description') => {
 }
 
 const VerifyQueryString = (value, defaultValue) => {
-    if (!value || typeof value === 'object' || ((typeof defaultValue === 'number' || typeof defaultValue === 'bigint') && /^\d+$/gm.test(value))) {
+    if (!value || typeof value === 'object' || ((typeof defaultValue === 'number' || typeof defaultValue === 'bigint') && IsNumber(value, false, false))) {
         return defaultValue
     }
 
@@ -539,4 +539,16 @@ const Log = (color = false, type = 'log', ...content) => {
     }
 }
 
-export { Sleep, PathInfo, GetEntitiesFromText, VerifyQueryString, Log }
+const IsNumber = (value, positive = false, isInt = false) => {
+    if (!['bigint', 'number', 'string'].includes(typeof value)) {
+        return false
+    }
+    value = Number(value)
+
+    if (isNaN(value) || !isFinite(value) || (positive && value <= 0) || (isInt && !Number.isInteger(value))) {
+        return false
+    }
+    return true
+}
+
+export { Sleep, PathInfo, GetEntitiesFromText, VerifyQueryString, Log, IsNumber }

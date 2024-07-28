@@ -19,7 +19,7 @@ import V2TwitterTweets from '../../../../libs/model/twitter_monitor/v2_twitter_t
 //twitter data
 import TwitterData from '../../../../libs/model/twitter_monitor/twitter_data.js'
 
-import { Log, GetEntitiesFromText, VerifyQueryString } from '../../../../libs/core/Core.function.mjs'
+import { Log, GetEntitiesFromText, VerifyQueryString, IsNumber } from '../../../../libs/core/Core.function.mjs'
 import { Op, QueryTypes, where } from 'sequelize'
 import { Rss } from '../../../../libs/core/Core.Rss.mjs'
 import dbHandle from '../../../../libs/core/Core.db.mjs'
@@ -989,7 +989,7 @@ const GetUid = async (query) => {
     }
     //uid first
     const tmpUserList = data_original.users.filter(
-        (user) => user.name !== '' && !(user.uid === '' || user.uid === 'undefined') && ((name.toLowerCase() === (user.name || '').toLowerCase() && /^[1-9]\d+$/gm.test(user.uid) && typeof user.uid !== 'object') || String(user.uid || '-1') === uid)
+        (user) => user.name !== '' && !(user.uid === '' || user.uid === 'undefined') && ((name.toLowerCase() === (user.name || '').toLowerCase() && IsNumber(user.uid, true, true)) || String(user.uid || '-1') === uid)
     )
     if (tmpUserList.length > 0) {
         name = tmpUserList[0].name
