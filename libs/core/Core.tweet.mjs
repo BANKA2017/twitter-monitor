@@ -1396,7 +1396,7 @@ const SnowFlake2Time = (snowflake, start = 1288834974657) => {
         server_id: 0,
         datacenter_id: 0
     }
-    if (IsNumber(snowflake, true, true)) {
+    if (!IsNumber(snowflake, true, true)) {
         return tmpData
     }
     if (typeof snowflake === 'string' || typeof snowflake === 'number') {

@@ -1628,7 +1628,7 @@ const uploadMedia = async (ctx = { cookie: {}, media: null, type: 'INIT', media_
     //cookie: {ct0, auth_token}
     if (!cookie.ct0 || !cookie.auth_token) {
     }
-    if ((['APPEND', 'INIT'].includes(type) && !media) || (['FINALIZE', 'STATUS', 'APPEND'].includes(type) && (!media_id || IsNumber(media_id, true, true)))) {
+    if ((['APPEND', 'INIT'].includes(type) && !media) || (['FINALIZE', 'STATUS', 'APPEND'].includes(type) && !IsNumber(media_id, true, true))) {
         return Promise.reject({ code: -1003, message: `miss ${['FINALIZE', 'STATUS', 'APPEND'].includes(type) ? 'media id' : 'media buffer'}`, e: {} })
     } else {
         let queryObject = new URLSearchParams({
