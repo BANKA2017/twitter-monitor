@@ -1064,6 +1064,13 @@ const Card = (cardInfo = {}, uid = '0', tweetId = '0', hidden = false, url = '',
                 tmpCardInfo.data.description = childCardInfo.component_objects.details_1.data.member_count
                 tmpCardInfo.data.vanity_url = childCardInfo.destination_objects.destination_1.data.url_data.vanity
                 tmpCardInfo.data.url = childCardInfo.destination_objects.destination_1.data.url_data.url
+                break
+            case 'grok_share':
+                tmpCardInfo.data.title = childCardInfo.component_objects.details_1.data.conversation_preview?.[0]?.message || ''
+                tmpCardInfo.data.description = childCardInfo.component_objects.details_1.data.conversation_preview?.[1]?.message || ''
+                tmpCardInfo.data.vanity_url = childCardInfo.component_objects.details_1.data.id
+                tmpCardInfo.data.url = childCardInfo.destination_objects.destination_1.data.url_data.url
+                break
             default:
             //https://developer.twitter.com/en/docs/twitter-ads-api/creatives/api-reference/cards
             //不知道还有什么，现在只找到这些

@@ -48,6 +48,7 @@ import { getOauthAuthorization } from './Core.android.mjs'
 import { _ConversationTimelineV2, _SearchTimeline, _TranslateProfileQuery, _TranslateTweetQuery, _UserWithProfileTweetsAndRepliesQueryV2, _UserWithProfileTweetsQueryV2, _ViewerUserQuery } from '../assets/graphql/androidQueryIdList.js'
 import cryptoHandle from 'crypto-helper'
 import { IsNumber, Log } from './Core.function.mjs'
+import { GenerateHeader, ParseOndemandS, ParseTwitterMainPage } from './Core.xClientTransactionID.mjs'
 
 const generateCsrfToken = () => cryptoHandle.randomUUID().replaceAll('-', '')
 
@@ -83,6 +84,9 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
     if (!url) {
         throw 'tmv3: Invalid url'
     }
+
+    const method = body !== undefined ? 'POST' : 'GET'
+
     let loginMode = !!(cookie?.auth_token && cookie?.ct0) || (guest_token?.open_account?.oauth_token && guest_token?.open_account?.oauth_token_secret) || !guest_token
     //TODO fix rate limit
     //TDOO remove getToken() here
@@ -112,7 +116,7 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
     }
     if (guest_token?.open_account?.oauth_token && guest_token?.open_account?.oauth_token_secret) {
         //url = url.replace(TW_WEBAPI_PREFIX, TW_ANDROID_PREFIX)
-        const oauthSign = await getOauthAuthorization(guest_token.open_account.oauth_token, guest_token.open_account.oauth_token_secret, body !== undefined ? 'POST' : 'GET', url, body)
+        const oauthSign = await getOauthAuthorization(guest_token.open_account.oauth_token, guest_token.open_account.oauth_token_secret, method, url, body)
         authorization = `OAuth realm="http://api.twitter.com/", oauth_version="1.0", oauth_token="${oauthSign.oauth_token}", oauth_nonce="${oauthSign.oauth_nonce}", oauth_timestamp="${oauthSign.timestamp}", oauth_signature="${encodeURIComponent(
             oauthSign.sign
         )}", oauth_consumer_key="${oauthSign.oauth_consumer_key}", oauth_signature_method="HMAC-SHA1"`
@@ -132,6 +136,14 @@ const coreFetch = async (url = '', guest_token = {}, cookie = {}, authorization 
                       .map((x) => x.join('='))
                       .join(';')
     }
+
+    if (guest_token?.web_ext?.key_bytes_indices?.length === 3) {
+        try {
+            const parsedURL = new URL(url)
+            tmpHeaders['x-client-transaction-id'] = await GenerateHeader(parsedURL.pathname, method.toUpperCase(), guest_token.web_ext)
+        } catch {}
+    }
+
     if ((typeof authorization === 'string' && authorization.startsWith('OAuth')) || guest_token?.open_account) {
         if (typeof authorization === 'string' && authorization.startsWith('OAuth')) {
             delete tmpHeaders['x-guest-token']
@@ -224,6 +236,7 @@ const getSetCookie = (headers = {}, responseType = 'entries') => {
 
 // ANONYMOUS
 // source -> api, web(only 1`TnA` and 4`QCF`)
+// TODO remove .rate_limit
 const getToken = async (authorization = 0, source = 'api', rateLimitOnly = false, env = {}) => {
     let tmpResponse = {
         success: false,
@@ -249,7 +262,8 @@ const getToken = async (authorization = 0, source = 'api', rateLimitOnly = false
             Login: 180 //187
         },
         expire: Date.now() + 870000, //15 min
-        authorization: typeof authorization === 'string' ? authorization : Authorization[authorization]
+        authorization: typeof authorization === 'string' ? authorization : Authorization[authorization],
+        web_ext: {}
     }
 
     if (rateLimitOnly) {
@@ -264,14 +278,39 @@ const getToken = async (authorization = 0, source = 'api', rateLimitOnly = false
     const _axios = env.axios === undefined ? axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY }) : env.axios
 
     return new Promise((resolve, reject) => {
-        //2000 per 30 min i guess
-        if (false && source === 'web' && [TW_AUTHORIZATION2, TWEETDECK_AUTHORIZATION2].includes(tmpResponse.authorization)) {
-            _axios(tmpResponse.authorization === 1 || tmpResponse.authorization === Authorization[1] ? 'https://twitter.com' : 'https://tweetdeck.twitter.com', {
+        //500 per 30 min i guess
+        if (source === 'web' && [TW_AUTHORIZATION2].includes(tmpResponse.authorization)) {
+            _axios('https://x.com/?mx=2', {
                 headers: {
                     'sec-fetch-mode': 'navigate'
                 }
             })
-                .then((response) => {
+                .then(async (response) => {
+                    ParseTwitterMainPage(response.data, tmpResponse.web_ext)
+
+                    if (!tmpResponse.web_ext?.guest_token || !tmpResponse.web_ext?.ondemand_s_hex) {
+                        tmpResponse.token = 'invalid guest token or ondemand_s_hex'
+                        reject(tmpResponse)
+                    }
+
+                    let ondemand_s_data = { data: '' }
+                    try {
+                        ondemand_s_data = await _axios('https://abs.twimg.com/responsive-web/client-web/ondemand.s.' + tmpResponse.web_ext.ondemand_s_hex + 'a.js', {
+                            headers: {
+                                'sec-fetch-mode': 'navigate'
+                            }
+                        })
+                    } catch (e) {
+                        tmpResponse.token = String(e)
+                        reject(tmpResponse)
+                    }
+                    ParseOndemandS(ondemand_s_data?.data || '', tmpResponse.web_ext)
+                    if (tmpResponse.web_ext?.key_bytes_indices?.length !== 3) {
+                        tmpResponse.token = 'unable to parse ondemand.s.' + hexValue + 'a.js'
+                        reject(tmpResponse)
+                    }
+                    tmpResponse.token = tmpResponse.web_ext?.guest_token
+
                     let cookies = response.data.match(/>document\.cookie\=([^<]+)</gm)
                     if (cookies) {
                         tmpResponse.code = 200
@@ -282,9 +321,8 @@ const getToken = async (authorization = 0, source = 'api', rateLimitOnly = false
                             .slice(1)
                             .map((cookie) => cookie.slice(1, -2))
                             .map((cookie) => cookie.split(';')[0])
-                        tmpResponse.token = tmpResponse.cookies.find((cookie) => cookie.startsWith('gt=')).replace('gt=', '')
                     } else {
-                        e.token = 'No token'
+                        tmpResponse.token = 'No token'
                         reject(tmpResponse)
                     }
                     resolve(tmpResponse)

@@ -39,7 +39,9 @@ yarn add ws otplib
 
 ### Config
 
-Most of the settings will be filled in by the script. Before using the script, you only need to enter `screen_name`, `password` and `authentication_secret`
+Most of the settings will be automatically filled in by the script. Before running the script, you only need to edit the values for `twitter.screen_name`, `twitter.password`, and `twitter.authentication_secret`.
+
+If you are unable to sign in using the script, you can sign in through your browser, then copy the `auth_token` and `ct0` values from your cookies. Afterward, set these values in `twitter.cookies.auth_token` and `twitter.cookies.ct0`.
 
 #### path
 

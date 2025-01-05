@@ -1,6 +1,6 @@
 import { cloneDeep, shuffle } from 'lodash-es'
 import { getBearerToken, postOpenAccount, postOpenAccountInit } from './Core.android.mjs'
-import { getToken, postFlowTask, getJsInstData, getViewer, getSetCookie } from './Core.fetch.mjs'
+import { getToken, postFlowTask, getJsInstData, getViewer, getSetCookie, Authorization } from './Core.fetch.mjs'
 import axiosFetch from 'axios-helper'
 import { SnowFlake2Time } from './Core.tweet.mjs'
 //import * as twitter_text from 'twitter-text'
@@ -96,7 +96,7 @@ export class GuestToken {
         ) {
             Log(false, 'log', `[${new Date()}]: #GuestToken Update guest token #${authorizationMode}`)
             do {
-                this.#guest_token = await getToken(authorizationMode, [1, 4].includes(authorizationMode) ? 'web' : 'api', rateLimitOnly, env)
+                this.#guest_token = await getToken(authorizationMode, [1, Authorization[1]].includes(authorizationMode) ? 'web' : 'api', rateLimitOnly, env)
                 this.errorCount--
                 if (!this.#guest_token.success) {
                     Log(false, 'error', `[${new Date()}]: #GuestToken Unable to get guest token, remain ${this.errorCount}`)

@@ -7,7 +7,6 @@ const translatorPlatform = {
     microsoft: 'Microsoft Translator',
     yandex: 'Yandex Translate',
     sogou: '搜狗翻译',
-    baidu: '百度翻译',
     deepl: 'DeepL'
 }
 
@@ -16,11 +15,10 @@ const realTranslatePlatform = {
     microsoft: 'microsoft_browser',
     yandex: 'yandex_browser',
     sogou: 'sogou_browser',
-    baidu: 'baidu',
     deepl: 'deepl'
 }
 
-const notSupportedEntities = ['baidu', 'deepl']
+const notSupportedEntities = ['deepl']
 
 const targetLanguagePreprocessing = (target = 'en', platform = 'google') => {
     switch (platform) {
@@ -44,17 +42,6 @@ const targetLanguagePreprocessing = (target = 'en', platform = 'google') => {
             //for Chinese //NOT SUPPORTED CHT
             if (/^zh(_|\-|$)/.test(target.toLowerCase())) {
                 target = 'zh-CHS'
-            }
-            break
-        case 'baidu':
-            if (IsChs(target)) {
-                target = 'zh'
-            } else if (IsCht(target)) {
-                target = 'cht'
-            } else if (target.toLowerCase() === 'ja') {
-                target = 'jp'
-            } else if (target.toLowerCase() === 'ko') {
-                target === 'kor'
             }
             break
         case 'deepl':

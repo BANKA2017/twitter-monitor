@@ -29,10 +29,6 @@ Archiver()
 - Build ffmpeg command for downloading broadcast or audiospace content
 - Update timeline while cursor value is **complete**
 
-## Download
-
-We use GitHub Actions to build scripts, you can find them in [BANKA2017/twitter-monitor/-/Actions/build_rollup](https://github.com/BANKA2017/twitter-monitor/actions/workflows/build_rollup.yml) **(Login required)**
-
 ## TODO
 
 - Download Space and Broadcast with js
