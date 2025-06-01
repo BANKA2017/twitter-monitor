@@ -162,8 +162,7 @@ const setAnimationStr = (key, _2d_array, row_index, key_bytes_indices) => {
         const numColorValue = style.color[i]
         if (numColorValue >= 0 && numColorValue <= 255) {
             hexArray[i] = numColorValue.toString(16)
-        }
-        if (numColorValue < 0) {
+        } else if (numColorValue < 0) {
             hexArray[i] = '0'
         } else {
             hexArray[i] = 'ff'
