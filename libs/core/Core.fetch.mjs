@@ -63,7 +63,7 @@ const TW_AUTHORIZATION3 = 'Bearer AAAAAAAAAAAAAAAAAAAAAIK1zgAAAAAA2tUWuhGZ2JceoI
 const TWEETDECK_AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAAF7aAAAAAAAASCiRjWvh7R5wxaKkFp7MM%2BhYBqM%3DbQ0JPmjU9F6ZoMhDfI4uTNAaQuTDm2uO9x3WFVr2xBZ2nhjdP0' //tweetdeck
 const TWEETDECK_AUTHORIZATION2 = 'Bearer AAAAAAAAAAAAAAAAAAAAAFQODgEAAAAAVHTp76lzh3rFzcHbmHVvQxYYpTw%3DckAlMINMjmCwxUcaXbAN4XqJVdgMJaHqNOFgPMK0zN1qLqLQCF' //new tweetdeck
 
-const TW_WEBAPI_PREFIX = 'https://api.twitter.com'
+const TW_WEBAPI_PREFIX = 'https://api.x.com'
 const TW_ANDROID_PREFIX = 'https://global.albtls.t.co'
 const TW_ANDROID_SEARCH_PREFIX = 'https://na.albtls.t.co'
 
@@ -245,7 +245,7 @@ const getToken = async (authorization = 0, source = 'api', rateLimitOnly = false
         cookies: [],
         rate_limit: {
             UserByRestId: 495, //500
-            UserByScreenName: 495, //500
+            UserByScreenName: 148, //150
             UserTweets: 495, //500
             TweetDetail: 495, //500//poll also use this
             AudioSpaceById: 495, //500
@@ -261,7 +261,7 @@ const getToken = async (authorization = 0, source = 'api', rateLimitOnly = false
             CommunityTimeLime: 495, //500
             Login: 180 //187
         },
-        expire: Date.now() + 870000, //15 min
+        expire: Date.now() + 3300000, //1hr-5min
         authorization: typeof authorization === 'string' ? authorization : Authorization[authorization],
         web_ext: {}
     }
@@ -1354,7 +1354,7 @@ const getImage = async (path = '', headers = {}, env = {}) => {
     }
     const _axios = env.axios === undefined ? axiosFetch({ HTTP_PROXY: env?.HTTP_PROXY, HTTPS_PROXY: env?.HTTPS_PROXY }) : env.axios
     return _axios(path, {
-        responseType: typeof process === 'undefined' || (process?.browser ?? false) ? 'arrayBuffer' : 'arraybuffer',
+        responseType: env.responseType ? env.responseType : typeof process === 'undefined' || (process?.browser ?? false) ? 'arrayBuffer' : 'arraybuffer',
         headers
         //timeout: 10000
     })

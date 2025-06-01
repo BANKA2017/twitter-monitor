@@ -18,6 +18,7 @@ import { resolve } from 'path'
 let settingsFile = basePath + '/assets/setting.mjs'
 
 let EXPRESS_PORT = 3000
+let EXPRESS_HOST = '0.0.0.0'
 let EXPRESS_ALLOW_ORIGIN = ['*']
 let ACTIVE_SERVICE = []
 let GUEST_ACCOUNT_HANDLE = new GuestAccount()
@@ -34,6 +35,7 @@ for (const argvContent of process.argv.slice(2)) {
 if (settingsFile && existsSync(settingsFile)) {
     const settings = await import(settingsFile)
     EXPRESS_PORT = settings.EXPRESS_PORT
+    EXPRESS_HOST = settings.EXPRESS_HOST
     EXPRESS_ALLOW_ORIGIN = settings.EXPRESS_ALLOW_ORIGIN
     ACTIVE_SERVICE = settings.ACTIVE_SERVICE
     if (settings.GUEST_ACCOUNT_HANDLE && Array.isArray(settings.GUEST_ACCOUNT_HANDLE) && settings.GUEST_ACCOUNT_HANDLE.length > 0) {
@@ -75,6 +77,7 @@ if (existsSync(`${basePath}/../apps/backend/cache/_audio_apsce_cache.json`)) {
 const app = express()
 const media = express()
 const port = EXPRESS_PORT
+const host = EXPRESS_HOST
 
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
@@ -165,7 +168,11 @@ media.get(/(proxy)\/(.*)/, async (req, res) => {
             res.status(_res.status).redirect(_res.data)
             break
         case 200:
-            res.send(_res.data)
+            if (_res.data?.pipe) {
+                _res.data.pipe(res)
+            } else {
+                res.send(_res.data)
+            }
             break
         default:
             res.status(_res.status).end()
@@ -184,7 +191,11 @@ app.get(/^\/(ext_tw_video|amplify_video)\/(.*)/, async (req, res) => {
             res.status(_res.status).redirect(_res.data)
             break
         case 200:
-            res.status(200).send(_res.data)
+            if (_res.data?.pipe) {
+                _res.data.pipe(res)
+            } else {
+                res.send(_res.data)
+            }
             break
         default:
             res.status(_res.status).end()
@@ -204,6 +215,6 @@ app.use((err, req, res, next) => {
     Log(false, 'error', new Date(), err)
     res.status(500).json(apiTemplate(500, 'Unknown error', {}, 'global_api'))
 })
-app.listen(port, () => {
-    Log(false, 'log', `V3Api listening on port ${port}`)
+app.listen(port, host, () => {
+    Log(false, 'log', `V3Api listening on port ${host}:${port}`)
 })

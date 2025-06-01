@@ -31,7 +31,7 @@ const MediaProxy = async (req, env) => {
         return env.ResponseWrapper(null, 403, responseHeaders)
     } else if (mediaLinkArray.basename === 'banner.jpg') {
         try {
-            const banner = await getImage(`https://${mediaLinkArray.dirname.slice(0, -1)}`)
+            const banner = await getImage(`https://${mediaLinkArray.dirname.slice(0, -1)}`, {}, { responseType: 'stream' })
             responseHeaders.set('Content-Type', banner.headers.get('content-type'))
             //res.setHeader('Content-Disposition', 'attachment;filename=banner.jpg')
             //response.data.pipe(res)
@@ -50,7 +50,7 @@ const MediaProxy = async (req, env) => {
             case 'ts':
             case 'aac':
             case 'gif':
-                if (!['mp4', 'm4s', 'm3u8', 'aac'].includes(mediaLinkArray.extension) && (mediaLinkArray.size === 'small' || mediaLinkArray.extension === 'ts') && env.mediaExistPreCheck(mediaLinkArray.basename)) {
+                if (!['mp4', 'm4s', 'm3u8'].includes(mediaLinkArray.extension) && env.mediaExistPreCheck(mediaLinkArray.basename)) {
                     responseHeaders.set('X-TMCache', 1)
                     return env.ResponseWrapper(`/media/cache/${mediaLinkArray.basename}`, 307, responseHeaders)
                 } else {
@@ -71,26 +71,27 @@ const MediaProxy = async (req, env) => {
                             return env.ResponseWrapper(null, 403, responseHeaders)
                     }
                     try {
-                        const tmpBuffer = await getImage(realLink, { referer: 'https://twitter.com/' })
-                        const contentLength = (tmpBuffer?.data || new ArrayBuffer(0)).byteLength
-                        //res.setHeader('Accept-Ranges', 'bytes')
-                        if (contentLength === 0) {
-                            //res.setHeader('Content-Type', 'image/svg+xml')
+                        const noPipeProxy = ['m3u8', 'm3u', 'aac'].includes(mediaLinkArray.extension) || (mediaLinkArray.extension !== 'mp4' && mediaLinkArray.size === 'small')
+
+                        const tmpBuffer = await getImage(realLink, { referer: 'https://twitter.com/' }, { responseType: noPipeProxy ? undefined : 'stream' })
+                        if (tmpBuffer.status >= 400) {
                             return env.ResponseWrapper(null, 404, responseHeaders)
+                        }
+
+                        if (mediaLinkArray.extension === 'aac' || (mediaLinkArray.extension !== 'mp4' && mediaLinkArray.size === 'small')) {
+                            env.mediaCacheSave(tmpBuffer.data, mediaLinkArray.basename)
+                        }
+
+                        //res.setHeader('content-disposition', `attachment;filename=${mediaLinkArray.basename}`)
+                        responseHeaders.set('Content-Type', tmpBuffer?.headers?.['content-type'] || (tmpBuffer?.headers ?? new Map()).get('content-type'))
+
+                        if (mediaLinkArray.pathtype === 3 && ['m3u8', 'm3u'].includes(mediaLinkArray.extension) && prefix) {
+                            const newM3UFile = new TextDecoder('utf-8').decode(tmpBuffer.data).replaceAll(/^\//gm, `${prefix}${mediaLinkArray.firstpath}/`)
+                            responseHeaders.set('Content-Length', newM3UFile.length)
+                            return env.ResponseWrapper(newM3UFile, 200, responseHeaders)
                         } else {
-                            if ((mediaLinkArray.extension !== 'mp4' && mediaLinkArray.size === 'small') || mediaLinkArray.extension === 'ts') {
-                                env.mediaCacheSave(tmpBuffer.data, mediaLinkArray.basename)
-                            }
-                            //res.setHeader('content-disposition', `attachment;filename=${mediaLinkArray.basename}`)
-                            responseHeaders.set('Content-Length', contentLength)
-                            responseHeaders.set('Content-Type', tmpBuffer?.headers?.['content-type'] || (tmpBuffer?.headers ?? new Map()).get('content-type'))
-                            //response.data.pipe(res)
-                            if (mediaLinkArray.pathtype === 3 && ['m3u8', 'm3u'].includes(mediaLinkArray.extension) && prefix) {
-                                return env.ResponseWrapper(new TextDecoder('utf-8').decode(tmpBuffer.data).replaceAll(/^\//gm, `${prefix}${mediaLinkArray.firstpath}/`), 200, responseHeaders)
-                            } else {
-                                return env.ResponseWrapper(tmpBuffer.data, 200, responseHeaders)
-                            }
-                            //res.send(response.data)
+                            responseHeaders.set('Content-Length', tmpBuffer?.headers?.['content-length'] || (tmpBuffer?.headers ?? new Map()).get('content-length'))
+                            return env.ResponseWrapper(tmpBuffer.data, 200, responseHeaders)
                         }
                     } catch (e) {
                         //TODO solve sometimes 500

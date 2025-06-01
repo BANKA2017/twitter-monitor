@@ -27,9 +27,12 @@ const mockWebpackFunc = (anyV) => anyV
 mockWebpackFunc.d = (anyV) => anyV
 
 const updateIdList = (content) => {
-    const functions = Function(`const that = {__SCRIPTS_LOADED__: {vendor: {}}}; const self=that;const window=that;\n\n${content}\n\n;return that.webpackChunk_twitter_responsive_web`)()
+    const functions = Function(`const that = {__SCRIPTS_LOADED__: {vendor: {}}}; const self=that;const window=that;const importScripts=(...args)=>({});\n\n${content}\n\n;return that.webpackChunk_twitter_responsive_web`)()
 
-    for (let tmpFunction of Object.entries(functions[0][1])) {
+    //# importScripts:
+    //> node_modules_x-clients_features_dist_dms_sqlite_worker_js
+    //> node_modules_x-clients_features_dist_dms_sqlite2_worker_js
+    for (let tmpFunction of Object.entries(functions?.[0]?.[1] || [])) {
         if (existsList.includes(tmpFunction[0])) {
             continue
         }
