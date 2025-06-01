@@ -507,7 +507,7 @@
 
                 const animationStyle = computed(() => {
                     if (data.value?.animationStr?.length === 9) {
-                        return `color: #${data.value.animationStr.slice(0, 3).join('')}; transform: matrix(${data.value.animationStr.slice(3).map(x => {
+                        return `color: #${data.value.animationStr.slice(0, 3).map(x => x.padStart(2, '0')).join('')}; transform: matrix(${data.value.animationStr.slice(3).map(x => {
                             if (x.length === 1) {
                                 return x
                             } else {
