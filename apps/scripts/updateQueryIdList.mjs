@@ -2,9 +2,21 @@ import { writeFileSync } from 'fs'
 import { basePath } from '../../libs/share/NodeConstant.mjs'
 import axiosFetch from 'axios-helper'
 import { PregMatchAll } from '../../libs/share/MockFuntions.mjs'
-import { Log } from '../../libs/core/Core.function.mjs'
 
 let link = 'https://x.com/i/flow/login?mx=2'
+
+const Log = (color = false, type = 'log', ...content) => {
+    // TODO chalk color/handle
+    let isLog = false
+    if (globalThis.mute === false || globalThis.mute === undefined || globalThis.mute === null) {
+        isLog = true
+    } else if (Array.isArray(globalThis.mute)) {
+        isLog = !globalThis.mute.includes(type)
+    }
+    if (isLog) {
+        console[type](...content)
+    }
+}
 
 if (process.argv[2]) {
     try {
@@ -102,17 +114,18 @@ _axios
     .then(async (response) => {
         if (response.data) {
             // NOT a good regexp, we will fix it later.
-            const jsFileValues = ((regexpData) =>
-                Object.fromEntries(
-                    regexpData[0]
-                        .map((x, index) => {
-                            if (['themeColor', 'type', 'value'].includes(regexpData[1][index])) {
-                                return null
-                            }
-                            return [regexpData[1][index], regexpData[2][index]]
-                        })
-                        .filter((x) => x)
-                ))(PregMatchAll(/(?:"|)([\w\/~\-\.]+)(?:"|):"([\w]{7})"(?:,|})/gm, response.data))
+            const jsFileValues = ((regexpData) =>{
+                let indexKV = {}
+                for (let i=0; i<regexpData[0].length; i++) {
+                    if (!indexKV[regexpData[1][i]]) {
+                        indexKV[regexpData[1][i]] = [regexpData[2][i]]
+                    } else {
+                        indexKV[regexpData[1][i]].push(regexpData[2][i])
+                    }
+                }
+
+                return Object.fromEntries(Object.values(indexKV).filter(kv => kv.length === 2 && !['themeColor', 'type', 'value'].includes(kv[0])))
+            })(PregMatchAll(/(\d+):(?:"|)([\w\/~\-\.]+)(?:"|)(?:,|})/gm, response.data))
             //get main link
             const mainLink = /(https:\/\/abs\.twimg\.com\/responsive-web\/client-web(?:[^\/]+|)\/main\.[^.]+\.js)/gm.exec(response.data)[0]
             //api:"8684ec1"
