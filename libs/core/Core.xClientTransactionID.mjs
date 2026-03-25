@@ -312,9 +312,18 @@ export function ParseTwitterMainPage(strPage = '', objValue = {}) {
         objValue.guest_token = guestTokenMatch[1]
     }
 
-    const ondemandSHexMatch = strPage.match(/"ondemand\.s":"([0-9a-f]+)"/)
+    let ondemandSHexMatch = strPage.match(/"ondemand\.s":"([0-9a-f]+)"/)
     if (ondemandSHexMatch) {
         objValue.ondemand_s_hex = ondemandSHexMatch[1]
+    } else {
+        // Warning: The `ondemand_s_hex` value obtained from the logged-in and logged-out web pages is different!
+        const ondemandSHexMatchID = strPage.match(/([0-9a-f]+):"ondemand\.s"/)
+        if (ondemandSHexMatchID) {
+            let ondemandSHexMatch = strPage.match(new RegExp(ondemandSHexMatchID[1] + ':"([0-9a-f]+)"'))
+            if (ondemandSHexMatch) {
+                objValue.ondemand_s_hex = ondemandSHexMatch[1]
+            }
+        }
     }
 
     // if (!objValue.ondemand_s_hex) {
