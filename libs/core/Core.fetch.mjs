@@ -25,7 +25,7 @@ import {
     _ListLatestTweetsTimeline,
     _ListMembers,
     _SearchTimeline as _SearchTimelineWeb,
-    _TweetActivityQuery,
+    // _TweetActivityQuery,
     _TweetDetail,
     _TweetEditHistory,
     _TweetResultByRestId,
@@ -1949,34 +1949,34 @@ const getBookmark = async (ctx = { cookie: {}, count: 20, cursor: '' }, env = {}
     )
 }
 
-const getTweetAnalytics = async (ctx = { cookie: {}, tweet_id: '', time_range_from: '', time_range_to: '' }, env = {}) => {
-    let { cookie, tweet_id, time_range_from, time_range_to } = preCheckCtx(ctx, { cookie: {}, tweet_id: '', time_range_from: '', time_range_to: '' })
-    //TODO precheck
-    //cookie: {ct0, auth_token}
-    if (!tweet_id || !cookie.ct0 || !cookie.auth_token) {
-    }
-    let graphqlVariables = {
-        restId: tweet_id,
-        from_time: time_range_from ? new Date(time_range_from).toISOString() : '',
-        to_time: time_range_to ? new Date(time_range_to).toISOString() : '',
-        first_48_hours_time: time_range_from ? new Date(Number(new Date(time_range_from)) + 48 * 60 * 60 * 1000).toISOString() : '',
-        requested_organic_metrics: ['DetailExpands', 'Engagements', 'Follows', 'Impressions', 'LinkClicks', 'ProfileVisits'],
-        requested_promoted_metrics: ['DetailExpands', 'Engagements', 'Follows', 'Impressions', 'LinkClicks', 'ProfileVisits', 'CostPerFollower']
-    }
-    return coreFetch(
-        TW_WEBAPI_PREFIX +
-            '/graphql/' +
-            _TweetActivityQuery.queryId +
-            '/TweetActivityQuery?' +
-            new URLSearchParams({
-                variables: JSON.stringify(graphqlVariables),
-                features: JSON.stringify(_TweetActivityQuery.features)
-            }).toString(),
-        {},
-        cookie,
-        1
-    )
-}
+// const getTweetAnalytics = async (ctx = { cookie: {}, tweet_id: '', time_range_from: '', time_range_to: '' }, env = {}) => {
+//     let { cookie, tweet_id, time_range_from, time_range_to } = preCheckCtx(ctx, { cookie: {}, tweet_id: '', time_range_from: '', time_range_to: '' })
+//     //TODO precheck
+//     //cookie: {ct0, auth_token}
+//     if (!tweet_id || !cookie.ct0 || !cookie.auth_token) {
+//     }
+//     let graphqlVariables = {
+//         restId: tweet_id,
+//         from_time: time_range_from ? new Date(time_range_from).toISOString() : '',
+//         to_time: time_range_to ? new Date(time_range_to).toISOString() : '',
+//         first_48_hours_time: time_range_from ? new Date(Number(new Date(time_range_from)) + 48 * 60 * 60 * 1000).toISOString() : '',
+//         requested_organic_metrics: ['DetailExpands', 'Engagements', 'Follows', 'Impressions', 'LinkClicks', 'ProfileVisits'],
+//         requested_promoted_metrics: ['DetailExpands', 'Engagements', 'Follows', 'Impressions', 'LinkClicks', 'ProfileVisits', 'CostPerFollower']
+//     }
+//     return coreFetch(
+//         TW_WEBAPI_PREFIX +
+//             '/graphql/' +
+//             _TweetActivityQuery.queryId +
+//             '/TweetActivityQuery?' +
+//             new URLSearchParams({
+//                 variables: JSON.stringify(graphqlVariables),
+//                 features: JSON.stringify(_TweetActivityQuery.features)
+//             }).toString(),
+//         {},
+//         cookie,
+//         1
+//     )
+// }
 
 const postFollow = async (ctx = { cookie: {}, uid: '', follow: true }, env = {}) => {
     let { cookie, uid, follow } = preCheckCtx(ctx, { cookie: {}, uid: '', follow: true })
@@ -2107,7 +2107,7 @@ export {
     postHomeTimeLine,
     getBookmark,
     getLikes,
-    getTweetAnalytics,
+    // getTweetAnalytics,
     postFollow,
     postLike,
     getViewerUser

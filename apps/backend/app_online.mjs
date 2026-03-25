@@ -4,7 +4,7 @@ import { apiTemplate } from '../../libs/share/Constant.mjs'
 import { basePath } from '../../libs/share/NodeConstant.mjs'
 import { loadModule } from 'cld3-asm'
 //Online api
-import { MediaProxy } from './CoreFunctions/media/MediaProxy.mjs'
+// import { MediaProxy } from './CoreFunctions/media/MediaProxy.mjs'
 import online from './service/online.mjs'
 import album from './service/album.mjs'
 //Bot api
@@ -75,7 +75,7 @@ if (existsSync(`${basePath}/../apps/backend/cache/_audio_apsce_cache.json`)) {
 }
 
 const app = express()
-const media = express()
+// const media = express()
 const port = EXPRESS_PORT
 const host = EXPRESS_HOST
 
@@ -132,7 +132,7 @@ app.use('/translate', translate)
 //proxy api
 app.use('/online/api/v3', online)
 app.use('/album', album)
-app.use('/media', media)
+// app.use('/media', media)
 //app.use('/bot', bot)
 
 //LanguageIdentification
@@ -140,14 +140,14 @@ global.LanguageIdentification = await loadModule()
 Log(false, 'log', 'tmv3: Enabled language identification service')
 
 //media proxy
-media.use(
-    '/cache',
-    express.static(basePath + '/../apps/backend/cache', {
-        setHeaders: function (res, path, stat) {
-            res.set('X-TMCache', 1)
-        }
-    })
-)
+// media.use(
+//     '/cache',
+//     express.static(basePath + '/../apps/backend/cache', {
+//         setHeaders: function (res, path, stat) {
+//             res.set('X-TMCache', 1)
+//         }
+//     })
+// )
 
 //global static file
 // TODO static path
@@ -155,52 +155,52 @@ media.use(
 //    app.use('/static', express.static(STATIC_PATH))
 //}
 
-media.get(/(proxy)\/(.*)/, async (req, res) => {
-    req.params.link = req.params?.[1] || ''
-    const _res = await MediaProxy(req, req.env)
-    for (const header of [..._res.headers]) {
-        res.setHeader(header[0], header[1])
-    }
-    switch (_res.status) {
-        case 301:
-        case 302:
-        case 307:
-            res.status(_res.status).redirect(_res.data)
-            break
-        case 200:
-            if (_res.data?.pipe) {
-                _res.data.pipe(res)
-            } else {
-                res.send(_res.data)
-            }
-            break
-        default:
-            res.status(_res.status).end()
-    }
-})
-app.get(/^\/(ext_tw_video|amplify_video)\/(.*)/, async (req, res) => {
-    req.params.link = req.params?.[1] || ''
-    const _res = await MediaProxy(req, req.env)
-    for (const header of [..._res.headers]) {
-        res.setHeader(header[0], header[1])
-    }
-    switch (_res.status) {
-        case 301:
-        case 302:
-        case 307:
-            res.status(_res.status).redirect(_res.data)
-            break
-        case 200:
-            if (_res.data?.pipe) {
-                _res.data.pipe(res)
-            } else {
-                res.send(_res.data)
-            }
-            break
-        default:
-            res.status(_res.status).end()
-    }
-}) //for m3u8
+// media.get(/(proxy)\/(.*)/, async (req, res) => {
+//     req.params.link = req.params?.[1] || ''
+//     const _res = await MediaProxy(req, req.env)
+//     for (const header of [..._res.headers]) {
+//         res.setHeader(header[0], header[1])
+//     }
+//     switch (_res.status) {
+//         case 301:
+//         case 302:
+//         case 307:
+//             res.status(_res.status).redirect(_res.data)
+//             break
+//         case 200:
+//             if (_res.data?.pipe) {
+//                 _res.data.pipe(res)
+//             } else {
+//                 res.send(_res.data)
+//             }
+//             break
+//         default:
+//             res.status(_res.status).end()
+//     }
+// })
+// app.get(/^\/(ext_tw_video|amplify_video)\/(.*)/, async (req, res) => {
+//     req.params.link = req.params?.[1] || ''
+//     const _res = await MediaProxy(req, req.env)
+//     for (const header of [..._res.headers]) {
+//         res.setHeader(header[0], header[1])
+//     }
+//     switch (_res.status) {
+//         case 301:
+//         case 302:
+//         case 307:
+//             res.status(_res.status).redirect(_res.data)
+//             break
+//         case 200:
+//             if (_res.data?.pipe) {
+//                 _res.data.pipe(res)
+//             } else {
+//                 res.send(_res.data)
+//             }
+//             break
+//         default:
+//             res.status(_res.status).end()
+//     }
+// }) //for m3u8
 
 //robots.txt
 app.all('/robots.txt', (req, res) => {
@@ -208,7 +208,7 @@ app.all('/robots.txt', (req, res) => {
 })
 
 //error control
-app.all('*', (req, res) => {
+app.all('/{*splat}', (req, res) => {
     res.status(403).json(apiTemplate(403, 'Invalid Request', {}, 'global_api'))
 })
 app.use((err, req, res, next) => {

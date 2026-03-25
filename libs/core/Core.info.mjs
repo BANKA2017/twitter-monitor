@@ -40,30 +40,43 @@ const GenerateAccountInfo = (accountDataOriginal, extAccountData = {}) => {
     }
 
     GeneralAccountData.uid = monitorDataInfo.uid = accountDataIdStr
-    GeneralAccountData.name = monitorDataInfo.name = accountData.screen_name
-    GeneralAccountData.display_name = monitorDataInfo.display_name = accountData.name
+    const nr = path2array('user_info', accountDataOriginal)
 
-    if (accountData.profile_image_url_https) {
-        GeneralAccountData.header = accountData.profile_image_url_https.replaceAll(/\/([0-9]+|default_profile_images)\/([\w\-]+)_normal.([\w]+)$/gm, '/$1/$2.$3')
+    if (nr?.core?.screen_name) {
+        GeneralAccountData.name = monitorDataInfo.name = nr.core.screen_name
+        GeneralAccountData.display_name = monitorDataInfo.display_name = nr.core.name
+        if (nr?.avatar?.image_url) {
+            GeneralAccountData.header = nr?.avatar?.image_url.replaceAll(/\/([0-9]+|default_profile_images)\/([\w\-]+)_normal.([\w]+)$/gm, '/$1/$2.$3')
+        }
+        GeneralAccountData.created_at = Math.floor(Date.parse(nr.core.created_at) / 1000)
+
+        GeneralAccountData.verified = VerifiedInt(nr?.verification?.verified || false, true, nr?.verification?.verified_type || false)
+    } else {
+        GeneralAccountData.name = monitorDataInfo.name = accountData.screen_name
+        GeneralAccountData.display_name = monitorDataInfo.display_name = accountData.name
+        if (accountData.profile_image_url_https) {
+            GeneralAccountData.header = accountData.profile_image_url_https.replaceAll(/\/([0-9]+|default_profile_images)\/([\w\-]+)_normal.([\w]+)$/gm, '/$1/$2.$3')
+        }
+        GeneralAccountData.created_at = Math.floor(Date.parse(accountData.created_at) / 1000)
+
+        GeneralAccountData.verified = VerifiedInt(accountData.verified, path2array('user_is_blue_verified', accountDataOriginal), accountData.ext_verified_type || accountData.verified_type || false)
+
+        //for verify
+        // 0 or '' or null:  none,
+        // 10000000: only legacy mark
+        // 01000000: only blue mark // first bit means blue mark
+        // 11000000: both
+        // 11000001: order in verified_type list // this list is updated manually
+        //GeneralAccountData.lang = accountData.lang
+
+        //from php version and i forge why i did it
+        //$this->GeneralAccountData["top"] = (string)($this->account_data["pinned_tweet_ids_str"][0]??(($this->account_data["pinned_tweet_ids"]??'0') ? number_format($this->account_data["pinned_tweet_ids"][0], 0, '', '') : "0"));
     }
 
     GeneralAccountData.following = monitorDataInfo.following = accountData.friends_count
     GeneralAccountData.followers = monitorDataInfo.followers = accountData.followers_count
     GeneralAccountData.media_count = monitorDataInfo.media_count = accountData.media_count
     GeneralAccountData.statuses_count = monitorDataInfo.statuses_count = accountData.statuses_count
-    GeneralAccountData.created_at = Math.floor(Date.parse(accountData.created_at) / 1000)
-    GeneralAccountData.verified = VerifiedInt(accountData.verified, path2array('user_is_blue_verified', accountDataOriginal), accountData.ext_verified_type || accountData.verified_type || false)
-
-    //for verify
-    // 0 or '' or null:  none,
-    // 10000000: only legacy mark
-    // 01000000: only blue mark // first bit means blue mark
-    // 11000000: both
-    // 11000001: order in verified_type list // this list is updated manually
-    //GeneralAccountData.lang = accountData.lang
-
-    //from php version and i forge why i did it
-    //$this->GeneralAccountData["top"] = (string)($this->account_data["pinned_tweet_ids_str"][0]??(($this->account_data["pinned_tweet_ids"]??'0') ? number_format($this->account_data["pinned_tweet_ids"][0], 0, '', '') : "0"));
     GeneralAccountData.top = accountData.pinned_tweet_ids_str?.length ? accountData.pinned_tweet_ids_str[0] : '0'
 
     let description = accountData.description

@@ -228,7 +228,7 @@ app.all('/robots.txt', (req, res) => {
 })
 
 //error control
-app.all('*', (req, res) => {
+app.all('/{*splat}', (req, res) => {
     res.status(403).json(apiTemplate(403, 'Invalid Request', {}, 'global_api'))
 })
 app.use((err, req, res, next) => {

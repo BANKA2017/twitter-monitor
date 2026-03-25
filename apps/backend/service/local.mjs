@@ -10,7 +10,7 @@ local.get('/data/userinfo/', ApiLocalUserInfo)
 //tweets
 local.get('/data/tweets/', ApiLocalTweets)
 //for rss
-local.get(/rss\/(.*).xml$/, ApiLocalTweets)
+local.get('/rss/{*name}.xml', ApiLocalTweets)
 
 //charts
 local.get('/data/chart/', ApiLocalChart)
@@ -19,7 +19,7 @@ local.get('/data/status/', ApiLocalStatus)
 local.get('/data/trends/', ApiLocalTrends)
 
 //hashtag and cashtag
-local.get(/^\/data\/(hashtag|symbol)(\/|)$/, ApiLocalTag)
+local.get(['/data/hashtag', '/data/symbol'], ApiLocalTag)
 //hashtag rank
 local.get('/data/hashtag_rank', ApiLocalHashtagRank)
 

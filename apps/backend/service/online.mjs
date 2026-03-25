@@ -17,7 +17,7 @@ online.use(async (req, res, next) => {
     }
     //await global.guest_token2.updateGuestToken(0)
     await req.env.guest_token2_handle.updateGuestToken(4)
-    await req.env.guest_token3_handle.openAccountInit(req.env.guest_accounts.RandomItem)
+    // await req.env.guest_token3_handle.openAccountInit(req.env.guest_accounts.RandomItem)
     //if (global.guest_token2.token.nextActiveTime) {
     //    Log(false, 'error', `[${new Date()}]: #Online #GuestToken #429 Wait until ${global.guest_token2.token.nextActiveTime}`)
     //    res.json(apiTemplate(429, `Wait until ${global.guest_token2.token.nextActiveTime}`))
@@ -27,7 +27,7 @@ online.use(async (req, res, next) => {
         res.json(apiTemplate(429, `Wait until ${req.env.guest_token2_handle.token.nextActiveTime}`))
     } else {
         req.env.guest_token2 = req.env.guest_token2_handle.token
-        req.env.guest_token3 = req.env.guest_token3_handle.token
+        // req.env.guest_token3 = req.env.guest_token3_handle.token
         next()
     }
 })
@@ -53,8 +53,8 @@ online.get('/data/tweets/', async (req, res) => {
 online.get('/data/chart/', (req, res) => {
     res.json(apiTemplate(200, 'No record found', []))
 })
-online.get(/^\/data\/(hashtag|cashtag|search)(\/|)$/, async (req, res) => {
-    req.type = req.params[0] || ''
+online.get(['/data/hashtag', '/data/cashtag', '/data/search'], async (req, res) => {
+    req.type = req?._parsedUrl?.pathname?.split('/')?.filter(x => x)?.pop() || ''
     const _res = await ApiSearch(req, req.env)
     if (_res.format === 'xml') {
         res.append('content-type', 'application/xml;charset=UTF-8')

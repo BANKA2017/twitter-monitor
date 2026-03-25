@@ -292,7 +292,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
         GeneralTweetData.display_name = recrawlMode.display_name
     } else {
         tmpInfo = graphqlMode ? (path2array('graphql_user_result', content) ?? {}) : (users[GeneralTweetData.uid] ?? content?.user ?? {})
-        if (Object.keys(tmpInfo).length && (tmpInfo?.legacy?.screen_name || tmpInfo?.screen_name)) {
+        if (Object.keys(tmpInfo).length && (tmpInfo?.core?.screen_name || tmpInfo?.legacy?.screen_name || tmpInfo?.screen_name)) {
             const tmpInfoHandle = GenerateAccountInfo(tmpInfo)
             userInfo = tmpInfoHandle.GeneralAccountData
             userInfo.uid_str = GeneralTweetData.uid
@@ -316,7 +316,7 @@ const Tweet = (content = {}, users = {}, contentList = [], recrawlerObject = {},
             content = path2array('retweet_graphql_path', content)
             //quoted_status_result.result.core.user_results.result.legacy.screen_name
             tmpInfo = path2array('graphql_user_result', content)
-            if (tmpInfo && (tmpInfo?.legacy?.screen_name || tmpInfo?.screen_name)) {
+            if (tmpInfo && (tmpInfo?.core?.screen_name || tmpInfo?.legacy?.screen_name || tmpInfo?.screen_name)) {
                 const tmpRetweetInfoHandle = GenerateAccountInfo(tmpInfo)
                 retweetUserInfo = tmpRetweetInfoHandle.GeneralAccountData
                 retweetUserInfo.description = retweetUserInfo.description?.replaceAll('\n', '<br />')
@@ -673,8 +673,10 @@ const GetQuote = (content = {}, users = {}, uid = '0', tweetId = '0', graphqlMod
     //name and display_name
     if (graphqlMode) {
         //quoted_status_result.result.core.user_results.result.legacy
-        inSqlQuote.display_name = path2array('graphql_user_result', content)?.legacy?.name ?? ''
-        inSqlQuote.name = path2array('graphql_user_result', content)?.legacy?.screen_name ?? ''
+        const gqlUser = path2array('graphql_user_result', content)
+
+        inSqlQuote.display_name = gqlUser?.core?.name ?? gqlUser?.legacy?.name ?? ''
+        inSqlQuote.name = gqlUser?.core?.screen_name ?? gqlUser?.legacy?.screen_name ?? ''
         if (!inSqlQuote.name && !inSqlQuote.display_name) {
             Log(false, 'log', `tmv2: warning, no display name [${inSqlQuote.tweet_id}]`)
         }

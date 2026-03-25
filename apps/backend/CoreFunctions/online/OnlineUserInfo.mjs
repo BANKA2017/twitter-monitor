@@ -12,9 +12,9 @@ const ApiUserInfo = async (req, env) => {
     }
     let userInfo = {}
     try {
-        userInfo = await getUserInfo({ user: [name || uid, uid !== '0' && Number(uid) > 0 ? -2 : -3], guest_token: env.guest_token2, cookie: req.cookies, authorization: 4 })
+        userInfo = await getUserInfo({ user: [name || uid, uid !== '0' && Number(uid) > 0 ? -2 : -3], guest_token: env.guest_token2, cookie: req.cookies, authorization: env.guest_token2.authorization })
         //updateGuestToken
-        await env.updateGuestToken(env, 'guest_token2', 4, userInfo.headers.get('x-rate-limit-remaining') < 1, !name ? 'UserByRestId' : 'UserByScreenName')
+        await env.updateGuestToken(env, 'guest_token2', env.guest_token2.authorization, userInfo.headers.get('x-rate-limit-remaining') < 1, !name ? 'UserByRestId' : 'UserByScreenName')
     } catch (e) {
         Log(false, 'error', `[${new Date()}]: #OnlineUserInfo #${name || uid} #${e.code} ${e.message}`)
         return env.json(apiTemplate(e.code, e.message))

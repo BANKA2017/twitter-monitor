@@ -95,7 +95,7 @@ const ApiLocalTweets = async (req, res) => {
     let isRssMode = VerifyQueryString(req.query.format, 'json') === 'rss'
     let query = req.query
     if (Object.keys(req.params).length > 0) {
-        query.name = VerifyQueryString(req.params[0], '')
+        query.name = VerifyQueryString(req.params.name, '')
         isRssMode = true
     }
     const { uid } = await GetUid(query)
@@ -314,7 +314,7 @@ const ApiLocalTweets = async (req, res) => {
             }
             if (conversationList !== null) {
                 tmpTweets.push(...conversationList)
-                ;(count = conversationList.length), (top = '0')
+                ;((count = conversationList.length), (top = '0'))
             }
         }
         //Log(false, 'log', tmpTweets.length, count, top, typeof top, count + 1)
@@ -678,7 +678,7 @@ const ApiLocalStatus = async (req, res) => {
 }
 
 const ApiLocalTag = async (req, res) => {
-    const tagType = req.params[0]
+    const tagType = req?._parsedUrl?.pathname?.split('/')?.filter(x => x)?.pop() || ''
 
     const hash = VerifyQueryString(req.query.hash, '')
 
