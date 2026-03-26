@@ -1,25 +1,38 @@
-# Twitter Monitor v3 monorepo (DEV)
+# Twitter Monitor v3 monorepo (RE?)
 
 ---
 
 ## ⚠ WARNING / 警告
 
-This is an early release version, everything are subject to change, please **DO NOT** used for production!!!
+March 2026 Update: A large amount of content was removed. This part of the solution was already outdated and irreparable, making further maintenance unnecessary. The following are the affected projects, which may be missing:
 
-这是一个提前释出的版本，所有内容都可能会改变，请**不要**用于生产环境
+- Removed all early crawlers and statistics (data from LoveLive!/BanGDream!, etc.)
+- Removed or hid **tmv1/tmv3/media proxy/static file and image caching** related APIs
+  - The existing API's media proxy uses the currently unopened TM@GO. Future code will be available at [twitter-monitor/go](https://github.com/BANKA2017/twitter-monitor/tree/go)
+  - If you need previous data, please contact me directly.
+- Removed all cloudflare@workers related content.
+- Removed some globally installable CLI tools such as prettier/vitest/nodemon...
+- Removed all other unnecessary content.
+
+If you need unaffected repositories, please check [Commit 0a47432](https://github.com/BANKA2017/twitter-monitor/commit/0a4743247f5bb5e923cb217c4c8d8e62c7f233b7) and previous commits.
+
+2026-03 更新移除了大量内容，这部分方案早已失效，并且无法修复，已经失去继续维护的必要，下面是受影响的项目，可能会有遗漏：
+
+- 移除所有早期爬虫和统计数据（来自 LoveLive!/BanGDream! 等成员的数据）
+- 移除或隐藏 **tmv1/tmv3/媒体代理/静态文件和图片缓存** 相关 API
+  - 现有 API 的媒体代理使用暂未开源的 TM@GO，未来相关代码会放在 [twitter-monitor/go](https://github.com/BANKA2017/twitter-monitor/tree/go)
+  - 如果需要以前的数据，请直接联系我
+- 移除所有 cloudflare@workers 相关的内容
+- 移除了一些可以全局安装的 cli 工具 prettier/vitest/nodemon...
+- 移除所有其他不必要的内容
+
+如果需要未受影响的仓库，请检查 [Commit 0a47432](https://github.com/BANKA2017/twitter-monitor/commit/0a4743247f5bb5e923cb217c4c8d8e62c7f233b7) 及以前的 commit
 
 ---
 
-This repository included `core/crawler/api/scripts`, frontend repository is [here](https://github.com/BANKA2017/twitter-monitor-frontend/).
+This repository included `core/api/scripts`, frontend repository is [here](https://github.com/BANKA2017/twitter-monitor-frontend/).
 
-这个仓库包含 `核心/爬虫/api/脚本`，前端仓库位于[这里](https://github.com/BANKA2017/twitter-monitor-frontend/)
-
-## Environment
-
-* x86_64/arm64
-* Node.js 18+
-* Nginx
-* MySQL 8.0 / MariaDB (some function is not supported MariaDB, like function `ANY_VALUE()`, parser `ngram`) / SQLite
+这个仓库包含 `核心/api/脚本`，前端仓库位于[这里](https://github.com/BANKA2017/twitter-monitor-frontend/)
 
 ## How to
 

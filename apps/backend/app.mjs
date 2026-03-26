@@ -4,19 +4,17 @@ import { apiTemplate } from '../../libs/share/Constant.mjs'
 import { basePath } from '../../libs/share/NodeConstant.mjs'
 import { loadModule } from 'cld3-asm'
 //Online api
-import { MediaProxy } from './CoreFunctions/media/MediaProxy.mjs'
 import online from './service/online.mjs'
 import album from './service/album.mjs'
 import translate from './service/translate.mjs'
-//Bot api
-//import bot from './service/bot.mjs'
+
 import { json, xml, updateGuestToken, ResponseWrapper, mediaExistPreCheck, mediaCacheSave } from './share.mjs'
 import { existsSync, readFileSync } from 'fs'
 import { resolve } from 'path'
 
 //settings
 global.dbmode = false
-let settingsFile = basePath + '/assets/setting.mjs'
+let settingsFile = ''
 
 let EXPRESS_PORT = 3000
 let EXPRESS_HOST = '0.0.0.0'
@@ -70,17 +68,8 @@ if (GUEST_ACCOUNT_HANDLE.Link) {
     ) // per 8 hours
 }
 
-// audio space cache
-if (existsSync(`${basePath}/../apps/backend/cache/_audio_apsce_cache.json`)) {
-    try {
-        AUDIO_SPACE_CACHE = JSON.parse(readFileSync(`${basePath}/../apps/backend/cache/_audio_apsce_cache.json`).toString())
-    } catch (e) {
-        Log(false, 'log', `tmv3: Unable to read audio space cache`)
-    }
-}
-
 const app = express()
-const media = express()
+// const media = express()
 const port = EXPRESS_PORT
 const host = EXPRESS_HOST
 
@@ -131,14 +120,14 @@ app.use((req, res, next) => {
 })
 
 //local api
-if (ACTIVE_SERVICE.includes('tmv1')) {
-    const { default: legacy } = await import('./service/legacy.mjs')
-    app.use('/api/v1', legacy)
-}
-if (ACTIVE_SERVICE.includes('twitter_monitor')) {
-    const { default: local } = await import('./service/local.mjs')
-    app.use('/api/v3', local)
-}
+// if (ACTIVE_SERVICE.includes('tmv1')) {
+//     const { default: legacy } = await import('./service/legacy.mjs')
+//     app.use('/api/v1', legacy)
+// }
+// if (ACTIVE_SERVICE.includes('twitter_monitor')) {
+//     const { default: local } = await import('./service/local.mjs')
+//     app.use('/api/v3', local)
+// }
 
 //translate api
 app.use('/translate', translate)
@@ -146,81 +135,80 @@ app.use('/translate', translate)
 //proxy api
 app.use('/online/api/v3', online)
 app.use('/album', album)
-app.use('/media', media)
-//app.use('/bot', bot)
+// app.use('/media', media)
 
-media.use((req, res, next) => {
-    if (global.dbmode) {
-        res.json(apiTemplate(403, 'DB Mode is not included media proxy api'))
-        return
-    }
-    next()
-})
+// media.use((req, res, next) => {
+//     if (global.dbmode) {
+//         res.json(apiTemplate(403, 'DB Mode is not included media proxy api'))
+//         return
+//     }
+//     next()
+// })
 
 //LanguageIdentification
 global.LanguageIdentification = await loadModule()
 Log(false, 'log', 'tmv3: Enabled language identification service')
 
 //media proxy
-media.use(
-    '/cache',
-    express.static(basePath + '/../apps/backend/cache', {
-        setHeaders: function (res, path, stat) {
-            res.set('X-TMCache', 1)
-        }
-    })
-)
-media.get(/(proxy)\/(.*)/, async (req, res) => {
-    req.params.link = req.params?.[1] || ''
-    const _res = await MediaProxy(req, req.env)
-    for (const header of [..._res.headers]) {
-        res.setHeader(header[0], header[1])
-    }
-    switch (_res.status) {
-        case 301:
-        case 302:
-        case 307:
-            res.status(_res.status).redirect(_res.data)
-            break
-        case 200:
-            if (_res.data?.pipe) {
-                _res.data.pipe(res)
-            } else {
-                res.send(_res.data)
-            }
-            break
-        default:
-            res.status(_res.status).end()
-    }
-})
-app.get(/^\/(ext_tw_video|amplify_video)\/(.*)/, async (req, res) => {
-    req.params.link = req.params?.[1] || ''
-    const _res = await MediaProxy(req, req.env)
-    for (const header of [..._res.headers]) {
-        res.setHeader(header[0], header[1])
-    }
-    switch (_res.status) {
-        case 301:
-        case 302:
-        case 307:
-            res.status(_res.status).redirect(_res.data)
-            break
-        case 200:
-            if (_res.data?.pipe) {
-                _res.data.pipe(res)
-            } else {
-                res.send(_res.data)
-            }
-            break
-        default:
-            res.status(_res.status).end()
-    }
-}) //for m3u8
+// media.use(
+//     '/cache',
+//     express.static(basePath + '/../apps/backend/cache', {
+//         setHeaders: function (res, path, stat) {
+//             res.set('X-TMCache', 1)
+//         }
+//     })
+// )
+// media.get(/(proxy)\/(.*)/, async (req, res) => {
+//     req.params.link = req.params?.[1] || ''
+//     const _res = await MediaProxy(req, req.env)
+//     for (const header of [..._res.headers]) {
+//         res.setHeader(header[0], header[1])
+//     }
+//     switch (_res.status) {
+//         case 301:
+//         case 302:
+//         case 307:
+//             res.status(_res.status).redirect(_res.data)
+//             break
+//         case 200:
+//             if (_res.data?.pipe) {
+//                 _res.data.pipe(res)
+//             } else {
+//                 res.send(_res.data)
+//             }
+//             break
+//         default:
+//             res.status(_res.status).end()
+//     }
+// })
+// app.get(/^\/(ext_tw_video|amplify_video)\/(.*)/, async (req, res) => {
+//     req.params.link = req.params?.[1] || ''
+//     const _res = await MediaProxy(req, req.env)
+//     for (const header of [..._res.headers]) {
+//         res.setHeader(header[0], header[1])
+//     }
+//     switch (_res.status) {
+//         case 301:
+//         case 302:
+//         case 307:
+//             res.status(_res.status).redirect(_res.data)
+//             break
+//         case 200:
+//             if (_res.data?.pipe) {
+//                 _res.data.pipe(res)
+//             } else {
+//                 res.send(_res.data)
+//             }
+//             break
+//         default:
+//             res.status(_res.status).end()
+//     }
+// }) //for m3u8
 
 //global static file
-if (STATIC_PATH) {
-    app.use('/static', express.static(STATIC_PATH))
-}
+// if (STATIC_PATH) {
+//     app.use('/static', express.static(STATIC_PATH))
+// }
 
 //robots.txt
 app.all('/robots.txt', (req, res) => {

@@ -5,7 +5,7 @@ import { ApiOfficialTranslate, ApiTranslate } from '../CoreFunctions/translate/O
 const translate = express()
 
 //translate
-translate.get('/local/', ApiLocalTranslate)
+// translate.get('/local/', ApiLocalTranslate)
 translate.post('/online/', async (req, res) => {
     req.postBody = new Map(Object.entries(req.body))
     const _res = await ApiTranslate(req, req.env)

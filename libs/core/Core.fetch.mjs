@@ -47,28 +47,23 @@ import { parse } from 'acorn'
 import { getOauthAuthorization } from './Core.android.mjs'
 import { _ConversationTimelineV2, _SearchTimeline, _TranslateProfileQuery, _TranslateTweetQuery, _UserWithProfileTweetsAndRepliesQueryV2, _UserWithProfileTweetsQueryV2, _ViewerUserQuery } from '../assets/graphql/androidQueryIdList.js'
 import cryptoHandle from 'crypto-helper'
-import { IsNumber, Log } from './Core.function.mjs'
+import { IsNumber } from './Core.function.mjs'
 import { GenerateHeader, ParseOndemandS, ParseTwitterMainPage } from './Core.xClientTransactionID.mjs'
 
 const generateCsrfToken = () => cryptoHandle.randomUUID().replaceAll('-', '')
 
 //for web
-// const TW_AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAAPYXBAAAAAAACLXUNDekMxqa8h%2F40K4moUkGsoc%3DTYfbDKbT3jJPCEVnMYqilB28NHfOPqkca3qaAxGfsyKCs0wRbw' //old token
 
 const TW_AUTHORIZATION2 = 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA' //new token
 const TW_AUTHORIZATION = TW_AUTHORIZATION2// old token was expired
 
-const TW_AUTHORIZATION3 = 'Bearer AAAAAAAAAAAAAAAAAAAAAIK1zgAAAAAA2tUWuhGZ2JceoId5GwYWU5GspY4%3DUq7gzFoCZs1QfwGoVdvSac3IniczZEYXIcDyumCauIXpcAPorE' //another token
-
-//for tweetdeck, most endpoints work except for SearchTimeline
-const TWEETDECK_AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAAF7aAAAAAAAASCiRjWvh7R5wxaKkFp7MM%2BhYBqM%3DbQ0JPmjU9F6ZoMhDfI4uTNAaQuTDm2uO9x3WFVr2xBZ2nhjdP0' //tweetdeck
 const TWEETDECK_AUTHORIZATION2 = 'Bearer AAAAAAAAAAAAAAAAAAAAAFQODgEAAAAAVHTp76lzh3rFzcHbmHVvQxYYpTw%3DckAlMINMjmCwxUcaXbAN4XqJVdgMJaHqNOFgPMK0zN1qLqLQCF' //new tweetdeck
 
 const TW_WEBAPI_PREFIX = 'https://api.x.com'
 const TW_ANDROID_PREFIX = 'https://global.albtls.t.co'
 const TW_ANDROID_SEARCH_PREFIX = 'https://na.albtls.t.co'
 
-const Authorization = [TW_AUTHORIZATION, TW_AUTHORIZATION2, TW_AUTHORIZATION3, TWEETDECK_AUTHORIZATION, TWEETDECK_AUTHORIZATION2]
+const Authorization = [TW_AUTHORIZATION, TW_AUTHORIZATION2, TW_AUTHORIZATION2, TWEETDECK_AUTHORIZATION2, TWEETDECK_AUTHORIZATION2]
 
 const axios = axiosFetch()
 

@@ -349,10 +349,10 @@ const ApiAudioSpace = async (req, env) => {
             tmpAudioSpaceData = await getAudioSpace({ id, guest_token: env.guest_token3, cookie: req.cookies })
         }
         //cache response
-        if (!env.audio_apsce_cache[id]) {
-            env.audio_apsce_cache[id] = tmpAudioSpaceData.data
-            env.mediaCacheSave(JSON.stringify(env.audio_apsce_cache), '_audio_apsce_cache.json')
-        }
+        // if (!env.audio_apsce_cache[id]) {
+        //     env.audio_apsce_cache[id] = tmpAudioSpaceData.data
+        //     env.mediaCacheSave(JSON.stringify(env.audio_apsce_cache), '_audio_apsce_cache.json')
+        // }
     } catch (e) {
         Log(false, 'error', `[${new Date()}]: #OnlineAudioSpace #${id} #500 Unkonwn Error`, e)
         return env.json(apiTemplate())
