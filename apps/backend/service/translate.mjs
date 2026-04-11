@@ -1,5 +1,5 @@
 import express from 'express'
-import { ApiLocalTranslate, ApiPredict } from '../CoreFunctions/translate/Translate.mjs'
+import { ApiPredict } from '../CoreFunctions/translate/Translate.mjs'
 import { ApiOfficialTranslate, ApiTranslate } from '../CoreFunctions/translate/OnlineTranslate.mjs'
 
 const translate = express()
