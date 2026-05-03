@@ -39,7 +39,7 @@ const mockWebpackFunc = (anyV) => anyV
 mockWebpackFunc.d = (anyV) => anyV
 
 const updateIdList = (content) => {
-    const functions = Function(`const that = {__SCRIPTS_LOADED__: {vendor: {}}}; const self=that;const window=that;const importScripts=(...args)=>({});\n\n${content}\n\n;return that.webpackChunk_twitter_responsive_web`)()
+    const functions = Function(`const that = {__SCRIPTS_LOADED__: {vendor: {}}, webpackChunk_twitter_responsive_web: []}; const self=that;const window=that;const globalThis = that;const importScripts=(...args)=>({});\n\n${content}\n\n;return that.webpackChunk_twitter_responsive_web`)()
 
     //# importScripts:
     //> node_modules_x-clients_features_dist_dms_sqlite_worker_js
@@ -53,7 +53,7 @@ const updateIdList = (content) => {
         //const pattern = /exports=({.+?})(;|)},|params:({.+?})};/gm //=Object\.freeze\(([\w:!,"{}]+)\)
 
         let tmpData = null
-        if (tmpFunction?.toString().startsWith('e=>{e.exports={queryId:')) {
+        if (tmpFunction?.toString().includes('{e.exports={queryId:')) {
             let e = {}
             tmpFunction(e, e, mockWebpackFunc)
             tmpData = e.exports
