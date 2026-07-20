@@ -16,24 +16,24 @@
         "format": "npx prettier --write ."
     },
     "devDependencies": {
-        "@types/node": "^25.6.0"
+        "@types/node": "^26.1.1"
     },
     "dependencies": {
         "@kdwnil/translator-utils": "github:BANKA2017/translator-utils#npm",
-        "acorn": "^8.16.0",
-        "axios": "^1.15.0",
+        "acorn": "^8.17.0",
+        "axios": "^1.18.1",
         "blurhash": "^2.0.5",
         "cld3-asm": "^4.0.0",
         "cookie-parser": "^1.4.7",
         "express": "^5.2.1",
         "hpagent": "^1.2.0",
-        "jsdom": "^29.0.2",
+        "jsdom": "^29.1.1",
         "lodash-es": "^4.18.1",
         "m3u8-parser": "^7.2.0",
-        "otplib": "^13.4.0",
-        "sharp": "^0.34.5",
+        "otplib": "^13.4.1",
+        "sharp": "^0.35.3",
         "twemoji-parser": "^14.0.0",
-        "ws": "^8.20.0"
+        "ws": "^8.21.1"
     },
     "workspaces": [
         "packages/*"
