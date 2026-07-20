@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="robots" content="nofollow">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="author" content="Banka2017 (https://nest.moe)">
+    <meta name="description" content="Twitter Monitor Graphql IDs Tool">
+    <title>Graphql IDs</title>
+    <!-- CSS only -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css"
+        crossorigin="anonymous">
+</head>
+
+<body>
+    <div id="app">
+        <nav class="navbar navbar-expand-lg navbar-light text-center bg-light px-2">
+            <span class="navbar-brand mb-0 h1">Graphql IDs</span>
+        </nav>
+        <div class="my-4"></div>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="mb-3">
+                        <label class="form-label" for="TwitterMainPage_input">Twitter Main Page</label>
+                        <div class="input-group" v-if="progress.count === 0 && TwitterMainPage === ''">
+                            <textarea rows="5" type="text" class="form-control" id="TwitterMainPage_input"
+                                v-model="TwitterMainPage"></textarea>
+                        </div>
+                        <div v-else>Content is already set.</div>
+                        <div class="form-text" id="form-text-TwitterMainPage">Copy text from: <code
+                                style="user-select: all;">view-source:https://x.com/i/flow/login?mx=2</code></div>
+                    </div>
+                    <button class="btn btn-primary me-2 mb-1"
+                        v-if="progress.count === 0 || progress.succeed_count+progress.failed_count+progress.skip_count !== progress.count"
+                        @click="updateList" :disabled="progress.count === 0">Download</button>
+                    <button class="btn btn-outline-danger me-2 mb-1" @click="resetList">Reset</button>
+                    <button class="btn btn-danger me-2 mb-1" v-show="progress.failed_count > 0"
+                        @click="updateList(jsFailedList)">Retry</button>
+                    <hr />
+                    <h3>Progress</h3>
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="progress">
+                                <div class="progress-bar bg-primary"
+                                    :style="{width: ((100*progress.succeed_count / progress.count) || 0) +'%'}">
+                                </div>
+                                <div class="progress-bar bg-danger"
+                                    :style="{width: ((100*progress.failed_count / progress.count) || 0) +'%'}">
+                                </div>
+                                <div class="progress-bar bg-secondary"
+                                    :style="{width: ((100*progress.skip_count / progress.count) || 0) +'%'}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ms-2 text-nowrap">
+                            {{ progress.succeed_count + progress.skip_count }} / {{ progress.count }}
+                        </div>
+                    </div>
+                    <hr />
+                </div>
+                <div class="col-md-4">
+                    <h3>Export</h3>
+                    <div class="list-group">
+                        <button type="button" class="list-group-item list-group-item-action"
+                            @click="exportValues('graphqlQueryIdList', 'json')">graphqlQueryIdList.json</button>
+                        <button type="button" class="list-group-item list-group-item-action"
+                            @click="exportValues('graphqlQueryIdList', 'js')">graphqlQueryIdList.js</button>
+                        <button type="button" class="list-group-item list-group-item-action"
+                            @click="exportValues('featuresValueList', 'json')">featuresValueList.json</button>
+                        <button type="button" class="list-group-item list-group-item-action"
+                            @click="exportValues('featuresValueList', 'js')">featuresValueList.js</button>
+                        <button type="button" v-show="progress.count > 0" class="list-group-item list-group-item-action"
+                            @click="exportValues('jsFiles', 'json')">jsFiles.json</button>
+                    </div>
+                    <hr />
+                    <h3>More...</h3>
+                    <div id="all-data" class="p-2 rounded" style="background-color: rgb(247, 247, 247);">
+                        <ul>
+                            <li><a href="https://github.com/BANKA2017/twitter-monitor-assets"
+                                    target="_blank">gh:twitter-monitor-assets
+                                </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="text-center my-2">
+        &gt;_ Twitter Monitor
+    </div>
+    <!--load css and js-->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.5.40"></script>
+    <script>
+        const { createApp, ref, watch, computed } = Vue
+
+        const PregMatchAll = (regex, text = '') => {
+            const match = []
+
+            if (!(regex instanceof RegExp)) {
+                return match
+            }
+
+            for (const handle of text.matchAll(regex.global ? regex : new RegExp(regex.source, regex.flags + 'g'))) {
+                for (let i = 0; i < handle.length; i++) {
+                    if (!match[i]) {
+                        match[i] = []
+                    }
+                    match[i].push(handle[i])
+                }
+            }
+
+            return match
+        }
+
+        function download(filename, text) {
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+
+            URL.revokeObjectURL(url);
+        }
+
+
+        createApp({
+            setup() {
+                const TwitterMainPage = ref('')
+                const jsStatus = ref({})
+
+                const forceStop = ref(false)
+
+                const parsedMainPage = ref({ file_hash: {}, features: {} })
+
+                const jsFileHashList = ref([])
+
+                watch(TwitterMainPage, () => {
+                    if (!TwitterMainPage.value) {
+                        return
+                    }
+
+                    parsedMainPage.value = TwitterMainPage.value ? ParseTwitterMainPage(TwitterMainPage.value) : { file_hash: {}, features: {} }
+                    jsFileHashList.value = Object.entries(parsedMainPage.value.file_hash).map(f => ({
+                        name: f[0],
+                        hash: f[1]
+                    }))
+                    jsStatus.value = Object.fromEntries(jsFileHashList.value.map(entry => ([entry.hash, {
+                        status: 'wait',// wait/fetching/failed/done
+                        value: {
+                            value: {}, name: entry.name, hash: entry.hash
+                        }
+                    }])))
+                })
+
+                const jsFailedList = computed(() => {
+                    const tmpJsStatus = jsStatus.value
+                    const tmpJsFailedList = []
+
+                    for (const val of tmpJsStatus) {
+                        if (val.status === 'failed') {
+                            tmpJsFailedList.push(val.value)
+                        }
+                    }
+
+                    return tmpJsFailedList
+                })
+
+                const progress = computed(() => {
+                    const status = Object.values(jsStatus.value)
+                    return {
+                        count: status.length,
+                        succeed_count: status.filter(x => x.status === 'done').length,
+                        failed_count: status.filter(x => x.status === 'failed').length,
+                        skip_count: status.filter(x => x.status === 'skip').length,
+                    }
+                })
+
+                const loading = ref(false)
+
+                const updateList = async (list = []) => {
+                    if (loading.value) {
+                        return
+                    }
+
+                    if (!Array.isArray(list) || list.length === 0) {
+                        list = jsFileHashList.value
+                    }
+
+                    if (list.length === 0) {
+                        return
+                    }
+
+                    loading.value = true
+
+                    try {
+                        let counter = 0
+                        const sliceCount = 10
+                        for (let x = 0; x < list.length; x += sliceCount) {// jsFileValuesEntries.length
+                            if (forceStop.value) {
+                                loading.value = false
+                                forceStop.value = false
+                                return
+                            }
+
+                            //filter
+                            const jsFilesNameList = list.slice(x, x + sliceCount)
+                            // counter += list.slice(x, x + sliceCount).length - jsFilesNameList.length
+                            // console.log(false, 'log', `tmv3: graphqlQueryIdList break ${sliceCount - jsFilesNameList.length} ->[${counter}/${list.length}]<-`)
+                            const allData = await Promise.allSettled(jsFilesNameList.map((tmpValue) => downloadAndParseJSFile(tmpValue.name, tmpValue.hash)))
+                            //readFileSync(`./js/${file}`).toString()// await _axios.get(`https://abs.twimg.com/responsive-web/client-web/bundle.Communities.${file_hash['bundle.Communities']}a.js`)
+
+                            for (let allDataIndex in allData) {
+                                allDataIndex = Number(allDataIndex)
+                                counter++
+
+                                const status = allData[allDataIndex].status
+                                const res = allData[allDataIndex]?.value || allData[allDataIndex]?.reason
+
+                                if (status === 'fulfilled') {
+                                    jsStatus.value[res.hash].status = res.status
+                                    if (Object.keys(res.value).length > 0) {
+                                        jsStatus.value[res.hash].value = res
+                                        console.log(`tmv3: graphqlQueryIdList (${res.name}) ->[${counter}/${list.length}]<- success`)
+                                    }
+                                } else {
+                                    jsStatus.value[res.hash].status = res.status || 'failed'
+                                    console.log(`tmv3: graphqlQueryIdList ${res.name} ->[${counter}/${list.length}]<- falied`)
+                                }
+
+                            }
+                        }
+                    } catch (e) {
+                        console.error(e)
+                        loading.value = false
+                    }
+                    loading.value = false
+                }
+
+                const ParseTwitterMainPage = () => {
+                    let jsFileHashs = ((regexpData) => {
+                        let indexKV = {}
+                        for (let i = 0; i < (regexpData[0] ?? []).length; i++) {
+                            if (!indexKV[regexpData[1][i]]) {
+                                indexKV[regexpData[1][i]] = [regexpData[2][i]]
+                            } else {
+                                indexKV[regexpData[1][i]].push(regexpData[2][i])
+                            }
+                        }
+
+                        return Object.fromEntries(Object.values(indexKV).filter(kv => kv.length === 2 && !['themeColor', 'type', 'value'].includes(kv[0])))
+                    })(PregMatchAll(/(\d+):(?:"|)([\w\/~\-\.]+)(?:"|)(?:,|})/gm, TwitterMainPage.value))
+
+                    const mainPageHash = PregMatchAll(/https:\/\/abs\.twimg\.com\/responsive-web\/client-web(?:[^\/]+|)\/([^.]+)\.([^.]+)a\.js/gm, TwitterMainPage.value)
+
+                    for (let i in mainPageHash[0] ?? []) {
+                        if (!jsFileHashs[mainPageHash[1][i]]) {
+                            jsFileHashs[mainPageHash[1][i]] = mainPageHash[2][i]
+                        }
+                    }
+
+                    //api:"8684ec1"
+
+                    const __INITIAL_STATE__ = Function(`return {${/window\.__INITIAL_STATE__=\{(.+?)\};/gm.exec(TwitterMainPage.value)[1]}}`)()
+                    const tmpConfigKV = { ...__INITIAL_STATE__.featureSwitch.defaultConfig, ...__INITIAL_STATE__.featureSwitch.user.config }
+                    const featuresValueList = Object.fromEntries(Object.keys(tmpConfigKV).map((key) => [key, tmpConfigKV[key].value]))
+
+                    TwitterMainPage.value = ''
+
+                    return {
+                        file_hash: jsFileHashs, features: featuresValueList
+                    }
+                }
+
+                const resetList = () => {
+                    forceStop.value = true
+                    TwitterMainPage.value = ''
+                    parsedMainPage.value = { file_hash: {}, features: {} }
+                    jsFileHashList.value = []
+                    jsStatus.value = {}
+                }
+
+                const updateIdList = (name, hash, content) => {
+                    const mockWebpackFunc = (anyV) => anyV
+                    mockWebpackFunc.d = (anyV) => anyV
+                    let queryIdList = {}
+                    const featuresValueList = parsedMainPage.value.features
+
+                    try {
+                        const functions = Function(`const that = {__SCRIPTS_LOADED__: {vendor: {}}, webpackChunk_twitter_responsive_web: []}; const self=that;const window=that;const globalThis = that;const importScripts=(...args)=>({});\n\n${content}\n\n;return that.webpackChunk_twitter_responsive_web`)()
+
+                        //# importScripts:
+                        //> node_modules_x-clients_features_dist_dms_sqlite_worker_js
+                        //> node_modules_x-clients_features_dist_dms_sqlite2_worker_js
+                        for (let tmpFunction of Object.entries(functions?.[0]?.[1] || [])) {
+                            // if (existsList.includes(tmpFunction[0])) {
+                            //     continue
+                            // }
+                            // existsList.push(tmpFunction[0])
+                            tmpFunction = tmpFunction[1]
+                            //const pattern = /exports=({.+?})(;|)},|params:({.+?})};/gm //=Object\.freeze\(([\w:!,"{}]+)\)
+                            let tmpData = null
+
+                            const fnString = tmpFunction?.toString() || ''
+                            if (fnString.includes('{e.exports={queryId:')) {
+                                let e = {}
+                                try {
+                                    tmpFunction(e, e, mockWebpackFunc)
+                                    tmpData = e.exports
+                                } catch (err) {
+                                    console.error(err, fnString)
+                                    continue
+                                }
+                            } else if (/,params:\{id:"/gm.test(fnString)) {
+                                try {
+                                    tmpData = Function('return ' + (/,params:([^;]+)};/.exec(fnString)?.[1] || ''))()
+                                } catch (e) {
+                                    console.error(e, fnString)
+                                    continue
+                                }
+                            } else {
+                                //?
+                                continue
+                            }
+                            //let tmpData = e.exports.params || e.exports //Function(`return ${tmpFunction.toString().slice(14,-1)}`)()
+                            let tmpName = tmpData?.operationName || tmpData?.name || false
+                            if (!tmpName) {
+                                continue
+                            }
+                            if (tmpData.name !== undefined && !tmpData.operationName) {
+                                tmpData.operationName = tmpData.name
+                                delete tmpData.name
+                            }
+                            if (tmpData.id !== undefined && !tmpData.queryId) {
+                                tmpData.queryId = tmpData.id
+                                delete tmpData.id
+                            }
+                            if (tmpData.metadata?.features !== undefined && !tmpData.metadata?.featureSwitches) {
+                                tmpData.metadata.featureSwitches = JSON.parse(JSON.stringify(tmpData.metadata?.features))
+                                delete tmpData.metadata?.features
+                                //Log(false, 'log', tmpData)
+                            }
+                            queryIdList[tmpName] = tmpData
+                            //features
+                            //Log(false, 'log', queryIdList[tmpName])
+                            if (queryIdList[tmpName]?.metadata?.featureSwitches) {
+                                queryIdList[tmpName].features = Object.fromEntries((queryIdList[tmpName].metadata.featureSwitches || {}).map((feature) => [feature, featuresValueList[feature] || false]))
+                            }
+                        }
+
+                        return queryIdList
+                    } catch (e) {
+                        console.error(name, hash, e)
+                        return queryIdList
+                    }
+                }
+
+                const exportValues = (valueType = '', fileType = 'js') => {
+                    if (!['graphqlQueryIdList', 'featuresValueList', 'jsFiles'].includes(valueType) || !['js', 'json'].includes(fileType)) {
+                        return
+                    }
+
+                    if (valueType === 'featuresValueList' && fileType === 'json') {
+                        return download(`${valueType}.${fileType}`, JSON.stringify(parsedMainPage.value.features, null, 4))
+                    } else if (valueType === 'featuresValueList' && fileType === 'js') {
+                        const features = parsedMainPage.value.features
+                        const output = [];
+                        const values = [];
+
+                        for (const key of Object.keys(features)) {
+                            output.push(`export const _${key} = ${JSON.stringify(features[key])}`);
+                            values.push(`"${key}": _${key}`);
+                        }
+
+                        output.push(`const featuresValueList = { ${values.join(',')} }`);
+                        output.push('export default featuresValueList');
+
+                        return download(`${valueType}.${fileType}`, output.join('\n'))
+                    } else if (valueType === 'graphqlQueryIdList' && fileType === 'json') {
+                        let queryIdList = {}
+
+                        const list = Object.values(jsStatus.value).filter(val => val.status === 'done' && Object.keys(val.value.value).length > 0).map(val => val.value.value)
+
+                        for (const id in list) {
+                            for (const name in list[id]) {
+                                if (!queryIdList[name]) {
+                                    queryIdList[name] = list[id][name]
+                                }
+                            }
+                        }
+
+                        return download(`${valueType}.${fileType}`, JSON.stringify(queryIdList, null, 4))
+                    } else if (valueType === 'graphqlQueryIdList' && fileType === 'js') {
+                        let queryIdList = {}
+
+                        const list = Object.values(jsStatus.value).filter(val => val.status === 'done' && Object.keys(val.value.value).length > 0).map(val => val.value.value)
+
+                        for (const id in list) {
+                            for (const name in list[id]) {
+                                if (!queryIdList[name]) {
+                                    queryIdList[name] = list[id][name]
+                                }
+                            }
+                        }
+
+                        return download(`${valueType}.${fileType}`, Object.keys(queryIdList)
+                            .map((key) => `export const _${key} = ${JSON.stringify(queryIdList[key])}`)
+                            .join('\n') +
+                            `\nconst graphqlQueryIdList = { ${Object.keys(queryIdList)
+                                .map((key) => `"${key}": _${key}`)
+                                .join(',')} }\nexport default graphqlQueryIdList\n`)
+                    } else if (valueType === 'jsFiles' && fileType === 'json') {
+                        let jsList = []
+
+                        const jfl = jsFileHashList.value
+
+                        for (const val of jfl) {
+                            jsList.push(`https://abs.twimg.com/responsive-web/client-web/${val.name}.${val.hash}a.js`)
+                        }
+
+                        return download(`${valueType}.${fileType}`, JSON.stringify(jsList, null, 4))
+                    }
+
+                    console.error('?')
+                }
+
+                const downloadAndParseJSFile = async (name = '', hash = '') => new Promise(async (resolve, reject) => {
+                    if (!name || !hash) {
+                        reject({
+                            name, hash, status: 'invalid',
+                            value: {}
+                        })
+                    }
+
+                    if (/^(icons\/|icons\.|i18n\/|react-syntax-highlighter)/gm.test(name)) {
+                        resolve({
+                            name, hash, status: 'skip',
+                            value: {}
+                        })
+                    }
+
+                    // mock random error
+                    // if ((Math.floor(Math.random() * 100)) % 2) {
+                    //     reject({
+                    //         name, hash,
+                    //         value: {}
+                    //     })
+                    // }
+
+                    fetch(`https://abs.twimg.com/responsive-web/client-web/${name}.${hash}a.js`).then(res => res.text()).then(fileStr => updateIdList(name, hash, fileStr)).then(gqlIDs => {
+                        resolve({
+                            value: gqlIDs,
+                            name, hash, status: 'done',
+                        })
+                    }).catch(err => {
+                        console.error(err)
+                        reject({
+                            name, hash, status: 'failed',
+                            value: {}
+                        })
+                    })
+                })
+
+
+                return { TwitterMainPage, parsedMainPage, jsStatus, jsFailedList, progress, loading, updateList, resetList, exportValues }
+            }
+        }).mount('#app')
+    </script>
+</body>
+
+</html>

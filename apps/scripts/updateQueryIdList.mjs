@@ -39,7 +39,9 @@ const mockWebpackFunc = (anyV) => anyV
 mockWebpackFunc.d = (anyV) => anyV
 
 const updateIdList = (content) => {
-    const functions = Function(`const that = {__SCRIPTS_LOADED__: {vendor: {}}, webpackChunk_twitter_responsive_web: []}; const self=that;const window=that;const globalThis = that;const importScripts=(...args)=>({});\n\n${content}\n\n;return that.webpackChunk_twitter_responsive_web`)()
+    const functions = Function(
+        `const that = {__SCRIPTS_LOADED__: {vendor: {}}, webpackChunk_twitter_responsive_web: []}; const self=that;const window=that;const globalThis = that;const importScripts=(...args)=>({});\n\n${content}\n\n;return that.webpackChunk_twitter_responsive_web`
+    )()
 
     //# importScripts:
     //> node_modules_x-clients_features_dist_dms_sqlite_worker_js
@@ -53,12 +55,24 @@ const updateIdList = (content) => {
         //const pattern = /exports=({.+?})(;|)},|params:({.+?})};/gm //=Object\.freeze\(([\w:!,"{}]+)\)
 
         let tmpData = null
-        if (tmpFunction?.toString().includes('{e.exports={queryId:')) {
+
+        const fnString = tmpFunction?.toString() || ''
+        if (fnString.includes('{e.exports={queryId:')) {
             let e = {}
-            tmpFunction(e, e, mockWebpackFunc)
-            tmpData = e.exports
-        } else if (/,params:\{id:"/gm.test(tmpFunction?.toString())) {
-            tmpData = Function('return ' + (/,params:([^;]+)};/.exec(tmpFunction?.toString() || '')?.[1] || ''))()
+            try {
+                tmpFunction(e, e, mockWebpackFunc)
+                tmpData = e.exports
+            } catch (err) {
+                console.error(err, fnString)
+                continue
+            }
+        } else if (/,params:\{id:"/gm.test(fnString)) {
+            try {
+                tmpData = Function('return ' + (/,params:([^;]+)};/.exec(fnString)?.[1] || ''))()
+            } catch (e) {
+                console.error(e, fnString)
+                continue
+            }
         } else {
             //?
             continue
@@ -76,7 +90,7 @@ const updateIdList = (content) => {
             tmpData.queryId = tmpData.id
             delete tmpData.id
         }
-        if (tmpData.metadata?.features !== undefined && !tmpData.metadata?.featureSwitches !== undefined) {
+        if (tmpData.metadata?.features !== undefined && !tmpData.metadata?.featureSwitches) {
             tmpData.metadata.featureSwitches = JSON.parse(JSON.stringify(tmpData.metadata?.features))
             delete tmpData.metadata?.features
             //Log(false, 'log', tmpData)
@@ -107,16 +121,16 @@ const updateIdList = (content) => {
 _axios
     .get(link, {
         headers: {
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
             'sec-fetch-mode': 'navigate'
         }
     })
     .then(async (response) => {
         if (response.data) {
             // NOT a good regexp, we will fix it later.
-            const jsFileValues = ((regexpData) =>{
+            const jsFileValues = ((regexpData) => {
                 let indexKV = {}
-                for (let i=0; i<regexpData[0].length; i++) {
+                for (let i = 0; i < regexpData[0].length; i++) {
                     if (!indexKV[regexpData[1][i]]) {
                         indexKV[regexpData[1][i]] = [regexpData[2][i]]
                     } else {
@@ -124,10 +138,16 @@ _axios
                     }
                 }
 
-                return Object.fromEntries(Object.values(indexKV).filter(kv => kv.length === 2 && !['themeColor', 'type', 'value'].includes(kv[0])))
+                return Object.fromEntries(Object.values(indexKV).filter((kv) => kv.length === 2 && !['themeColor', 'type', 'value'].includes(kv[0])))
             })(PregMatchAll(/(\d+):(?:"|)([\w\/~\-\.]+)(?:"|)(?:,|})/gm, response.data))
             //get main link
-            const mainLink = /(https:\/\/abs\.twimg\.com\/responsive-web\/client-web(?:[^\/]+|)\/main\.[^.]+\.js)/gm.exec(response.data)[0]
+            const mainPageHash = PregMatchAll(/https:\/\/abs\.twimg\.com\/responsive-web\/client-web(?:[^\/]+|)\/([^.]+)\.([^.]+)a\.js/gm, TwitterMainPage.value)
+
+            for (let i in mainPageHash[0] ?? []) {
+                if (!jsFileHashs[mainPageHash[1][i]]) {
+                    jsFileHashs[mainPageHash[1][i]] = mainPageHash[2][i]
+                }
+            }
             //api:"8684ec1"
 
             const __INITIAL_STATE__ = Function(`return {${/window\.__INITIAL_STATE__=\{(.+?)\};/gm.exec(response.data)[1]}}`)()
@@ -146,17 +166,13 @@ _axios
             //json
             writeFileSync(basePath + '/../libs/assets/graphql/featuresValueList.json', JSON.stringify(featuresValueList, null, 4))
             try {
-                const mainId = await _axios.get(mainLink)
-                if (mainId.data) {
-                    updateIdList(mainId.data)
-                }
                 // full version
                 const jsFileValuesEntries = Object.entries(jsFileValues)
                 Log(false, 'log', `tmv3: graphqlQueryIdList ->[${jsFileValuesEntries.length}]<-`)
                 const sliceCount = 30
                 for (let x = 0; x < jsFileValuesEntries.length; x += sliceCount) {
                     //filter
-                    const jsFilesNameList = jsFileValuesEntries.slice(x, x + sliceCount).filter((item) => !item[0].startsWith('icons/') && !item[0].startsWith('i18n/') && !item[0].startsWith('react-syntax-highlighter'))
+                    const jsFilesNameList = jsFileValuesEntries.slice(x, x + sliceCount).filter((item) => !/^(icons\/|icons\.|i18n\/|react-syntax-highlighter)/gm.test(item[0]))
                     counter += jsFileValuesEntries.slice(x, x + sliceCount).length - jsFilesNameList.length
                     Log(false, 'log', `tmv3: graphqlQueryIdList break ${sliceCount - jsFilesNameList.length} ->[${counter}/${jsFileValuesEntries.length}]<-`)
                     const allData = await Promise.allSettled(jsFilesNameList.map((tmpValue) => _axios.get(`https://abs.twimg.com/responsive-web/client-web/${tmpValue[0]}.${tmpValue[1]}a.js`)))
@@ -175,16 +191,6 @@ _axios
                         }
                     }
                 }
-
-                // for twitter monitor only
-                //const apiId = await _axios.get(`https://abs.twimg.com/responsive-web/client-web/api.${jsFileValues['api']}a.js`)
-                //if (apiId.data) {
-                //    updateIdList(apiId.data, 'api')
-                //}
-                //const communityId = await _axios.get(`https://abs.twimg.com/responsive-web/client-web/bundle.Communities.${jsFileValues['bundle.Communities']}a.js`)
-                //if (communityId.data) {
-                //    updateIdList(communityId.data, 'community')
-                //}
                 process.exit()
             } catch (e) {
                 Log(false, 'log', e)
