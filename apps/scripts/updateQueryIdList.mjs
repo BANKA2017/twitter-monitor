@@ -141,7 +141,7 @@ _axios
                 return Object.fromEntries(Object.values(indexKV).filter((kv) => kv.length === 2 && !['themeColor', 'type', 'value'].includes(kv[0])))
             })(PregMatchAll(/(\d+):(?:"|)([\w\/~\-\.]+)(?:"|)(?:,|})/gm, response.data))
             //get main link
-            const mainPageHash = PregMatchAll(/https:\/\/abs\.twimg\.com\/responsive-web\/client-web(?:[^\/]+|)\/([^.]+)\.([^.]+)a\.js/gm, TwitterMainPage.value)
+            const mainPageHash = PregMatchAll(/https:\/\/abs\.twimg\.com\/responsive-web\/client-web(?:[^\/]+|)\/([^.]+)\.([^.]+)a\.js/gm, response.data)
 
             for (let i in mainPageHash[0] ?? []) {
                 if (!jsFileHashs[mainPageHash[1][i]]) {
