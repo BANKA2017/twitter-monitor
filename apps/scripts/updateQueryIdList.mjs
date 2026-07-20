@@ -144,8 +144,8 @@ _axios
             const mainPageHash = PregMatchAll(/https:\/\/abs\.twimg\.com\/responsive-web\/client-web(?:[^\/]+|)\/([^.]+)\.([^.]+)a\.js/gm, response.data)
 
             for (let i in mainPageHash[0] ?? []) {
-                if (!jsFileHashs[mainPageHash[1][i]]) {
-                    jsFileHashs[mainPageHash[1][i]] = mainPageHash[2][i]
+                if (!jsFileValues[mainPageHash[1][i]]) {
+                    jsFileValues[mainPageHash[1][i]] = mainPageHash[2][i]
                 }
             }
             //api:"8684ec1"
